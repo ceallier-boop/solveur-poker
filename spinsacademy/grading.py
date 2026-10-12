@@ -2,8 +2,9 @@
 
 Barème (cahier des charges §4.2), sur l'EV de référence du spot (exacte ou HRC, voir importer) :
   - regret = EV de la meilleure action - EV de l'action choisie, en mBB ;
-  - « correct »   : regret <= TOLERANCE_MBB, ou bien, quand l'EV de référence est celle de HRC, action jouée par HRC
-                    au moins MIXED_MIN de la fois (stratégie mixte : on ne la présente pas comme une erreur) ;
+  - « correct »   : regret <= TOLERANCE_MBB, ou bien regret <= 3 x TOLERANCE_MBB pour une action que HRC joue au moins
+                    MIXED_MIN de la fois quand l'EV de référence est celle de HRC (stratégie mixte : on ne la présente
+                    pas comme une erreur, mais on ne couvre pas une action coûteuse) ;
   - « imprécision » : regret <= 3 x TOLERANCE_MBB (actions de valeur proche) ;
   - « erreur »    : au-delà.
 Points : 1 / 0,5 / 0. Les fréquences affichées sont arrondies (pas de DISPLAY_STEP), la correction utilise les valeurs exactes.
@@ -20,12 +21,13 @@ def reference_ev(spot, hand):
 
 
 def grade(spot, hand, action_id):
+    if not spot['hands'][hand].get('quiz_eligible', True): raise ValueError(f'{hand} n\'est pas proposable dans ce spot (atteinte ou données HRC incohérentes)')
     ids = [a['id'] for a in spot['actions']]
     if action_id not in ids: raise ValueError(f"action {action_id!r} non proposée dans ce spot ({ids})")
     j = ids.index(action_id); ev = reference_ev(spot, hand); freq = spot['hands'][hand]['freq']
     best = max(range(len(ev)), key=lambda k: ev[k])
     regret = 1000 * (ev[best] - ev[j])
-    mixed_ok = spot['ev_reference'] == 'hrc' and freq[j] >= MIXED_MIN
+    mixed_ok = spot['ev_reference'] == 'hrc' and freq[j] >= MIXED_MIN and regret <= 3 * TOLERANCE_MBB
     if regret <= TOLERANCE_MBB or mixed_ok: verdict = 'correct'
     elif regret <= 3 * TOLERANCE_MBB: verdict = 'imprécision'
     else: verdict = 'erreur'

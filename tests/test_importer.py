@@ -63,11 +63,25 @@ def test_grading_rules(built):
     aa = grading.grade(spot, 'AA', 'C'); assert aa['verdict'] == 'correct' and aa['regret_mbb'] <= 0
     bad = grading.grade(spot, 'AA', 'F'); assert bad['verdict'] == 'erreur' and bad['regret_mbb'] > 1000
     with pytest.raises(ValueError): grading.grade(spot, 'AA', 'X')
-    mixed = next(s for s in built[0] if s['ev_reference'] == 'hrc')
-    for h in NAMES:
-        f = mixed['hands'][h]['freq']
-        for j, a in enumerate(mixed['actions']):
-            if f[j] >= grading.MIXED_MIN: assert grading.grade(mixed, h, a['id'])['verdict'] == 'correct'
+    checked = 0
+    for mixed in [s for s in built[0] if s['ev_reference'] == 'hrc'][:60]:
+        for h in NAMES:
+            H = mixed['hands'][h]
+            if not H['quiz_eligible']:
+                with pytest.raises(ValueError): grading.grade(mixed, h, mixed['actions'][0]['id'])
+                continue
+            for j, a in enumerate(mixed['actions']):
+                r = grading.grade(mixed, h, a['id'])
+                if H['freq'][j] >= grading.MIXED_MIN and r['regret_mbb'] <= 3 * grading.TOLERANCE_MBB: assert r['verdict'] == 'correct'
+                if r['regret_mbb'] > 3 * grading.TOLERANCE_MBB: assert r['verdict'] == 'erreur'   # la stratégie mixte ne couvre pas une action coûteuse
+                checked += 1
+    assert checked > 1000
+
+
+def test_eligibility_excludes_reach_and_inconsistent_hrc(built):
+    for s in built[0]:
+        for h in s['hands'].values():
+            assert h['quiz_eligible'] == (h['reach'] >= im.MIN_REACH and h['hrc_self_regret_mbb'] <= im.MAX_SELF_REGRET_MBB)
 
 
 def test_displayed_mix_rounds_to_100(built):
@@ -75,3 +89,27 @@ def test_displayed_mix_rounds_to_100(built):
         for h in NAMES:
             mix = grading.displayed_mix(s, h)
             assert sum(p for _, p in mix) == 100 and all(p % grading.DISPLAY_STEP == 0 for _, p in mix)
+
+
+def test_publication_blocked_by_injected_invalid_spot(tmp_path):
+    """un export volontairement corrompu (fréquences d'une main non normalisées) doit bloquer la publication"""
+    import shutil
+    src = os.path.join(im.ROOT, 'data', 'hrc', 'raw', 'v2', 'hand_8')
+    dst = tmp_path / 'raw' / 'v2' / 'hand_8'; shutil.copytree(src, dst)
+    f = next(p for p in sorted((dst / 'nodes').iterdir()))
+    node = json.load(open(f)); node['hands']['AA']['played'][0] += 0.3; json.dump(node, open(f, 'w'))
+    with pytest.raises(SystemExit, match='Publication bloquée'):
+        im.publish('x', str(tmp_path / 'out'), raw=str(tmp_path / 'raw'))
+    assert not (tmp_path / 'out' / 'x').exists()
+
+
+def test_publication_blocked_by_illegal_action(tmp_path):
+    import shutil
+    src = os.path.join(im.ROOT, 'data', 'hrc', 'raw', 'v2', 'hand_8')
+    dst = tmp_path / 'raw' / 'v2' / 'hand_8'; shutil.copytree(src, dst)
+    for f in sorted((dst / 'nodes').iterdir()):
+        node = json.load(open(f))
+        r = [a for a in node['actions'] if a['type'] == 'R']
+        if r: r[-1]['amount'] *= 3; json.dump(node, open(f, 'w')); break      # relance au-delà du stack
+    with pytest.raises(SystemExit, match='au-delà du stack'):
+        im.publish('x', str(tmp_path / 'out'), raw=str(tmp_path / 'raw'))
