@@ -14,16 +14,26 @@ from . import grading
 from .cards import NAMES, W
 from .hrc import ROOT
 
-DATASETS = os.path.join(ROOT, 'data', 'datasets', 'gto_preflop')
-DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.12-2')
+DATASETS = os.path.join(ROOT, 'data', 'datasets')
+DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.12-2')                       # gto_preflop
+DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-1')
+ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
 FAMILIES = {'premier à parler': 'first_in', 'face à un limp': 'vs_limp', 'face à une relance': 'vs_raise', 'face à un tapis': 'vs_allin'}
 
 
-@lru_cache(maxsize=4)
+def ref_path(ref):
+    """« version » (dataset GTO) ou « dataset/version »"""
+    return os.path.join(DATASETS, *(ref.split('/', 1) if '/' in ref else ('gto_preflop', ref)))
+
+
+def is_exploit(ref): return ref.startswith('exploit_')
+
+
+@lru_cache(maxsize=8)
 def load(version=DEFAULT_VERSION):
-    d = os.path.join(DATASETS, version)
+    d = ref_path(version)
     spots = [json.loads(l) for l in open(os.path.join(d, 'spots.jsonl'))]
     return json.load(open(os.path.join(d, 'manifest.json'))), {s['spot_id']: s for s in spots}
 
@@ -79,6 +89,9 @@ def prompt(sp, hand):
     hist = history_text(sp)
     parts = [f'{table}, tapis {stacks} BB ({pos}).'] + [h + '.' for h in hist]
     if not hist: parts.append('Personne n\'a encore parlé.')
+    v = sp.get('villain')
+    if v:
+        parts.append(f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation (GTO : {bb(v['gto_pct'])} %).")
     parts.append(f"Tu es au {sp['hero']} avec {hand_display(hand)}. Que fais-tu ?")
     return ' '.join(parts)
 
@@ -101,6 +114,8 @@ def candidates(spots, filters=None):
 def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None):
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots"""
     _, spots = load(version); pool = candidates(spots, filters); rnd = random.Random(seed)
+    exploit = is_exploit(version)
+    if exploit: pool = [sp for sp in pool if sp.get('adaptations', 0) > 0]
     if len(pool) < size: raise ValueError(f'{len(pool)} spots disponibles pour ces filtres, {size} demandés')
     by_fam = {}
     for sp in pool: by_fam.setdefault(family(sp), []).append(sp)
@@ -114,7 +129,13 @@ def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=No
             if not by_fam: break
             continue
         sp = rnd.choice(choices); used.add(sp['spot_id'])
+        if exploit:                                              # pas deux fois la même situation de base (facteurs différents)
+            used.update(x['spot_id'] for x in pool if x.get('base_spot_id') == sp.get('base_spot_id'))
         hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
+        if exploit:
+            adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
+            other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
+            hands = adapt if adapt and (not other or rnd.random() < ADAPTATION_SHARE) else other
         weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in hands]
         out.append((sp['spot_id'], rnd.choices(hands, weights)[0]))
     return out
@@ -125,7 +146,8 @@ def question(version, spot_id, hand):
     _, spots = load(version); sp = spots[spot_id]
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
-                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp),
+                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), mode='exploit' if sp.get('villain') else 'gto',
+                villain=({k: sp['villain'][k] for k in ('position', 'stat', 'observed_pct', 'gto_pct')} if sp.get('villain') else None),
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
 
 
@@ -152,9 +174,21 @@ def correct(version, spot_id, hand, action_id):
             lines.append('L\'écart est trop faible pour être significatif : réponse acceptée.')
         elif g['verdict'] == 'imprécision':
             lines.append('Les deux actions ont une valeur proche : imprécision, pas erreur.')
-    lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
-    lines.append('Source : ' + ('EV exacte (décision tout ou rien)' if g['ev_source'] == 'exact' else 'EV du solveur de référence') + '.')
+    v = sp.get('villain'); h = sp['hands'][hand]
+    if v:
+        trop = 'pousse plus souvent' if v['factor'] > 1 else 'pousse moins souvent'
+        if h['gto_action'] != best:
+            eg = h['ev_gto'][1]
+            lines.append(f"Adaptation : ce joueur {trop} que le GTO ({bb(v['observed_pct'])} % contre {bb(v['gto_pct'])} %). Contre un joueur GTO, "
+                         f"la bonne action serait {labels[h['gto_action']]} ({'+' if eg >= 0 else '−'}{bb(abs(eg))} BB pour le call) ; contre lui, c'est {labels[best]}.")
+        else:
+            lines.append(f"Même si ce joueur {trop} que le GTO, la bonne action ne change pas : l'écart de range ne suffit pas à retourner la décision.")
+        lines.append('Source : EV exacte du call contre sa range de tapis observée. Le profil est une hypothèse de simulation, pas une lecture d\'un adversaire réel.')
+    else:
+        lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
+        lines.append('Source : ' + ('EV exacte (décision tout ou rien)' if g['ev_source'] == 'exact' else 'EV du solveur de référence') + '.')
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
+                gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
                 ev_source=g['ev_source'], explanation_fr=' '.join(lines))
 

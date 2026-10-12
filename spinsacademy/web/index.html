@@ -20,6 +20,11 @@
     <section id="screen-home" class="screen" aria-labelledby="home-title">
       <h1 id="home-title">Entraînement Expresso</h1>
       <p class="lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
+        <button type="button" data-value="gto" aria-pressed="true">GTO</button>
+        <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
+      </div>
+      <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <button class="primary big" id="quick-start">Série rapide</button>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
       <button class="secondary" id="stats-btn">Ma progression</button>
@@ -70,6 +75,7 @@
     <!-- Question -->
     <section id="screen-question" class="screen" hidden aria-labelledby="q-title">
       <h2 id="q-title" class="sr-only">Question</h2>
+      <div class="villain" id="villain" hidden></div>
       <div class="table-view" id="table-view" aria-hidden="true"></div>
       <ol class="history" id="history" aria-label="Historique du coup"></ol>
       <div class="hero">
@@ -85,7 +91,7 @@
       <p class="recap" id="a-recap"></p>
       <div class="verdict" id="a-verdict" tabindex="-1"></div>
       <p class="choice" id="a-choice"></p>
-      <h3>Stratégie de référence</h3>
+      <h3 id="a-strategy-title">Stratégie de référence</h3>
       <div class="strategy" id="a-strategy"></div>
       <p class="explanation" id="a-explanation"></p>
       <button class="primary big" id="next-btn">Question suivante</button>

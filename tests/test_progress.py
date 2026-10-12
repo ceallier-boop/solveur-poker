@@ -68,3 +68,15 @@ def test_migration_of_older_database(tmp_path, monkeypatch):
     c = TestClient(app)
     play(c, ME, 1)
     assert c.get('/users/me/stats', headers=ME).json()['questions'] == 5
+
+
+def test_stats_split_by_mode(client):
+    play(client, ME, 1)
+    sid = client.post('/sessions', json={'mode': 'exploit', 'seed': 2}, headers=ME).json()['session_id']
+    for i in range(5):
+        client.get('/quiz/next', params={'session_id': sid})
+        client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': 'F'})
+    s = client.get('/users/me/stats', headers=ME).json()
+    modes = {x['filters']['mode']: x['questions'] for x in s['by']['mode']}
+    assert modes == {'gto': 5, 'exploit': 5}
+    for e in s['recurring_errors']: assert e['filters']['mode'] in ('gto', 'exploit')

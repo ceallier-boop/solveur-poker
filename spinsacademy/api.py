@@ -1,6 +1,6 @@
 """API du quiz (FastAPI + SQLite), routes du cahier des charges §13.1.
 
-  POST /sessions                 créer une série (filtres, taille, graine) liée à une version de dataset
+  POST /sessions                 créer une série (mode gto ou exploit, filtres, taille, graine) liée à une version de dataset
   GET  /quiz/next?session_id=    question suivante non répondue (sans solution) ; done=true à la fin
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
@@ -67,6 +67,7 @@ class Filters(BaseModel):
 
 
 class NewSession(BaseModel):
+    mode: str = Field('gto', pattern='^(gto|exploit)$')
     filters: Filters = Filters()
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
@@ -96,7 +97,7 @@ def health():
 
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id); version = quiz.DEFAULT_VERSION
+    pid = player(x_player_id); version = quiz.DEFAULT_EXPLOIT if body.mode == 'exploit' else quiz.DEFAULT_VERSION
     try:
         series = quiz.draw_series(version, body.filters.model_dump(exclude_none=True), body.size, body.seed)
     except ValueError as e:
@@ -106,7 +107,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                     (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed, len(series), pid))
         con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand) VALUES (?, ?, ?, ?)', [(sid, i, s, h) for i, (s, h) in enumerate(series)])
-    return dict(session_id=sid, dataset_version=version, size=len(series))
+    return dict(session_id=sid, dataset_version=version, mode=body.mode, size=len(series))
 
 
 def _session(con, sid):

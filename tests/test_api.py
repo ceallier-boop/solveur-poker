@@ -67,3 +67,34 @@ def test_web_interface_is_served(client):
     r = client.get('/'); assert r.status_code == 200 and 'SpinsAcademy' in r.text and '/static/app.js' in r.text
     for f in ('app.js', 'app.css', 'manifest.json', 'icon.svg'):
         assert client.get(f'/static/{f}').status_code == 200
+
+
+def test_exploit_mode_series(client):
+    r = client.post('/sessions', json={'mode': 'exploit', 'seed': 4}).json()
+    assert r['mode'] == 'exploit' and r['dataset_version'].startswith('exploit_calls/')
+    sid = r['session_id']; bases = set()
+    for i in range(r['size']):
+        q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
+        assert q['mode'] == 'exploit' and q['villain']['observed_pct'] != q['villain']['gto_pct']
+        assert [o['id'] for o in q['options']] == ['F', 'C'] and 'part à tapis avec' in q['prompt_fr']
+        bases.add(q['spot_id'].rsplit('-x', 1)[0])
+        a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': 'C'}).json()
+        assert a['gto_label'] and 'hypothèse de simulation' in a['explanation_fr']
+    assert len(bases) == r['size']                                     # jamais deux fois la même situation de base
+
+
+def test_exploit_dataset_consistency():
+    """facteur 1 implicite : l'EV « GTO » stockée = l'EV exacte du spot GTO ; une adaptation change bien l'action"""
+    from spinsacademy import quiz
+    _, ex = quiz.load(quiz.DEFAULT_EXPLOIT); _, gto = quiz.load(quiz.DEFAULT_VERSION)
+    n = 0
+    for sp in list(ex.values())[:40]:
+        base = gto[sp['base_spot_id']]
+        for h, v in sp['hands'].items():
+            if 'ev_gto' not in v: continue
+            assert abs(v['ev_gto'][1] - base['hands'][h]['ev_exact'][1]) < 1e-6
+            if v['kind'] == 'adaptation':
+                assert (v['ev_exact'][1] > 0) != (v['ev_gto'][1] > 0) and abs(v['ev_exact'][1]) * 1000 >= 20; n += 1
+        f = sp['villain']['factor']
+        assert (sp['villain']['observed_pct'] > sp['villain']['gto_pct']) == (f > 1)
+    assert n > 0
