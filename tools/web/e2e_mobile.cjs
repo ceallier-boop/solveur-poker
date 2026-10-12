@@ -1,4 +1,4 @@
-// Parcours complet sur mobile (390 x 844) : accueil, 5 questions, bilan ; captures d'écran et erreurs JavaScript.
+// Parcours complet sur mobile (390 x 844) : accueil, 5 questions (dont un signalement), bilan ; captures d'écran et erreurs JavaScript.
 // Usage : BASE_URL=http://localhost:8000/ [MODE=exploit] [EXTRA_SERIES=n] node tools/web/e2e_mobile.cjs <dossier_captures> [light|dark]
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 (async () => {
@@ -15,7 +15,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     const n = await p.locator('#actions button').count();
     await p.locator('#actions button').nth(i % n).click();
     await p.waitForSelector('#screen-answer:not([hidden])');
-    if (i === 0) await p.screenshot({ path: out + '/3_correction.png', fullPage: true });
+    if (i === 0) {
+      await p.screenshot({ path: out + '/3_correction.png', fullPage: true });
+      await p.click('#report summary'); await p.check('input[value="unclear"]'); await p.fill('#report-comment', 'test e2e');
+      await p.click('#report-form button[type=submit]'); await p.waitForSelector('#report-done:not([hidden])');
+      await p.screenshot({ path: out + '/3b_signalement.png', fullPage: true });
+    }
+    if (i === 1 && !(await p.locator('#report-done').isHidden())) errors.push('signalement affiché comme envoyé sur une autre question');
     await p.click('#next-btn');
   }
   await p.waitForSelector('#screen-summary:not([hidden])'); await p.screenshot({ path: out + '/4_bilan.png', fullPage: true });

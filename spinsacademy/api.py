@@ -5,6 +5,9 @@
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
   GET  /users/me/stats           progression du joueur (en-tête X-Player-Id) ; GET /users/me/export, DELETE /users/me
+  POST /reports                  signaler une erreur sur une question répondue (une fois par question)
+  GET  /admin/reports, POST /admin/reports/{id}/resolve, GET /admin/disabled, DELETE /admin/disabled/{spot_id},
+  GET  /admin/log                administration (en-tête X-Admin-Token = SPINSACADEMY_ADMIN_TOKEN ; désactivée sans jeton)
   GET  /health
   GET  /                         interface web mobile (spinsacademy/web)
 Mode invité au MVP : pas d'authentification (cahier des charges §19, question 22, à trancher). L'appareil génère un
@@ -29,7 +32,17 @@ CREATE TABLE IF NOT EXISTS questions(session_id TEXT NOT NULL REFERENCES session
 CREATE TABLE IF NOT EXISTS attempts(session_id TEXT NOT NULL, idx INTEGER NOT NULL, action_id TEXT NOT NULL,
   verdict TEXT NOT NULL, points REAL NOT NULL, regret_mbb REAL NOT NULL, result TEXT NOT NULL, answered_at TEXT NOT NULL,
   PRIMARY KEY(session_id, idx), FOREIGN KEY(session_id, idx) REFERENCES questions(session_id, idx));
+CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL, player_id TEXT,
+  session_id TEXT NOT NULL, question_index INTEGER NOT NULL, dataset_version TEXT NOT NULL, spot_id TEXT NOT NULL,
+  hand TEXT NOT NULL, action_id TEXT, reason TEXT NOT NULL, comment TEXT, status TEXT NOT NULL DEFAULT 'open',
+  resolution TEXT, resolved_at TEXT, UNIQUE(session_id, question_index));
+CREATE TABLE IF NOT EXISTS disabled_spots(spot_id TEXT PRIMARY KEY, dataset_version TEXT NOT NULL, reason TEXT NOT NULL,
+  report_id INTEGER, disabled_at TEXT NOT NULL, actor TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
+  action TEXT NOT NULL, details TEXT NOT NULL);
 """
+REASONS = {'wrong_answer': 'La réponse me semble fausse', 'unclear': "L'énoncé est incompréhensible",
+           'illegal_action': 'Une action proposée est impossible', 'other': 'Autre'}
 
 
 def _now(): return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
@@ -99,7 +112,9 @@ def health():
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id); version = quiz.DEFAULT_EXPLOIT if body.mode == 'exploit' else quiz.DEFAULT_VERSION
     try:
-        series = quiz.draw_series(version, body.filters.model_dump(exclude_none=True), body.size, body.seed)
+        with closing(connect()) as con:
+            excluded = frozenset(r[0] for r in con.execute('SELECT spot_id FROM disabled_spots'))
+        series = quiz.draw_series(version, body.filters.model_dump(exclude_none=True), body.size, body.seed, excluded)
     except ValueError as e:
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
@@ -190,3 +205,97 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         for sid in ids:
             con.execute('DELETE FROM attempts WHERE session_id = ?', (sid,)); con.execute('DELETE FROM questions WHERE session_id = ?', (sid,))
         con.execute('DELETE FROM sessions WHERE player_id = ?', (pid,))
+
+
+# ------------------------------------------------------------------ signalements (cahier des charges §7 et §14)
+class Report(BaseModel):
+    session_id: str
+    question_index: int = Field(ge=0)
+    reason: str = Field(pattern='^(' + '|'.join(REASONS) + ')$')
+    comment: Optional[str] = Field(None, max_length=1000)
+
+
+@app.post('/reports', status_code=201)
+def report(body: Report, x_player_id: Optional[str] = Header(None)):
+    pid = player(x_player_id)
+    with closing(connect()) as con, con:
+        s = _session(con, body.session_id)
+        q = con.execute('SELECT q.spot_id, q.hand, a.action_id FROM questions q JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx '
+                        'WHERE q.session_id = ? AND q.idx = ?', (body.session_id, body.question_index)).fetchone()
+        if q is None: raise HTTPException(409, 'on ne peut signaler qu\'une question à laquelle on a répondu')
+        try:
+            cur = con.execute('INSERT INTO reports(created_at, player_id, session_id, question_index, dataset_version, spot_id, hand, action_id, reason, comment) '
+                              'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (_now(), pid, body.session_id, body.question_index, s['dataset_version'],
+                                                                      q['spot_id'], q['hand'], q['action_id'], body.reason, (body.comment or '').strip() or None))
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, 'cette question a déjà été signalée')
+        return dict(report_id=cur.lastrowid, status='open')
+
+
+def admin(token):
+    expected = os.environ.get('SPINSACADEMY_ADMIN_TOKEN')
+    if not expected: raise HTTPException(403, 'administration désactivée (SPINSACADEMY_ADMIN_TOKEN non défini)')
+    if token != expected: raise HTTPException(403, 'jeton d\'administration invalide')
+    return 'admin'
+
+
+def _log(con, actor, action, **details):
+    con.execute('INSERT INTO admin_log(at, actor, action, details) VALUES (?, ?, ?, ?)', (_now(), actor, action, json.dumps(details, ensure_ascii=False)))
+
+
+@app.get('/admin/reports')
+def list_reports(status: str = 'open', x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con:
+        rows = [dict(r) for r in con.execute('SELECT * FROM reports WHERE status = ? ORDER BY created_at', (status,))]
+    for r in rows:
+        r['reason_fr'] = REASONS[r['reason']]
+        try: r['prompt_fr'] = quiz.question(r['dataset_version'], r['spot_id'], r['hand'])['prompt_fr']
+        except KeyError: r['prompt_fr'] = None
+        same = sum(1 for x in rows if x['spot_id'] == r['spot_id']); r['reports_on_spot'] = same
+    return rows
+
+
+class Resolution(BaseModel):
+    status: str = Field(pattern='^(accepted|rejected)$')
+    resolution: str = Field(min_length=3, max_length=1000)
+    disable_spot: bool = False
+    actor: str = Field('admin', max_length=80)
+
+
+@app.post('/admin/reports/{report_id}/resolve')
+def resolve(report_id: int, body: Resolution, x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con, con:
+        r = con.execute('SELECT * FROM reports WHERE id = ?', (report_id,)).fetchone()
+        if r is None: raise HTTPException(404, 'signalement inconnu')
+        if r['status'] != 'open': raise HTTPException(409, 'signalement déjà traité')
+        con.execute('UPDATE reports SET status = ?, resolution = ?, resolved_at = ? WHERE id = ?', (body.status, body.resolution, _now(), report_id))
+        if body.disable_spot:
+            con.execute('INSERT OR REPLACE INTO disabled_spots VALUES (?, ?, ?, ?, ?, ?)', (r['spot_id'], r['dataset_version'], body.resolution, report_id, _now(), body.actor))
+        _log(con, body.actor, 'resolve_report', report_id=report_id, status=body.status, resolution=body.resolution,
+             disabled_spot=r['spot_id'] if body.disable_spot else None)
+    return dict(report_id=report_id, status=body.status, disabled_spot=r['spot_id'] if body.disable_spot else None)
+
+
+@app.get('/admin/disabled')
+def list_disabled(x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con:
+        return [dict(r) for r in con.execute('SELECT * FROM disabled_spots ORDER BY disabled_at')]
+
+
+@app.delete('/admin/disabled/{spot_id}')
+def enable_spot(spot_id: str, reason: str, actor: str = 'admin', x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con, con:
+        if con.execute('DELETE FROM disabled_spots WHERE spot_id = ?', (spot_id,)).rowcount == 0: raise HTTPException(404, 'spot non désactivé')
+        _log(con, actor, 'enable_spot', spot_id=spot_id, reason=reason)
+    return dict(spot_id=spot_id, enabled=True)
+
+
+@app.get('/admin/log')
+def admin_log(x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con:
+        return [dict(r, details=json.loads(r['details'])) for r in con.execute('SELECT * FROM admin_log ORDER BY id')]

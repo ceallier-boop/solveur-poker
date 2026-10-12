@@ -111,9 +111,11 @@ def candidates(spots, filters=None):
     return out
 
 
-def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None):
-    """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots"""
-    _, spots = load(version); pool = candidates(spots, filters); rnd = random.Random(seed)
+def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset()):
+    """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
+    excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent)"""
+    _, spots = load(version); rnd = random.Random(seed)
+    pool = [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded and sp.get('base_spot_id') not in excluded]
     exploit = is_exploit(version)
     if exploit: pool = [sp for sp in pool if sp.get('adaptations', 0) > 0]
     if len(pool) < size: raise ValueError(f'{len(pool)} spots disponibles pour ces filtres, {size} demandés')

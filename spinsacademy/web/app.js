@@ -161,7 +161,28 @@ function renderAnswer(r) {
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
   $('a-explanation').textContent = r.explanation_fr;
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
+  resetReport();
   show('answer'); v.focus({ preventScroll: true });
+}
+
+// ------------------------------------------------------------------ signalement d'une question
+function resetReport() {
+  const done = (state.reported || new Set()).has(`${state.sid}:${state.index}`);
+  $('report').open = false; $('report-form').reset();
+  $('report-form').hidden = done; $('report-done').hidden = !done;
+}
+
+async function sendReport(e) {
+  e.preventDefault();
+  const reason = new FormData($('report-form')).get('reason');
+  if (!reason || state.busy) return; state.busy = true;
+  try {
+    await api('/reports', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, reason, comment: $('report-comment').value || null }) });
+  } catch (err) {
+    if (err.status !== 409) { alert(err.message); return; }                  // 409 : déjà signalée, on remercie quand même
+  } finally { state.busy = false; }
+  (state.reported = state.reported || new Set()).add(`${state.sid}:${state.index}`);
+  $('report-form').hidden = true; $('report-done').hidden = false;
 }
 
 // ------------------------------------------------------------------ bilan
@@ -223,6 +244,7 @@ const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui 
   exploit: 'Payer ou non un tapis contre un adversaire qui pousse plus ou moins souvent que le GTO. Profils simulés, pas de vrais joueurs.' };
 document.querySelector('.mode-switch').addEventListener('click', () => { $('mode-note').textContent = MODE_NOTE[mode()]; });
 $('custom-start').addEventListener('click', () => start(filters()));
+$('report-form').addEventListener('submit', sendReport);
 $('next-btn').addEventListener('click', () => next().catch((e) => alert(e.message)));
 $('again-btn').addEventListener('click', () => start({ mode: state.mode || mode() }));
 $('back-home').addEventListener('click', home);
