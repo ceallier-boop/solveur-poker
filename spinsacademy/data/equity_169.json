@@ -1,0 +1,7 @@
+{
+ "file": "equity_169.npy",
+ "description": "E[i, j] : équité préflop de la classe i contre la classe j (169 x 169), combinaisons disjointes, égalités comptées pour moitié",
+ "method": "Monte-Carlo, 200 000 tirages par duel (legacy/conversation/pushfold.py:equity_matrix, graine 11), E[j, i] = 1 - E[i, j]",
+ "precision": "erreur-type ≈ 0,0011 par duel ; écart à l'énumération exacte : 72o-AA 0,1178 contre 0,1180, AKo-22 0,4749 contre 0,4735",
+ "class_order": "grille 13 x 13, indice = ligne * 13 + colonne (spinsacademy.cards.NAMES)"
+}
