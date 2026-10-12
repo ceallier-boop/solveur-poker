@@ -24,6 +24,7 @@ class PostflopConfig:
     raise_fraction: float = 0.66      # relance classique : on ajoute ce pourcentage du pot après call ; 0 = tapis seulement
     max_raises: int = 2               # relances par rue (la dernière possible est toujours un tapis)
     metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
+    allin_spr: float = 0.0            # > 0 : le tapis n'est proposé que si tapis restant / pot <= allin_spr (règle HRC : 5)
 
 
 class _N:
@@ -55,18 +56,20 @@ class HUPostflop:
     def _act(self, street, c, p, facing, raised, checked):
         """raised : nombre de relances déjà faites dans la rue"""
         n = self._new('act', street, c, player=p); left = self.S - c[p]; pot = self.P + c[0] + c[1]
+        shove_ok = self.cfg.allin_spr <= 0 or left / pot <= self.cfg.allin_spr + 1e-9
         if facing <= 1e-9:
             opts = [('X', None)]
             bet = self.cfg.bet_fraction * pot
             if bet < self.cfg.allin_fraction * left: opts.append((f'B{self.cfg.bet_fraction:g}', bet))
-            opts.append(('A', left))
+            if shove_ok or len(opts) == 1: opts.append(('A', left))
         else:
             opts = [('F', None), ('C', None)]
             if raised < self.cfg.max_raises and left > facing + 1e-9:
                 add = facing + self.cfg.raise_fraction * (pot + facing)
-                if self.cfg.raise_fraction > 0 and raised + 1 < self.cfg.max_raises and add < self.cfg.allin_fraction * left:
+                can_raise = self.cfg.raise_fraction > 0 and add < self.cfg.allin_fraction * left
+                if can_raise and (raised + 1 < self.cfg.max_raises or not shove_ok):
                     opts.append((f'R{self.cfg.raise_fraction:g}', add))
-                opts.append(('A', left))
+                if shove_ok or not can_raise: opts.append(('A', left))
         for lab, amt in opts:
             if lab == 'X':
                 ch = self._street(street + 1, c) if checked else self._act(street, c, 1 - p, 0.0, raised, True)
