@@ -1,0 +1,6 @@
+{
+ "file": "equity3_169.npy",
+ "description": "T[i, j, k] : part du pot de la classe i dans un all-in à 3 contre les classes j et k (169 x 169 x 169), combos disjoints, égalités partagées ; symétrique en (j, k)",
+ "method": "Monte-Carlo, 600 tirages par triplet non ordonné (legacy/conversation/tensor3.py, graine 12345), symétrisé ; stocké en float16",
+ "precision": "erreur-type ≈ 0,02 par triplet ; les erreurs se compensent sur des ranges (centaines de triplets). Contrôle : la somme des trois parts vaut 1 pour chaque triplet."
+}
