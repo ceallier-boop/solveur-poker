@@ -102,6 +102,11 @@ def index():
     return FileResponse(os.path.join(WEB, 'index.html'))
 
 
+@app.get('/admin', include_in_schema=False)
+def admin_page():
+    return FileResponse(os.path.join(WEB, 'admin.html'))
+
+
 @app.get('/health')
 def health():
     m, spots = quiz.load(quiz.DEFAULT_VERSION)
@@ -250,8 +255,10 @@ def list_reports(status: str = 'open', x_admin_token: Optional[str] = Header(Non
         rows = [dict(r) for r in con.execute('SELECT * FROM reports WHERE status = ? ORDER BY created_at', (status,))]
     for r in rows:
         r['reason_fr'] = REASONS[r['reason']]
-        try: r['prompt_fr'] = quiz.question(r['dataset_version'], r['spot_id'], r['hand'])['prompt_fr']
-        except KeyError: r['prompt_fr'] = None
+        try:
+            r['prompt_fr'] = quiz.question(r['dataset_version'], r['spot_id'], r['hand'])['prompt_fr']
+            r['correction'] = quiz.correct(r['dataset_version'], r['spot_id'], r['hand'], r['action_id'])   # ce que le joueur a vu
+        except (KeyError, ValueError): r['prompt_fr'] = r['correction'] = None
         same = sum(1 for x in rows if x['spot_id'] == r['spot_id']); r['reports_on_spot'] = same
     return rows
 

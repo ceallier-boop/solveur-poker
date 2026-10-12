@@ -36,6 +36,8 @@ def test_report_flow_and_duplicates(client):
     rows = client.get('/admin/reports', headers=ADMIN).json()
     assert len(rows) == 1 and rows[0]['comment'] == 'le call me semble meilleur' and rows[0]['player_id'] == ME['X-Player-Id']
     assert rows[0]['reason_fr'] and rows[0]['prompt_fr'] and rows[0]['reports_on_spot'] == 1
+    assert rows[0]['correction']['chosen_label'] == rows[0]['correction']['strategy'][0]['label_fr'] or rows[0]['correction']['explanation_fr']
+    assert client.get('/admin').headers['content-type'].startswith('text/html')            # la page est publique, les données non
 
 
 def test_admin_requires_token(client, monkeypatch):

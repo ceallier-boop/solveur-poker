@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>SpinsAcademy · Signalements</title>
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+  <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="/">Spins<span>Academy</span></a>
+    <div class="progress">Administration</div>
+  </header>
+  <main id="app">
+    <section class="screen" id="login">
+      <h1>Signalements</h1>
+      <p class="lead">Réservé aux experts. Le jeton est défini sur le serveur (SPINSACADEMY_ADMIN_TOKEN) ; il reste dans cet onglet.</p>
+      <form id="login-form" class="filters">
+        <label for="token">Jeton d'administration</label>
+        <input id="token" type="password" autocomplete="current-password" required>
+        <label for="actor">Ton nom (pour le journal)</label>
+        <input id="actor" type="text" maxlength="80" required>
+        <button class="primary" type="submit">Ouvrir</button>
+      </form>
+      <p class="error" id="login-error" role="alert" hidden></p>
+    </section>
+
+    <section class="screen" id="panel" hidden>
+      <div class="chips tabs" role="tablist" aria-label="Vue">
+        <button role="tab" data-tab="open" aria-pressed="true">À traiter</button>
+        <button role="tab" data-tab="accepted" aria-pressed="false">Acceptés</button>
+        <button role="tab" data-tab="rejected" aria-pressed="false">Rejetés</button>
+        <button role="tab" data-tab="disabled" aria-pressed="false">Spots retirés</button>
+        <button role="tab" data-tab="log" aria-pressed="false">Journal</button>
+      </div>
+      <p class="lead" id="count" aria-live="polite"></p>
+      <div id="list" class="cards-list"></div>
+    </section>
+  </main>
+  <script src="/static/admin.js"></script>
+</body>
+</html>

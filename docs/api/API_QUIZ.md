@@ -50,11 +50,13 @@ Le signalement enregistre la version du dataset, le spot, la main et l'action ch
 
 ### Administration
 
+Page d'administration : `/admin` (mobile et ordinateur). L'expert saisit le jeton et son nom (inscrit au journal), puis traite les signalements : énoncé, réponse du joueur, correction qu'il a vue, commentaire, décision motivée, retrait éventuel du spot. Le jeton reste dans l'onglet (sessionStorage) ; la page elle-même ne contient aucune donnée.
+
 Les routes `/admin/*` exigent l'en-tête `X-Admin-Token`, égal à la variable d'environnement `SPINSACADEMY_ADMIN_TOKEN`. Si la variable n'est pas définie, l'administration est fermée (`403`).
 
 | Route | Rôle |
 |---|---|
-| `GET /admin/reports?status=open` | signalements (`open`, `accepted` ou `rejected`), avec le motif en français, l'énoncé et le nombre de signalements sur le même spot |
+| `GET /admin/reports?status=open` | signalements (`open`, `accepted` ou `rejected`), avec le motif en français, l'énoncé, la correction affichée au joueur (`correction`) et le nombre de signalements sur le même spot |
 | `POST /admin/reports/{id}/resolve` | `{status: accepted\|rejected, resolution, disable_spot?, actor?}`. Avec `disable_spot`, le spot n'est plus tiré. `409` si le signalement est déjà traité. |
 | `GET /admin/disabled` | spots désactivés, avec le motif et le signalement d'origine |
 | `DELETE /admin/disabled/{spot_id}?reason=...&actor=...` | réactive un spot (motif obligatoire) |
