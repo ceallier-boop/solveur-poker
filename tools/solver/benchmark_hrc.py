@@ -16,6 +16,7 @@ from spinsacademy.solver import postflop as pf
 from spinsacademy.solver.cfr import Solver
 
 REF = 'daa9aaa0'
+OUTER, POST_ITERS, BUCKETS, DAMP = 3, 3000, 16, 0.5
 
 
 def find_export(stacks):
@@ -52,8 +53,14 @@ def run(stacks, iters, model):
     found = find_export(stacks)
     if not found: raise SystemExit(f'aucun export HRC de référence pour {stacks}')
     d, st, nodes = found
-    pm = {'showdown': pf.Showdown}[model]()
-    t0 = time.time(); s = Solver(st, postflop=pm).solve(iters); dt = time.time() - t0
+    t0 = time.time()
+    if model == 'showdown':
+        s = Solver(st, postflop=pf.Showdown()).solve(iters)
+    else:
+        from spinsacademy.solver.pipeline import solve
+        from spinsacademy.postflop.hu_solver import PostflopConfig
+        s, _, _ = solve(st, pre_iters=iters, outer=OUTER, post_iters=POST_ITERS, pf_cfg=PostflopConfig(buckets=BUCKETS), damping=DAMP)
+    dt = time.time() - t0
     rows = compare(s.strategy(), st, nodes)
     return dict(export=d, stacks=st, iters=iters, seconds=dt, expl=s.exploitability(), rows=rows, model=model)
 
@@ -68,6 +75,8 @@ def show(res):
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('--stacks', required=True); ap.add_argument('--iters', type=int, default=1500)
-    ap.add_argument('--postflop', default='showdown')
-    a = ap.parse_args()
+    ap.add_argument('--postflop', default='showdown', choices=['showdown', 'realization'])
+    ap.add_argument('--outer', type=int, default=3); ap.add_argument('--post-iters', type=int, default=3000)
+    ap.add_argument('--buckets', type=int, default=16); ap.add_argument('--damping', type=float, default=0.5)
+    a = ap.parse_args(); OUTER, POST_ITERS, BUCKETS, DAMP = a.outer, a.post_iters, a.buckets, a.damping
     show(run([float(x) for x in a.stacks.split(',')], a.iters, a.postflop))
