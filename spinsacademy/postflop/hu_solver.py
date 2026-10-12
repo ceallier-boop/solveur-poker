@@ -36,9 +36,10 @@ class _N:
 
 
 class HUPostflop:
-    def __init__(self, pot, stack, cfg=None):
+    def __init__(self, pot, stack, cfg=None, start_street=0):
+        """start_street : 0 flop (par défaut), 1 turn, 2 river (sous-jeux de contrôle, spinsacademy.postflop.exact)"""
         self.P = float(pot); self.S = float(stack); self.cfg = cfg or PostflopConfig(); self.nodes = []
-        self.root = self._street(0, (0.0, 0.0))
+        self.root = self._street(start_street, (0.0, 0.0))
         self.dec = [n for n in self.nodes if n.kind == 'act']
         B = self.cfg.buckets
         self.R = {n.id: np.zeros((B, len(n.actions))) for n in self.dec}
