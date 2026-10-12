@@ -43,7 +43,7 @@ class Realization:
 
     def value(self, solver, nd, p, reach):
         off = self.offsets.get(nd.id)
-        if off is None: return solver.showdown_value(nd, p, reach)
+        if off is None or nd.folded[p]: return solver.showdown_value(nd, p, reach)     # joueur couché : il perd sa mise
         active = [q for q in range(solver.n) if not nd.folded[q]]
         q = active[0] if active[1] == p else active[1]
         P = float(sum(nd.contrib)); rq = reach[q]; dp, dq = off[p], off[q]

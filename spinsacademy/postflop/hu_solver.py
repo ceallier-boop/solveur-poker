@@ -162,7 +162,7 @@ class HUPostflop:
         """fréquences globales des actions d'OOP à la racine (stratégie moyenne)"""
         arr = self._arrays(); ranks, order, valid, bucket = pool; r0 = np.asarray(w_oop, float)[CLASS_OF]
         acc = np.zeros(len(self.root.actions)); tot = 0.0
-        for i in range(boards):
+        for i in range(min(boards, len(ranks))):
             b = bucket[i, 0]; S = np.maximum(self.Sf[0], 0); s = S.sum(1, keepdims=True)
             sg = np.where(s > 0, S / np.where(s > 0, s, 1), 1.0 / len(self.root.actions))[:, :len(self.root.actions)]
             w = r0 * valid[i]; acc += (w[:, None] * sg[b]).sum(0); tot += w.sum()

@@ -55,3 +55,13 @@ def test_fit_offsets_reproduces_marginals():
     d0, d1 = fit_offsets(P, w0, w1, G0, G1)
     Gh = P * E + d0[:, None] - d1[None, :]
     assert np.abs((D * Gh) @ w1 / (D @ w1) - G0).max() < 1e-6 and np.abs((D * (P - Gh)).T @ w0 / (D.T @ w0) - G1).max() < 1e-6
+
+
+def test_pipeline_three_handed_runs_and_stays_consistent():
+    """chaîne complète à 3 joueurs (petits réglages) : pas d'erreur, ranges postflop prises en compte, exploitabilité faible"""
+    from spinsacademy.solver.pipeline import solve
+    from spinsacademy.postflop.hu_solver import PostflopConfig
+    s, model, hist = solve([8, 8, 8], outer=1, pre_iters=300, post_iters=200, boards=60, workers=2,
+                           pf_cfg=PostflopConfig(rollouts=2), log=None)
+    assert model.offsets and len(hist) == 1
+    assert max(s.exploitability()) < 0.01
