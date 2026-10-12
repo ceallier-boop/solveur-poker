@@ -13,10 +13,21 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+const pc = (x) => String(x).replace('.', ',') + ' %';
+
+// identifiant anonyme de l'appareil (mode invité) : relie les séries d'un même joueur pour les statistiques
+function playerId() {
+  let id = store.get('player_id');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join(''));
+    store.set('player_id', id);
+  }
+  return id;
+}
 
 async function api(path, opts = {}) {
-  const r = await fetch(path, { headers: { 'content-type': 'application/json' }, ...opts });
-  const body = await r.json().catch(() => ({}));
+  const r = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'X-Player-Id': playerId() } });
+  const body = r.status === 204 ? {} : await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(body.detail || `Erreur ${r.status}`), { status: r.status });
   return body;
 }
@@ -153,7 +164,7 @@ function renderAnswer(r) {
 async function summary() {
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
-  $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${s.score_pct} % des points</small>`;
+  $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`;
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
@@ -162,7 +173,47 @@ async function summary() {
   show('summary');
 }
 
+// ------------------------------------------------------------------ progression
+const DIM_FR = { family: 'Situation', hero: 'Position', table: 'Format', depth: 'Profondeur' };
+function themeRow(x, min) {
+  const low = x.reliable && x.score_pct < 60, cls = !x.reliable ? ' unreliable' : (low ? ' low' : '');
+  const right = x.reliable ? pc(x.score_pct) : `${x.questions} / ${min} questions`;
+  return `<div class="trow${cls}"><span>${x.label}</span><span>${right}</span><div class="sbar"><i style="width:${x.reliable ? x.score_pct : 0}%"></i></div></div>`;
+}
+async function stats() {
+  loading(true);
+  const s = await api('/users/me/stats');
+  progress('');
+  if (!s.questions) {
+    $('st-score').innerHTML = '—<small>Joue une première série pour voir ta progression.</small>';
+    for (const id of ['st-evolution', 'st-weakest', 'st-themes', 'st-recurring']) $(id).innerHTML = '';
+    $('st-note').textContent = ''; show('stats'); return;
+  }
+  $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} séries</small>`;
+  $('st-evolution').innerHTML = s.evolution.length > 1
+    ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
+    : '<span>L\'évolution s\'affiche après deux séries.</span>';
+  const w = s.weakest;
+  $('st-weakest').innerHTML = w ? `<div class="weak"><span>Point à travailler : <b>${w.label}</b> (${pc(w.score_pct)} sur ${w.questions} questions)</span>`
+    + `<button class="primary" id="train-weak">M'entraîner sur ce thème</button></div>` : '';
+  if (w) $('train-weak').addEventListener('click', () => start(w.filters));
+  $('st-themes').innerHTML = Object.entries(s.by).map(([k, rows]) =>
+    `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
+  $('st-recurring').innerHTML = s.recurring_errors.length
+    ? s.recurring_errors.map((e, k) => `<li><b>${e.label}</b> : ${e.errors} erreurs sur ${e.questions} questions (${e.regret_mbb} mBB perdus)<br>${e.examples[0] || ''}<br><button class="link" data-k="${k}">S'entraîner sur ce thème</button></li>`).join('')
+    : '<li>Pas d\'erreur répétée pour l\'instant.</li>';
+  for (const b of $('st-recurring').querySelectorAll('button[data-k]')) b.addEventListener('click', () => start(s.recurring_errors[Number(b.dataset.k)].filters));
+  $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;
+  show('stats');
+}
+
 // ------------------------------------------------------------------ navigation
+$('stats-btn').addEventListener('click', () => stats().catch((e) => alert(e.message)));
+$('st-back').addEventListener('click', home);
+$('st-delete').addEventListener('click', async () => {
+  if (!confirm('Effacer définitivement toutes tes séries et ta progression ?')) return;
+  await api('/users/me', { method: 'DELETE' }); store.del('sid'); stats();
+});
 $('quick-start').addEventListener('click', () => start({}));
 $('custom-start').addEventListener('click', () => start(filters()));
 $('next-btn').addEventListener('click', () => next().catch((e) => alert(e.message)));

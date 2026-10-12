@@ -22,6 +22,7 @@
       <p class="lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
       <button class="primary big" id="quick-start">Série rapide</button>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
+      <button class="secondary" id="stats-btn">Ma progression</button>
 
       <details class="filters" id="filters">
         <summary>Choisir le thème</summary>
@@ -99,6 +100,21 @@
       <ul class="errors" id="s-errors"></ul>
       <button class="primary big" id="again-btn">Nouvelle série</button>
       <button class="link" id="back-home">Retour à l'accueil</button>
+    </section>
+
+    <!-- Progression -->
+    <section id="screen-stats" class="screen" hidden aria-labelledby="st-title">
+      <h2 id="st-title">Ma progression</h2>
+      <div class="score" id="st-score"></div>
+      <div class="evolution" id="st-evolution" aria-label="Score des dernières séries"></div>
+      <div id="st-weakest"></div>
+      <h3>Par thème</h3>
+      <div id="st-themes"></div>
+      <h3>Erreurs récurrentes</h3>
+      <ul class="errors" id="st-recurring"></ul>
+      <p class="note" id="st-note"></p>
+      <button class="link" id="st-back">Retour à l'accueil</button>
+      <button class="link danger" id="st-delete">Effacer mes données</button>
     </section>
 
     <div class="loading" id="loading" hidden>Chargement…</div>

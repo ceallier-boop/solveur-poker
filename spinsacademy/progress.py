@@ -1,0 +1,72 @@
+"""Statistiques de progression d'un joueur (cahier des charges §9.2 et §9.3).
+
+Entrée : les réponses enregistrées du joueur, chacune avec la session, la date, la version du dataset et le spot.
+Sortie : totaux, scores par thème (avec seuil d'échantillon), évolution par série, erreurs récurrentes et point faible.
+Règles :
+  - un score n'est marqué fiable qu'à partir de MIN_SAMPLE questions : on ne conclut pas sur quelques réponses ;
+  - le point faible proposé est le thème fiable au score le plus bas ; sans thème fiable, aucun n'est proposé ;
+  - les statistiques ne modifient jamais les solutions ni la correction.
+"""
+from collections import defaultdict
+from . import quiz
+
+MIN_SAMPLE = 10
+DEPTHS = (('lt10', 'Moins de 10 BB', 0, 9.5), ('10_16', '10 à 16 BB', 9.5, 16.5), ('17_25', '17 à 25 BB', 16.5, 99))
+FAMILY_FR = {'first_in': 'Premier à parler', 'vs_limp': 'Face à un limp', 'vs_raise': 'Face à une relance', 'vs_allin': 'Face à un tapis'}
+TABLE_FR = {'3-handed': '3 joueurs', 'heads-up': 'Heads-up'}
+
+
+def depth_of(stack):
+    for key, label, lo, hi in DEPTHS:
+        if lo <= stack < hi: return key
+    return DEPTHS[-1][0]
+
+
+def _bucket():
+    return dict(questions=0, points=0.0, errors=0)
+
+
+def _close(b, label, filters):
+    n = b['questions']
+    return dict(label=label, questions=n, score_pct=round(100 * b['points'] / n, 1) if n else None,
+                errors=b['errors'], reliable=n >= MIN_SAMPLE, filters=filters)
+
+
+def compute(rows):
+    """rows : dicts {session_id, session_created_at, dataset_version, spot_id, hand, verdict, points, regret_mbb, answered_at}"""
+    total = _bucket(); verdicts = defaultdict(int)
+    dims = {'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
+    sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None))
+    themes = defaultdict(lambda: dict(errors=0, questions=0, regret=0.0, examples=[]))
+    for r in rows:
+        _, spots = quiz.load(r['dataset_version']); sp = spots[r['spot_id']]
+        fam, hero, table, depth = quiz.family(sp), sp['hero'], sp['table'], depth_of(sp['effective_stack_bb'])
+        err = r['verdict'] == 'erreur'
+        for b in (total, dims['family'][fam], dims['hero'][hero], dims['table'][table], dims['depth'][depth]):
+            b['questions'] += 1; b['points'] += r['points']; b['errors'] += err
+        verdicts[r['verdict']] += 1
+        s = sessions[r['session_id']]; s['questions'] += 1; s['points'] += r['points']; s['date'] = r['session_created_at']
+        t = themes[(fam, hero, depth)]; t['questions'] += 1
+        if err:
+            t['errors'] += 1; t['regret'] += r['regret_mbb']
+            if len(t['examples']) < 2: t['examples'].append(quiz.prompt(sp, r['hand']))
+    depth_label = {k: l for k, l, *_ in DEPTHS}
+    depth_filter = {k: dict(min_stack=lo, max_stack=hi) for k, _, lo, hi in DEPTHS}
+    by = dict(
+        family=[_close(dims['family'][k], FAMILY_FR[k], dict(family=k)) for k in FAMILY_FR if k in dims['family']],
+        hero=[_close(dims['hero'][k], k, dict(hero=k)) for k in ('BTN', 'SB', 'BB') if k in dims['hero']],
+        table=[_close(dims['table'][k], TABLE_FR[k], dict(table=k)) for k in TABLE_FR if k in dims['table']],
+        depth=[_close(dims['depth'][k], depth_label[k], depth_filter[k]) for k, *_ in DEPTHS if k in dims['depth']])
+    reliable = [x for v in by.values() for x in v if x['reliable']]
+    weakest = min(reliable, key=lambda x: x['score_pct']) if reliable else None
+    recurring = sorted(([dict(label=f"{FAMILY_FR[f]} · {h} · {depth_label[d]}", errors=t['errors'], questions=t['questions'],
+                              regret_mbb=round(t['regret']), examples=t['examples'],
+                              filters=dict(family=f, hero=h, **depth_filter[d]))
+                         for (f, h, d), t in themes.items() if t['errors'] >= 2]), key=lambda x: (-x['errors'], -x['regret_mbb']))[:3]
+    evolution = [dict(session_id=k, date=v['date'], questions=v['questions'], score_pct=round(100 * v['points'] / v['questions'], 1))
+                 for k, v in sorted(sessions.items(), key=lambda kv: kv[1]['date'] or '')]
+    n = total['questions']
+    return dict(sessions=len(sessions), questions=n, points=round(total['points'], 1),
+                score_pct=round(100 * total['points'] / n, 1) if n else None,
+                verdicts={v: verdicts.get(v, 0) for v in ('correct', 'imprécision', 'erreur')},
+                min_sample=MIN_SAMPLE, by=by, evolution=evolution[-20:], recurring_errors=recurring, weakest=weakest)

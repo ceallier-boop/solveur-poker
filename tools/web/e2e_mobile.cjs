@@ -18,6 +18,17 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await p.click('#next-btn');
   }
   await p.waitForSelector('#screen-summary:not([hidden])'); await p.screenshot({ path: out + '/4_bilan.png', fullPage: true });
+  for (let s = 0; s < Number(process.env.EXTRA_SERIES || 0); s++) {              // séries supplémentaires pour remplir les statistiques
+    await p.click('#again-btn');
+    for (let i = 0; i < 5; i++) {
+      await p.waitForSelector('#screen-question:not([hidden])');
+      const n = await p.locator('#actions button').count(); await p.locator('#actions button').nth((i + s) % n).click();
+      await p.waitForSelector('#screen-answer:not([hidden])'); await p.click('#next-btn');
+    }
+    await p.waitForSelector('#screen-summary:not([hidden])');
+  }
+  await p.click('#back-home'); await p.click('#stats-btn');
+  await p.waitForSelector('#screen-stats:not([hidden])'); await p.screenshot({ path: out + '/5_progression.png', fullPage: true });
   const overflow = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   console.log(JSON.stringify({ errors, horizontalOverflow: overflow }));
   await b.close();
