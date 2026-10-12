@@ -9,48 +9,21 @@ Usage : python tools/hrc/validate.py [--out docs/hrc/VALIDATION_HRC.md]
 """
 import argparse, json, os
 import numpy as np
-from hrc_io import ROOT, NC, exports, labels, load, positions, preflop_hash, tree_hash
+from hrc_io import ROOT, exports, labels, load, preflop_hash, tree_hash
 
-E = np.load(os.path.join(os.path.dirname(__file__), 'equity_169.npy'))   # équité classe contre classe (combos disjoints), Monte-Carlo 20 000 tirages
-
-
-def _classes():
-    ranks = '23456789TJQKA'; names = []; combos = []
-    for row in range(13):
-        for col in range(13):
-            if row == col:
-                r = 12 - row; names.append(ranks[r] * 2); combos.append([(r * 4 + a, r * 4 + b) for a in range(4) for b in range(a + 1, 4)])
-            elif row < col:
-                hi, lo = 12 - row, 12 - col; names.append(ranks[hi] + ranks[lo] + 's'); combos.append([(hi * 4 + s, lo * 4 + s) for s in range(4)])
-            else:
-                hi, lo = 12 - col, 12 - row; names.append(ranks[hi] + ranks[lo] + 'o'); combos.append([(hi * 4 + a, lo * 4 + b) for a in range(4) for b in range(4) if a != b])
-    masks = [np.array([(1 << x) | (1 << y) for x, y in c], dtype=np.int64) for c in combos]
-    D = np.array([[((mi[:, None] & mj[None, :]) == 0).sum() for mj in masks] for mi in masks], float)
-    return names, D
-
-
-NAMES, D = _classes()
-W = np.array([NC(h) for h in NAMES], float)
-
-# nœud du joueur qui paie -> (nœud et action du shove, joueurs impliqués, argent mort, blind déjà payée par celui qui paie)
-ALLIN_CALLS = {
-    2: [('SB-allin', ('root', 'A'), (0, 1), 0.0, 1.0)],
-    3: [('BTN-fold_SB-allin', ('BTN-fold', 'A'), (1, 2), 0.0, 1.0),
-        ('BTN-allin_SB-fold', ('root', 'A'), (0, 2), 0.5, 1.0)],
-}
+from spinsacademy import allin
+from spinsacademy.cards import NAMES, W
 
 
 def check_allin_calls(st, nodes):
     out = []
-    for key, (skey, slab), (a, b), dead, blind in ALLIN_CALLS[len(st)]:
+    for key, ((skey, slab), (a, b), dead, blind) in allin.CALL_NODES[len(st)].items():
         if key not in nodes or skey not in nodes: continue
         sn = nodes[skey]; sl = labels(sn, st)
         if slab not in sl: continue
         q = np.array([sn['hands'][h]['played'][sl.index(slab)] * sn['hands'][h]['weight'] for h in NAMES])
         if q.sum() <= 0: continue
-        L = min(st[a], st[b])
-        J = D * q[None, :]; eq = (J * E).sum(1) / J.sum(1)
-        exact = eq * (2 * L + dead) - L + blind
+        exact = allin.call_ev(q, min(st[a], st[b]), dead, blind)
         n = nodes[key]; nl = labels(n, st)
         if 'C' not in nl: continue
         jc = nl.index('C')

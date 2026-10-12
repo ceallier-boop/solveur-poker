@@ -1,0 +1,77 @@
+import json, os
+import numpy as np
+import pytest
+from spinsacademy import importer as im, grading
+from spinsacademy.cards import NAMES, W
+
+
+@pytest.fixture(scope='module')
+def built():
+    return im.build_dataset()
+
+
+def test_no_rejection_and_reference_tree_only(built):
+    spots, rejected, used, skipped = built
+    assert not rejected
+    assert all(s['provenance']['hrc_preflop_tree'] == im.REF_PREFLOP for s in spots)
+    assert any('min_raise_3way' in d and 'arbre' in r for d, r in skipped)
+
+
+def test_one_export_per_stack_configuration(built):
+    spots, _, used, _ = built
+    keys = [(tuple(s['stacks_bb']), s['node_key']) for s in spots]
+    assert len(keys) == len(set(keys))
+    assert len({s['spot_id'] for s in spots}) == len(spots)
+
+
+def test_spots_are_legal_and_normalised(built):
+    for s in built[0]:
+        hero = s['players'].index(s['hero']); stack = s['stacks_bb'][hero]
+        ids = [a['id'] for a in s['actions']]
+        assert len(ids) >= 2 and len(set(ids)) == len(ids)
+        if s['to_call_bb'] == 0: assert 'F' not in ids
+        else: assert 'X' not in ids
+        for a in s['actions']:
+            if 'to_bb' in a: assert a['to_bb'] <= stack + 1e-6
+        assert len(s['hands']) == 169
+        for h in s['hands'].values():
+            assert abs(sum(h['freq']) - 1) < 2e-3 and len(h['freq']) == len(h['ev_hrc']) == len(ids)
+
+
+def test_exact_ev_matches_hrc_where_hrc_is_precise(built):
+    """à 2 BB heads-up, HRC est précis : le calcul exact (call et shove) doit coïncider à quelques mBB près"""
+    for s in built[0]:
+        if s['table'] == 'heads-up' and s['stacks_bb'] == [2.0, 2.0] and s['node_key'] in ('root', 'SB-allin'):
+            ids = [a['id'] for a in s['actions']]; j = ids.index('A' if s['node_key'] == 'root' else 'C')
+            hrc = np.array([s['hands'][x]['ev_hrc'][j] for x in NAMES]); ex = np.array([s['hands'][x]['ev_exact'][j] for x in NAMES], float)
+            w = W * np.array([s['hands'][x]['reach'] for x in NAMES])
+            assert abs(np.average(hrc - ex, weights=w)) < 0.005 and np.average(np.abs(hrc - ex), weights=w) < 0.015
+
+
+def test_publish_is_immutable(tmp_path):
+    m = im.publish('test-1', str(tmp_path))
+    d = tmp_path / 'test-1'
+    assert m['status'] == 'staging' and m['spots'] == sum(1 for _ in open(d / 'spots.jsonl'))
+    assert json.load(open(d / 'manifest.json'))['spots_sha256'] == m['spots_sha256']
+    with pytest.raises(SystemExit):
+        im.publish('test-1', str(tmp_path))
+
+
+def test_grading_rules(built):
+    spot = next(s for s in built[0] if s['table'] == 'heads-up' and s['stacks_bb'] == [10.0, 10.0] and s['node_key'] == 'SB-allin')
+    assert spot['ev_reference'] == 'exact'
+    aa = grading.grade(spot, 'AA', 'C'); assert aa['verdict'] == 'correct' and aa['regret_mbb'] <= 0
+    bad = grading.grade(spot, 'AA', 'F'); assert bad['verdict'] == 'erreur' and bad['regret_mbb'] > 1000
+    with pytest.raises(ValueError): grading.grade(spot, 'AA', 'X')
+    mixed = next(s for s in built[0] if s['ev_reference'] == 'hrc')
+    for h in NAMES:
+        f = mixed['hands'][h]['freq']
+        for j, a in enumerate(mixed['actions']):
+            if f[j] >= grading.MIXED_MIN: assert grading.grade(mixed, h, a['id'])['verdict'] == 'correct'
+
+
+def test_displayed_mix_rounds_to_100(built):
+    for s in built[0][:40]:
+        for h in NAMES:
+            mix = grading.displayed_mix(s, h)
+            assert sum(p for _, p in mix) == 100 and all(p % grading.DISPLAY_STEP == 0 for _, p in mix)

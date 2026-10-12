@@ -84,14 +84,18 @@ Heads-up : le calcul est exact. À 3 joueurs, il ignore les cartes du joueur qui
 | `data/hrc/raw/complement2/hand_1` | 4 / 8 / 8 | BTN-allin_SB-fold | 43 % | 36 mBB | 157 mBB | -18 mBB | T4s, T3s, 76o, Q4o, 43s |
 | `data/hrc/raw/complement2/hand_2` | 8 / 4 / 8 | BTN-fold_SB-allin | 73 % | 29 mBB | 107 mBB | -18 mBB | 94s, 86o |
 | `data/hrc/raw/complement2/hand_2` | 8 / 4 / 8 | BTN-allin_SB-fold | 32 % | 81 mBB | 272 mBB | -52 mBB | K5s, Q9s, Q8s |
+| `data/hrc/raw/complement2/hand_3` | 8 / 8 / 4 | BTN-fold_SB-allin | 73 % | 33 mBB | 108 mBB | -22 mBB | 93s, 84s, 96o, 86o, 64s |
 | `data/hrc/raw/complement2/hand_3` | 8 / 8 / 4 | BTN-allin_SB-fold | 30 % | 37 mBB | 208 mBB | -15 mBB | T4s, 84s, 97o, 86o, 63s, 65o |
 | `data/hrc/raw/complement2/hand_4` | 8 / 4 / 4 | BTN-fold_SB-allin | 73 % | 34 mBB | 111 mBB | -18 mBB | 94s, 84s, 86o, 53s |
+| `data/hrc/raw/complement2/hand_4` | 8 / 4 / 4 | BTN-allin_SB-fold | 42 % | 34 mBB | 165 mBB | -20 mBB | T5s, 84s, 74s, 63s, 53s |
+| `data/hrc/raw/complement2/hand_5` | 4 / 8 / 4 | BTN-fold_SB-allin | 73 % | 35 mBB | 125 mBB | -22 mBB | 93s, 74s, 86o, 76o, 53s |
 | `data/hrc/raw/complement2/hand_5` | 4 / 8 / 4 | BTN-allin_SB-fold | 43 % | 41 mBB | 163 mBB | -27 mBB | 84s, 83s, T7o, 63s |
 | `data/hrc/raw/complement2/hand_6` | 4 / 4 / 8 | BTN-fold_SB-allin | 73 % | 30 mBB | 107 mBB | -22 mBB | 93s, 84s, 64s |
 | `data/hrc/raw/complement2/hand_6` | 4 / 4 / 8 | BTN-allin_SB-fold | 42 % | 39 mBB | 133 mBB | -25 mBB | 97o, 74s, 76o |
 | `data/hrc/raw/complement2/hand_7` | 12 / 12 / 12 | BTN-fold_SB-allin | 27 % | 136 mBB | 650 mBB | -63 mBB | K6s, JTo, T9s, T8s |
 | `data/hrc/raw/complement2/hand_7` | 12 / 12 / 12 | BTN-allin_SB-fold | 20 % | 126 mBB | 540 mBB | -54 mBB | A2s, K9s, KTo, A5o |
 | `data/hrc/raw/complement2/hand_8` | 4 / 8 | SB-allin | 74 % | 18 mBB | 84 mBB | +2 mBB | 63s |
+| `data/hrc/raw/complement2/hand_9` | 8 / 4 | SB-allin | 74 % | 14 mBB | 74 mBB | +1 mBB | — |
 | `data/hrc/raw/complement2/hand_10` | 4 / 8 | SB-allin | 74 % | 17 mBB | 78 mBB | -1 mBB | — |
 | `data/hrc/raw/complement2/hand_11` | 15 / 15 | SB-allin | 8 % | 181 mBB | 960 mBB | -15 mBB | J9s, J8s, KTo, T8s, 98s |
 | `data/hrc/raw/complement2/hand_12` | 12 / 12 | SB-allin | 15 % | 113 mBB | 464 mBB | -18 mBB | K6s, K4s, Q8s, J8s, T7s |
@@ -100,8 +104,11 @@ Heads-up : le calcul est exact. À 3 joueurs, il ignore les cartes du joueur qui
 | `data/hrc/raw/complement2/hand_16` | 14 / 18 / 18 | BTN-allin_SB-fold | 12 % | 160 mBB | 778 mBB | -54 mBB | A6s, A5s, A4s, A3s, KJo, 22 |
 | `data/hrc/raw/complement2/hand_17` | 18 / 12 / 18 | BTN-fold_SB-allin | 28 % | 120 mBB | 515 mBB | -60 mBB | K5s, J8s |
 | `data/hrc/raw/complement2/hand_17` | 18 / 12 / 18 | BTN-allin_SB-fold | 7 % | 256 mBB | 1166 mBB | -34 mBB | A5s, QJs |
+| `data/hrc/raw/complement2/hand_18` | 18 / 18 / 12 | BTN-fold_SB-allin | 27 % | 129 mBB | 547 mBB | -64 mBB | Q8s, J8s |
 | `data/hrc/raw/complement2/hand_18` | 18 / 18 / 12 | BTN-allin_SB-fold | 7 % | 158 mBB | 762 mBB | -0 mBB | KJo |
 | `data/hrc/raw/complement2/hand_19` | 18 / 12 / 12 | BTN-fold_SB-allin | 27 % | 122 mBB | 507 mBB | -82 mBB | Q8s, K8o |
+| `data/hrc/raw/complement2/hand_19` | 18 / 12 / 12 | BTN-allin_SB-fold | 19 % | 107 mBB | 484 mBB | -38 mBB | A2s, JTs |
+| `data/hrc/raw/complement2/hand_20` | 12 / 18 / 12 | BTN-fold_SB-allin | 26 % | 118 mBB | 451 mBB | -65 mBB | T8s, K8o |
 | `data/hrc/raw/complement2/hand_20` | 12 / 18 / 12 | BTN-allin_SB-fold | 18 % | 128 mBB | 665 mBB | -36 mBB | QTs, Q9s, KTo |
 | `data/hrc/raw/complement2/hand_21` | 12 / 12 / 18 | BTN-fold_SB-allin | 27 % | 125 mBB | 512 mBB | -43 mBB | K6s, Q8s, J8s, T8s |
 | `data/hrc/raw/complement2/hand_21` | 12 / 12 / 18 | BTN-allin_SB-fold | 19 % | 122 mBB | 500 mBB | -53 mBB | K9s |
@@ -127,8 +134,10 @@ Heads-up : le calcul est exact. À 3 joueurs, il ignore les cartes du joueur qui
 | `data/hrc/raw/min_raise_3way/hand_8` | 8 / 8 / 8 | BTN-allin_SB-fold | 30 % | 64 mBB | 370 mBB | -25 mBB | Q9s, QTo, T9s |
 | `data/hrc/raw/min_raise_3way/hand_9` | 12 / 21 / 21 | BTN-allin_SB-fold | 20 % | 114 mBB | 580 mBB | -20 mBB | A2s |
 | `data/hrc/raw/min_raise_3way/hand_10` | 21 / 12 / 21 | BTN-fold_SB-allin | 26 % | 121 mBB | 590 mBB | -63 mBB | K6s, K5s, Q8s |
+| `data/hrc/raw/min_raise_3way/hand_11` | 21 / 21 / 12 | BTN-fold_SB-allin | 27 % | 110 mBB | 666 mBB | -25 mBB | JTo |
 | `data/hrc/raw/min_raise_3way/hand_12` | 8 / 14 / 14 | BTN-fold_SB-allin | 22 % | 161 mBB | 716 mBB | -80 mBB | K7s, J9s, JTo, T8s |
 | `data/hrc/raw/min_raise_3way/hand_12` | 8 / 14 / 14 | BTN-allin_SB-fold | 30 % | 63 mBB | 356 mBB | -30 mBB | K6s, T9s |
 | `data/hrc/raw/min_raise_3way/hand_13` | 14 / 8 / 14 | BTN-fold_SB-allin | 53 % | 68 mBB | 277 mBB | -33 mBB | — |
 | `data/hrc/raw/min_raise_3way/hand_13` | 14 / 8 / 14 | BTN-allin_SB-fold | 19 % | 135 mBB | 739 mBB | -39 mBB | QTs, QJo, A5o |
+| `data/hrc/raw/min_raise_3way/hand_14` | 14 / 14 / 8 | BTN-fold_SB-allin | 54 % | 61 mBB | 246 mBB | -35 mBB | J7s, K3o |
 | `data/hrc/raw/min_raise_3way/hand_14` | 14 / 14 / 8 | BTN-allin_SB-fold | 18 % | 82 mBB | 368 mBB | -19 mBB | K7s, QTo, T8s |
