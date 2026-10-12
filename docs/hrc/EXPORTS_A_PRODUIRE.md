@@ -22,7 +22,7 @@ La session Claude dans le cloud ne peut pas piloter HRC : elle prépare les entr
 
 **Profondeur d'export :** si HRC propose de choisir les nœuds à exporter, exporter **tous les nœuds préflop**. Les exports actuels s'arrêtent souvent à deux actions ; par exemple, la réponse du SB à un iso-raise du BB manque.
 
-## 1. Calculs GTO manquants (priorité 1)
+## 1. Calculs GTO manquants (priorité 1) — **reçus le 12 octobre 2026** (`data/hrc/raw/v2/`)
 
 Objectif : une solution HRC à chaque profondeur proposée dans les quiz (4 à 25 BB), toutes avec le même arbre. L'interpolation entre profondeurs coûte trop cher (8 à 64 mBB par main).
 
@@ -42,7 +42,7 @@ Fichiers générés par `python tools/hrc/make_locks.py` dans `data/hrc/locks/` 
 - `manifest.csv` : la liste des calculs, avec priorité ;
 - un dossier par calcul, `<profil>/<table>_<stacks>/hero_<position>/`, qui contient `ranges.txt` (lisible, à coller dans HRC) et `locks.json` (même contenu, pour les scripts).
 
-**72 calculs**, dont **45 en priorité P1** (12, 15 et 20 BB) :
+**135 calculs**, dont **45 en priorité P1** (12, 15 et 20 BB) ; la liste a été recalculée après réception de la base v2 :
 - 3 profils : nit, fish, maniac. Le profil Shark est inutile : c'est la solution GTO.
 - Chaque position du héros : BTN, SB, BB à 3 joueurs ; SB, BB en heads-up.
 - Stacks égaux à partir de 10 BB. En dessous, les décisions sont surtout tout ou rien, et `exploit_engine` et `exp_hu_solver` couvrent déjà l'exploitant.
@@ -54,7 +54,7 @@ Procédure pour un calcul :
 
 **À tester d'abord sur un seul nœud :** si HRC refuse la notation `main:poids` ou attend des pourcentages, indiquez-moi le format accepté et je régénère les fichiers.
 
-Les calculs exploitants à 10, 18 et 25 BB à 3 joueurs seront générés après le §1, puisqu'ils partent de la nouvelle solution GTO.
+Ils couvrent maintenant toutes les profondeurs de 10 à 25 BB, à 3 joueurs comme en heads-up, base v2 comprise.
 
 ### Règles des profils (à valider)
 
@@ -75,3 +75,17 @@ Déposer chaque export (dossier `settings.json` + `nodes/`) dans une archive, co
 ## 4. Arrondis
 
 Les stratégies affichées dans l'application sont arrondies : action dominante, ou mélange au pas de 5 % ou 10 %, à fixer avec la maquette. La correction des réponses reste calculée sur les valeurs exactes, avant arrondi.
+
+## 5. Précision des calculs (constat sur les exports reçus)
+
+`docs/hrc/VALIDATION_HRC.md` compare l'EV exportée par HRC à l'EV exacte sur les calls d'all-in. En heads-up, le calcul est exact. L'écart moyen croît avec la profondeur :
+- 7 mBB à 2 BB et 42 mBB à 8 BB ;
+- 100 à 140 mBB à 12–14 BB ;
+- 180 à 210 mBB à 15 BB ;
+- plus de 300 mBB à 18 BB à 3 joueurs (calcul approché à 3 joueurs).
+
+Le bruit vient du Monte-Carlo de HRC sur les nœuds peu fréquents : plus la range de shove adverse est étroite, plus il est fort. Il fausse aussi quelques décisions (J8s payé à 92 % à 15 BB alors que son EV exacte est de −0,22 BB).
+
+Conséquences :
+- **côté application** : les corrections de décisions tout ou rien utilisent l'EV exacte recalculée à partir des ranges HRC, pas l'EV HRC ;
+- **côté HRC, si possible** : relancer les calculs P1 avec une précision plus élevée (temps de calcul ou nombre d'itérations plus grand, selon les réglages de convergence proposés par HRC) et exporter **tous les nœuds préflop**. Les exports v2 s'arrêtent encore à deux actions.

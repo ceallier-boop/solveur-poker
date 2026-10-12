@@ -22,10 +22,9 @@ Usage : python tools/hrc/make_locks.py [--out data/hrc/locks]
 import argparse, csv, glob, json, os
 import numpy as np
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RAW = os.path.join(ROOT, 'data', 'hrc', 'raw')
+from hrc_io import RAW, ROOT, NC, POS3, POS2, preflop_hash, labels, key_of, exports, stacks_of
+
 VSR = json.load(open(os.path.join(os.path.dirname(__file__), 'equity_vs_random.json')))['equity_vs_random']
-NC = lambda h: 6 if len(h) == 2 else (4 if h[2] == 's' else 12)
 
 PROFILES = {  # facteurs sur les cotes : AGG (raise / all-in), PAS (limp / call)
     'nit': dict(AGG=0.5, PAS=0.5, agg_cut_to='F'),
@@ -34,36 +33,7 @@ PROFILES = {  # facteurs sur les cotes : AGG (raise / all-in), PAS (limp / call)
 }
 MIN_STACK = 10          # sous 10 BB, l'exploitant tout ou rien (exploit_engine) et exp_hu_solver suffisent
 PRIORITY_STACKS = (12, 15, 20)
-REF_TREE = '00a1dd91'   # empreinte des réglages d'arbre retenus (limp du BTN autorisé), voir data/hrc/README.md
-POS3, POS2 = ['BTN', 'SB', 'BB'], ['SB', 'BB']
-
-
-def tree_hash(settings):
-    import hashlib
-    s = dict(settings); s.pop('handdata')
-    return hashlib.md5(json.dumps(s, sort_keys=True).encode()).hexdigest()[:8]
-
-
-def labels(node, st):
-    out = []
-    for a in node['actions']:
-        amt = a['amount'] / 10000
-        if a['type'] == 'R':
-            out.append('A' if amt >= st[node['player']] - 1e-9 else f'R{amt:g}')
-        else:
-            out.append(a['type'])
-    return out
-
-
-def key_of(seq, st, names):
-    out = []
-    for a in seq:
-        amt = a['amount'] / 10000
-        t = {'F': 'fold', 'C': 'call', 'X': 'check'}.get(a['type'])
-        if a['type'] == 'R':
-            t = 'allin' if amt >= st[a['player']] - 1e-9 else f'raise{amt:g}'
-        out.append(f"{names[a['player']]}-{t}")
-    return '_'.join(out) or 'root'
+REF_PREFLOP = 'daa9aaa0'   # empreinte de l'arbre préflop retenu (limp du BTN autorisé), voir data/hrc/README.md
 
 
 def group_of(lab, labs):
@@ -125,10 +95,10 @@ def range_text(hands, freq, mass=None):
 
 def main(out):
     manifest = []; seen = set()
-    for d in sorted(glob.glob(os.path.join(RAW, '*', 'hand_*'))):
+    for d in exports():                                    # le plus récent d'abord quand les stacks sont en double
         s = json.load(open(os.path.join(d, 'settings.json')))
-        if tree_hash(s) != REF_TREE: continue
-        st = [x / 10000 for x in s['handdata']['stacks']]
+        if preflop_hash(s) != REF_PREFLOP: continue
+        st = stacks_of(s)
         if len(set(st)) > 1 or st[0] < MIN_STACK or tuple(st) in seen: continue     # stacks égaux à partir de 10 BB, un export par profondeur
         seen.add(tuple(st))
         names = POS3 if len(st) == 3 else POS2

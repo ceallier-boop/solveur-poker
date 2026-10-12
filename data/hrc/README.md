@@ -62,3 +62,22 @@ La colonne « Clé `hrcdata` » donne la correspondance avec les scripts de `leg
 | `min_raise_hu/hand_20` | 20 | heads-up | 6 / 6 | — | 3 | `58407ad7` | `hu/20` |
 | `min_raise_hu/hand_21` | 21 | heads-up | 4 / 4 | — | 3 | `58407ad7` | `hu/21` |
 | `min_raise_hu/hand_22` | 22 | heads-up | 2 / 2 | — | 3 | `58407ad7` | `hu/22` |
+
+## Base v2 (12 octobre 2026)
+
+Calculs demandés dans `docs/hrc/EXPORTS_A_PRODUIRE.md` §1. L'arbre préflop est identique à `complement` et `complement2` (empreinte préflop `daa9aaa0`). En revanche, le postflop est en mode « general » (mise flop 66 %, mise à faible SPR « 66g », seuil SPR 2,5) au lieu de « simple ». À 12 / 12 / 12, la comparaison avec `complement2/hand_7` donne les mêmes fréquences globales à 1 ou 2 points près ; l'écart de regret, de 5 à 34 mBB selon le nœud, reste de l'ordre du bruit propre de HRC.
+
+| Dossier | Table | Stacks (BB) | Nœuds | Empreinte préflop |
+|---|---|---|---|---|
+| `v2/hand_1` | 3 joueurs | 8 / 8 / 8 | 10 | `daa9aaa0` |
+| `v2/hand_2` | 3 joueurs | 10 / 10 / 10 | 11 | `daa9aaa0` |
+| `v2/hand_3` | 3 joueurs | 12 / 12 / 12 | 11 | `daa9aaa0` |
+| `v2/hand_4` | 3 joueurs | 16 / 16 / 16 | 10 | `daa9aaa0` |
+| `v2/hand_5` | 3 joueurs | 18 / 18 / 18 | 10 | `daa9aaa0` |
+| `v2/hand_6` | 3 joueurs | 22 / 22 / 22 | 8 | `daa9aaa0` |
+| `v2/hand_7` | 3 joueurs | 25 / 25 / 25 | 8 | `daa9aaa0` |
+| `v2/hand_8` | heads-up | 14 / 14 | 4 | `daa9aaa0` |
+| `v2/hand_9` | heads-up | 16 / 16 | 3 | `daa9aaa0` |
+| `v2/hand_10` | heads-up | 22 / 22 | 3 | `daa9aaa0` |
+
+Le contrôle complet (structure et EV) est dans `docs/hrc/VALIDATION_HRC.md` (`python tools/hrc/validate.py`).

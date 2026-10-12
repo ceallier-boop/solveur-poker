@@ -5,9 +5,9 @@ import make_locks as ml
 
 
 def _nodes():
-    for d in sorted(glob.glob(os.path.join(ml.RAW, '*', 'hand_*'))):
+    for d in ml.exports():
         s = json.load(open(os.path.join(d, 'settings.json')))
-        if ml.tree_hash(s) != ml.REF_TREE: continue
+        if ml.preflop_hash(s) != ml.REF_PREFLOP: continue
         st = [x / 10000 for x in s['handdata']['stacks']]
         for f in glob.glob(os.path.join(d, 'nodes', '*.json')):
             n = json.load(open(f))
@@ -45,3 +45,12 @@ def test_nit_drops_weakest_hands_first():
         if gained.max() < 0.5: continue
         vsr = np.array([ml.VSR[h] for h in hands]); dropped = vsr[gained > 0.5]; kept = vsr[(P[:, fi] < 0.01) & (mass > 0)]
         if len(kept): assert dropped.min() <= kept.min() + 1e-9
+
+
+def test_validator_structure_and_exact_ev_small_stacks():
+    import validate as v
+    for d in ml.exports():
+        r = v.validate(d)
+        assert not r['issues'], (d, r['issues'][:3])
+        if len(r['stacks']) == 2 and r['stacks'][0] == r['stacks'][1] == 2:
+            assert r['allin'] and r['allin'][0]['mean_abs_mbb'] < 15 and abs(r['allin'][0]['bias_mbb']) < 5   # 2 BB : HRC et calcul exact concordent
