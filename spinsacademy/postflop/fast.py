@@ -5,8 +5,9 @@ from numba import njit
 from .kernels import CC, combo_ranks, strength
 
 
-def board_pool(n, buckets, rollouts, seed):
-    """n boards tirés au hasard : valeurs à la river (n, 1326), ordre de tri, validité, groupes de force (n, 3, 1326)"""
+def board_pool(n, buckets, rollouts, seed, metric='ehs'):
+    """n boards tirés au hasard : valeurs à la river (n, 1326), ordre de tri, validité, groupes de force (n, 3, 1326).
+    metric : 'ehs' (force moyenne) ou 'ehs2' (moyenne du carré, flop et turn ; la river reste le rang exact)."""
     rng = np.random.default_rng(seed)
     ranks = np.zeros((n, 1326), np.int64); order = np.zeros((n, 1326), np.int64)
     bucket = np.zeros((n, 3, 1326), np.int64); valid = np.zeros((n, 1326), np.bool_)
@@ -15,8 +16,12 @@ def board_pool(n, buckets, rollouts, seed):
         r = combo_ranks(board, CC); ranks[i] = r; order[i] = np.argsort(r); valid[i] = r >= 0
         s0 = int(rng.integers(1 << 30))
         for k, nc in enumerate((3, 4, 5)):
-            s = strength(board, nc, board, rollouts, CC, s0 + nc)
-            bucket[i, k] = np.clip((s * buckets).astype(np.int64), 0, buckets - 1)
+            s = strength(board, nc, board, rollouts, CC, s0 + nc, metric == 'ehs2' and nc < 5)
+            if metric == 'ehs2' and nc < 5:                  # groupes d'effectifs égaux : EHS² n'est pas uniforme sur [0, 1]
+                v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, buckets + 1)[1:-1])
+                bucket[i, k] = np.where(v, np.searchsorted(q, s), 0)
+            else:
+                bucket[i, k] = np.clip((s * buckets).astype(np.int64), 0, buckets - 1)
     return ranks, order, valid, bucket
 
 

@@ -117,9 +117,11 @@ def _percentile(ranks):
 
 
 @njit(cache=True)
-def strength(board, k, full_board, rollouts, CC, seed):
+def strength(board, k, full_board, rollouts, CC, seed, squared=False):
     """force de chaque combo sur les k premières cartes du board : rang relatif moyen à la river sur `rollouts` suites
-    tirées au hasard (k = 5 : rang exact). Approxime l'équité contre une main aléatoire."""
+    tirées au hasard (k = 5 : rang exact). Approxime l'équité contre une main aléatoire.
+    squared=True : moyenne du carré du rang relatif (EHS²), qui distingue les mains à fort potentiel (tirages)
+    des mains moyennes de même force moyenne."""
     if k == 5: return _percentile(combo_ranks(full_board, CC))
     np.random.seed(seed)
     used = np.zeros(52, np.bool_)
@@ -131,7 +133,8 @@ def strength(board, k, full_board, rollouts, CC, seed):
         while m < 5:
             x = np.random.randint(52)
             if not u2[x]: u2[x] = True; b5[m] = x; m += 1
-        acc += _percentile(combo_ranks(b5, CC))
+        pr = _percentile(combo_ranks(b5, CC))
+        acc += pr * pr if squared else pr
     out = acc / rollouts
     for c in range(1326):
         if used[CC[c, 0]] or used[CC[c, 1]]: out[c] = -1.0

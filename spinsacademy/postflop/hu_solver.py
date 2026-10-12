@@ -23,6 +23,7 @@ class PostflopConfig:
     rollouts: int = 6
     raise_fraction: float = 0.66      # relance classique : on ajoute ce pourcentage du pot après call ; 0 = tapis seulement
     max_raises: int = 2               # relances par rue (la dernière possible est toujours un tapis)
+    metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
 
 
 class _N:
