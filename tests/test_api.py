@@ -61,3 +61,9 @@ def test_series_coverage_across_seeds():
             fam[quiz.family(spots[sid])] += 1; table[spots[sid]['table']] += 1
     assert set(fam) == {'first_in', 'vs_limp', 'vs_raise', 'vs_allin'} and min(fam.values()) > 0.15 * sum(fam.values())
     assert set(table) == {'3-handed', 'heads-up'}
+
+
+def test_web_interface_is_served(client):
+    r = client.get('/'); assert r.status_code == 200 and 'SpinsAcademy' in r.text and '/static/app.js' in r.text
+    for f in ('app.js', 'app.css', 'manifest.json', 'icon.svg'):
+        assert client.get(f'/static/{f}').status_code == 200

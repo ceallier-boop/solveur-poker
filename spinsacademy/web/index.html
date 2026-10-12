@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <title>SpinsAcademy</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="bar">
+    <button class="brand" id="home-btn" aria-label="Accueil">Spins<span>Academy</span></button>
+    <div class="progress" id="progress" aria-live="polite"></div>
+  </header>
+
+  <main id="app">
+    <!-- Accueil -->
+    <section id="screen-home" class="screen" aria-labelledby="home-title">
+      <h1 id="home-title">Entraînement Expresso</h1>
+      <p class="lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <button class="primary big" id="quick-start">Série rapide</button>
+      <button class="link" id="resume" hidden>Reprendre la série en cours</button>
+
+      <details class="filters" id="filters">
+        <summary>Choisir le thème</summary>
+        <fieldset>
+          <legend>Format</legend>
+          <div class="chips" data-name="table">
+            <button type="button" data-value="" aria-pressed="true">Tous</button>
+            <button type="button" data-value="3-handed" aria-pressed="false">3 joueurs</button>
+            <button type="button" data-value="heads-up" aria-pressed="false">Heads-up</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Situation</legend>
+          <div class="chips" data-name="family">
+            <button type="button" data-value="" aria-pressed="true">Toutes</button>
+            <button type="button" data-value="first_in" aria-pressed="false">Premier à parler</button>
+            <button type="button" data-value="vs_limp" aria-pressed="false">Face à un limp</button>
+            <button type="button" data-value="vs_raise" aria-pressed="false">Face à une relance</button>
+            <button type="button" data-value="vs_allin" aria-pressed="false">Face à un tapis</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Position</legend>
+          <div class="chips" data-name="hero">
+            <button type="button" data-value="" aria-pressed="true">Toutes</button>
+            <button type="button" data-value="BTN" aria-pressed="false">BTN</button>
+            <button type="button" data-value="SB" aria-pressed="false">SB</button>
+            <button type="button" data-value="BB" aria-pressed="false">BB</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Profondeur</legend>
+          <div class="chips" data-name="depth">
+            <button type="button" data-value="" aria-pressed="true">Toutes</button>
+            <button type="button" data-value="0-9" aria-pressed="false">Moins de 10 BB</button>
+            <button type="button" data-value="10-16" aria-pressed="false">10 à 16 BB</button>
+            <button type="button" data-value="17-25" aria-pressed="false">17 à 25 BB</button>
+          </div>
+        </fieldset>
+        <button class="primary" id="custom-start">Lancer cette série</button>
+      </details>
+      <p class="error" id="home-error" role="alert" hidden></p>
+    </section>
+
+    <!-- Question -->
+    <section id="screen-question" class="screen" hidden aria-labelledby="q-title">
+      <h2 id="q-title" class="sr-only">Question</h2>
+      <div class="table-view" id="table-view" aria-hidden="true"></div>
+      <ol class="history" id="history" aria-label="Historique du coup"></ol>
+      <div class="hero">
+        <div class="cards" id="hero-cards" role="img"></div>
+        <p class="prompt" id="prompt"></p>
+      </div>
+      <div class="actions" id="actions" role="group" aria-label="Ta décision"></div>
+      <p class="hint">Raccourcis clavier : 1, 2, 3, 4.</p>
+    </section>
+
+    <!-- Correction -->
+    <section id="screen-answer" class="screen" hidden aria-labelledby="a-verdict">
+      <p class="recap" id="a-recap"></p>
+      <div class="verdict" id="a-verdict" tabindex="-1"></div>
+      <p class="choice" id="a-choice"></p>
+      <h3>Stratégie de référence</h3>
+      <div class="strategy" id="a-strategy"></div>
+      <p class="explanation" id="a-explanation"></p>
+      <button class="primary big" id="next-btn">Question suivante</button>
+    </section>
+
+    <!-- Bilan -->
+    <section id="screen-summary" class="screen" hidden aria-labelledby="s-title">
+      <h2 id="s-title">Bilan de la série</h2>
+      <div class="score" id="s-score"></div>
+      <ul class="verdicts" id="s-verdicts"></ul>
+      <h3>À revoir</h3>
+      <ul class="errors" id="s-errors"></ul>
+      <button class="primary big" id="again-btn">Nouvelle série</button>
+      <button class="link" id="back-home">Retour à l'accueil</button>
+    </section>
+
+    <div class="loading" id="loading" hidden>Chargement…</div>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

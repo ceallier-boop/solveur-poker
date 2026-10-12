@@ -5,6 +5,7 @@
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
   GET  /health
+  GET  /                         interface web mobile (spinsacademy/web)
 Mode invité au MVP : pas d'authentification (cahier des charges §19, question 22, à trancher).
 Base : SPINSACADEMY_DB (par défaut data/app/spinsacademy.sqlite) ; dataset : SPINSACADEMY_DATASET.
 """
@@ -12,6 +13,8 @@ import datetime, json, os, sqlite3, uuid
 from contextlib import closing
 from typing import Optional
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from . import quiz
 from .hrc import ROOT
@@ -60,6 +63,13 @@ class Attempt(BaseModel):
 
 
 app = FastAPI(title='SpinsAcademy', version='0.1.0')
+WEB = os.path.join(os.path.dirname(__file__), 'web')
+app.mount('/static', StaticFiles(directory=WEB), name='static')
+
+
+@app.get('/', include_in_schema=False)
+def index():
+    return FileResponse(os.path.join(WEB, 'index.html'))
 
 
 @app.get('/health')
