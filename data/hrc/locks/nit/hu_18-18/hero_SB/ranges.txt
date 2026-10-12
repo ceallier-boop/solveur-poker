@@ -1,0 +1,14 @@
+Source GTO : data/hrc/raw/min_raise_hu/hand_16
+Profil : nit {'AGG': 0.5, 'PAS': 0.5, 'agg_cut_to': 'F'}
+Héros (nœuds libres) : SB
+
+=== Nœud SB-call (joue : BB)
+  F: (aucune main)
+  X: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,A2o,32s,33,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o,42s,43s,44:0.01,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o,A4o:0.07,52s,53s,54s,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,62s,63s,64s,65s,76o,86o,96o,T6o,J6o,Q6o,K6o,A6o:0.28,72s,73s,74s,75s,76s,87o,97o,T7o,J7o,Q7o,K7o,82s,83s,84s,85s,86s,87s,98o,T8o,J8o,Q8o,K8o:0.89,92s,93s,94s,95s,96s,97s,98s,T9o,J9o,Q9o,K9o:0.08,T2s,T3s,T4s,T5s,T6s,T7s,T8s,T9s,JTo,QTo:0.21,KTo:0.07,J2s,J3s,J4s,J5s,J6s,J7s,J8s,J9s,JTs:0.02,QJo:0.05,KJo:0.24,Q2s,Q3s,Q4s,Q5s,Q6s,Q7s,Q8s:0.68,Q9s:0.22,QTs:0.39,QJs:0.02,K2s,K3s,K4s,K5s,K6s:0.99,K7s:0.03,K8s:0.58,K9s:0.63,KJs:0.02,A2s:0.95,A3s:0.95,A4s:0.81,A5s:0.22,A6s:0.33,A7s:0.04
+  R3: 44:0.99,A4o:0.93,55,A5o,66,A6o:0.72,77,A7o,88,K8o:0.11,A8o,99,K9o:0.92,A9o,TT,QTo:0.79,KTo:0.93,ATo,JTs:0.98,JJ,QJo:0.95,KJo:0.76,AJo,Q8s:0.32,Q9s:0.78,QTs:0.61,QJs:0.98,QQ,KQo,AQo,K6s:0.01,K7s:0.97,K8s:0.42,K9s:0.37,KTs,KJs:0.98,KQs,KK,AKo,A2s:0.05,A3s:0.05,A4s:0.19,A5s:0.78,A6s:0.67,A7s:0.96,A8s,A9s,ATs,AJs,AQs,AKs,AA
+
+=== Nœud SB-raise3.5 (joue : BB)
+  F: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,A2o:0.61,32s,33,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o:0.07,42s,43s,44,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o,A4o:0.08,52s,53s,54s,55:0.04,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,A5o:0.79,62s,63s,64s,65s,76o,86o,96o,T6o,J6o,Q6o,K6o:0.99,A6o:0.42,72s,73s,74s,75s,76s,87o,97o,T7o,J7o,Q7o,K7o:0.18,A7o:0.93,82s,83s,84s,85s,86s,87s,98o,T8o,J8o,Q8o,K8o:0.01,A8o,92s,93s,94s,95s,96s,97s,98s,T9o,J9o,K9o:0.05,A9o,T2s,T3s,T4s,T5s,T6s,T7s,T8s,T9s:0.51,QTo:0.02,KTo:0.05,J2s,J3s,J4s,J5s,J6s,J7s,J8s:0.06,J9s:0.64,JTs:0.14,QJo:0.02,KJo:0.02,Q2s,Q3s,Q4s,Q5s,Q6s,Q7s:0.01,Q8s:0.10,Q9s:0.01,QTs:0.01,QJs:0.02,K2s,K3s,K4s:0.01,K5s:0.27,K6s:0.01,K7s:0.14,K9s:0.01,A2s:0.56,A3s:0.66,A4s:0.38,A5s:0.03,A6s:0.85,A7s:0.10
+  C: A2o:0.39,A3o:0.93,A4o:0.92,A5o:0.21,K6o:0.01,A6o:0.58,K7o:0.82,A7o:0.07,K8o:0.99,Q9o,K9o:0.95,T9s:0.49,JTo,QTo:0.98,KTo:0.95,J8s:0.94,J9s:0.36,JTs:0.86,QJo:0.98,KJo:0.98,Q7s:0.99,Q8s:0.90,Q9s:0.99,QTs:0.99,QJs:0.98,KQo:0.46,K4s:0.99,K5s:0.73,K6s:0.99,K7s:0.86,K8s,K9s:0.99,KTs:0.31,KJs:0.79,KQs:0.95,KK:0.01,A2s:0.44,A3s:0.34,A4s:0.62,A5s:0.97,A6s:0.15,A7s:0.90,A8s:0.86,ATs:0.01,AA:0.09
+  A: 55:0.96,66,77,88,99,TT,ATo,JJ,AJo,QQ,KQo:0.54,AQo,KTs:0.69,KJs:0.21,KQs:0.05,KK:0.99,AKo,A8s:0.14,A9s,ATs:0.99,AJs,AQs,AKs,AA:0.91
+
