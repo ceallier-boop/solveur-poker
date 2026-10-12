@@ -1,0 +1,63 @@
+import pytest
+from fastapi.testclient import TestClient
+from spinsacademy import quiz
+
+
+@pytest.fixture()
+def client(tmp_path, monkeypatch):
+    monkeypatch.setenv('SPINSACADEMY_DB', str(tmp_path / 'test.sqlite'))
+    from spinsacademy.api import app
+    return TestClient(app)
+
+
+def test_full_series_of_five(client):
+    r = client.post('/sessions', json={'seed': 3}); assert r.status_code == 201
+    sid = r.json()['session_id']; assert r.json()['size'] == 5
+    seen = []
+    for i in range(5):
+        q = client.get('/quiz/next', params={'session_id': sid}).json()
+        assert not q['done'] and q['question_index'] == i
+        body = q['question']
+        assert 'solution' not in str(body) and 'ev' not in {k for o in body['options'] for k in o}    # aucune solution envoyée
+        seen.append(body['spot_id'])
+        a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': body['options'][0]['id']}).json()
+        assert a['verdict'] in ('correct', 'imprécision', 'erreur') and a['explanation_fr'] and not a['already_answered']
+    assert len(set(seen)) == 5                                                                         # pas deux fois le même spot
+    assert client.get('/quiz/next', params={'session_id': sid}).json()['done']
+    s = client.get(f'/sessions/{sid}/summary').json()
+    assert s['complete'] and s['questions'] == 5 and sum(s['verdicts'].values()) == 5 and 0 <= s['score_pct'] <= 100
+    assert s['dataset_version'] == quiz.DEFAULT_VERSION
+
+
+def test_answers_are_final_and_validated(client):
+    sid = client.post('/sessions', json={'seed': 1}).json()['session_id']
+    q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
+    ids = [o['id'] for o in q['options']]
+    assert client.post('/attempts', json={'session_id': sid, 'question_index': 0, 'action_id': 'ZZ'}).status_code == 422
+    first = client.post('/attempts', json={'session_id': sid, 'question_index': 0, 'action_id': ids[0]}).json()
+    again = client.post('/attempts', json={'session_id': sid, 'question_index': 0, 'action_id': ids[0]}).json()
+    assert again['already_answered'] and again['verdict'] == first['verdict']                          # reprise après coupure réseau
+    if len(ids) > 1:
+        assert client.post('/attempts', json={'session_id': sid, 'question_index': 0, 'action_id': ids[1]}).status_code == 409
+    assert client.get('/quiz/next', params={'session_id': 'inconnue'}).status_code == 404
+
+
+def test_filters_and_reproducibility(client):
+    a = client.post('/sessions', json={'seed': 7, 'filters': {'table': 'heads-up', 'family': 'vs_allin'}}).json()['session_id']
+    b = client.post('/sessions', json={'seed': 7, 'filters': {'table': 'heads-up', 'family': 'vs_allin'}}).json()['session_id']
+    qa = client.get('/quiz/next', params={'session_id': a}).json()['question']; qb = client.get('/quiz/next', params={'session_id': b}).json()['question']
+    assert qa['spot_id'] == qb['spot_id'] and qa['hand'] == qb['hand'] and qa['table'] == 'heads-up' and qa['family'] == 'vs_allin'
+    assert client.post('/sessions', json={'filters': {'table': 'heads-up', 'hero': 'BTN'}}).status_code == 422   # filtre sans spot
+    assert client.post('/sessions', json={'filters': {'table': 'six-max'}}).status_code == 422
+
+
+def test_series_coverage_across_seeds():
+    """répartition réellement servie sur 300 séries : toutes les familles et les deux tables apparaissent"""
+    import collections
+    fam = collections.Counter(); table = collections.Counter()
+    _, spots = quiz.load()
+    for seed in range(300):
+        for sid, h in quiz.draw_series(seed=seed):
+            fam[quiz.family(spots[sid])] += 1; table[spots[sid]['table']] += 1
+    assert set(fam) == {'first_in', 'vs_limp', 'vs_raise', 'vs_allin'} and min(fam.values()) > 0.15 * sum(fam.values())
+    assert set(table) == {'3-handed', 'heads-up'}

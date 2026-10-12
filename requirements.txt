@@ -1,4 +1,6 @@
 numpy>=2.0
+numba>=0.60          # solveur postflop et scripts historiques
+fastapi>=0.110
+uvicorn>=0.29
 pytest>=8.0
-# scripts historiques de legacy/ uniquement :
-numba>=0.60
+httpx>=0.27          # client de test de l'API

@@ -21,4 +21,5 @@ python -m pytest -q                                   # tests
 python tools/hrc/validate.py                          # rapport docs/hrc/VALIDATION_HRC.md
 python -m spinsacademy.importer --version AAAA.MM.JJ-N  # publie un dataset en staging
 python tools/hrc/make_locks.py                        # régénère data/hrc/locks/
+python -m uvicorn spinsacademy.api:app --port 8000   # API du quiz (docs/api/API_QUIZ.md)
 ```
