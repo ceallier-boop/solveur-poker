@@ -1,0 +1,109 @@
+"""Vérification automatique du jeu de questions : structure, cohérence des explications, recalcul indépendant, simulation des formules d'EV."""
+import json, re, sys
+import numpy as np
+import exploit_engine as ee
+from hrcdata import NAMES, W
+from pushfold import build_classes, eval7
+from numba import njit
+
+qs = json.load(open('/home/claude/quiz_exploit.json'))
+fails = []
+def check(cond, msg, q=None):
+    if not cond: fails.append((msg, q['id'] if q else None))
+
+# ---------- 1) structure et cohérence du texte
+for q in qs:
+    check(q['bonne_reponse'] in q['options'], "bonne réponse absente des options", q)
+    check(len(set(q['options'])) == len(q['options']), "options dupliquées", q)
+    if q['type'] in ('adaptation', 'piège'):
+        check(q['gain_mBB'] >= 0, "gain négatif", q)
+        ev = q['ev_jeu_vs_fold_mBB']; ex = q['explication']
+        if q['bonne_reponse'] == 'Fold':
+            check(ev < 0, "réponse Fold mais l'action de jeu a une EV >= 0", q)
+            check('serait à' in ex and f"{ev:.0f}" in ex, "explication d'un fold incohérente", q)
+        else:
+            check(ev >= 0, "réponse de jeu mais EV < 0", q)
+            check('rapporte' in ex and f"{ev:+.0f}" in ex, "explication d'une action de jeu incohérente", q)
+    if q['type'] == 'adaptation':
+        check(q['bonne_reponse'] != q['action_GTO'], "adaptation sans changement de décision", q)
+        check(q['gain_mBB'] >= 2 * q['seuil_bruit_mBB'] - 1, "gain sous 2 x bruit", q)
+    if q['type'] == 'piège':
+        check(q['bonne_reponse'] == q['action_GTO'], "piège dont la décision change", q)
+        check(abs(q['ev_jeu_vs_fold_mBB']) >= 3 * q['seuil_bruit_mBB'] - 1, "piège trop proche de la frontière", q)
+print(f"1) structure et explications : {len(qs)} questions, {len(fails)} échec(s)")
+
+# ---------- 2) recalcul : on rejoue le moteur avec les facteurs enregistrés et on compare la décision, le gain et l'EV
+n_rec = 0; bad = 0
+cache = {}
+for q in qs:
+    if q['type'] == 'identification': continue
+    key = (q['kind'], q['situation'], q['stack'], q['facteurs']['shove'], q['facteurs']['call'])
+    if key not in cache:
+        ee.PROFILES.clear(); ee.PROFILES['x'] = dict(shove=q['facteurs']['shove'], call=q['facteurs']['call']); ee.INTENSITE = 1.0
+        cache[key] = ee.run_spot(q['kind'], q['stack'], q['situation'], ee.SPOTS[(q['kind'], q['situation'])])['x']
+    r = cache[key]; i = NAMES.index(q['hero_hand'])
+    play = 'Payer' if ee.SPOTS[(q['kind'], q['situation'])]['type'] == 'call' else 'Pousser all-in'
+    expl = play if r['expl'][i] in ('paie', 'pousse') else 'Fold'
+    n_rec += 1
+    if expl != q['bonne_reponse'] or abs(1000 * float(r['ev_raw'][i]) - q['ev_jeu_vs_fold_mBB']) > 1.0 or not r['valid'][i]:
+        bad += 1; fails.append(("recalcul différent", q['id']))
+print(f"2) recalcul avec les facteurs enregistrés : {n_rec - bad}/{n_rec} identiques")
+
+# ---------- 3) simulation de parties réelles : décalage d'EV profil - GTO, formule contre simulation
+combos, nc, names = build_classes()
+@njit(cache=True)
+def sim_decalage(hero, q_prof, q_gto, c_prof, c_gto, kind, S, N, seed):
+    # kind 0 : BB face à l'all-in du SB (heads-up) ; 1 : BB face au BTN (SB fold) ; 2 : SB face au BTN (BB fold)
+    np.random.seed(seed)
+    cum_p = np.cumsum(q_prof) / q_prof.sum(); cum_g = np.cumsum(q_gto) / q_gto.sum()
+    tot_p = 0.0; tot_g = 0.0
+    cards = np.zeros(7, np.int64)
+    for rep in range(2):
+        cum = cum_p if rep == 0 else cum_g
+        acc = 0.0; done = 0
+        while done < N:
+            j = np.searchsorted(cum, np.random.random())
+            if j > 168: j = 168
+            a = np.random.randint(nc[hero]); b = np.random.randint(nc[j])
+            a0, a1 = combos[hero, a, 0], combos[hero, a, 1]; b0, b1 = combos[j, b, 0], combos[j, b, 1]
+            if a0 == b0 or a0 == b1 or a1 == b0 or a1 == b1: continue
+            used = np.zeros(52, np.bool_); used[a0] = used[a1] = used[b0] = used[b1] = True
+            m = 0
+            while m < 5:
+                x = np.random.randint(52)
+                if not used[x]:
+                    used[x] = True; cards[2 + m] = x; m += 1
+            cards[0] = a0; cards[1] = a1; sa = eval7(cards)
+            cards[0] = b0; cards[1] = b1; sb = eval7(cards)
+            s = 1.0 if sa > sb else (0.5 if sa == sb else 0.0)
+            if kind == 0: v = S * (2 * s - 1) + 1.0
+            elif kind == 1: v = s * (2 * S + 0.5) - S + 1.0
+            else: v = s * (2 * S + 1.0) - S + 0.5
+            acc += v; done += 1
+        if rep == 0: tot_p = acc / N
+        else: tot_g = acc / N
+    return tot_p - tot_g
+
+KIND = {"BB face à l'all-in du SB (BTN fold)": 0, "BB face à l'all-in du BTN (SB fold)": 1, "SB face à l'all-in du BTN": 2, "BB face à l'all-in du SB": 0}
+rng = np.random.default_rng(5); diffs = []
+for (kind, name), spec in ee.SPOTS.items():
+    if spec['type'] != 'call': continue
+    for S in (6, 10):
+        ee.PROFILES.clear(); ee.PROFILES.update({'m': dict(shove=2.0, call=1.0), 'n': dict(shove=0.5, call=1.0)}); ee.INTENSITE = 1.0
+        res = ee.run_spot(kind, S, name, spec)
+        for pname in ('m', 'n'):
+            r = res[pname]; idx = [i for i in np.where(r['valid'])[0]]
+            for i in rng.choice(idx, 3, replace=False):
+                sim = sim_decalage(int(i), (P_ := ee.P) * r['vec'], P_ * r['vec_gto'], r['vec'], r['vec_gto'], KIND[name], float(S), 500000, int(rng.integers(1e6)))
+                q_p = ee.P * r['vec']; q_p /= q_p.sum(); q_g = ee.P * r['vec_gto']; q_g /= q_g.sum()
+                form = ee.ev_call(spec['formula'], S, q_p)[i] - ee.ev_call(spec['formula'], S, q_g)[i]
+                diffs.append((name, S, pname, NAMES[i], form, sim))
+d = np.array([x[4] - x[5] for x in diffs])
+se = np.array([np.sqrt(2) * 0.95 * x[1] / np.sqrt(500000) for x in diffs])      # erreur-type de l'écart simulé : écart-type d'un gain de partie ~ 0,95 x stack
+z = d / se
+print(f"3) simulation de parties réelles ({len(diffs)} cas de calls, 500 000 parties par distribution) : écart formule - simulation moyen {1000*d.mean():+.1f} mBB, maximum {1000*np.abs(d).max():.1f} mBB ; |écart| < 2 erreurs-types dans {100*np.mean(np.abs(z)<2):.0f} % des cas, maximum {np.abs(z).max():.1f} erreurs-types")
+for S_ in (6, 10):
+    dd = np.array([abs(x[4] - x[5]) for x in diffs if x[1] == S_]); print(f"   stack {S_} BB : écart absolu moyen {1000*dd.mean():.1f} mBB, maximum {1000*dd.max():.1f} mBB")
+fails_total = len(fails)
+print("\nÉCHECS :", fails_total)
+for f in fails[:10]: print("  ", f)

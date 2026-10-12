@@ -62,3 +62,48 @@ La conversation partagée sur claude.ai n'a pas pu être lue, car la page est bl
 | `hrc_surrogate.py` | **Conserver après récupération de ses dépendances**, avec étiquetage « interpolé » |
 | Quiz exporté | **Conserver comme jeu de démarrage**, après retrait ou correction des 32 questions de 10–12 BB à options incomplètes, et régénération traçable |
 | Fiches et guide | **À régénérer** depuis la source unique |
+
+---
+
+## 5. Complément après réception de l'archive complète (`tout_le_travail_expresso.zip`)
+
+Décisions du propriétaire :
+- le GTO couvre 4 à 25 BB, avec limp et raise ;
+- on reste en chip EV ;
+- les exports HRC vont dans le dépôt (`data/hrc/raw/`) mais jamais dans l'application.
+
+### 5.1 Ce qui a été reproduit
+
+| Chaîne | Résultat |
+|---|---|
+| `hrcdata` → `hrc_surrogate` → `exploit_engine` | Tourne avec `E3.npy` recalculé. 42 808 lignes, dont 42 784 décisions exploitantes identiques à l'original. Les 24 écarts viennent du tirage Monte-Carlo de la matrice d'équité |
+| `quiz_generator` → `verify_quiz` | **0 échec**. Il génère 287 questions. Les réponses sont identiques sur les 166 questions communes avec l'original ; le tirage aléatoire change avec les pools |
+| `loo_eval` (stack retiré puis interpolé) | Perte nette de 8 à 64 mBB par main contre HRC, pour un plancher HRC de 0,4 à 19 mBB |
+| `exp_hu_solver` (heads-up limp/raise, jeu après le flop calibré sur HRC) | Perte de 4 à 6 mBB à 6 BB et de 12 à 13 mBB à 8 BB, mais **30 à 50 mBB à 10–12 BB** |
+| Paquet postflop v2 (avec `postflop_quiz`) | 181 questions. Seules **4 questions « mains fortes »** sont sur un board pairé (défaut §3.7). Aucune question « amélioration » n'est produite |
+
+Le point 4 du §3 (profil Shark) est traité dans `quiz_generator` : les mains où Shark change la décision sont exclues des questions. Les seuils de bruit sont documentés dans `exploit_engine` : ce sont les gains parasites du profil Shark au 90ᵉ centile.
+
+### 5.2 Ce qu'on garde, au vu des décisions
+
+| Élément | Usage dans SpinsAcademy |
+|---|---|
+| **Exports HRC (44 mains)** | **Seule source du mode GTO**, limp et raise compris. On n'utilise que les profondeurs résolues. 3 joueurs : 4, 6, 8, 10, 12, 14, 15, 18, 20, 25 BB et 18 répartitions inégales. Heads-up : 2, 4, 6, 8, 10, 12, 15, 18, 20, 25 BB et 3 inégales. La correction se fait d'après l'EV HRC, avec une tolérance au moins égale au plancher HRC (≈ 20 mBB) |
+| `hrcdata.py` | Logique de lecture à reprendre dans l'importeur (clés de nœud, étiquettes d'action, all-in) |
+| `hrc_surrogate.fill_unreached` | À garder pour les mains non atteintes, mais **pas l'interpolation entre stacks** dans le mode GTO (perte de 8 à 64 mBB) |
+| `exploit_engine.py`, `quiz_generator.py`, `verify_quiz.py`, `quiz_export.schema.json`, `spinsacademy_quiz.sqlite` | **Mode exploitant pour les décisions tout ou rien**, à toutes les profondeurs où HRC a la situation. La méthode différentielle (EV HRC + décalage calculé par les équités), les seuils de bruit, les pièges et la vérification sont bons. À étendre à 14–25 BB, et à afficher les options limp et raise avec leur EV GTO |
+| `calibrate_profiles.py` + gabarit CSV | Calibration des profils sur des comptages observés, à garder pour plus tard |
+| `crsolve.py`, `solver3h.py`, `solver_uneq.py`, `tensor3.py`, `pushfold.py` | Moteur push/fold avec bloqueurs : référence et contrôle sous 8 BB, module pédagogique « push/fold » distinct du GTO |
+| `exp_hu_solver.py` + `solver_hu.py` | Exploitant heads-up limp/raise **jusqu'à 8 BB seulement**. Au-delà, l'erreur dépasse les écarts qu'on veut enseigner |
+| Paquet postflop v2 (`postflop_core`, `postflop_quiz`, vérifications, tests exhaustifs) | À garder intégralement, avec les 2 corrections du §3.7. Les 4 questions sur board pairé sont à régénérer ensuite |
+| `scorecard.csv`, `regret_stats`, `loo_*`, `eval_c2` | Rapports de validation historiques, à archiver |
+| `Guide_final_Expresso.md`, fiches PDF v1 à v5, `ranges_*.md` | **Ne pas reprendre tels quels** : ils sont en push/fold pur ou mélangent les sources. À régénérer depuis HRC |
+| `pushfold_raise.py`, `solver2.py`, `solver3_iso.py`, `model_pages.py` | À archiver |
+
+### 5.3 Exploitant avec limp et raise de 10 à 25 BB
+
+Aucun script fourni ne le fait de façon fiable : `exploit_engine` exclut volontairement ces lignes, et `exp_hu_solver` ne tient pas au-delà de 8 BB. La voie recommandée est le **verrouillage de nœuds dans HRC** : on fige la stratégie du vilain selon un profil, puis HRC calcule la meilleure réponse du héros. Ces exports « exploitants » suivraient le même import, la même validation et le même versionnage que les exports GTO.
+
+### 5.4 Point juridique à confirmer
+
+Les exports bruts restent hors de l'application. En revanche, les datasets publiés en contiendront des **dérivés** : fréquences, EV, ranges et questions. Il faut confirmer que la licence HRC autorise cette diffusion dérivée.
