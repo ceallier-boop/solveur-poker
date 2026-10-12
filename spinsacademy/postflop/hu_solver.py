@@ -2,7 +2,7 @@
 
 Jeu : pot P au flop, tapis effectif S derrière chaque joueur ; OOP parle en premier à chaque rue.
   - sans mise à payer : check, mise (bet_fraction du pot), tapis ;
-  - face à une mise : fold, call, tapis (une relance, toujours à tapis) ;
+  - face à une mise : fold, call, relance (raise_fraction du pot après call), tapis ; au plus max_raises relances par rue ;
   - une mise de plus de allin_fraction du tapis restant devient un tapis.
 À chaque itération, un board complet (5 cartes) est tiré ; les combos qui le touchent sont exclus (tirage exact
 de la distribution jointe mains + board). Information d'un joueur : nœud de l'arbre + groupe de force de sa main
@@ -21,6 +21,8 @@ class PostflopConfig:
     allin_fraction: float = 0.67
     buckets: int = 16
     rollouts: int = 6
+    raise_fraction: float = 0.66      # relance classique : on ajoute ce pourcentage du pot après call ; 0 = tapis seulement
+    max_raises: int = 2               # relances par rue (la dernière possible est toujours un tapis)
 
 
 class _N:
@@ -47,9 +49,10 @@ class HUPostflop:
 
     def _street(self, street, c):
         if street == 3 or min(self.S - c[0], self.S - c[1]) <= 1e-9: return self._new('show', street, c)
-        return self._act(street, c, 0, facing=0.0, raised=False, checked=False)
+        return self._act(street, c, 0, facing=0.0, raised=0, checked=False)
 
     def _act(self, street, c, p, facing, raised, checked):
+        """raised : nombre de relances déjà faites dans la rue"""
         n = self._new('act', street, c, player=p); left = self.S - c[p]; pot = self.P + c[0] + c[1]
         if facing <= 1e-9:
             opts = [('X', None)]
@@ -58,7 +61,11 @@ class HUPostflop:
             opts.append(('A', left))
         else:
             opts = [('F', None), ('C', None)]
-            if not raised and left > facing + 1e-9: opts.append(('A', left))
+            if raised < self.cfg.max_raises and left > facing + 1e-9:
+                add = facing + self.cfg.raise_fraction * (pot + facing)
+                if self.cfg.raise_fraction > 0 and raised + 1 < self.cfg.max_raises and add < self.cfg.allin_fraction * left:
+                    opts.append((f'R{self.cfg.raise_fraction:g}', add))
+                opts.append(('A', left))
         for lab, amt in opts:
             if lab == 'X':
                 ch = self._street(street + 1, c) if checked else self._act(street, c, 1 - p, 0.0, raised, True)
@@ -68,7 +75,7 @@ class HUPostflop:
                 c2 = list(c); c2[p] += min(facing, left); ch = self._street(street + 1, tuple(c2))
             else:                                          # mise ou tapis ; face à une mise, c'est une relance
                 c2 = list(c); c2[p] += amt; to_call = c2[p] - c2[1 - p]
-                ch = self._act(street, tuple(c2), 1 - p, to_call, raised or facing > 0, False)
+                ch = self._act(street, tuple(c2), 1 - p, to_call, raised + (1 if facing > 0 else 0), False)
             n.actions.append(lab); n.children.append(ch)
         return n
 
@@ -124,12 +131,12 @@ class HUPostflop:
         kind = np.array([{'act': 0, 'fold': 1, 'show': 2}[n.kind] for n in self.nodes], np.int64)
         player = np.array([n.player for n in self.nodes], np.int64); street = np.array([min(n.street, 2) for n in self.nodes], np.int64)
         c0 = np.array([n.c[0] for n in self.nodes]); c1 = np.array([n.c[1] for n in self.nodes]); winner = np.array([n.winner for n in self.nodes], np.int64)
-        nch = np.array([len(n.children) for n in self.nodes], np.int64); child = np.zeros((N, 3), np.int64)
+        nch = np.array([len(n.children) for n in self.nodes], np.int64); W_ = max(len(n.children) for n in self.nodes); child = np.zeros((N, W_), np.int64)
         for n in self.nodes:
             for k, ch in enumerate(n.children): child[n.id, k] = ch.id
         assert all(n.id == i for i, n in enumerate(self.nodes)) and all(ch.id > n.id for n in self.nodes for ch in n.children)
         B = self.cfg.buckets
-        self.Rf = np.zeros((N, B, 3)); self.Sf = np.zeros((N, B, 3))
+        self.Rf = np.zeros((N, B, W_)); self.Sf = np.zeros((N, B, W_))
         self.V = np.zeros((N, 2, 1326)); self.reach = np.zeros((N, 2, 1326))
         self._arr = (kind, player, street, c0, c1, winner, nch, child)
         return self._arr

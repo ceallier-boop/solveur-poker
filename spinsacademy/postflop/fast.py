@@ -65,7 +65,7 @@ def iterate(kind, player, street, c0, c1, winner, nch, child, P, R, Sg, t, ranks
             r0, r1, update, use_avg, V, reach, CC):
     """un parcours complet sur un board ; V (nœuds, 2, 1326) reçoit les valeurs ; R et Sg mis à jour si update"""
     N = kind.shape[0]; B = R.shape[1]
-    sig = np.zeros((N, B, 3))
+    sig = np.zeros((N, B, R.shape[2]))
     for n in range(N):
         if kind[n] != 0: continue
         k = nch[n]

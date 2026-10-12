@@ -6,7 +6,11 @@ Realization : pour chaque fin de tour à deux joueurs, le sous-jeu postflop head
 avec les ranges qui y arrivent. On en tire, pour chaque classe, une correction additive de réalisation :
     part du pot de p avec i contre j = P * E[i, j] + delta_p[i] - delta_q[j]
 (somme nulle par construction), ajustée pour reproduire les gains postflop G de chaque classe contre la range adverse.
-Les fins de tour à trois joueurs actifs restent évaluées en showdown (pas de solveur postflop à 3).
+Fins de tour à trois joueurs actifs (pas de solveur postflop à 3) : chaque paire de joueurs est résolue en
+sous-jeu heads-up avec le pot réel et les deux ranges ; la correction d'un joueur est la moyenne de ses deux duels, et
+    part de p avec i contre j et k = P * T[i, j, k] + delta_p[i] - (delta_q[j] + delta_s[k]) / 2
+(somme nulle par construction). C'est une approximation : elle capte la position et la jouabilité, pas les
+interactions propres à trois joueurs (protection, sandwich).
 """
 import numpy as np
 from ..cards import DISJOINT as D, W as NCOMB
@@ -40,11 +44,13 @@ class Realization:
 
     def __init__(self):
         self.offsets = {}          # id du nœud terminal -> {joueur: delta (169)}
+        self._pending = {}
 
     def value(self, solver, nd, p, reach):
         off = self.offsets.get(nd.id)
         if off is None or nd.folded[p]: return solver.showdown_value(nd, p, reach)     # joueur couché : il perd sa mise
         active = [q for q in range(solver.n) if not nd.folded[q]]
+        if len(active) == 3: return self._value3(solver, nd, p, reach, off)
         q = active[0] if active[1] == p else active[1]
         P = float(sum(nd.contrib)); rq = reach[q]; dp, dq = off[p], off[q]
         v = P * ((D * E) @ rq) + dp * (D @ rq) - D @ (rq * dq) - nd.contrib[p] * (D @ rq)
@@ -52,15 +58,38 @@ class Realization:
         s = [x for x in range(3) if x not in (p, q)][0]
         return v * (D @ reach[s]) / NCOMB
 
+    def _value3(self, solver, nd, p, reach, off):
+        from .cfr import equity3
+        q, s = [x for x in range(3) if x != p]; rq, rs = reach[q], reach[s]
+        P = float(sum(nd.contrib)); Dq, Ds = D @ rq, D @ rs
+        Y = (equity3()[1] @ rs.astype(np.float32)).reshape(169, 169).astype(np.float64)
+        return (P * (Y @ rq) + (off[p] - nd.contrib[p]) * Dq * Ds / NCOMB
+                - 0.5 * ((D @ (rq * off[q])) * Ds + (D @ (rs * off[s])) * Dq) / NCOMB)
+
     @staticmethod
     def subgames(solver):
-        """fins de tour « flop » à deux joueurs actifs : (nœud, OOP, IP, pot, tapis restant)"""
+        """duels postflop à résoudre : (nœud, OOP, IP, pot, tapis restant) ; trois duels par fin de tour à trois"""
         out = []
         for nd in solver.tree.terminals():
             if nd.terminal != 'flop': continue
             active = [q for q in range(solver.n) if not nd.folded[q]]
-            if len(active) != 2: continue
             order = [q for q in POSTFLOP_ORDER[solver.n] if q in active]
             stack = min(solver.tree.st[q] - nd.contrib[q] for q in active)
-            out.append((nd, order[0], order[1], float(sum(nd.contrib)), float(stack)))
+            for a in range(len(order)):
+                for b in range(a + 1, len(order)):
+                    out.append((nd, order[a], order[b], float(sum(nd.contrib)), float(stack)))
         return out
+
+    def store(self, nd, o, i, d0, d1, damping):
+        """enregistre les corrections d'un duel ; pour une fin de tour à trois, moyenne des deux duels de chaque joueur"""
+        acc = self._pending.setdefault(nd.id, {})
+        acc.setdefault(o, []).append(d0); acc.setdefault(i, []).append(d1)
+
+    def commit(self, damping):
+        for nid, acc in self._pending.items():
+            new = {p: np.mean(v, axis=0) for p, v in acc.items()}
+            old = self.offsets.get(nid)
+            if old is not None and damping > 0:
+                new = {p: damping * old[p] + (1 - damping) * new[p] for p in new}
+            self.offsets[nid] = new
+        self._pending = {}

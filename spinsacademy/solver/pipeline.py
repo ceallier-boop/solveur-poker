@@ -1,7 +1,7 @@
 """Résolution complète : préflop (CFR+) et sous-jeux postflop heads-up, alternés jusqu'à stabilité des ranges.
 
   1. préflop résolu avec le modèle postflop courant (au départ : showdown) ;
-  2. pour chaque fin de tour « flop » à deux joueurs : sous-jeu postflop résolu avec les ranges qui y arrivent,
+  2. pour chaque fin de tour « flop » : sous-jeux postflop heads-up (un par paire de joueurs actifs) résolus avec les ranges qui y arrivent,
      corrections de réalisation ajustées (postflop.fit_offsets) ;
   3. retour en 1 avec ces corrections, amorties (moyenne avec le tour précédent, poids `damping`) ;
      on s'arrête après `outer` tours.
@@ -53,10 +53,8 @@ def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=Non
             roots = {}
             for (nd, o, i, pot, stack), (G0, G1, rf) in zip(subs, results):
                 d0, d1 = fit_offsets(pot, reach[nd.id][o], reach[nd.id][i], G0, G1)
-                old = model.offsets.get(nd.id)
-                if old is not None and damping > 0:             # amortissement : évite les oscillations entre tours
-                    d0 = damping * old[o] + (1 - damping) * d0; d1 = damping * old[i] + (1 - damping) * d1
-                model.offsets[nd.id] = {o: d0, i: d1}; roots[nd.key] = rf
+                model.store(nd, o, i, d0, d1, damping); roots[(nd.key, o, i)] = rf
+            model.commit(damping)                                # amortissement : évite les oscillations entre tours
             s = Solver(stacks, cfg or TreeConfig(), postflop=model).solve(pre_iters)
             cur = s.strategy(); shift = strategy_shift(cur, prev); prev = cur
             history.append(dict(round=k + 1, subgames=len(subs), shift_pts=shift, seconds=time.time() - t0))
