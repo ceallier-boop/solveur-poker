@@ -155,3 +155,13 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .backs i { width: 18px; height: 26px; border-radius: 3px; border: 2px solid #fff;
   background: repeating-linear-gradient(45deg, #b3261e 0 3px, #8c1d17 3px 6px); }
 .seat { white-space: nowrap; }
+
+/* jetons de mise */
+.chip { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.chip i { --c: #8b948f; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800;
+  font-size: .8rem; color: #fff; background: var(--c); border: 3px dashed rgba(255,255,255,.85); box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+.chip span { font-size: .78rem; font-weight: 700; color: #fff; background: rgba(0,0,0,.45); border-radius: 6px; padding: 0 5px; font-variant-numeric: tabular-nums; }
+.chip.k-limp i { --c: #2f6fd0; } .chip.k-call i { --c: #1f8f55; } .chip.k-raise i { --c: #d9822b; } .chip.k-allin i { --c: #c62828; }
+.chip-legend { margin: -4px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
+.chip-legend .chip { position: static; transform: none; display: inline-flex; margin-right: -8px; }
+.chip-legend .chip i { width: 18px; height: 18px; font-size: .6rem; border-width: 2px; }

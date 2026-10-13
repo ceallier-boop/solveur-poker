@@ -75,18 +75,30 @@ async function start(f) {
 // ------------------------------------------------------------------ question
 function contributions(q) {
   const n = q.players.length, c = BLINDS[n].slice(), folded = new Array(n).fill(false);
+  const kind = c.map((x) => (x > 0 ? 'blind' : null));               // dernière action de chaque joueur, pour son jeton
   for (const h of q.history) {
     const i = q.players.indexOf(h.position);
     if (h.action === 'fold') folded[i] = true;
     else if (h.to_bb !== undefined) c[i] = h.to_bb;
+    if (h.action !== 'fold' && h.action !== 'check') kind[i] = h.action === 'call_allin' ? 'call' : h.action;
   }
-  return { c, folded };
+  return { c, folded, kind };
+}
+
+// jetons : un symbole et une couleur par type de mise (légende sous la table)
+const CHIP = { blind: ['', 'Blinde'], limp: ['=', 'Limp'], call: ['✓', 'Call'], raise: ['▲', 'Relance'], allin: ['★', 'Tapis'] };
+function chip(kind, amount, x, y) {
+  const el = document.createElement('div'); el.className = `chip k-${kind}`;
+  el.style.left = x + '%'; el.style.top = y + '%';
+  el.innerHTML = `<i>${CHIP[kind][0]}</i><span>${bb(amount)}</span>`;
+  return el;
 }
 
 function renderTable(q) {
   const view = $('table-view'); view.innerHTML = '';
-  const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded } = contributions(q);
+  const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded, kind } = contributions(q);
   const spots = n === 3 ? [[50, 84], [17, 22], [83, 22]] : [[50, 84], [50, 18]];
+  const chips = n === 3 ? [[27, 84], [17, 43], [83, 43]] : [[27, 84], [73, 20]];      // devant chaque place, hors du pot et des cartes
   for (let k = 0; k < n; k++) {
     const i = (hero + k) % n, [x, y] = spots[k];
     const seat = document.createElement('div');
@@ -94,10 +106,13 @@ function renderTable(q) {
     seat.style.left = x + '%'; seat.style.top = y + '%';
     const left = q.stacks_bb[i] - c[i];
     const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
-    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (c[i] > 0 && !folded[i] ? `<span class="bet">mise ${bb(c[i])}</span>` : (folded[i] ? '<span class="bet">fold</span>' : ''));
+    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
     view.appendChild(seat);
+    if (c[i] > 0 && kind[i]) view.appendChild(chip(kind[i], c[i], ...chips[k]));     // un joueur couché laisse sa mise devant lui
   }
   const pot = document.createElement('div'); pot.className = 'pot'; pot.textContent = `Pot ${bb(q.pot_bb)} BB`; view.appendChild(pot);
+  const used = [...new Set(kind.filter((k, i) => k && c[i] > 0))];
+  $('chip-legend').innerHTML = used.map((k) => `<span class="chip k-${k}"><i>${CHIP[k][0]}</i></span>${CHIP[k][1]}`).join('');
   const hole = document.createElement('div'); hole.className = 'cards hole'; hole.id = 'hero-cards'; view.appendChild(hole);   // tes cartes, devant ta place
 }
 
