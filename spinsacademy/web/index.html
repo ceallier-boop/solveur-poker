@@ -136,23 +136,24 @@
         <div class="range-grid" id="a-grid" role="img"></div>
         <p class="grid-legend" id="a-grid-legend"></p>
       </details>
-      <button class="primary big" id="next-btn">Question suivante</button>
       <details class="report" id="report">
-        <summary>Signaler une erreur</summary>
+        <summary>⚑ Signaler cette main</summary>
+        <p class="note">Tu trouves la réponse de référence inadaptée, ou l'énoncé incompréhensible ? Dis-le : chaque signalement est relu par un expert.</p>
         <form id="report-form">
           <fieldset>
             <legend>Quel est le problème ?</legend>
-            <label><input type="radio" name="reason" value="wrong_answer" required> La réponse me semble fausse</label>
+            <label><input type="radio" name="reason" value="wrong_answer" required> La réponse de référence me semble inadaptée</label>
             <label><input type="radio" name="reason" value="unclear"> L'énoncé est incompréhensible</label>
             <label><input type="radio" name="reason" value="illegal_action"> Une action proposée est impossible</label>
             <label><input type="radio" name="reason" value="other"> Autre</label>
           </fieldset>
           <label for="report-comment" class="sr-only">Commentaire</label>
-          <textarea id="report-comment" maxlength="1000" rows="3" placeholder="Commentaire (facultatif)"></textarea>
+          <textarea id="report-comment" maxlength="1000" rows="3" placeholder="Pourquoi ? Par exemple : « contre ce type de joueur, je paierais plus large » (facultatif)"></textarea>
           <button class="primary" type="submit">Envoyer le signalement</button>
         </form>
         <p class="report-done" id="report-done" role="status" hidden>Merci, ton signalement a été transmis. La question sera vérifiée par un expert.</p>
       </details>
+      <button class="primary big" id="next-btn">Question suivante</button>
     </section>
 
     <!-- Bilan -->

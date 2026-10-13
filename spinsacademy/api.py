@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS preferences(player_id TEXT PRIMARY KEY, adaptive INTE
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
 """
-REASONS = {'wrong_answer': 'La réponse me semble fausse', 'unclear': "L'énoncé est incompréhensible",
+REASONS = {'wrong_answer': 'La réponse de référence me semble inadaptée', 'unclear': "L'énoncé est incompréhensible",
            'illegal_action': 'Une action proposée est impossible', 'other': 'Autre'}
 
 

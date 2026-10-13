@@ -28,9 +28,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       if (await p.locator('#a-next-box').isVisible()) await p.click('#a-next-box summary');
       if (await p.locator('#a-grid-box').isVisible()) await p.click('#a-grid-box summary');
       await p.screenshot({ path: out + '/3c_pourquoi_grille.png', fullPage: true });
-      if (await p.locator('#report').isVisible()) {                                 // absent de la version autonome
+      if (await p.locator('#report').isVisible()) {
       await p.click('#report summary'); await p.check('input[value="unclear"]'); await p.fill('#report-comment', 'test e2e');
-      await p.click('#report-form button[type=submit]'); await p.waitForSelector('#report-done:not([hidden])');
+      await p.click('#report-form button[type=submit]');
+      await p.waitForSelector('#report-done:not([hidden]), #demo-toast:not([hidden])');   // démo hors claude.ai : message d'indisponibilité
       await p.screenshot({ path: out + '/3b_signalement.png', fullPage: true });
       }
     }

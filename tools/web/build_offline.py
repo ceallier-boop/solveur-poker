@@ -131,6 +131,33 @@ const DEMO = (() => {
       verdicts, min_sample: MIN_SAMPLE, by, evolution: sessions.slice(-20), recurring_errors: recurring, weakest };
   }
 
+  // signalements : base de données partagée de l'artefact (lue par le porteur du projet), un document par signalement
+  let dbp = null;
+  async function report(body) {
+    const s = load().sessions[body.session_id]; if (!s) return [404, { detail: 'session inconnue' }];
+    const k = body.question_index, ans = s.answers[k]; const it = ITEMS[s.items[k]];
+    if (!it || !ans) return [409, { detail: "réponds d'abord à la question" }];
+    if ((s.reported || {})[k]) return [409, { detail: 'question déjà signalée' }];
+    dbp = dbp || (async () => {
+      const c = window.claude && window.claude.use; if (!c) return null;
+      const [db, user] = await Promise.all([c('db'), c('user')]);
+      const uid = user ? await user.id() : null;
+      return db && uid ? { db, uid } : null;
+    })();
+    const x = await dbp;
+    if (!x) return [503, { detail: 'Signalement indisponible ici : ouvre la démo connecté à claude.ai, avec un accès qui permet de contribuer.' }];
+    const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try {
+      await x.db.doc(`reports/${x.uid}/items/${rid}`).set({ created_at: now(), mode: s.mode, spot_id: it.q.spot_id, hand: it.q.hand,
+        action_id: ans.action_id, chosen: ans.chosen_label, reference: ans.best_label, verdict: ans.verdict, reason: body.reason,
+        comment: (body.comment || '').slice(0, 1000), prompt: it.q.prompt_fr, dataset: DATASETS[s.mode], status: 'open' });
+    } catch (e) {
+      return [503, { detail: e && e.code === 'permission_denied' ? "Ton accès à cette page ne permet pas d'envoyer de signalement : demande un accès « contributeur »." : "Le signalement n'a pas pu être envoyé, réessaie." }];
+    }
+    (s.reported = s.reported || {})[k] = true; save();
+    return [201, { report_id: rid, status: 'open' }];
+  }
+
   async function route(path, opts) {
     await ready;
     const url = new URL(path, 'https://demo.local/'); const p = url.pathname; const method = (opts && opts.method) || 'GET';
@@ -162,6 +189,7 @@ const DEMO = (() => {
       s.answers[body.question_index] = Object.assign({ action_id: body.action_id }, r0); save();       // sans la grille : stockage léger
       return [200, Object.assign({}, r, { already_answered: false })];
     }
+    if (p === '/reports' && method === 'POST') return report(body);
     if (p === '/users/me/stats') return [200, stats()];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
@@ -194,10 +222,10 @@ def build(out, k_gto, k_exp):
     body = re.sub(r'<script[^>]*></script>', '', body)
     gto, exp = quiz.load(quiz.DEFAULT_VERSION)[0]['version'], quiz.load(quiz.DEFAULT_EXPLOIT)[0]['version']
     note = (f'<p class="demo-note">Version de démonstration : {len(data)} questions tirées des datasets {gto} (GTO) et {exp} (exploitant). '
-            'Ta progression reste dans ce navigateur. Signalement, adaptation et administration sont réservés à l\'application complète.</p>')
+            'Ta progression reste dans ce navigateur ; tes signalements sont transmis au porteur du projet. Adaptation et administration sont réservées à l\'application complète.</p>')
     body = body.replace('<section id="screen-home" class="screen" aria-labelledby="home-title">',
                         '<section id="screen-home" class="screen" aria-labelledby="home-title">\n      ' + note, 1)
-    for hide in ('id="report"', 'id="st-delete"'):                 # pas de signalement ; pas d'effacement sans confirmation possible
+    for hide in ('id="st-delete"',):                               # pas d'effacement sans confirmation possible
         body = body.replace(hide, hide + ' hidden', 1)
     body = body.replace('<h3>Exercices adaptatifs</h3>', '<h3 hidden>Exercices adaptatifs</h3>', 1)
     body = body.replace('id="quick-start">Série recommandée<', 'id="quick-start">Série rapide<', 1)
@@ -205,6 +233,7 @@ def build(out, k_gto, k_exp):
     page = (f'<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
+            f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp))};</script>\n'
             f'<script>\n{SHIM}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
