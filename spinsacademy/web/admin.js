@@ -7,7 +7,7 @@ const ses = {
   set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) { /* stockage indisponible */ } },
   del(k) { try { sessionStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
-const state = { token: ses.get('admin_token'), actor: ses.get('admin_actor') || '', tab: 'open' };
+const state = { token: ses.get('admin_token'), actor: ses.get('admin_actor') || '', tab: 'datasets' };
 const date = (iso) => iso ? new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '';
 
 async function api(path, opts = {}) {
@@ -66,11 +66,40 @@ function disabledCard(d) {
   </article>`;
 }
 
+const DS_FR = { gto_preflop: 'Préflop GTO', exploit_calls: 'Exploitant : payer un tapis' };
+function checksList(rep) {
+  return `<ul class="checks">${rep.checks.map((c) => `<li class="${c.level}">${esc(c.label_fr)}<small>${esc(c.details_fr)}</small></li>`).join('')}</ul>`;
+}
+function datasetCard(d) {
+  const ref = esc(d.ref);
+  const can = { validate: d.status !== 'published', publish: ['validated', 'retired', 'disabled'].includes(d.status) && d.report_ok, disable: d.status !== 'disabled' };
+  return `<article class="item" data-ref="${ref}">
+    <div class="row"><span class="tag ${d.status}">${esc(d.status_fr)}</span><b>${esc(DS_FR[d.dataset] || d.dataset)} · ${esc(d.version)}</b></div>
+    <p class="meta">${d.spots ?? '—'} spots · ${d.questions ?? '—'} questions · généré le ${date(d.created_at)}${d.source ? ` · source ${esc(d.source)}` : ''}${d.on_disk ? '' : ' · fichiers absents'}</p>
+    ${d.report_summary ? `<p>Contrôle du ${date(d.validated_at)} : <b>${esc(d.report_summary)}</b></p>` : '<p>Pas encore contrôlé.</p>'}
+    ${d.reason ? `<p class="meta">Dernière décision (${esc(d.actor)}, ${date(d.updated_at)}) : ${esc(d.reason)}</p>` : ''}
+    <details class="report-view"><summary>Rapport de contrôle</summary><div class="report-body">${d.report_summary ? 'Chargement…' : 'Aucun rapport.'}</div></details>
+    <form class="dataset">
+      <label class="sr-only" for="why-${ref}">Motif</label>
+      <textarea id="why-${ref}" rows="2" maxlength="1000" placeholder="Motif (obligatoire pour publier ou retirer)"></textarea>
+      <div class="row">
+        ${can.validate ? '<button class="secondary" type="submit" value="validate">Contrôler</button>' : ''}
+        ${can.publish ? '<button class="primary" type="submit" value="publish">Publier</button>' : ''}
+        ${can.disable ? '<button class="secondary danger" type="submit" value="disable">Retirer</button>' : ''}
+      </div>
+    </form>
+  </article>`;
+}
+
 function logCard(e) {
   const d = e.details || {};
   const what = e.action === 'resolve_report'
     ? `Signalement n° ${d.report_id} ${d.status === 'accepted' ? 'accepté' : 'rejeté'}${d.disabled_spot ? `, spot ${esc(d.disabled_spot)} retiré` : ''} : ${esc(d.resolution)}`
-    : e.action === 'enable_spot' ? `Spot ${esc(d.spot_id)} remis dans le tirage : ${esc(d.reason)}` : esc(e.action);
+    : e.action === 'enable_spot' ? `Spot ${esc(d.spot_id)} remis dans le tirage : ${esc(d.reason)}`
+    : e.action === 'validate_dataset' ? `Dataset ${esc(d.ref)} contrôlé : ${esc(d.summary)}`
+    : e.action === 'publish_dataset' ? `Dataset ${esc(d.ref)} publié${d.replaced ? ` (remplace ${esc(d.replaced)})` : ''} : ${esc(d.reason)}`
+    : e.action === 'disable_dataset' ? `Dataset ${esc(d.ref)} retiré${d.also_disabled && d.also_disabled.length ? ` avec ${d.also_disabled.map(esc).join(', ')}` : ''} : ${esc(d.reason)}`
+    : esc(e.action);
   return `<article class="item"><p>${what}</p><p class="meta">${date(e.at)} · ${esc(e.actor)}</p></article>`;
 }
 
@@ -79,7 +108,8 @@ async function render() {
   const list = $('list'); list.innerHTML = '<p class="lead">Chargement…</p>';
   try {
     let rows, html;
-    if (state.tab === 'disabled') { rows = await api('/admin/disabled'); html = rows.map(disabledCard); }
+    if (state.tab === 'datasets') { rows = await api('/admin/datasets'); html = rows.map(datasetCard); }
+    else if (state.tab === 'disabled') { rows = await api('/admin/disabled'); html = rows.map(disabledCard); }
     else if (state.tab === 'log') { rows = (await api('/admin/log')).reverse(); html = rows.map(logCard); }
     else { rows = await api(`/admin/reports?status=${state.tab}`); html = rows.map(reportCard); }
     $('count').textContent = `${rows.length} élément${rows.length > 1 ? 's' : ''}`;
@@ -87,9 +117,27 @@ async function render() {
   } catch (e) { list.innerHTML = `<p class="error">${esc(e.message)}</p>`; }
 }
 
+$('list').addEventListener('toggle', async (e) => {
+  const det = e.target; if (!det.classList || !det.classList.contains('report-view') || !det.open) return;
+  const ref = det.closest('[data-ref]').dataset.ref; const body = det.querySelector('.report-body');
+  try { body.innerHTML = checksList(await api(`/admin/datasets/${ref}/report`)); } catch (err) { body.textContent = err.message; }
+}, true);
+
 $('list').addEventListener('submit', async (e) => {
   e.preventDefault();
   const f = e.target; const text = f.querySelector('textarea').value.trim();
+  if (f.classList.contains('dataset')) {
+    const act = e.submitter ? e.submitter.value : 'validate'; const ref = f.closest('[data-ref]').dataset.ref;
+    if (act !== 'validate' && text.length < 3) { f.querySelector('textarea').focus(); return; }
+    if (act === 'disable' && !confirm(`Retirer ${ref} ? Les séries en cours sur cette version s'arrêteront.`)) return;
+    for (const b of f.querySelectorAll('button')) b.disabled = true;
+    try {
+      const body = act === 'validate' ? { actor: state.actor } : { actor: state.actor, reason: text };
+      await api(`/admin/datasets/${ref}/${act}`, { method: 'POST', body: JSON.stringify(body) });
+      await render();
+    } catch (err) { alert(err.message); for (const b of f.querySelectorAll('button')) b.disabled = false; }
+    return;
+  }
   if (text.length < 3) { f.querySelector('textarea').focus(); return; }
   for (const b of f.querySelectorAll('button')) b.disabled = true;
   try {

@@ -63,3 +63,37 @@ Les routes `/admin/*` exigent l'en-tête `X-Admin-Token`, égal à la variable d
 | `GET /admin/log` | journal de toutes les décisions d'administration (qui, quand, quoi) |
 
 Le dataset publié n'est jamais modifié : une correction de fond passe par une nouvelle version. La désactivation sert à retirer tout de suite une question douteuse, en attendant cette nouvelle version.
+
+## Publication des datasets (cahier des charges §2, §13.1 et §16)
+
+L'application ne sert que des versions **publiées**. Tant qu'aucune version n'est publiée pour un mode, `POST /sessions` répond `503`. En développement et dans les tests, `SPINSACADEMY_ALLOW_STAGING=1` sert les versions par défaut (`SPINSACADEMY_DATASET`, `SPINSACADEMY_EXPLOIT`) quand rien n'est publié ; cette variable ne doit pas être définie en production.
+
+Cycle de vie (`spinsacademy/catalog.py`), statut enregistré dans la base de l'application :
+
+| Statut | Sens |
+|---|---|
+| `staging` (À contrôler) | dossier présent sur le serveur, jamais contrôlé |
+| `rejected` (Refusé au contrôle) | au moins un contrôle bloquant en échec ; publication impossible |
+| `validated` (Contrôlé) | tous les contrôles bloquants réussis |
+| `published` (Publié) | version servie aux nouvelles séries ; une seule par dataset |
+| `retired` (Remplacé) | ancienne version publiée, remplacée par une nouvelle ; peut être republiée (retour arrière) |
+| `disabled` (Retiré) | retrait en urgence : plus de nouvelles séries, et les séries en cours s'arrêtent (`410`) ; peut être republiée |
+
+Contrôles (rapport lisible dans `/admin`, onglet Datasets) :
+- bloquants : manifeste cohérent avec le dossier ; empreinte SHA-256 du fichier des spots identique au manifeste ; nombre de spots et de questions conformes ; aucun doublon ; chaque spot complet et légal (héros présent et non couché, actions distinctes, pas de check face à une mise ni de fold gratuit, pas de mise au-delà des tapis, 169 mains, fréquences normalisées, EV de référence complète pour chaque main proposable, règles d'éligibilité du manifeste respectées) ; pour l'exploitant, chaque spot renvoie à un spot du dataset GTO source ;
+- test de référence : chaque spot est reconstruit depuis ses sources (exports HRC pour le GTO, dataset GTO source pour l'exploitant) et doit être identique. Si la reconstruction n'est pas comparable (version d'importeur différente, exports absents de ce poste), c'est un avertissement affiché, pas un échec ;
+- avertissement : dataset GTO source non publié (exploitant).
+
+Règles : publier exige un contrôle réussi sur des fichiers inchangés depuis le contrôle ; un dataset exploitant ne peut être publié que si son dataset GTO source l'est ; retirer un dataset GTO retire aussi les datasets exploitants publiés qui en dérivent. Publier, retirer et contrôler sont inscrits au journal (acteur, date, motif). Le contrôle est aussi disponible hors application : `python -m spinsacademy.catalog gto_preflop/2026.10.12-2`.
+
+L'import reste hors ligne : `python -m spinsacademy.importer --version X` (GTO, depuis les exports HRC du dépôt) et `python -m spinsacademy.exploit --version X --gto Y` produisent un dossier immuable en `staging`, livré au serveur avec le code. Les exports HRC bruts ne sont jamais servis par l'application.
+
+| Route (en-tête `X-Admin-Token`) | Rôle |
+|---|---|
+| `GET /admin/datasets` | versions connues, statut, volumes, résumé du dernier contrôle, dernière décision |
+| `POST /admin/datasets/{dataset}/{version}/validate` | `{actor}` → rapport ; statut `validated` ou `rejected` |
+| `GET /admin/datasets/{dataset}/{version}/report` | dernier rapport de contrôle |
+| `POST /admin/datasets/{dataset}/{version}/publish` | `{reason, actor}` → publie ; l'ancienne version publiée passe en `retired` |
+| `POST /admin/datasets/{dataset}/{version}/disable` | `{reason, actor}` → retire (et les exploitants dérivés) |
+
+`GET /health` indique les versions publiées. Les refus du cycle de vie répondent `409` avec la raison.

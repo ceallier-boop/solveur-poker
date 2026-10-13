@@ -11,7 +11,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   await p.fill('#token', 'mauvais'); await p.fill('#actor', 'Expert test'); await p.click('#login-form button');
   await p.waitForSelector('#login-error:not([hidden])');
   await p.fill('#token', process.env.ADMIN_TOKEN); await p.click('#login-form button');
-  await p.waitForSelector('.item form.resolve'); await p.screenshot({ path: out + '/a1_a_traiter.png', fullPage: true });
+  await p.click('[data-tab=open]'); await p.waitForSelector('.item form.resolve'); await p.screenshot({ path: out + '/a1_a_traiter.png', fullPage: true });
   const f = p.locator('form.resolve').first();
   await f.locator('details, summary').count();
   await f.locator('textarea').fill('Énoncé ambigu : spot retiré en attendant la prochaine version');

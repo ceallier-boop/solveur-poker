@@ -21,7 +21,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import progress, quiz
+from . import catalog, progress, quiz
 from .hrc import ROOT
 
 SCHEMA = """
@@ -57,7 +57,16 @@ def connect():
     if 'player_id' not in {r[1] for r in con.execute('PRAGMA table_info(sessions)')}:      # migration d'une base antérieure
         con.execute('ALTER TABLE sessions ADD COLUMN player_id TEXT')
     con.execute('CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id)')
+    catalog.sync(con); con.commit()
     return con
+
+
+def serving_version(con, mode):
+    """version publiée du mode ; SPINSACADEMY_ALLOW_STAGING=1 (développement, tests) : version par défaut si rien n'est publié"""
+    ref = catalog.active(con, 'exploit_calls' if mode == 'exploit' else 'gto_preflop')
+    if ref: return ref
+    if os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1': return quiz.DEFAULT_EXPLOIT if mode == 'exploit' else quiz.DEFAULT_VERSION
+    raise HTTPException(503, 'aucun dataset publié pour ce mode : l\'administration doit en publier un')
 
 
 PLAYER_RE = re.compile(r'^[A-Za-z0-9-]{8,64}$')
@@ -109,15 +118,17 @@ def admin_page():
 
 @app.get('/health')
 def health():
-    m, spots = quiz.load(quiz.DEFAULT_VERSION)
-    return dict(status='ok', dataset_version=m['version'], spots=len(spots))
+    with closing(connect()) as con:
+        return dict(status='ok', published={ds: catalog.active(con, ds) for ds in catalog.KINDS},
+                    staging_fallback=os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1')
 
 
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id); version = quiz.DEFAULT_EXPLOIT if body.mode == 'exploit' else quiz.DEFAULT_VERSION
+    pid = player(x_player_id)
     try:
         with closing(connect()) as con:
+            version = serving_version(con, body.mode)
             excluded = frozenset(r[0] for r in con.execute('SELECT spot_id FROM disabled_spots'))
         series = quiz.draw_series(version, body.filters.model_dump(exclude_none=True), body.size, body.seed, excluded)
     except ValueError as e:
@@ -140,6 +151,8 @@ def _session(con, sid):
 def next_question(session_id: str):
     with closing(connect()) as con, con:
         s = _session(con, session_id)
+        if catalog.status_of(con, s['dataset_version']) == 'disabled':
+            raise HTTPException(410, 'cette série utilise un dataset retiré pour correction : commence une nouvelle série')
         row = con.execute('SELECT q.* FROM questions q LEFT JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx '
                           'WHERE q.session_id = ? AND a.idx IS NULL ORDER BY q.idx LIMIT 1', (session_id,)).fetchone()
         if row is None: return dict(done=True, session_id=session_id)
@@ -306,3 +319,60 @@ def admin_log(x_admin_token: Optional[str] = Header(None)):
     admin(x_admin_token)
     with closing(connect()) as con:
         return [dict(r, details=json.loads(r['details'])) for r in con.execute('SELECT * FROM admin_log ORDER BY id')]
+
+
+# ------------------------------------------------------------------ datasets (cahier des charges §2, §13.1 et §16)
+class DatasetAction(BaseModel):
+    reason: str = Field(min_length=3, max_length=1000)
+    actor: str = Field('admin', max_length=80)
+
+
+class Actor(BaseModel):
+    actor: str = Field('admin', max_length=80)
+
+
+def _lifecycle(fn):
+    try: return fn()
+    except catalog.LifecycleError as e: raise HTTPException(409, str(e))
+
+
+@app.get('/admin/datasets')
+def list_datasets(x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con: return catalog.listing(con)
+
+
+@app.get('/admin/datasets/{dataset}/{version}/report')
+def dataset_report(dataset: str, version: str, x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token)
+    with closing(connect()) as con:
+        rep = _lifecycle(lambda: catalog.report(con, f'{dataset}/{version}'))
+    if rep is None: raise HTTPException(404, 'pas encore contrôlé')
+    return rep
+
+
+@app.post('/admin/datasets/{dataset}/{version}/validate')
+def validate_dataset(dataset: str, version: str, body: Actor, x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token); ref = f'{dataset}/{version}'
+    with closing(connect()) as con, con:
+        rep, status = _lifecycle(lambda: catalog.run_validation(con, ref, body.actor))
+        _log(con, body.actor, 'validate_dataset', ref=ref, ok=rep['ok'], status=status, summary=rep['summary_fr'])
+    return dict(rep, status=status)
+
+
+@app.post('/admin/datasets/{dataset}/{version}/publish')
+def publish_dataset(dataset: str, version: str, body: DatasetAction, x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token); ref = f'{dataset}/{version}'
+    with closing(connect()) as con, con:
+        prev = _lifecycle(lambda: catalog.publish(con, ref, body.actor, body.reason))
+        _log(con, body.actor, 'publish_dataset', ref=ref, replaced=prev, reason=body.reason)
+    return dict(ref=ref, status='published', replaced=prev)
+
+
+@app.post('/admin/datasets/{dataset}/{version}/disable')
+def disable_dataset(dataset: str, version: str, body: DatasetAction, x_admin_token: Optional[str] = Header(None)):
+    admin(x_admin_token); ref = f'{dataset}/{version}'
+    with closing(connect()) as con, con:
+        deps = _lifecycle(lambda: catalog.disable(con, ref, body.actor, body.reason))
+        _log(con, body.actor, 'disable_dataset', ref=ref, also_disabled=deps, reason=body.reason)
+    return dict(ref=ref, status='disabled', also_disabled=deps)
