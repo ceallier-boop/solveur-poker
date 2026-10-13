@@ -52,7 +52,7 @@ def bb(x):
     return s.replace('.', ',')
 
 
-GAIN_MIN_BB = 0.05                # en dessous : « <0,05 BB » (pas de mBB affichés au joueur)
+GAIN_MIN_BB = grading.TOLERANCE_MBB / 1000   # en dessous : « <0,02 BB », la limite entre réponse acceptée et imprécision (pas de mBB affichés)
 
 
 def gain_bb(x, signed=False):
@@ -61,7 +61,7 @@ def gain_bb(x, signed=False):
     return (('+' if x >= 0 else '−') + s) if signed else s
 
 
-RANGE_BOUNDS_BB = (0.05, 0.25, 0.5, 1, 2, 5)
+RANGE_BOUNDS_BB = (GAIN_MIN_BB, 0.25, 0.5, 1, 2, 5)
 
 
 def gain_range(x):
@@ -468,7 +468,7 @@ def correct(version, spot_id, hand, action_id):
     evb = ev[ids.index(best)] - ev[ids.index(base_id)]
     ref = 'fold' if base_id == 'F' else 'check'
     if best == base_id or abs(evb) < 0.005: lines = [f'Meilleure action : {labels[best]}.']
-    elif evb < GAIN_MIN_BB: lines = [f"Meilleure action : {labels[best]}, à peine mieux que le {ref} (moins de 0,05 BB)."]
+    elif evb < GAIN_MIN_BB: lines = [f"Meilleure action : {labels[best]}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
     else: lines = [f"Meilleure action : {labels[best]}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id); after = next_steps(sp, hand, best, action_id, labels)
     if action_id == best:

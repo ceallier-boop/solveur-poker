@@ -13,7 +13,7 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
-const gainBB = (mbb) => (Math.abs(mbb) < 50 ? '<0,05 BB' : bb(Math.abs(mbb) / 1000) + ' BB');   // gains toujours en BB
+const gainBB = (mbb) => (Math.abs(mbb) < 20 ? '<0,02 BB' : bb(Math.abs(mbb) / 1000) + ' BB');   // gains toujours en BB
 // profils fictifs : symbole (sens et force de l'écart de tapis avec le GTO) et couleur, pour les reconnaître d'un coup d'œil
 const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲' };
 const pbadge = (pr, small) => `<span class="pbadge p-${pr.id}${small ? ' sm' : ''}" aria-hidden="true">${PROFILE_VIS[pr.id] || '?'}</span>`;

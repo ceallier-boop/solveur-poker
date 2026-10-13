@@ -1,5 +1,5 @@
 {
- "version": "1.2.0",
+ "version": "1.2.1",
  "date": "2026-10-13",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
@@ -514,13 +514,13 @@
    "def": "Ce que joue le solveur dans la situation, arrondi à 5 %. En mode exploitant, la référence est la meilleure action contre le profil."
   },
   {
-   "term": "<0,05 BB",
+   "term": "<0,02 BB",
    "cat": "appli",
    "match": [
-    "<0,05 BB",
-    "moins de 0,05 BB"
+    "<0,02 BB",
+    "moins de 0,02 BB"
    ],
-   "def": "Écart trop faible pour être affiché précisément : moins de 0,05 BB (50 mBB)."
+   "def": "Écart trop faible pour être affiché précisément : moins de 0,02 BB (20 mBB). C'est aussi la limite entre une réponse acceptée et une imprécision."
   },
   {
    "term": "Série recommandée",
