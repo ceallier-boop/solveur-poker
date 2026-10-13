@@ -8,7 +8,7 @@ Règles (paramétrables par TreeConfig) :
   - face à un 3-bet : fold, call ou tapis ; ensuite fold ou call ;
   - au plus un call « à froid » par niveau de relance, sauf pour le joueur qui clôt l'action ;
   - une mise de plus de allin_fraction du tapis effectif devient un tapis ; le tapis est toujours proposé, sauf en premier
-    de parole ou face à des limps quand unopened_allin_max est fixé et dépassé (et qu'une relance est possible) ;
+    de parole ou face à des limps au-delà des seuils de HRC (UNOPENED_ALLIN), quand une relance est possible ;
   - une mise au-delà du plus gros tapis adverse encore en jeu est un tapis effectif.
 Fin de tour : « fold » (un seul joueur restant), « showdown » (au moins un joueur à tapis : on abat les cartes),
 ou « flop » (au moins deux joueurs avec des jetons derrière : valeur donnée par le modèle postflop).
@@ -18,6 +18,12 @@ from dataclasses import dataclass, field
 POS = {3: ('BTN', 'SB', 'BB'), 2: ('SB', 'BB')}
 BLINDS = {3: (0.0, 0.5, 1.0), 2: (0.5, 1.0)}
 EPS = 1e-9
+# Seuils de tapis effectif au-delà desquels HRC ne propose pas de tapis sans relance préalable, relevés sur les exports
+# (16 à 25 BB) : (nombre de joueurs, position qui parle, positions des limpers) -> seuil. Situation absente : toujours proposé.
+# Les exports étant espacés (15, 16, 18, 20, 22, 25 BB), le seuil retenu est le plus grand tapis où HRC le propose.
+UNOPENED_ALLIN = {(2, 'SB', ()): 15.0, (2, 'BB', ('SB',)): 15.0,
+                  (3, 'BTN', ()): 18.0, (3, 'SB', ()): 15.0, (3, 'SB', ('BTN',)): 22.0,
+                  (3, 'BB', ('SB',)): 15.0, (3, 'BB', ('BTN',)): 18.0}
 
 
 @dataclass
@@ -37,7 +43,7 @@ class TreeConfig:
     flats_per_level: int = 1
     allow_limp: bool = True
     unopened_allin_max: float = None  # pas de tapis en premier de parole ni face à des limps au-delà de ce tapis effectif ;
-                                      # None : 15 BB en heads-up (règle HRC), toujours proposé à 3 joueurs ; 0 : toujours proposé
+                                      # None : seuils HRC (UNOPENED_ALLIN) ; 0 : toujours proposé
 
 
 @dataclass
@@ -133,7 +139,7 @@ class Tree:
                 if size >= cap - EPS or size >= self.cfg.allin_fraction * cap - EPS: continue     # seuil sur le tapis effectif
                 opts.append((f'R{round(size, 4):g}', size, 'raise'))
             lim = self.cfg.unopened_allin_max
-            if lim is None: lim = 15.0 if self.n == 2 else 0.0
+            if lim is None: lim = UNOPENED_ALLIN.get((self.n, name, tuple(self.names[q] for q in limpers)), 0.0)
             if not (raises == 0 and 0 < lim < cap - EPS and len(opts) > 1 + (to_call > EPS)):
                 opts.append(('A', cap, 'allin'))
         for lab, amt, typ in opts:

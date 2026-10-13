@@ -52,16 +52,16 @@ def test_full_tree_heads_up_converges_and_is_zero_sum():
     assert abs(ev[0] + ev[1]) < 1e-6                           # jeu à somme nulle (heads-up : pondération exacte)
 
 
-def test_unopened_allin_rule_matches_hrc_heads_up():
-    """avec unopened_allin_max = 15, l'arbre heads-up reproduit exactement les actions HRC, tapis compris"""
+def test_default_tree_matches_hrc_actions_exactly():
+    """avec les seuils de tapis HRC (réglage par défaut), l'arbre reproduit exactement les actions HRC, tapis compris"""
     checked = 0
     for d in exports():
         s, st, nodes = load(d)
-        if preflop_hash(s) != 'daa9aaa0' or len(st) != 2: continue
-        bk = Tree(st, TreeConfig(unopened_allin_max=15)).by_key()
+        if preflop_hash(s) != 'daa9aaa0': continue
+        bk = Tree(st).by_key()
         for k, n in nodes.items():
             hl = set(labels(n, st))
             if 'F' not in bk[k].actions: hl -= {'F'}
             assert set(bk[k].actions) == hl, (d, k, labels(n, st), bk[k].actions)
             checked += 1
-    assert checked > 20
+    assert checked > 300
