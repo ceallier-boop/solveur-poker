@@ -15,8 +15,8 @@ from .cards import NAMES, W
 from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
-DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.12-2')                       # gto_preflop
-DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-1')
+DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-1')                       # gto_preflop
+DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-2')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}

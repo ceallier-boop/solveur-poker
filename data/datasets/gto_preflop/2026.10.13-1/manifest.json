@@ -1,0 +1,120 @@
+{
+ "dataset": "gto_preflop",
+ "version": "2026.10.13-1",
+ "created_at": "2026-10-13T12:47:22+00:00",
+ "importer": "1.2.0",
+ "reference_preflop_tree": "daa9aaa0",
+ "model": "chip_ev",
+ "spots": 287,
+ "spots_sha256": "c86a70bce977511c814a17508b56101c63d04e0b99c049044ae4a72a3cd4389b",
+ "ev_reference_rule": "EV exacte si chaque action autre que fold en a une, sinon EV HRC",
+ "min_reach_for_questions": 0.05,
+ "max_self_regret_mbb": 60.0,
+ "mixed_min": 0.1,
+ "max_mixed_regret_mbb": 60.0,
+ "questions_eligible": 41250,
+ "sources": [
+  "data/hrc/raw/v2/hand_1",
+  "data/hrc/raw/v2/hand_2",
+  "data/hrc/raw/v2/hand_3",
+  "data/hrc/raw/v2/hand_4",
+  "data/hrc/raw/v2/hand_5",
+  "data/hrc/raw/v2/hand_6",
+  "data/hrc/raw/v2/hand_7",
+  "data/hrc/raw/v2/hand_8",
+  "data/hrc/raw/v2/hand_9",
+  "data/hrc/raw/v2/hand_10",
+  "data/hrc/raw/complement2/hand_1",
+  "data/hrc/raw/complement2/hand_2",
+  "data/hrc/raw/complement2/hand_3",
+  "data/hrc/raw/complement2/hand_4",
+  "data/hrc/raw/complement2/hand_5",
+  "data/hrc/raw/complement2/hand_6",
+  "data/hrc/raw/complement2/hand_8",
+  "data/hrc/raw/complement2/hand_9",
+  "data/hrc/raw/complement2/hand_11",
+  "data/hrc/raw/complement2/hand_12",
+  "data/hrc/raw/complement2/hand_13",
+  "data/hrc/raw/complement2/hand_14",
+  "data/hrc/raw/complement2/hand_15",
+  "data/hrc/raw/complement2/hand_16",
+  "data/hrc/raw/complement2/hand_17",
+  "data/hrc/raw/complement2/hand_18",
+  "data/hrc/raw/complement2/hand_19",
+  "data/hrc/raw/complement2/hand_20",
+  "data/hrc/raw/complement2/hand_21",
+  "data/hrc/raw/complement/hand_1",
+  "data/hrc/raw/complement/hand_2",
+  "data/hrc/raw/complement/hand_3",
+  "data/hrc/raw/min_raise_hu/hand_15",
+  "data/hrc/raw/min_raise_hu/hand_16",
+  "data/hrc/raw/min_raise_hu/hand_18",
+  "data/hrc/raw/min_raise_hu/hand_19",
+  "data/hrc/raw/min_raise_hu/hand_20",
+  "data/hrc/raw/min_raise_hu/hand_21",
+  "data/hrc/raw/min_raise_hu/hand_22"
+ ],
+ "skipped": [
+  {
+   "export": "data/hrc/raw/complement2/hand_7",
+   "reason": "stacks déjà couverts par un export plus récent"
+  },
+  {
+   "export": "data/hrc/raw/complement2/hand_10",
+   "reason": "stacks déjà couverts par un export plus récent"
+  },
+  {
+   "export": "data/hrc/raw/complement/hand_4",
+   "reason": "stacks déjà couverts par un export plus récent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_17",
+   "reason": "stacks déjà couverts par un export plus récent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_4",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_5",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_6",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_7",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_8",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_9",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_10",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_11",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_12",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_13",
+   "reason": "arbre préflop différent"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_14",
+   "reason": "arbre préflop différent"
+  }
+ ],
+ "status": "staging"
+}

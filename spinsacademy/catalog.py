@@ -88,6 +88,8 @@ def _spot_problems(sp, manifest, exploit):
         ev = x.get('ev_exact') if sp['ev_reference'] == 'exact' else x.get('ev_hrc')
         if ev is None or len(ev) != n or any(e is None or not np.isfinite(e) for e in ev): bad_ev += 1
         if x['reach'] < min_reach - 1e-9 or (not exploit and max_regret is not None and x.get('hrc_self_regret_mbb', 0) > max_regret + 1e-9): bad_rule += 1
+        elif manifest.get('max_mixed_regret_mbb') is not None and ev is not None and all(e is not None for e in ev) and x.get('freq'):
+            if any(f >= manifest['mixed_min'] and 1000 * (max(ev) - ev[j]) > manifest['max_mixed_regret_mbb'] + 1e-6 for j, f in enumerate(x['freq'])): bad_rule += 1
     if bad_norm: p.append(f'{bad_norm} mains aux fréquences non normalisées')
     if bad_ev: p.append(f'{bad_ev} mains proposables sans EV de référence complète')
     if bad_rule: p.append(f'{bad_rule} mains proposables hors des règles d\'éligibilité du manifeste')

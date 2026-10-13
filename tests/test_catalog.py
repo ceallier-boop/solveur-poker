@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from spinsacademy import catalog, quiz
 
 ADMIN = {'X-Admin-Token': 'jeton-de-test'}
-GTO, OLD, EXP = 'gto_preflop/2026.10.12-2', 'gto_preflop/2026.10.12-1', 'exploit_calls/2026.10.13-1'
+GTO, OLD, EXP = 'gto_preflop/2026.10.13-1', 'gto_preflop/2026.10.12-1', 'exploit_calls/2026.10.13-2'
 
 
 @pytest.fixture()
@@ -80,9 +80,9 @@ def test_full_lifecycle(client):
 
 
 def test_new_publication_retires_previous_and_rollback(tmp_path, monkeypatch, client):
-    root = tmp_path / 'datasets'; new = 'gto_preflop/2026.10.12-3'
+    root = tmp_path / 'datasets'; new = 'gto_preflop/2026.10.13-9'
     shutil.copytree(quiz.ref_path(GTO), root / GTO); shutil.copytree(quiz.ref_path(GTO), root / new)
-    m = json.load(open(root / new / 'manifest.json')); m['version'] = '2026.10.12-3'; json.dump(m, open(root / new / 'manifest.json', 'w'))
+    m = json.load(open(root / new / 'manifest.json')); m['version'] = '2026.10.13-9'; json.dump(m, open(root / new / 'manifest.json', 'w'))
     monkeypatch.setattr(quiz, 'DATASETS', str(root)); quiz.load.cache_clear()
     for ref in (GTO, new): assert post(client, f'/admin/datasets/{ref}/validate').json()['status'] == 'validated'
     post(client, f'/admin/datasets/{GTO}/publish', reason='première')

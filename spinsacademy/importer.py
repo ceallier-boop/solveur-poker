@@ -10,7 +10,9 @@ Règles :
   - EV de référence pour la correction : l'EV exacte quand chaque action autre que fold en a une (décision tout
     ou rien), sinon l'EV HRC ;
   - une main n'est proposée en question que si elle atteint le nœud (reach >= MIN_REACH) et si la stratégie HRC
-    est cohérente avec l'EV de référence : EV(meilleure action) - somme(fréquence x EV) <= MAX_SELF_REGRET_MBB ;
+    est cohérente avec l'EV de référence : EV(meilleure action) - somme(fréquence x EV) <= MAX_SELF_REGRET_MBB,
+    et aucune action jouée au moins MIXED_MIN de la fois ne perd plus de MAX_MIXED_REGRET_MBB (1.2.0 : une action de
+    la stratégie mixte n'est jamais sanctionnée, il faut donc que ses fréquences et son EV concordent) ;
   - un spot invalide (fréquences non normalisées, action illégale, mains manquantes) bloque la publication ;
   - une version publiée est immuable : on ne réécrit jamais un dossier existant.
 
@@ -22,10 +24,12 @@ from . import allin
 from .cards import NAMES, W
 from .hrc import ROOT, exports, is_allin, labels, load, positions, preflop_hash, tree_hash
 
-IMPORTER_VERSION = '1.1.0'
+IMPORTER_VERSION = '1.2.0'
 REF_PREFLOP = 'daa9aaa0'          # arbre préflop retenu (limp du BTN autorisé), voir data/hrc/README.md
 MIN_REACH = 0.05                  # poids d'atteinte minimal pour qu'une main soit proposée en question
 MAX_SELF_REGRET_MBB = 60.0        # incohérence maximale entre la stratégie HRC et l'EV de référence pour proposer la main
+MAX_MIXED_REGRET_MBB = 60.0       # écart maximal d'une action jouée au moins MIXED_MIN de la fois (sinon : main non proposée)
+from .grading import MIXED_MIN
 BLINDS = {3: [0.0, 0.5, 1.0], 2: [0.5, 1.0]}
 
 
@@ -143,10 +147,12 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
         if full_exact and any(x is None for x in ex): raise InvalidSpot(f'EV exacte manquante pour {h}')
         ref = np.array(ex if full_exact else ev_hrc[i], float)
         self_regret = round(1000 * float(ref.max() - (freq[i] * ref).sum()), 1); r = round(float(reach[i]), 4)
-        hands[h] = dict(reach=r, freq=[round(float(x), 4) for x in freq[i]],
+        fq = [round(float(x), 4) for x in freq[i]]
+        mixed_ok = all(f < MIXED_MIN or 1000 * float(ref.max() - ref[j]) <= MAX_MIXED_REGRET_MBB for j, f in enumerate(fq))
+        hands[h] = dict(reach=r, freq=fq,
                         ev_hrc=[round(float(x), 5) for x in ev_hrc[i]], ev_exact=ex,
                         hrc_self_regret_mbb=self_regret,
-                        quiz_eligible=bool(r >= MIN_REACH and self_regret <= MAX_SELF_REGRET_MBB))   # décidé sur les valeurs publiées
+                        quiz_eligible=bool(r >= MIN_REACH and self_regret <= MAX_SELF_REGRET_MBB and mixed_ok))   # décidé sur les valeurs publiées
     table = '3-handed' if len(st) == 3 else 'heads-up'
     sid = hashlib.sha256(json.dumps([REF_PREFLOP, table, st, key]).encode()).hexdigest()[:12]
     mass = W * reach
@@ -194,6 +200,7 @@ def publish(version, out, raw=None):
     manifest = dict(dataset='gto_preflop', version=version, created_at=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
                     importer=IMPORTER_VERSION, reference_preflop_tree=REF_PREFLOP, model='chip_ev', spots=len(spots), spots_sha256=digest,
                     ev_reference_rule="EV exacte si chaque action autre que fold en a une, sinon EV HRC", min_reach_for_questions=MIN_REACH, max_self_regret_mbb=MAX_SELF_REGRET_MBB,
+                    mixed_min=MIXED_MIN, max_mixed_regret_mbb=MAX_MIXED_REGRET_MBB,
                     questions_eligible=sum(sp['eligible_hands'] for sp in spots),
                     sources=[os.path.relpath(d, ROOT) for d in used], skipped=[dict(export=os.path.relpath(d, ROOT), reason=r) for d, r in skipped],
                     status='staging')

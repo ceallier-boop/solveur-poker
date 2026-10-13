@@ -2,9 +2,9 @@
 
 Barème (cahier des charges §4.2), sur l'EV de référence du spot (exacte ou HRC, voir importer) :
   - regret = EV de la meilleure action - EV de l'action choisie, en mBB ;
-  - « correct »   : regret <= TOLERANCE_MBB, ou bien regret <= 3 x TOLERANCE_MBB pour une action que HRC joue au moins
-                    MIXED_MIN de la fois quand l'EV de référence est celle de HRC (stratégie mixte : on ne la présente
-                    pas comme une erreur, mais on ne couvre pas une action coûteuse) ;
+  - « correct »   : regret <= TOLERANCE_MBB, ou action jouée au moins MIXED_MIN de la fois par la stratégie de référence
+                    (stratégie mixte : jamais sanctionnée ; l'importeur 1.2.0 ne propose que des mains où ces actions
+                    perdent au plus 60 mBB, donc fréquences et EV concordent) ;
   - « imprécision » : regret <= 3 x TOLERANCE_MBB (actions de valeur proche) ;
   - « erreur »    : au-delà.
 Points : 1 / 0,5 / 0. Les fréquences affichées sont arrondies (pas de DISPLAY_STEP), la correction utilise les valeurs exactes.
@@ -27,12 +27,12 @@ def grade(spot, hand, action_id):
     j = ids.index(action_id); ev = reference_ev(spot, hand); freq = spot['hands'][hand]['freq']
     best = max(range(len(ev)), key=lambda k: ev[k])
     regret = 1000 * (ev[best] - ev[j])
-    mixed_ok = spot['ev_reference'] == 'hrc' and freq[j] >= MIXED_MIN and regret <= 3 * TOLERANCE_MBB
+    mixed_ok = freq[j] >= MIXED_MIN
     if regret <= TOLERANCE_MBB or mixed_ok: verdict = 'correct'
     elif regret <= 3 * TOLERANCE_MBB: verdict = 'imprécision'
     else: verdict = 'erreur'
     return dict(verdict=verdict, points=POINTS[verdict], regret_mbb=round(regret, 1), best_action=ids[best],
-                chosen_frequency=freq[j], ev_source=spot['ev_reference'])
+                chosen_frequency=freq[j], mixed=bool(mixed_ok and regret > TOLERANCE_MBB), ev_source=spot['ev_reference'])
 
 
 def displayed_mix(spot, hand, step=DISPLAY_STEP):
