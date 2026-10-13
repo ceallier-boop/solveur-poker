@@ -7,7 +7,8 @@ Règles (paramétrables par TreeConfig) :
   - face à une relance : fold, call, 3-bet (multiplicateur de la relance + 1x par caller), tapis ;
   - face à un 3-bet : fold, call ou tapis ; ensuite fold ou call ;
   - au plus un call « à froid » par niveau de relance, sauf pour le joueur qui clôt l'action ;
-  - une mise de plus de allin_fraction du tapis effectif devient un tapis ; le tapis est toujours proposé ;
+  - une mise de plus de allin_fraction du tapis effectif devient un tapis ; le tapis est toujours proposé, sauf en premier
+    de parole ou face à des limps quand unopened_allin_max est fixé et dépassé (et qu'une relance est possible) ;
   - une mise au-delà du plus gros tapis adverse encore en jeu est un tapis effectif.
 Fin de tour : « fold » (un seul joueur restant), « showdown » (au moins un joueur à tapis : on abat les cartes),
 ou « flop » (au moins deux joueurs avec des jetons derrière : valeur donnée par le modèle postflop).
@@ -35,6 +36,7 @@ class TreeConfig:
     max_raises: int = 3
     flats_per_level: int = 1
     allow_limp: bool = True
+    unopened_allin_max: float = 0.0   # > 0 : pas de tapis en premier de parole ni face à des limps au-delà de ce tapis effectif (HRC heads-up : 15 BB)
 
 
 @dataclass
@@ -129,7 +131,8 @@ class Tree:
             for size in self._raise_sizes(c, folded, p, raises, last_raise, limpers, callers, aggressor):
                 if size >= cap - EPS or size >= self.cfg.allin_fraction * cap - EPS: continue     # seuil sur le tapis effectif
                 opts.append((f'R{round(size, 4):g}', size, 'raise'))
-            opts.append(('A', cap, 'allin'))
+            if not (raises == 0 and 0 < self.cfg.unopened_allin_max < cap - EPS and len(opts) > 1 + (to_call > EPS)):
+                opts.append(('A', cap, 'allin'))
         for lab, amt, typ in opts:
             c2 = list(c); f2 = list(folded); acted2 = set(acted) | {p}
             r2, lr2, ag2, fl2, lim2, cal2 = raises, last_raise, aggressor, flats, limpers, callers
