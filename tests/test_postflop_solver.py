@@ -77,7 +77,7 @@ def test_no_donk_rule():
     assert 'B0.66' in g.root.children[0].children[0].actions        # flop checké des deux côtés : OOP peut miser la turn
     assert 'B0.66' in HUPostflop(7, 21.5, cfg, aggressor=0).root.actions
     assert 'B0.66' in HUPostflop(7, 21.5, cfg, aggressor=-1).root.actions
-    assert len(HUPostflop(7, 21.5, PostflopConfig(), aggressor=1).nodes) > len(g.nodes)
+    assert len(HUPostflop(7, 21.5, PostflopConfig(donk=True), aggressor=1).nodes) > len(g.nodes)
 
 
 def test_subgames_carry_preflop_aggressor():

@@ -16,7 +16,7 @@ from spinsacademy.solver import postflop as pf
 from spinsacademy.solver.cfr import Solver
 
 REF = 'daa9aaa0'
-OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED, ROLLOUTS, TEXTURED, DONK = 3, 3000, 16, 0.5, None, 24, False, True
+OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED, ROLLOUTS, TEXTURED, DONK = 3, 3000, 16, 0.5, None, 24, False, False
 
 
 def find_export(stacks):
@@ -83,8 +83,8 @@ if __name__ == '__main__':
     ap.add_argument('--unopened-allin-max', type=float, default=None, help='par défaut : 15 BB en heads-up ; 0 = tapis toujours proposé')
     ap.add_argument('--rollouts', type=int, default=24, help='tirages pour la force des mains au flop et à la turn')
     ap.add_argument('--textured', action='store_true', help='groupes croisés force x texture du board')
-    ap.add_argument('--no-donk', action='store_true', help='règle HRC : pas de donk bet')
+    ap.add_argument('--donk', action='store_true', help='autorise le donk bet (par défaut : règle HRC, pas de donk bet)')
     a = ap.parse_args()
     OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED, ROLLOUTS = a.outer, a.post_iters, a.buckets, a.damping, a.unopened_allin_max, a.rollouts
-    TEXTURED, DONK = a.textured, not a.no_donk
+    TEXTURED, DONK = a.textured, a.donk
     show(run([float(x) for x in a.stacks.split(',')], a.iters, a.postflop))

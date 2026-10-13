@@ -26,7 +26,7 @@ class PostflopConfig:
     metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
     allin_spr: float = 0.0            # > 0 : le tapis n'est proposé que si tapis restant / pot <= allin_spr (règle HRC : 5)
     textured: bool = False            # groupes croisés force x texture du board visible (8 classes, kernels.texture)
-    donk: bool = True                 # False : OOP ne peut pas ouvrir les mises d'une rue si IP a été l'agresseur de la rue
+    donk: bool = False                # False (règle HRC, par défaut) : OOP ne peut pas ouvrir les mises d'une rue si IP a été l'agresseur de la rue
                                       # précédente (le relanceur préflop pour le flop) : règle HRC POSTFLOP_ALLOW_DONK = False
 
 

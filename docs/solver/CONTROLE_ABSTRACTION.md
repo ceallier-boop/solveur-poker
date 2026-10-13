@@ -89,3 +89,20 @@ Les deux réglages sont désormais ceux par défaut :
 - `PostflopConfig.rollouts` : 24.
 
 Point restant : le BB face à la relance du SB reste à 2 à 3 fois le plancher HRC.
+
+## Règles postflop de HRC et groupes par texture (2026-10-13)
+
+Paramètres de l'export HRC (`settings.json`) : moteur Monte-Carlo, 256 groupes par rue ; postflop « simple » : mise 66 %, tapis ajouté si SPR ≤ 5, pas de donk bet (`POSTFLOP_ALLOW_DONK = False`), check-down forcé selon le nombre de joueurs (`POSTFLOP_FORCE_CHECKDOWN_AFTER = [3, 3, 2, 1, 0, ...]`, lu comme le nombre de rues jouées : 3 en heads-up, 2 à trois joueurs).
+
+- Règle « pas de donk bet » (`PostflopConfig.donk = False`, désormais par défaut) : OOP ne peut pas ouvrir les mises d'une rue quand IP a été l'agresseur de la rue précédente (le relanceur préflop au flop). L'agresseur préflop est transmis à chaque sous-jeu (`Realization.subgames`).
+- Groupes croisés force × texture du board (`PostflopConfig.textured`, 8 classes : couleur possible, board pairé, quinte possible). Effet sur la turn exacte (40 boards, 24 tirages) : exploitabilité 16,9 % → 13,3 % du pot ; biais du BB par famille réduit, par exemple As assortis −118 → −86 mBB et broadways dépareillés −123 → −78 mBB. Sur la river : 6,2 % → 5,3 %. 64 groupes sans texture : 7,1 % (pas mieux).
+
+Benchmark HRC heads-up 25 BB (pertes en mBB : SB premier de parole / BB face au limp / BB face à la relance ; plancher HRC 4,3 / 4,7 / 12,8) :
+
+| Réglage | Pertes | Limp du SB | Durée |
+|---|---|---|---|
+| Règle de tapis + 24 tirages | 9,4 / 10,4 / 28,1 | 71,5 % | 393 s |
+| + groupes par texture, 6 000 itérations postflop | 9,1 / 10,4 / 26,9 | 72,9 % | 855 s |
+| + pas de donk bet | 9,3 / 9,1 / 26,9 | 69,9 % (HRC 68,8 %) | 315 s |
+
+La règle « pas de donk bet » est retenue par défaut. Les groupes par texture restent une option : gain faible pour un calcul 2,7 fois plus long.
