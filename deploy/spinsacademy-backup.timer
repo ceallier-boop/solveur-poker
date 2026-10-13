@@ -1,0 +1,10 @@
+# /etc/systemd/system/spinsacademy-backup.timer : une sauvegarde par jour à 4 h 17, rattrapée au démarrage si manquée
+[Unit]
+Description=Sauvegarde quotidienne de SpinsAcademy
+
+[Timer]
+OnCalendar=*-*-* 04:17:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

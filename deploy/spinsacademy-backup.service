@@ -1,0 +1,9 @@
+# /etc/systemd/system/spinsacademy-backup.service : sauvegarde à chaud de la base (lancée par le timer)
+[Unit]
+Description=Sauvegarde de la base SpinsAcademy
+
+[Service]
+Type=oneshot
+User=spinsacademy
+EnvironmentFile=/etc/spinsacademy.env
+ExecStart=/opt/spinsacademy/current/.venv/bin/python /opt/spinsacademy/current/tools/ops/backup.py backup --dir /opt/spinsacademy/shared/backups --keep 30

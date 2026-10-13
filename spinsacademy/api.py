@@ -55,7 +55,9 @@ def db_path(): return os.environ.get('SPINSACADEMY_DB', os.path.join(ROOT, 'data
 
 def connect():
     path = db_path(); os.makedirs(os.path.dirname(path), exist_ok=True)
-    con = sqlite3.connect(path); con.row_factory = sqlite3.Row; con.execute('PRAGMA foreign_keys = ON'); con.executescript(SCHEMA)
+    con = sqlite3.connect(path, timeout=10); con.row_factory = sqlite3.Row; con.execute('PRAGMA foreign_keys = ON')
+    con.execute('PRAGMA journal_mode = WAL')                       # lectures pendant les écritures (plusieurs processus uvicorn)
+    con.executescript(SCHEMA)
     if 'player_id' not in {r[1] for r in con.execute('PRAGMA table_info(sessions)')}:      # migration d'une base antérieure
         con.execute('ALTER TABLE sessions ADD COLUMN player_id TEXT')
     if 'purpose' not in {r[1] for r in con.execute('PRAGMA table_info(questions)')}:      # migration : objectif de la question

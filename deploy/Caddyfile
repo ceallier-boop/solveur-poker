@@ -1,0 +1,17 @@
+# /etc/caddy/Caddyfile : HTTPS automatique (Let's Encrypt) devant l'application. Remplacer le nom de domaine.
+spinsacademy.example.fr {
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+	}
+	# réserver l'administration à une adresse (recommandé) : décommenter et remplacer l'adresse
+	# @admin_ext {
+	# 	path /admin /admin/*
+	# 	not remote_ip 203.0.113.10/32
+	# }
+	# respond @admin_ext 403
+	reverse_proxy 127.0.0.1:8000
+}
