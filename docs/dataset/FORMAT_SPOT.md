@@ -70,3 +70,11 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
 - la couverture : par table, stacks, position, famille de décision et classe de main ;
 - la comparaison avec HRC ;
 - la notation : répartition des verdicts et exemples.
+
+
+## Évolution 2026-10-13 (importeur 1.2.0, dataset gto_preflop 2026.10.13-1)
+
+- Une action jouée au moins 10 % du temps par la stratégie de référence est toujours notée « correcte » (stratégie mixte jamais sanctionnée).
+- En contrepartie, une main n'est proposée que si chacune de ses actions jouées au moins 10 % du temps perd au plus 60 mBB selon l'EV de référence (`mixed_min`, `max_mixed_regret_mbb` dans le manifeste). 4 458 mains de la version 2026.10.12-2 avaient des fréquences et des EV HRC contradictoires : elles ne sont plus proposées.
+- Tirage : rotation sur la position du joueur (BTN, SB, BB) puis sur la famille de décision ; les mains où toutes les actions sont acceptées ne sont pas tirées ; les mains faciles (la première action sanctionnée coûte plus de 1 BB) sont tirées 4 fois moins souvent ; chaque question porte une difficulté (facile, moyen, difficile : moins de 0,2 BB d'écart).
+- Correction : phrase « pourquoi » tirée des données (cote du pot et équité contre la range de tapis pour les calls d'un tapis à EV exacte ; sinon part de la stratégie qui joue l'action de la main) et grille 13 × 13 de la stratégie de référence.

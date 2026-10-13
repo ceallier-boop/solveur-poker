@@ -89,3 +89,39 @@ Le bruit vient du Monte-Carlo de HRC sur les nœuds peu fréquents : plus la ran
 Conséquences :
 - **côté application** : les corrections de décisions tout ou rien utilisent l'EV exacte recalculée à partir des ranges HRC, pas l'EV HRC ;
 - **côté HRC, si possible** : relancer les calculs P1 avec une précision plus élevée (temps de calcul ou nombre d'itérations plus grand, selon les réglages de convergence proposés par HRC) et exporter **tous les nœuds préflop**. Les exports v2 s'arrêtent encore à deux actions.
+
+## 6. Calculs demandés après l'évaluation par un joueur (2026-10-13)
+
+Constats : tapis presque toujours symétriques ou en motifs fixes ; peu de décisions au BTN ; une seule taille de relance ; mode exploitant limité au call d'un tapis ; pas de postflop. Ces points ne se corrigent pas sans nouveaux calculs : l'application n'invente aucune solution.
+
+### 6.1 Tapis déséquilibrés (priorité 1)
+
+Même arbre de référence (§0), chip EV, une sortie par configuration (BTN / SB / BB, en BB). Au total 75 BB à trois joueurs, configurations rencontrées en partie :
+
+| 3 joueurs | | | | heads-up |
+|---|---|---|---|---|
+| 35 / 25 / 15 | 25 / 35 / 15 | 15 / 25 / 35 | 35 / 15 / 25 | 30 / 20 |
+| 40 / 20 / 15 | 20 / 40 / 15 | 15 / 20 / 40 | 30 / 30 / 15 | 35 / 15 |
+| 45 / 20 / 10 | 20 / 45 / 10 | 10 / 20 / 45 | 30 / 25 / 20 | 40 / 10 |
+| 50 / 15 / 10 | 15 / 50 / 10 | 25 / 25 / 25 | 20 / 30 / 25 | 20 / 30 |
+
+Chaque position occupe tour à tour le plus gros et le plus petit tapis, pour que le BTN ait autant de décisions que les blindes.
+
+### 6.2 Plusieurs tailles de relance (priorité 2)
+
+Sur 6 configurations (12, 16, 20 BB symétriques ; 35/25/15, 40/20/15, 30/20 HU) : ajouter à l'open du BTN 2 BB et 2,5 BB, à l'open du SB 2,5 BB et 3 BB, à l'iso du BB 2,5 BB et 4 BB. Les questions pourront alors porter sur le choix de taille.
+
+### 6.3 Mode exploitant au-delà du call d'un tapis (priorité 2)
+
+Les 135 calculs verrouillés du §2 couvrent les limps, les limp-relances et les opens. Ajouter, pour les profils de l'évaluation :
+- BB qui se couche trop face aux opens et aux limps (défense réduite de 30 % et 50 %) ;
+- joueur qui limp-relance trop (fréquence de limp-relance x 2) ;
+- joueur qui ouvre en min-raise trop large (open x 1,5).
+
+### 6.4 Postflop dans les pots limpés (priorité 3)
+
+Pour 15 à 25 BB, pots limpés heads-up et à trois : exports postflop HRC (flop, avec les ranges d'entrée) sur une sélection de textures de board. Le solveur postflop maison n'est pas encore assez précis pour servir de référence (`docs/solver/CONTROLE_ABSTRACTION.md`).
+
+### 6.5 ICM
+
+Les calculs restent en chip EV (décision du porteur du projet). Pour les gros multiplicateurs, où plusieurs places sont payées, il faudrait des calculs ICM séparés : hors périmètre actuel.

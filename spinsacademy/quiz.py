@@ -143,14 +143,35 @@ def pool(version, filters=None, excluded=frozenset()):
     return out
 
 
+EASY_MBB = 1000          # la première action sanctionnée coûte plus de 1 BB : question facile, tirée 4 fois moins souvent
+HARD_MBB = 200           # moins de 0,2 BB : question difficile
+EASY_WEIGHT = 0.25
+
+
+def lesson_gap(sp, hand):
+    """écart (mBB) de l'action sanctionnée la moins coûteuse ; None si toutes les actions sont acceptées (rien à apprendre)"""
+    ids = [a['id'] for a in sp['actions']]; gaps = []
+    for a in ids:
+        g = grading.grade(sp, hand, a)
+        if g['verdict'] != 'correct': gaps.append(g['regret_mbb'])
+    return min(gaps) if gaps else None
+
+
+def difficulty(gap):
+    if gap is None: return None
+    return 'facile' if gap > EASY_MBB else 'difficile' if gap < HARD_MBB else 'moyen'
+
+
 def _pick_hand(sp, exploit, rnd):
     hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
     if exploit:
         adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
         other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
         hands = adapt if adapt and (not other or rnd.random() < ADAPTATION_SHARE) else other
-    weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in hands]
-    return rnd.choices(hands, weights)[0]
+    gaps = {h: lesson_gap(sp, h) for h in hands}
+    useful = [h for h in hands if gaps[h] is not None] or hands       # une question où tout est accepté n'apprend rien
+    weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] * (EASY_WEIGHT if (gaps[h] or 0) > EASY_MBB else 1.0) for h in useful]
+    return rnd.choices(useful, weights)[0]
 
 
 def _use(sp, items, used, exploit):
@@ -164,16 +185,20 @@ def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=No
     excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent)"""
     rnd = random.Random(seed); items = pool(version, filters, excluded); exploit = is_exploit(version)
     if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
-    by_fam = {}
-    for sp in items: by_fam.setdefault(family(sp), []).append(sp)
-    order = []; used = set(); out = []
-    while len(out) < size:
-        if not order: order = list(by_fam); rnd.shuffle(order)
-        fam = order.pop()
-        choices = [sp for sp in by_fam[fam] if sp['spot_id'] not in used]
+    # rotation sur la position du joueur (BTN, SB, BB), puis sur la famille de décision : sans elle, le BB domine
+    by_pos = {}
+    for sp in items: by_pos.setdefault(sp['hero'], {}).setdefault(family(sp), []).append(sp)
+    pos_order = []; fam_order = {}; used = set(); out = []
+    while len(out) < size and by_pos:
+        if not pos_order: pos_order = sorted(by_pos); rnd.shuffle(pos_order)
+        pos = pos_order.pop(); fams = by_pos.get(pos)
+        if not fams: continue
+        if not fam_order.get(pos): fam_order[pos] = sorted(fams); rnd.shuffle(fam_order[pos])
+        fam = fam_order[pos].pop()
+        choices = [sp for sp in fams.get(fam, []) if sp['spot_id'] not in used]
         if not choices:
-            by_fam.pop(fam)
-            if not by_fam: break
+            fams.pop(fam, None)
+            if not fams: by_pos.pop(pos)
             continue
         sp = rnd.choice(choices); _use(sp, items, used, exploit)
         out.append((sp['spot_id'], _pick_hand(sp, exploit, rnd)))
@@ -202,10 +227,40 @@ def question(version, spot_id, hand):
     _, spots = load(version); sp = spots[spot_id]
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
-                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), mode='exploit' if sp.get('villain') else 'gto',
+                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), difficulty=difficulty(lesson_gap(sp, hand)), mode='exploit' if sp.get('villain') else 'gto',
                 villain=({k: sp['villain'][k] for k in ('position', 'stat', 'observed_pct', 'gto_pct')} if sp.get('villain') else None),
                 profile=(profiles.public(profiles.for_villain(sp['villain']), sp['villain']['gto_pct']) if sp.get('villain') else None),
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
+
+
+VERB_FR = {'fold': 'couche', 'check': 'checke', 'limp': 'limpe', 'call': 'paie', 'call_allin': 'paie', 'raise': 'relance', 'allin': 'pousse à tapis'}
+
+
+def range_grid(sp):
+    """stratégie de référence sur les 169 mains (grille 13 x 13) : pourcentages arrondis par action, et part de chaque action"""
+    acts = [dict(id=a['id'], type=a['type'], label_fr=action_label(sp, a)) for a in sp['actions']]
+    hands = {}; share = [0.0] * len(acts); tot = 0.0
+    for i, h in enumerate(NAMES):
+        x = sp['hands'][h]
+        if x.get('reach', 0) <= 0 or not x.get('freq'): continue
+        mix = dict(grading.displayed_mix(sp, h)); hands[h] = [mix.get(a['id'], 0) for a in acts]
+        m = W[i] * x['reach']; tot += m
+        for j, f in enumerate(x['freq']): share[j] += m * f
+    return dict(actions=acts, hands=hands, share_pct=[round(100 * v / tot) if tot else 0 for v in share])
+
+
+def why(sp, hand, ev, best, labels, grid):
+    """phrase « pourquoi », tirée des données : cote du pot et équité (call d'un tapis à EV exacte), sinon place de la main dans la stratégie"""
+    ids = [a['id'] for a in sp['actions']]; types = {a['id']: a['type'] for a in sp['actions']}
+    if sp['ev_reference'] == 'exact' and ids == ['F', 'C'] and types['C'] == 'call_allin' and sp['to_call_bb'] > 0:
+        call, final = sp['to_call_bb'], sp['pot_bb'] + sp['to_call_bb']
+        need = 100 * call / final; have = 100 * (ev[1] + call) / final
+        whose = 'la range de ce type de profil' if sp.get('villain') else 'sa range de tapis'
+        return [f"Pour payer, il faut {round(need)} % d'équité : {bb(call)} BB à payer pour un pot final de {bb(final)} BB.",
+                f"Contre {whose}, {hand} a {round(have)} % d'équité."]
+    j = ids.index(best); share = grid['share_pct'][j]
+    verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
+    return [f"Ici, la stratégie {verb} {share} % des mains ; {hand} en fait partie."]
 
 
 def correct(version, spot_id, hand, action_id):
@@ -219,7 +274,8 @@ def correct(version, spot_id, hand, action_id):
     base_id = 'F' if 'F' in ids else 'X'                     # référence : fold, ou check quand rien n'est à payer
     evb = ev[ids.index(best)] - ev[ids.index(base_id)]
     if best == base_id or abs(evb) < 0.005: lines = [f'Meilleure action : {labels[best]}.']
-    else: lines = [f"Meilleure action : {labels[best]} ({gain_bb(evb, signed=True)} par rapport au {'fold' if base_id == 'F' else 'check'})."]
+    else: lines = [f"Meilleure action : {labels[best]}, {gain_bb(evb, signed=True)} par rapport au {'fold' if base_id == 'F' else 'check'}."]
+    grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid)
     if action_id == best:
         lines.append('Tu as choisi la meilleure action.')
     else:
@@ -248,14 +304,14 @@ def correct(version, spot_id, hand, action_id):
                   choice_loss_fr=(gain_range(g['regret_mbb'] / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='écart net' if conf == 'élevée' else 'écart modéré',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
-        lines = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
+        lines = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}"] + because + [ex['comparison_fr'], ex['note_fr']]
         core = []
     else:
-        lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
+        lines += because                                         # la stratégie arrondie est affichée à part (barres et grille)
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
-                ev_source=g['ev_source'], exploit=ex, explanation_fr='\n'.join(lines),            # une phrase par ligne
+                ev_source=g['ev_source'], exploit=ex, why_fr=because, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core) if core is not None else None)
 
 

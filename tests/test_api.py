@@ -112,3 +112,28 @@ def test_gains_are_shown_in_bb_with_floor():
                 assert 'mBB' not in r['explanation_fr']
                 seen_small |= '<0,05 BB' in r['explanation_fr']
     assert seen_small
+
+
+def test_correction_has_grid_and_why():
+    _, spots = quiz.load()
+    seen = {'exact': 0, 'hrc': 0}
+    for sp in spots.values():
+        h = next((x for x, v in sp['hands'].items() if v['quiz_eligible']), None)
+        if not h: continue
+        r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, sp['actions'][0]['id'])
+        g = r['range']; assert len(g['actions']) == len(sp['actions']) and h in g['hands']
+        assert all(sum(v) == 100 for v in g['hands'].values()) and abs(sum(g['share_pct']) - 100) <= 2
+        assert r['why_fr'] and all(line in r['explanation_fr'] for line in r['why_fr'])
+        if 'équité' in r['why_fr'][0]: seen['exact'] += 1
+        else: seen['hrc'] += 1
+    assert seen['exact'] > 20 and seen['hrc'] > 100
+
+
+def test_draw_balances_positions_and_skips_no_lesson_hands():
+    import collections
+    _, spots = quiz.load(); pos = collections.Counter()
+    for seed in range(60):
+        for s, h in quiz.draw_series(quiz.DEFAULT_VERSION, None, 5, seed):
+            pos[spots[s]['hero']] += 1
+            assert quiz.lesson_gap(spots[s], h) is not None
+    assert min(pos.values()) >= 0.25 * sum(pos.values())

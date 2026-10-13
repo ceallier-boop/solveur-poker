@@ -41,11 +41,11 @@ def theme_css(css):
 SHIM = r"""
 // ---------------------------------------------------------------- moteur local (remplace l'API dans la version autonome)
 const DEMO = (() => {
-  let ITEMS = null;
+  let ITEMS = null; let GRIDS = {};
   const ready = (async () => {
     const bin = Uint8Array.from(atob(document.getElementById('demo-data').textContent.trim()), (c) => c.charCodeAt(0));
     const txt = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-    ITEMS = JSON.parse(txt);
+    const d = JSON.parse(txt); ITEMS = d.items; GRIDS = d.grids;
   })();
   const KEY = 'spinsacademy_demo_v1';
   let mem = null;
@@ -156,9 +156,10 @@ const DEMO = (() => {
       const s = db.sessions[body.session_id]; if (!s) return [404, { detail: 'session inconnue' }];
       const it = ITEMS[s.items[body.question_index]]; if (!it) return [404, { detail: 'question inconnue' }];
       const prev = s.answers[body.question_index];
-      if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { already_answered: true })] : [409, { detail: 'question déjà répondue' }];
-      const r = it.c[body.action_id]; if (!r) return [422, { detail: 'action non proposée' }];
-      s.answers[body.question_index] = Object.assign({ action_id: body.action_id }, r); save();
+      if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { range: GRIDS[it.q.spot_id] || null, already_answered: true })] : [409, { detail: 'question déjà répondue' }];
+      const r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
+      const r = Object.assign({}, r0, { range: GRIDS[it.q.spot_id] || null });
+      s.answers[body.question_index] = Object.assign({ action_id: body.action_id }, r0); save();       // sans la grille : stockage léger
       return [200, Object.assign({}, r, { already_answered: false })];
     }
     if (p === '/users/me/stats') return [200, stats()];
@@ -185,7 +186,10 @@ EXTRA_CSS = """
 def build(out, k_gto, k_exp):
     html = open(os.path.join(WEB, 'index.html')).read(); css = open(os.path.join(WEB, 'app.css')).read(); js = open(os.path.join(WEB, 'app.js')).read()
     data = items(quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT, k_gto, k_exp)
-    blob = base64.b64encode(gzip.compress(json.dumps(data, ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
+    grids = {}                                                    # grille de stratégie : une par spot, pas une par réponse
+    for it in data:
+        for r in it['c'].values(): grids[it['q']['spot_id']] = r.pop('range', None)
+    blob = base64.b64encode(gzip.compress(json.dumps(dict(items=data, grids=grids), ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
     body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
     body = re.sub(r'<script[^>]*></script>', '', body)
     gto, exp = quiz.load(quiz.DEFAULT_VERSION)[0]['version'], quiz.load(quiz.DEFAULT_EXPLOIT)[0]['version']
