@@ -1,5 +1,5 @@
 {
- "version": "1.3.0",
+ "version": "1.4.0",
  "date": "2026-10-13",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
@@ -90,7 +90,7 @@
     "tapis effectif",
     "profondeur"
    ],
-   "def": "Plus petit des tapis entre les joueurs encore dans le coup : c'est le maximum qu'on peut gagner ou perdre contre eux. La profondeur d'une situation est son tapis effectif en BB."
+   "def": "Pour toi : le plus petit entre ton tapis et le plus gros tapis adverse encore dans le coup. Contre un adversaire précis : le plus petit des deux tapis. C'est le maximum que tu peux gagner ou perdre ; la profondeur d'une situation est son tapis effectif en BB."
   },
   {
    "term": "Position",
@@ -321,7 +321,7 @@
     "cote du pot",
     "pot final"
    ],
-   "def": "Rapport entre ce qu'il faut payer et le pot final. Elle donne l'équité minimale pour qu'un call soit rentable : payer 7 BB pour un pot final de 16,5 BB demande 7 / 16,5 = 42 % d'équité. On la dit aussi sous forme de rapport : 9,5 BB à gagner contre 7 à payer, soit environ 1,4 contre 1."
+   "def": "Rapport entre le pot et ce qu'il faut payer : 9,5 BB à gagner contre 7 à payer, soit environ 1,4 contre 1. Elle donne l'équité minimale pour qu'un call soit rentable : payer 7 BB pour un pot final de 16,5 BB demande 7 / 16,5 = 42 % d'équité."
   },
   {
    "term": "Argent mort",
@@ -451,13 +451,12 @@
    "def": "Profil qui pousse beaucoup plus souvent que le GTO, avec une range plus large, donc en général moins forte : il faut payer beaucoup plus large. Badge ▲▲."
   },
   {
-   "term": "Station d'appel (Fish)",
+   "term": "Station d'appel",
    "cat": "profils",
    "match": [
-    "station",
-    "fish"
+    "station"
    ],
-   "def": "Joueur qui paie trop souvent. Pas encore couvert par les exercices."
+   "def": "Joueur qui paie trop souvent. C'est souvent un joueur faible (un « fish »), mais un fish n'est pas toujours une station d'appel. Pas encore couvert par les exercices."
   },
   {
    "term": "Shark",
@@ -502,16 +501,17 @@
     "imprécision",
     "erreur"
    ],
-   "def": "Bonne réponse : écart de 0,02 BB au plus avec la meilleure action, ou action de la stratégie mixte. Imprécision : écart de 0,06 BB au plus (actions de valeur proche). Erreur : au-delà. Points : 1, ½, 0."
+   "def": "Bonne réponse : écart de 0,02 BB au plus avec l'action la plus rentable, ou action jouée au moins 10 % du temps par la stratégie de référence. Imprécision : écart de 0,06 BB au plus. Erreur : au-delà. Points : 1, ½, 0."
   },
   {
    "term": "Stratégie de référence",
    "cat": "appli",
    "match": [
     "stratégie de référence",
+    "action de référence",
     "référence"
    ],
-   "def": "Ce que joue le solveur dans la situation, arrondi à 5 %. En mode exploitant, la référence est la meilleure action contre le profil."
+   "def": "Ce que joue le solveur dans la situation : les actions jouées au moins 10 % du temps, arrondies à 5 %. Quand l'EV est calculée exactement (calls de tapis), la référence est l'action la plus rentable. L'action de référence est celle que la stratégie joue le plus, à 0,06 BB près de la plus rentable. En mode exploitant : l'action la plus rentable contre le profil."
   },
   {
    "term": "<0,02 BB",
@@ -593,7 +593,7 @@
    "match": [
     "kicker"
    ],
-   "def": "Deuxième carte de la main, qui départage deux joueurs ayant la même paire. Un kicker faible expose à être dominé."
+   "def": "Carte qui départage deux mains de même combinaison. Avec deux paires d'As, AK bat AQ grâce au kicker K. Un kicker faible expose à être dominé."
   },
   {
    "term": "Tirage couleur",
@@ -642,6 +642,69 @@
     "décision serrée"
    ],
    "def": "Seuil : équité minimale pour qu'un call soit rentable (cote du pot). Écart : différence entre l'équité de la main et ce seuil, en points. Moins de 5 points : décision serrée ; 5 à 10 : écart moyen ; plus de 10 : écart large, décision de principe."
+  },
+  {
+   "term": "Open-shove",
+   "cat": "actions",
+   "match": [
+    "open-shove",
+    "pousser directement"
+   ],
+   "def": "Partir à tapis en premier, sans limp ni relance avant. À tapis court, c'est l'ouverture la plus courante."
+  },
+  {
+   "term": "Sur-relance à tapis (iso-shove)",
+   "cat": "actions",
+   "match": [
+    "iso-shove",
+    "sur-relance à tapis",
+    "par-dessus"
+   ],
+   "def": "Partir à tapis par-dessus un tapis ou une relance, pour faire coucher les joueurs derrière et jouer seul contre le premier."
+  },
+  {
+   "term": "Sur-call",
+   "cat": "actions",
+   "match": [
+    "sur-call",
+    "overcall"
+   ],
+   "def": "Payer après qu'un autre joueur a déjà payé. Il faut une main plus forte, car deux adversaires peuvent te battre."
+  },
+  {
+   "term": "Squeeze",
+   "cat": "actions",
+   "match": [
+    "squeeze"
+   ],
+   "def": "Relance (souvent à tapis) après une relance et un call : le relanceur et le payeur ont des ranges limitées, ils se couchent souvent."
+  },
+  {
+   "term": "Piège (slowplay)",
+   "cat": "calcul",
+   "match": [
+    "piège",
+    "slowplay"
+   ],
+   "def": "Jouer passivement une main très forte (par exemple compléter avec AA) pour laisser l'adversaire relancer ou partir à tapis avec des mains moins fortes."
+  },
+  {
+   "term": "Fold equity",
+   "cat": "calcul",
+   "match": [
+    "fold equity",
+    "se couche environ"
+   ],
+   "def": "Ce que rapporte le fait que l'adversaire se couche : en partant à tapis, tu gagnes souvent le pot sans abattage. Elle s'ajoute à ton équité quand il paie."
+  },
+  {
+   "term": "Équilibre de Nash (push/fold)",
+   "cat": "calcul",
+   "match": [
+    "nash",
+    "équilibre push/fold"
+   ],
+   "def": "Stratégie push/fold qu'aucun joueur ne peut améliorer seul : chaque tapis et chaque call sont la meilleure réponse à l'autre. Référence classique des tapis courts."
   }
  ]
 }

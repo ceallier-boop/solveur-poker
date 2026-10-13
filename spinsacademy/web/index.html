@@ -92,9 +92,9 @@
             <button type="button" data-value="maniac" aria-pressed="false">Maniaque</button>
           </div>
         </fieldset>
+        <p class="error" id="home-error" role="alert" tabindex="-1" hidden></p>
         <button class="primary" id="custom-start">Lancer cette série</button>
       </details>
-      <p class="error" id="home-error" role="alert" hidden></p>
     </section>
 
     <!-- Question -->
@@ -107,14 +107,16 @@
       <p class="chip-legend" id="chip-legend" aria-hidden="true"></p>
       <ol class="history" id="history" aria-label="Historique du coup"></ol>
       <p class="sr-only" id="prompt-full"></p>
-      <div class="actions" id="actions" role="group" aria-label="Ta décision"></div>
-      <p class="hint">Raccourcis clavier : 1, 2, 3, 4.</p>
+      <p class="ask" id="ask"></p>
+      <div class="actions" id="actions" role="group" aria-labelledby="ask"></div>
+      <p class="hint" id="kbd-hint"></p>
     </section>
 
     <!-- Correction -->
     <section id="screen-answer" class="screen" hidden aria-labelledby="a-verdict">
+      <div class="cards mini" id="a-cards" aria-hidden="true"></div>
       <p class="recap" id="a-recap"></p>
-      <div class="verdict" id="a-verdict" tabindex="-1"></div>
+      <div class="verdict" id="a-verdict" tabindex="-1" role="status"></div>
       <p class="choice" id="a-choice"></p>
       <h3 id="a-strategy-title">Stratégie de référence</h3>
       <div class="strategy" id="a-strategy"></div>
@@ -126,7 +128,7 @@
         <div class="why" id="a-why"></div>
       </details>
       <details class="reveal" id="a-next-box">
-        <summary>Et ensuite ?</summary>
+        <summary>Cette main après le flop</summary>
         <div class="next" id="a-next"></div>
       </details>
       <details class="reveal grid-box" id="a-grid-box">

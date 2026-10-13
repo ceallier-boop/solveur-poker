@@ -3,6 +3,7 @@
 Barème (cahier des charges §4.2), sur l'EV de référence du spot (exacte ou HRC, voir importer) :
   - regret = EV de la meilleure action - EV de l'action choisie, en mBB ;
   - « correct »   : regret <= TOLERANCE_MBB, ou action jouée au moins MIXED_MIN de la fois par la stratégie de référence
+                    (EV exacte : la stratégie de référence est pure, l'action la plus rentable)
                     (stratégie mixte : jamais sanctionnée ; l'importeur 1.2.0 ne propose que des mains où ces actions
                     perdent au plus 60 mBB, donc fréquences et EV concordent) ;
   - « imprécision » : regret <= 3 x TOLERANCE_MBB (actions de valeur proche) ;
@@ -21,11 +22,21 @@ def reference_ev(spot, hand):
     return h['ev_exact'] if spot['ev_reference'] == 'exact' else h['ev_hrc']
 
 
+def reference_freq(spot, hand):
+    """fréquences de la stratégie de référence. EV exacte : stratégie pure, l'action la plus rentable (le calcul exact fait
+    foi, les fréquences HRC n'en sont qu'une approximation) ; sinon les fréquences HRC."""
+    h = spot['hands'][hand]
+    if spot['ev_reference'] == 'exact' and h.get('ev_exact') and None not in h['ev_exact']:
+        ev = h['ev_exact']; top = max(range(len(ev)), key=lambda k: ev[k])
+        return [1.0 if k == top else 0.0 for k in range(len(ev))]
+    return h['freq']
+
+
 def grade(spot, hand, action_id):
     if not spot['hands'][hand].get('quiz_eligible', True): raise ValueError(f'{hand} n\'est pas proposable dans ce spot (atteinte ou données HRC incohérentes)')
     ids = [a['id'] for a in spot['actions']]
     if action_id not in ids: raise ValueError(f"action {action_id!r} non proposée dans ce spot ({ids})")
-    j = ids.index(action_id); ev = reference_ev(spot, hand); freq = spot['hands'][hand]['freq']
+    j = ids.index(action_id); ev = reference_ev(spot, hand); freq = reference_freq(spot, hand)
     best = max(range(len(ev)), key=lambda k: ev[k])
     regret = 1000 * (ev[best] - ev[j])
     mixed_ok = freq[j] >= MIXED_MIN
@@ -40,7 +51,7 @@ def displayed_mix(spot, hand, step=DISPLAY_STEP):
     """fréquences affichées : seules les actions jouées au moins MIXED_MIN de la fois (celles que la correction accepte),
     renormalisées puis arrondies au pas `step`, de somme 100 (méthode du plus fort reste). Ainsi une action affichée
     est toujours acceptée, et une action non affichée n'est jamais présentée comme jouée."""
-    freq = spot['hands'][hand]['freq']; units = 100 // step
+    freq = reference_freq(spot, hand); units = 100 // step
     kept = [f if f >= MIXED_MIN else 0.0 for f in freq]
     if not any(kept): kept = [1.0 if f == max(freq) else 0.0 for f in freq]
     tot = sum(kept); raw = [f / tot * units for f in kept]; base = [int(x) for x in raw]

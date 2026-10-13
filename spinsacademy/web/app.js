@@ -73,7 +73,8 @@ async function start(f) {
     await next();
   } catch (e) {
     loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.' : e.message;
-    $('home-error').hidden = false;
+    $('filters').open = true; $('home-error').hidden = false;
+    $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
   }
 }
 
@@ -109,10 +110,9 @@ function renderTable(q) {
     const seat = document.createElement('div');
     seat.className = 'seat' + (i === hero ? ' hero' : '') + (folded[i] ? ' folded' : '');
     seat.style.left = x + '%'; seat.style.top = y + '%';
-    const left = q.stacks_bb[i] - c[i];
     const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
     const tag = q.profile && q.villain && q.villain.position === q.players[i] ? pbadge(q.profile, true) : '';   // profil du vilain à sa place
-    seat.innerHTML = tag + backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
+    seat.innerHTML = tag + backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(q.stacks_bb[i])} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
     view.appendChild(seat);
     if (c[i] > 0 && kind[i]) view.appendChild(chip(kind[i], c[i], ...chips[k]));     // un joueur couché laisse sa mise devant lui
   }
@@ -122,8 +122,8 @@ function renderTable(q) {
   const hole = document.createElement('div'); hole.className = 'cards hole'; hole.id = 'hero-cards'; view.appendChild(hole);   // tes cartes, devant ta place
 }
 
-function renderCards(display) {
-  const box = $('hero-cards'); box.innerHTML = ''; const names = [];
+function renderCards(display, id = 'hero-cards') {
+  const box = $(id); box.innerHTML = ''; const names = [];
   const cards = [...display.matchAll(/([2-9TJQKA])([♠♥♦♣])/g)];
   for (const [, r, s] of cards) {
     const el = document.createElement('div'); const k = SUIT[s];
@@ -144,6 +144,8 @@ function renderQuestion(data) {
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
+  $('ask').textContent = `Avec ${q.hand_display.replace(/([♥♦])/g, '$1\uFE0E')}, que fais-tu ?`;
+  $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;
   if (v) {
@@ -192,13 +194,15 @@ async function answer(id) {
 function renderAnswer(r) {
   const [cls, title] = VERDICT[r.verdict]; const ex0 = !!r.exploit;
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
-  const sub = r.chosen_label === r.best_label ? 'Meilleure action jouée.' : ex0 ? `Meilleure action : ${r.best_label}` : '';
-  v.innerHTML = title + (sub ? `<small>${sub}</small>` : '');   // GTO : la meilleure action est dans l'explication
+  const sub = r.chosen_label === r.best_label ? `Tu as joué l'action de référence : ${r.best_label}.`
+    : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nRéférence : ${r.best_label}`;
+  v.innerHTML = title + `<small>${sub}</small>`;
+  renderCards(state.q.hand_display, 'a-cards');
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').split('\n').filter((l) => !l.startsWith('Profil fictif')).join('\n');
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
-    `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
+    `<div class="srow${s.id === r.best_action ? ' best' : ''}${s.chosen ? ' mine' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
   const ex = r.exploit; $('a-exploit').hidden = !ex;
   for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!ex;   // exploitant : correction courte
   if (ex) {
@@ -221,12 +225,12 @@ function renderNext(n) {
   $('a-next-box').hidden = !n; $('a-next-box').open = false; if (!n) return;
   const p100 = (x) => Math.round(100 * x);
   const top = Math.max(...(n.metrics || []).map((m) => Math.max(m.value, m.average)), 0.01);
-  const TAG = { above: '▲ au-dessus', below: '▼ en dessous', equal: '= dans' };
+  const TAG = { above: '▲ au-dessus de la moyenne', below: '▼ en dessous de la moyenne', equal: '= dans la moyenne' };
   const rows = (n.metrics || []).map((m) => `<div class="mrow ${m.compare} ${m.tone || (m.compare === 'above' ? 'good' : m.compare === 'below' ? 'bad' : 'neutral')}">
       <span class="mlabel">${m.label_fr}</span>
       <span class="mtrack"><i style="width:${(100 * m.value / top).toFixed(1)}%"></i><b style="left:${(100 * m.average / top).toFixed(1)}%" title="moyenne"></b></span>
       <span class="mval">${p100(m.value)} %</span>
-      <span class="mtag">${TAG[m.compare]} de la moyenne (${p100(m.average)} %)</span></div>`).join('');
+      <span class="mtag">${TAG[m.compare]} (${p100(m.average)} %)</span></div>`).join('');
   const list = (xs, cls, title) => (xs && xs.length ? `<h4 class="${cls}">${title}</h4><ul class="${cls}">${xs.map((x) => `<li>${x}</li>`).join('')}</ul>` : '');
   $('a-next').innerHTML = `<p>${n.intro}</p>` + (n.position ? `<p class="pos">${n.position}</p>` : '')
     + (rows ? `<div class="metrics"><p class="mhead">Au flop, comparé à la moyenne ${n.metrics[0].reference_fr} (repère vertical) :</p>${rows}</div>` : '')
@@ -241,13 +245,14 @@ function renderGrid(range, hand, exploit) {
   for (let r = 0; r < 13; r++) {
     for (let c = 0; c < 13; c++) {
       const h = r === c ? RANKS[r] + RANKS[c] : r < c ? RANKS[r] + RANKS[c] + 's' : RANKS[c] + RANKS[r] + 'o';
-      const mix = range.hands[h]; let bg = 'var(--line)';
+      const mix = range.hands[h]; let bg = 'var(--line)'; let light = false;
       if (mix) {
         let at = 0; const stops = [];
         acts.forEach((a, j) => { if (mix[j] > 0) { stops.push(`${ACT_COLOR[a.type]} ${at}% ${at + mix[j]}%`); at += mix[j]; } });
         bg = `linear-gradient(90deg, ${stops.join(', ')})`;
+        const main = mix.indexOf(Math.max(...mix)); light = ['fold', 'raise'].includes(acts[main].type);
       }
-      cells.push(`<span class="${h === hand ? 'me' : ''}${mix ? '' : ' out'}" style="background:${bg}">${h}</span>`);
+      cells.push(`<span class="${h === hand ? 'me' : ''}${mix ? '' : ' out'}${light ? ' lt' : ''}" style="background:${bg}">${h}</span>`);
     }
   }
   $('a-grid').innerHTML = cells.join('');
@@ -255,6 +260,11 @@ function renderGrid(range, hand, exploit) {
   $('a-grid-title').textContent = exploit ? 'Voir la décision contre ce type de profil sur toutes les mains' : 'Voir la stratégie sur toutes les mains';
   $('a-grid-legend').innerHTML = acts.map((a, j) => `<span><i style="background:${ACT_COLOR[a.type]}"></i>${a.label_fr} ${range.share_pct[j]} %</span>`).join('')
     + '<span><i class="me-key"></i>ta main</span>';
+  const mine = range.hands[hand];
+  const me = $('a-grid-me') || Object.assign(document.createElement('p'), { id: 'a-grid-me', className: 'grid-me' });
+  me.textContent = mine ? `${hand} : ` + acts.map((a, j) => (mine[j] ? `${a.label_fr} ${mine[j]} %` : '')).filter(Boolean).join(', ') : '';
+  $('a-grid').after(me);
+  $('a-grid').setAttribute('aria-label', `Grille des 169 mains. ` + acts.map((a, j) => `${a.label_fr} : ${range.share_pct[j]} % des mains`).join(', ') + `. ${me.textContent}`);
 }
 
 // ------------------------------------------------------------------ signalement d'une question
@@ -285,7 +295,7 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Mieux : <b>${e.best}</b> (${gainBB(e.regret_mbb)} de moins)</li>`).join('')
+    ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Référence : <b>${e.best}</b> (${e.loss_fr || gainBB(e.regret_mbb)} de moins)</li>`).join('')
     : '<li>Aucune erreur sur cette série.</li>';
   show('summary');
 }
@@ -307,7 +317,7 @@ async function stats() {
     for (const id of ['st-evolution', 'st-weakest', 'st-themes', 'st-recurring']) $(id).innerHTML = '';
     $('st-note').textContent = ''; show('stats'); return;
   }
-  $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} séries</small>`;
+  $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`;
   $('st-evolution').innerHTML = s.evolution.length > 1
     ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
     : '<span>L\'évolution s\'affiche après deux séries.</span>';
@@ -390,7 +400,16 @@ $('lex-btn').addEventListener('click', () => openLex().catch((e) => alert(e.mess
 $('lex-close').addEventListener('click', closeLex);
 $('lex').addEventListener('click', (e) => { if (e.target === $('lex')) closeLex(); });
 $('lex-search').addEventListener('input', () => renderLex());
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('lex').hidden) closeLex(); });
+document.addEventListener('keydown', (e) => {
+  if ($('lex').hidden) return;
+  if (e.key === 'Escape') { closeLex(); return; }
+  if (e.key !== 'Tab') return;                                       // fenêtre modale : le focus reste dans le lexique
+  const f = [...$('lex').querySelectorAll('button, input, [href], [tabindex]:not([tabindex="-1"])')].filter((x) => !x.hidden && x.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+  else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+});
 
 // ------------------------------------------------------------------ navigation
 $('stats-btn').addEventListener('click', () => stats().catch((e) => alert(e.message)));
@@ -402,8 +421,15 @@ $('st-delete').addEventListener('click', async () => {
 $('quick-start').addEventListener('click', () => start({}));
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
   exploit: 'Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui poussent moins ou plus souvent que le GTO. Hypothèses de simulation, pas de vrais joueurs.' };
+const EXPLOIT_FAMILIES = ['', 'vs_allin'];                          // le mode exploitant ne couvre que les calls de tapis
 document.querySelector('.mode-switch').addEventListener('click', () => {
   $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';
+  const ex = mode() === 'exploit'; const fam = document.querySelector('.chips[data-name="family"]');
+  for (const b of fam.querySelectorAll('button')) {
+    const off = ex && !EXPLOIT_FAMILIES.includes(b.dataset.value);
+    b.setAttribute('aria-disabled', String(off));
+    if (off && b.getAttribute('aria-pressed') === 'true') { b.setAttribute('aria-pressed', 'false'); fam.querySelector('[data-value=""]').setAttribute('aria-pressed', 'true'); }
+  }
 });
 $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);

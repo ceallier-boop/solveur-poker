@@ -35,7 +35,8 @@ def is_exploit(ref): return ref.startswith('exploit_')
 def load(version=DEFAULT_VERSION):
     d = ref_path(version)
     spots = [json.loads(l) for l in open(os.path.join(d, 'spots.jsonl'))]
-    return json.load(open(os.path.join(d, 'manifest.json'))), {s['spot_id']: s for s in spots}
+    by_id = {s['spot_id']: s for s in spots}; _index_nodes(by_id)
+    return json.load(open(os.path.join(d, 'manifest.json'))), by_id
 
 
 def family(sp):
@@ -60,22 +61,27 @@ NEAR_BB = 0.005                   # autour de la limite d'imprécision : 3 déci
 
 
 def gain_bb(x, signed=False):
-    """montant de gain ou de perte affiché au joueur, toujours en BB"""
+    """montant de gain ou de perte affiché au joueur, toujours en BB. Les bornes suivent la notation : jusqu'à 0,02 BB
+    compris « <0,02 BB » (accepté) ; tout près de 0,06 BB, on dit de quel côté on est (imprécision jusqu'à 0,06 inclus)."""
     a = abs(x)
-    if a < GAIN_MIN_BB: s = f'<{bb(GAIN_MIN_BB)} BB'
-    elif abs(a - IMPRECISION_BB) < NEAR_BB: s = f'{a:.3f} BB'.replace('.', ',')
+    if a <= GAIN_MIN_BB + 1e-12: s = f'<{bb(GAIN_MIN_BB)} BB'
+    elif a - GAIN_MIN_BB < 0.0005: s = f'un peu plus de {bb(GAIN_MIN_BB)} BB'
+    elif abs(a - IMPRECISION_BB) < 0.0005: s = f"un peu {'plus' if a > IMPRECISION_BB + 1e-12 else 'moins'} de {bb(IMPRECISION_BB)} BB"
+    elif abs(a - IMPRECISION_BB) < NEAR_BB or a - GAIN_MIN_BB < NEAR_BB: s = f'{a:.3f} BB'.replace('.', ',')
     else: s = f'{bb(a)} BB'
     return (('+' if x >= 0 else '−') + s) if signed else s
+
 
 RANGE_BOUNDS_BB = (GAIN_MIN_BB, IMPRECISION_BB, 0.5, 1, 2, 5)
 
 
 def gain_range(x):
-    """fourchette d'un montant (valeur absolue, en BB) : mode exploitant, où l'hypothèse de profil rend un montant exact trompeur"""
+    """fourchette d'un montant (valeur absolue, en BB) : mode exploitant, où l'hypothèse de profil rend un montant exact trompeur.
+    Les deux premières bornes sont incluses dans la fourchette du dessous, comme dans la notation."""
     x = abs(x); b = RANGE_BOUNDS_BB
-    if x < b[0]: return f'moins de {bb(b[0])} BB'
+    if x <= b[0] + 1e-12: return f'moins de {bb(b[0])} BB'
     for lo, hi in zip(b, b[1:]):
-        if x < hi: return f'entre {bb(lo)} et {bb(hi)} BB'
+        if x < hi or (hi == IMPRECISION_BB and x <= hi + 1e-12): return f'entre {bb(lo)} et {bb(hi)} BB'
     return f'plus de {bb(b[-1])} BB'
 
 
@@ -111,6 +117,14 @@ def opponents_in(sp):
     return [p for p in sp['players'] if p != sp['hero'] and p not in folded]
 
 
+def stack_of(sp, pos): return sp['stacks_bb'][sp['players'].index(pos)]
+
+
+def hero_effective(sp):
+    """tapis effectif du joueur : le plus petit entre son tapis et le plus gros tapis adverse encore dans le coup"""
+    return min(stack_of(sp, sp['hero']), max(stack_of(sp, p) for p in opponents_in(sp)))
+
+
 def action_label(sp, a):
     t = a['type']; to = a.get('to_bb')
     if t == 'fold': return 'Fold'
@@ -119,22 +133,25 @@ def action_label(sp, a):
     if t == 'call': return f"Payer ({bb(call_terms(sp)[0])} BB de plus)"
     if t == 'call_allin': return f"Payer le tapis ({bb(call_terms(sp)[0])} BB de plus)"
     if t == 'raise': return f'Relancer à {bb1(to)} BB'
-    eff = sp['effective_stack_bb']
+    eff = hero_effective(sp)
     return f'Tapis ({bb(to)} BB, {bb(eff)} BB effectifs)' if to > eff + 1e-9 else f'Tapis ({bb(to)} BB)'
 
 
 def history_text(sp):
-    out = []; mine = sp['stacks_bb'][sp['players'].index(sp['hero'])]
+    """historique ; le joueur à la 2e personne ; un tapis plus gros que le tien est dit en BB effectifs"""
+    out = []; mine = stack_of(sp, sp['hero'])
     for h in sp['history']:
-        p = h['position']; a = h['action']; to = h.get('to_bb')
-        if a == 'fold': out.append(f'Le {p} se couche')
-        elif a == 'check': out.append(f'Le {p} checke')
-        elif a == 'limp': out.append(f"Le {p} {'complète' if p == 'SB' else 'limpe'}")
-        elif a == 'call': out.append(f'Le {p} paie {bb(to)} BB')
-        elif a == 'call_allin': out.append(f'Le {p} paie le tapis')
-        elif a == 'raise': out.append(f'Le {p} relance à {bb1(to)} BB')
-        elif to is not None and to > mine: out.append(f'Le {p} part à tapis ({bb(to)} BB, soit {bb(mine)} BB effectifs)')   # tapis qui te couvre
-        else: out.append(f'Le {p} part à tapis ({bb(to)} BB)')
+        p = h['position']; a = h['action']; to = h.get('to_bb'); me = p == sp['hero']
+        if a == 'fold': out.append('Tu te couches' if me else f'Le {p} se couche')
+        elif a == 'check': out.append('Tu checkes' if me else f'Le {p} checke')
+        elif a == 'limp': out.append(('Tu complètes' if p == 'SB' else 'Tu limpes') if me else f"Le {p} {'complète' if p == 'SB' else 'limpe'}")
+        elif a == 'call': out.append(f'Tu paies {bb(to)} BB' if me else f'Le {p} paie {bb(to)} BB')
+        elif a == 'call_allin': out.append('Tu paies le tapis' if me else f'Le {p} paie le tapis')
+        elif a == 'raise': out.append(f'Tu relances à {bb1(to)} BB' if me else f'Le {p} relance à {bb1(to)} BB')
+        elif me: out.append(f'Tu pars à tapis ({bb(to)} BB)')
+        else:
+            full = stack_of(sp, p)
+            out.append(f'Le {p} part à tapis ({bb(full)} BB, soit {bb(mine)} BB effectifs)' if full > mine + 1e-9 else f'Le {p} part à tapis ({bb(full)} BB)')
     return out
 
 
@@ -165,8 +182,9 @@ def candidates(spots, filters=None):
         if f.get('min_stack') is not None and eff < f['min_stack']: continue
         if f.get('max_stack') is not None and eff > f['max_stack']: continue
         if f.get('profile') and (profiles.for_villain(sp.get('villain')) or {}).get('id') != f['profile']: continue
+        if eff < MIN_STACK_BB: continue                            # périmètre : de 4 à 25 BB
         if sp.get('villain') and not adapts(sp): continue          # mode exploitant : le profil ne change pas la part de calls
-        if sp['eligible_hands'] > 0: out.append(sp)
+        if sp['eligible_hands'] > 0 and teachable(sp): out.append(sp)
     return out
 
 
@@ -214,8 +232,29 @@ def difficulty(gap):
     return 'facile' if gap > EASY_MBB else 'difficile' if gap < HARD_MBB else 'moyen'
 
 
+MIN_STACK_BB = 4
+HRC_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 90e centile ≈ 250 mBB (relecture du 2026-10-13)
+_TEACH = {}
+
+
+def teachable(sp):
+    """mains proposables dont la leçon dépasse le bruit du calcul : une action sanctionnée existe et, sur une EV HRC,
+    la moins chère coûte au moins HRC_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
+    questions dont le verdict tiendrait dans l'imprécision de HRC."""
+    k = id(sp)
+    if k not in _TEACH:
+        floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
+        out = []
+        for h in NAMES:
+            if not sp['hands'][h].get('quiz_eligible'): continue
+            g = lesson_gap(sp, h)
+            if g is not None and g >= floor: out.append(h)
+        _TEACH[k] = (sp, out)                                      # garder sp : l'identifiant reste valable
+    return _TEACH[k][1]
+
+
 def _pick_hand(sp, exploit, rnd):
-    hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
+    hands = list(teachable(sp))
     if exploit:
         adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
         other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
@@ -287,6 +326,10 @@ def question(version, spot_id, hand):
 
 VERB_FR = {'fold': 'se couche', 'check': 'checke', 'limp': 'limpe', 'call': 'paie', 'call_allin': 'paie', 'raise': 'relance', 'allin': 'part à tapis'}
 BASE_FR = 'des mains qui arrivent à cette décision'
+REF_PLAYER_FR = 'un joueur GTO'  # mode exploitant : la référence à laquelle le profil est comparé
+REF_COMPARE_FR = 'En GTO'
+REF_SAME_FR = "qu'en GTO"
+REF_SHORT_FR = 'GTO'
 
 
 def range_grid(sp):
@@ -298,7 +341,7 @@ def range_grid(sp):
         if x.get('reach', 0) <= 0 or not x.get('freq'): continue
         mix = dict(grading.displayed_mix(sp, h)); hands[h] = [mix.get(a['id'], 0) for a in acts]
         m = W[i] * x['reach']; tot += m
-        for j, f in enumerate(x['freq']): share[j] += m * f
+        for j, f in enumerate(grading.reference_freq(sp, h)): share[j] += m * f
     return dict(actions=acts, hands=hands, share_pct=[round(100 * v / tot) if tot else 0 for v in share])
 
 
@@ -335,14 +378,87 @@ CHEAP_BB = IMPRECISION_BB        # « coûte peu » seulement en dessous de la l
 NEAR_POINTS = 2                   # « à la limite » : mains à moins de 2 points d'équité du seuil
 
 
-def why(sp, hand, ev, best, labels, grid, chosen=None, accepted=False):
+def _pct_eq(v, need):
+    """équité affichée à une décimale, ou deux quand elle tomberait sur la même valeur que le seuil"""
+    return (f"{100 * v:.2f} %" if round(100 * v, 1) == round(100 * need, 1) else f"{100 * v:.1f} %").replace('.', ',')
+
+
+def _token(sp, a):
+    t = a['type']
+    return {'fold': 'fold', 'check': 'check', 'limp': 'call', 'call': 'call', 'call_allin': 'call', 'allin': 'allin'}.get(t) or f"raise{a['to_bb']:g}"
+
+
+def fold_equity(sp, aid):
+    """probabilité (environ, sans retrait de cartes) que tous les adversaires se couchent après l'action aid, tirée des
+    spots suivants du même dataset ; None si un de ces spots manque"""
+    spots = _BY_NODE.get(id(sp))
+    if spots is None: return None
+    a = next(x for x in sp['actions'] if x['id'] == aid)
+    key = (sp['node_key'] + '_' if sp['node_key'] != 'root' else '') + f"{sp['hero']}-{_token(sp, a)}"
+    p = 1.0
+    for _ in opponents_in(sp):
+        nxt = spots.get((tuple(sp['stacks_bb']), key))
+        if nxt is None: return None
+        ids = [x['id'] for x in nxt['actions']]
+        if 'F' not in ids: return None
+        p *= range_grid(nxt)['share_pct'][ids.index('F')] / 100
+        key += f"_{nxt['hero']}-fold"
+        if key.count('_') + 1 >= len(sp['players']): break
+    return p
+
+
+_BY_NODE = {}
+
+
+def _index_nodes(spots):
+    idx = {(tuple(x['stacks_bb']), x['node_key']): x for x in spots.values()}
+    for x in spots.values(): _BY_NODE[id(x)] = idx
+
+
+PREMIUM_VSR = 0.70                # au-dessus : main très forte (AA à 99, AK) pour la phrase « piège »
+
+
+def principle(sp, hand, best, labels):
+    """une phrase de principe, tirée des données quand c'est possible : pourquoi cette action plutôt qu'une autre"""
+    t = {a['id']: a['type'] for a in sp['actions']}[best]; eff = hero_effective(sp); fam = family(sp)
+    strong = float(_VSR()[NAMES.index(hand)]) >= PREMIUM_VSR
+    if t in ('allin', 'raise'):
+        fe = fold_equity(sp, best); who = 'tout le monde se couche' if len(opponents_in(sp)) > 1 else "l'adversaire se couche"
+        if t == 'allin':
+            if to_act_after(sp) and fam == 'vs_allin':
+                return "Partir à tapis par-dessus fait coucher le joueur derrière : tu joues seul contre le premier tapis, avec le pot mort en plus."
+            return (f"Ton tapis met la pression maximale : {who} environ {round(100 * fe)} % du temps et tu prends le pot sans abattage ; sinon, il te reste ton équité."
+                    if fe is not None else f"À {bb(eff)} BB, partir à tapis met la pression maximale : il faut payer tout son tapis pour voir le flop.")
+        return (f"Relancer construit le pot avec une main qui joue bien : {who} environ {round(100 * fe)} % du temps, et sinon tu gardes l'initiative."
+                if fe is not None else "Relancer construit le pot avec une main qui joue bien, et garde l'initiative après le flop.")
+    if t == 'limp':
+        if strong: return "Avec une main très forte, compléter sert de piège : l'adversaire relancera ou partira à tapis avec des mains moins fortes."
+        return ("Compléter ne coûte que 0,5 BB : la main vaut un flop bon marché, sans payer une relance trop chère." if sp['hero'] == 'SB' else
+                "Limper ne coûte que 1 BB : la main vaut un flop bon marché, sans s'exposer seule à une relance.")
+    if t == 'check':
+        return "Tu vois le flop gratuitement : relancer ferait surtout coucher les mains que tu domines et garder celles qui te battent."
+    if t == 'call':
+        call, final = call_terms(sp)
+        return f"Payer {bb(call)} BB pour un pot de {bb(final)} BB : la cote est bonne, et la main joue assez bien après le flop pour ne pas tout risquer maintenant."
+    if t == 'call_allin':
+        return "Ton équité contre sa range dépasse ce que demande la cote du pot : payer rapporte plus que se coucher."
+    if fam == 'vs_allin':
+        return "Ton équité contre sa range ne suffit pas pour la cote du pot : payer perdrait des jetons à long terme."
+    if fam == 'vs_raise':
+        return "Face à une relance, la main est trop souvent dominée ou hors de la cote : se coucher évite de perdre davantage."
+    return ("Avec des joueurs encore à parler derrière, la main gagne trop rarement quand elle est payée : se coucher ne coûte que ce qui est déjà misé."
+            if to_act_after(sp) else "La main ne rapporte pas assez par rapport au risque : aucune action ne fait mieux que se coucher.")
+
+
+def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
     """« pourquoi », tiré des données : calcul, marge, limites de la décision.
-    best : l'action de référence affichée ; accepted : la réponse du joueur est acceptée (verdict « correct »).
+    best : l'action de référence affichée ; verdict : celui de la réponse du joueur.
     Call d'un tapis à EV exacte : cote du pot, équité de la main, marge en points, mains qui paient ou se couchent tout juste.
-    Ailleurs : part de la stratégie, deuxième option, jeu mixte, mains jouées en mixte."""
+    Ailleurs : part de la stratégie, autre option, jeu mixte, mains jouées en mixte."""
     ids = [a['id'] for a in sp['actions']]; types = {a['id']: a['type'] for a in sp['actions']}
-    exploit = bool(sp.get('villain')); out = []
+    exploit = bool(sp.get('villain')); out = []; accepted = verdict == 'correct'
     money = (lambda x: gain_range(x)) if exploit else (lambda x: gain_bb(x))
+    top = ids[max(range(len(ev)), key=lambda k: ev[k])]
     if sp['ev_reference'] == 'exact' and ids == ['F', 'C'] and types['C'] == 'call_allin' and sp['to_call_bb'] > 0:
         call, final = call_terms(sp); need = call / final
         eq = {}
@@ -351,40 +467,40 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, accepted=False):
             if e is not None and x.get('reach', 0) > 0: eq[h] = (e + call) / final
         have = eq[hand]; margin = round(round(100 * have, 1) - round(100 * need, 1), 1)   # cohérent avec les valeurs affichées
         out.append(f"Cote du pot : {bb(call)} BB à payer pour un pot final de {bb(final)} BB, il faut {_pct1(need)} d'équité pour payer.")
-        out.append(f"Contre {'sa range' if exploit else 'sa range de tapis'}, {hand} a {_pct1(have)} d'équité : "   # le gain est déjà donné par la ligne principale
-                   + (f"marge de {_points(margin)} au-dessus du seuil." if margin >= 0 else f"{_points(-margin)} sous le seuil."))
+        out.append(f"Contre {'sa range' if exploit else 'sa range de tapis'}, {hand} a {_pct_eq(have, need)} d'équité : "   # le gain est déjà dans la ligne principale
+                   + ("pile au seuil." if margin == 0 else f"marge de {_points(margin)} au-dessus du seuil." if margin > 0 else f"{_points(-margin)} sous le seuil."))
         best_choice = chosen is None or chosen == best; act = to_do(sp, best)
-        loss = 0.0 if best_choice else ev[ids.index(best)] - ev[ids.index(chosen)]
         right = best_choice or accepted
+        stake = ('soit ' if exploit else 'soit environ ') + f"{money(abs(ev[1]))} sur ce pot"   # les points d'équité, convertis en BB (= EV du call)
         if abs(margin) < 5:
-            out.append("Décision serrée (moins de 5 points d'écart) : " + (
+            out.append(f"Décision serrée (moins de 5 points d'équité, {stake}) : " + (
                 "bien vu, mais un petit changement de range adverse ou de tapis peut la renverser." if best_choice else
                 f"ton choix coûte moins de {bb(GAIN_MIN_BB)} BB, il est accepté ; retiens surtout le seuil d'équité, c'est lui qui tranche." if accepted else
-                ("ton erreur coûte peu" if loss < CHEAP_BB else f"même serrée, ton erreur coûte {money(loss)}") + " ; retiens surtout le seuil d'équité, c'est lui qui tranche."))
+                "retiens surtout le seuil d'équité, c'est lui qui tranche."))
         elif abs(margin) <= 10:
-            out.append("Écart moyen (5 à 10 points) : " + ("la décision est claire dès que tu estimes bien la range adverse." if right else
-                       f"il fallait {act}, ton erreur coûte {money(loss)} ; l'écart est assez grand pour ne pas hésiter si tu estimes bien la range adverse."))
+            out.append(f"Écart moyen (5 à 10 points, {stake}) : " + ("la décision est claire dès que tu estimes bien la range adverse." if right else
+                       f"il fallait {act} ; l'écart est assez grand pour ne pas hésiter si tu estimes bien la range adverse."))
         else:
-            out.append("Écart large (plus de 10 points) : " + ("c'est une décision de principe, à prendre sans hésiter." if right else
-                       f"erreur nette ({money(loss)}), il fallait {act} sans hésiter, la main est loin du seuil."))
+            out.append(f"Écart large (plus de 10 points, {stake}) : " + ("c'est une décision de principe, à prendre sans hésiter." if right else
+                       f"erreur nette, il fallait {act} sans hésiter, la main est loin du seuil."))
         near = {h: v for h, v in eq.items() if abs(v - need) <= NEAR_POINTS / 100 and h != hand}
         callers = sorted((v, h) for h, v in near.items() if v >= need); folders = sorted(((v, h) for h, v in near.items() if v < need), reverse=True)
         if callers or folders:
             out.append(f'À la limite (seuil {_pct1(need)}, à {NEAR_POINTS} points près), '
-                       + ' ; '.join(x for x in (('paient encore : ' + ', '.join(f'{h} ({_pct1(v)})' for v, h in callers[:3])) if callers else '',
-                                                 ('se couchent déjà : ' + ', '.join(f'{h} ({_pct1(v)})' for v, h in folders[:3])) if folders else '') if x) + '.')
+                       + ' ; '.join(x for x in (('paient encore : ' + ', '.join(f'{h} ({_pct_eq(v, need)})' for v, h in callers[:3])) if callers else '',
+                                                 ('se couchent déjà : ' + ', '.join(f'{h} ({_pct_eq(v, need)})' for v, h in folders[:3])) if folders else '') if x) + '.')
         else:
             out.append(f'Aucune main à moins de {NEAR_POINTS} points du seuil : la frontière est nette.')
         mass = lambda f: sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq if f(h)) / max(sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq), 1e-12)
         share = mass(lambda h: eq[h] >= need)
         if exploit:
             g = mass(lambda h: (sp['hands'][h].get('ev_gto') or [0, -1])[1] > 0)
-            out.append(f"Contre ce profil, on paie avec {_pct(share)} {BASE_FR} ; contre un joueur GTO, avec {_pct(g)}.")
+            out.append(f"Contre ce profil, on paie avec {_pct(share)} {BASE_FR} ; contre {REF_PLAYER_FR}, avec {_pct(g)}.")
         else:
             out.append(f"Ici, on paie avec {_pct(share)} {BASE_FR}.")
         return out
     j = ids.index(best); verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
-    f = sp['hands'][hand]['freq']; shown = grading.displayed_mix(sp, hand); pj = dict(shown).get(best, 0)
+    f = grading.reference_freq(sp, hand); shown = grading.displayed_mix(sp, hand); pj = dict(shown).get(best, 0)
     if f[j] >= 0.5: tail = f"{hand} en fait partie."
     elif pj: tail = f"{hand} le fait {pj} % du temps."
     else: tail = f"{hand} le fait rarement : les actions ont une valeur quasi égale."
@@ -394,24 +510,27 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, accepted=False):
         out.append(f"Repère : il faut {'' if exact else 'environ '}{_pct(call / final)} d'équité pour payer (cote du pot"
                    + ('' if exact else ' ; approximatif, car ' + ('un joueur reste à parler' if to_act_after(sp) else 'le tapis adverse te couvre')) + ').')
     base_id = 'F' if 'F' in ids else 'X'
-    others = sorted((k for k in range(len(ids)) if k != j and ids[k] not in (chosen, base_id) and ev[k] <= ev[j]), key=lambda k: -ev[k])
-    if others:                                                     # le choix du joueur, le fold et une action meilleure en EV sont déjà dans l'explication
-        out.append(f"Deuxième option : {_low(labels[ids[others[0]]])}, {gain_bb(ev[j] - ev[others[0]])} de moins.")
+    others = sorted((k for k in range(len(ids)) if ids[k] not in (best, chosen, base_id, top)), key=lambda k: -ev[k])
+    if others:                                                     # le choix du joueur, le fold et l'action la plus rentable sont déjà dans l'explication
+        d = ev[j] - ev[others[0]]
+        out.append(f"Autre option : {_low(labels[ids[others[0]]])}, {gain_bb(d)} {'de moins' if d >= 0 else 'de plus en EV'}.")
     if len(shown) > 1:
         mix = ', '.join(f'{_low(labels[a])} {p} %' for a, p in shown); played = dict(shown)
         if chosen is not None and chosen not in played:
-            out.append(f"{hand} est jouée en mixte ({mix}) : ces actions ont une valeur proche. Ton choix {_named(labels[chosen])} n'en fait pas partie"
+            out.append(f"{hand} est jouée de plusieurs façons ({mix}) : ces actions ont une valeur proche. Ton choix {_named(labels[chosen])} n'en fait pas partie"
                        + (f", mais il coûte moins de {bb(GAIN_MIN_BB)} BB : accepté." if accepted else '.'))
         else:
-            out.append(f"{hand} est jouée en mixte ({mix}) : ces actions ont une valeur proche, chacune est acceptée.")
+            out.append(f"{hand} est jouée de plusieurs façons ({mix}) : ces actions ont une valeur proche, chacune est acceptée.")
     elif chosen is not None and chosen != best and accepted and chosen not in dict(shown):
         out.append(f"Ton choix {_named(labels[chosen])} ne fait pas partie de la stratégie de référence, mais il coûte moins de {bb(GAIN_MIN_BB)} BB : accepté.")
-    edge = sorted(((abs(x['freq'][j] - 0.5), h) for h, x in sp['hands'].items()
-                   if x.get('reach', 0) >= 0.05 and x.get('freq') and 0.2 <= x['freq'][j] <= 0.8 and h != hand))
+    rf = {h: grading.reference_freq(sp, h) for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq') and h != hand}
+    edge = sorted((abs(v[j] - 0.5), h) for h, v in rf.items() if 0.2 <= v[j] <= 0.8)
     if edge:
-        out.append(f"Mains jouées en mixte pour l'action « {_low(labels[best])} » : {', '.join(h for _, h in edge[:5])}.")
+        out.append(f"Mains jouées en partie seulement pour l'action « {_low(labels[best])} » : {', '.join(h for _, h in edge[:5])}.")
+    elif grid['share_pct'][j] >= 100:
+        out.append(f"Toutes les mains le font ici : pas de frontière.")
     else:
-        out.append(f"Aucune main n'est jouée en mixte pour l'action « {_low(labels[best])} » : la frontière est nette.")
+        out.append(f"Aucune main n'est jouée en partie seulement pour l'action « {_low(labels[best])} » : la frontière est nette.")
     return out
 
 
@@ -449,40 +568,61 @@ def r100(x): return round(100 * x)
 SHORT_BB = 5                      # sous ce tapis restant après l'action, pas de vrai jeu après le flop
 
 
+_AVG = {}
+
+
+def _kind_average(kind):
+    """moyenne des fréquences au flop sur les classes du même type : 'pair', 's' (assorties) ou 'o' (dépareillées)"""
+    if kind not in _AVG:
+        postflop_profile('AA'); hs = _POSTFLOP['hands']
+        sel = [h for h in hs if (len(h) == 2) == (kind == 'pair') and (kind == 'pair' or h.endswith(kind))]
+        _AVG[kind] = {k: sum(hs[h][k] for h in sel) / len(sel) for k in hs[sel[0]]}
+    return _AVG[kind]
+
+
+SIGNIF = 3                        # « Et ensuite ? » : force ou faiblesse seulement à 3 points de la moyenne ou plus
+
+
 def next_steps(sp, hand, best, chosen=None, labels=None):
     """« Et ensuite ? » : forces et faiblesses de la main après le flop (énumération exacte des flops, data/postflop_profiles.json).
-    Le sujet est toujours la bonne action ; quand le joueur en a choisi une autre, l'intro le dit."""
+    Toujours au sujet de l'action de référence. None quand il n'y a rien d'utile à dire (fold, tapis payé sans joueur
+    derrière) : la section est alors masquée."""
     t = {a['id']: a['type'] for a in sp['actions']}[best]
     p = postflop_profile(hand); pc = lambda x: f"{round(100 * x)} %"
     pair = len(hand) == 2; suited = hand.endswith('s'); hi, lo = _R.index(hand[0]), _R.index(hand[1])
-    subject = (f"Avec la bonne action {_named(labels[best])} : " if labels and chosen and chosen != best else '')
+    subject = (f"Avec l'action de référence {_named(labels[best])} : " if labels and chosen and chosen != best else '')
     say = lambda x: subject + (_low(x) if subject else x)
     empty = dict(position=None, metrics=[], forces=[], weaknesses=[])
+    if t == 'fold': return None
+    behind = to_act_after(sp); several = len(opponents_in(sp)) > 1
     if family(sp) == 'vs_allin':
-        return dict(empty, intro=say("Face à un tapis, seule compte ton équité contre sa range : voir la cote du pot."))
+        if not behind: return None                                  # tout est dans « Pourquoi ? » (cote du pot, équité)
+        return dict(empty, intro=say("Un joueur parle encore derrière toi. Il faut plus que la cote du pot, car il peut payer ou partir à tapis à son tour."
+                                     + (" Partir à tapis par-dessus sert à le faire coucher." if t == 'allin' else '')))
     if t == 'allin':
-        return dict(empty, intro=say("Tu pousses : soit l'adversaire se couche et tu prends le pot, soit il paie et tout se joue à l'équité, sans décision après le flop."
-                                     if len(opponents_in(sp)) < 2 else
-                                     "Tu pousses : soit tout le monde se couche et tu prends le pot, soit quelqu'un paie et tout se joue à l'équité, sans décision après le flop."))
-    if t == 'call_allin':
-        return dict(empty, intro=say("Tu paies le tapis : plus aucune décision après le flop, seule compte ton équité contre sa range."))
+        return dict(empty, intro=say("Tu pousses. Soit tout le monde se couche et tu prends le pot, soit quelqu'un paie et tout se joue à l'équité, sans décision après le flop."
+                                     if several else
+                                     "Tu pousses. Soit l'adversaire se couche et tu prends le pot, soit il paie et tout se joue à l'équité, sans décision après le flop."))
     act = next(a for a in sp['actions'] if a['id'] == best)
     put = {'raise': act.get('to_bb'), 'limp': 1.0, 'call': sp['hero_committed_bb'] + call_terms(sp)[0]}.get(t, sp['hero_committed_bb'])
-    left = sp['effective_stack_bb'] - (put or 0)
-    if t == 'fold':
-        intro = say("Tu te couches, donc pas de postflop ici. Voici ce que cette main ferait au flop, pour comprendre pourquoi.")
-    elif left < SHORT_BB:
-        intro = say(f"Tapis trop court pour vraiment jouer après le flop (il restera environ {bb1(left)} BB) : l'argent part vite au milieu, l'essentiel se joue à l'équité. "
+    left = hero_effective(sp) - (put or 0)
+    if left < SHORT_BB:
+        intro = say(f"Tapis trop court pour vraiment jouer après le flop (il restera environ {bb1(left)} BB). L'argent part vite au milieu, l'essentiel se joue à l'équité. "
                     "Voici ce que la main touche au flop.")
     else:
         intro = say("Après le flop, voici ce que tu peux attendre de cette main (sur tous les flops possibles).")
     folded = {h['position'] for h in sp['history'] if h['action'] == 'fold'}
     order = [x for x in POSTFLOP_ORDER[len(sp['players'])] if x not in folded]
     position = None
-    if t != 'fold' and left >= SHORT_BB and sp['hero'] in order and len(order) > 1:
-        position = ("Tu joueras en position : tu parles en dernier à chaque tour, tu vois ce que font les autres avant de décider." if order[-1] == sp['hero'] else
+    if left >= SHORT_BB and sp['hero'] in order and len(order) > 1:
+        seen = 'ce que font les autres' if len(order) > 2 else "ce que fait l'adversaire"
+        position = (f"Tu joueras en position : tu parles en dernier à chaque tour, tu vois {seen} avant de décider."
+                    if order[-1] == sp['hero'] else
                     "Tu joueras hors position : tu parles en premier à chaque tour, ce qui rend la main plus difficile à jouer et réduit l'équité que tu réalises.")
-    postflop_profile(hand); au, ap = _POSTFLOP['average_unpaired'], _POSTFLOP['average_pairs']
+    kind = 'pair' if pair else 's' if suited else 'o'; av = _kind_average(kind)
+    ref = {'pair': 'des paires servies', 's': 'des mains assorties', 'o': 'des mains dépareillées'}[kind]
+    above = lambda k, v=None: r100(p[k] if v is None else v) - r100(av[k]) >= SIGNIF
+    below = lambda k: r100(av[k]) - r100(p[k]) >= SIGNIF
     forces, weak = [], []
     if pair:
         over = overcard_prob(hand)
@@ -492,31 +632,29 @@ def next_steps(sp, hand, best, chosen=None, labels=None):
     else:
         if p['top_pair_plus'] >= 0.25: forces.append(f"Paire max ou mieux au flop {pc(p['top_pair_plus'])} du temps.")
         if suited: forces.append(f"Tirage couleur ou couleur faite au flop {pc(p['flush_draw_plus'])} du temps.")
-        if p['oesd_plus'] >= 0.05 or p['gutshot'] >= 0.12:
-            forces.append(f"Potentiel de quinte : tirage par les deux bouts ou mieux {pc(p['oesd_plus'])} du temps, tirage ventral {pc(p['gutshot'])}.")
-        if r100(p['miss']) > r100(au['miss']):
-            weak.append(f"Tu rates le flop {pc(p['miss'])} du temps, sans paire ni tirage fort (moyenne des mains non pairées : {pc(au['miss'])}).")
+        if above('oesd_plus') or above('gutshot'):
+            forces.append(f"Potentiel de quinte au-dessus de la moyenne {ref} : tirage par les deux bouts ou mieux {pc(p['oesd_plus'])} du temps, tirage ventral {pc(p['gutshot'])}.")
+        if above('miss'):
+            weak.append(f"Tu rates le flop {pc(p['miss'])} du temps, sans paire ni tirage fort (moyenne {ref} : {pc(av['miss'])}).")
         if hi >= _R.index('T') and lo <= _R.index('7'):
             weak.append(f"Quand ton {hand[0]} touche, ton kicker {hand[1]} est faible : tu risques d'être dominé par les {hand[0]}x plus forts.")
-        elif r100(p['top_pair_plus']) < r100(au['top_pair_plus']):
-            weak.append(f"Paire max ou mieux seulement {pc(p['top_pair_plus'])} du temps (moyenne des mains non pairées : {pc(au['top_pair_plus'])}) : "
+        elif below('top_pair_plus'):
+            weak.append(f"Paire max ou mieux seulement {pc(p['top_pair_plus'])} du temps (moyenne {ref} : {pc(av['top_pair_plus'])}) : "
                         "tu touches rarement la paire max, tes paires seront souvent des paires moyennes ou basses.")
-        if not suited and p['oesd_plus'] < 0.05 and hi - lo >= 4:
-            weak.append("Peu de potentiel de tirage : main dépareillée et déconnectée.")
+        if below('oesd_plus') and below('gutshot'):
+            weak.append("Peu de potentiel de quinte : les deux cartes sont trop éloignées pour se compléter souvent.")
     eq = float(_VSR()[NAMES.index(hand)])
     if eq >= 0.55: forces.append(f"Contre une main au hasard, {hand} a {pc(eq)} d'équité (tapis préflop).")
     elif eq < 0.42: weak.append(f"Main faible à l'abattage : contre une main au hasard, {hand} n'a que {pc(eq)} d'équité (tapis préflop).")
     cmp = lambda v, a: 'equal' if r100(v) == r100(a) else 'above' if v > a else 'below'   # sur les valeurs affichées
     tone = lambda c, lower: 'neutral' if c == 'equal' else ('good' if (c == 'above') != lower else 'bad')
-    if pair:                                                     # une paire se compare aux paires, une main non pairée aux non pairées
-        ref = 'des paires servies'
-        rows = (('set_plus', 'Brelan ou mieux', p['set_plus'], ap['set_plus'], False),
-                ('overpair', 'Paire plus haute que le board', p['overpair'], ap['overpair'], False),
+    if pair:                                                     # une main se compare aux mains du même type
+        rows = (('set_plus', 'Brelan ou mieux', p['set_plus'], av['set_plus'], False),
+                ('overpair', 'Paire plus haute que le board', p['overpair'], av['overpair'], False),
                 ('overcard', 'Carte plus haute que ta paire au board (moins, c\'est mieux)', overcard_prob(hand), _overcard_avg(), True))
     else:
-        ref = 'des mains non pairées'
-        rows = tuple((k, l, p[k], au[k], False) for k, l in (('top_pair_plus', 'Paire max ou mieux'), ('two_pair_plus', 'Deux paires ou mieux'),
-                                                             ('draw_plus', 'Tirage couleur ou quinte (ou mieux)')))
+        draw = ('draw_plus', 'Tirage couleur ou quinte (ou mieux)') if suited else ('oesd_plus', 'Tirage quinte par les deux bouts (ou mieux)')
+        rows = tuple((k, l, p[k], av[k], False) for k, l in (('top_pair_plus', 'Paire max ou mieux'), ('two_pair_plus', 'Deux paires ou mieux'), draw))
     metrics = [dict(key=k, label_fr=l, value=v, average=a, compare=cmp(v, a), tone=tone(cmp(v, a), lower), lower_is_better=lower, reference_fr=ref)
                for k, l, v, a, lower in rows]
     return dict(intro=intro, position=position, metrics=metrics, forces=forces[:3], weaknesses=weak[:3])
@@ -539,10 +677,16 @@ def reference_action(sp, hand):
     """action de référence affichée : la plus jouée par la stratégie quand elle vaut, à la limite d'imprécision près, la plus
     rentable en EV (écarts de calcul HRC) ; sinon la plus rentable. En mode exploitant : toujours la plus rentable (EV exacte)."""
     ev = grading.reference_ev(sp, hand); ids = [a['id'] for a in sp['actions']]; top = max(range(len(ev)), key=lambda k: ev[k])
-    f = sp['hands'][hand].get('freq')
+    f = sp['hands'][hand].get('freq') and grading.reference_freq(sp, hand)
     if sp.get('villain') or not f: return ids[top]
     m = max(range(len(f)), key=lambda k: f[k])
     return ids[m] if f[m] > f[top] and ev[top] - ev[m] <= IMPRECISION_BB + 1e-9 else ids[top]
+
+
+def _option(sp, labels, aid):
+    """une action en sujet de phrase : « Le fold », « Le check », « L'option (…) »"""
+    t = {a['id']: a['type'] for a in sp['actions']}[aid]
+    return 'Le fold' if t == 'fold' else 'Le check' if t == 'check' else f"L'option {_named(labels[aid])}"
 
 
 def correct(version, spot_id, hand, action_id):
@@ -551,32 +695,32 @@ def correct(version, spot_id, hand, action_id):
     g = grading.grade(sp, hand, action_id)
     labels = {a['id']: action_label(sp, a) for a in sp['actions']}
     ev = grading.reference_ev(sp, hand)
-    mix = grading.displayed_mix(sp, hand)
+    mix = grading.displayed_mix(sp, hand); shown = dict(mix)
     ids = [a['id'] for a in sp['actions']]; top = g['best_action']          # top : la plus rentable en EV
     best = reference_action(sp, hand)                                       # best : l'action de référence affichée
     base_id = 'F' if 'F' in ids else 'X'                     # référence : fold, ou check quand rien n'est à payer
     E_ = lambda a: ev[ids.index(a)]
+    raw = 1000 * (E_(top) - E_(action_id))                   # regret non arrondi : montant et verdict concordent aux bornes
     evb = E_(best) - E_(base_id); ref = 'fold' if base_id == 'F' else 'check'
-    played = '' if best == top else f", jouée {dict(mix).get(best, 0)} % du temps par la référence"
-    if best == base_id or abs(evb) < 0.005: lines = [f'Meilleure action : {labels[best]}{played}.']
-    elif evb < GAIN_MIN_BB: lines = [f"Meilleure action : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
-    else: lines = [f"Meilleure action : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
+    played = '' if best == top else f", jouée {shown.get(best, 0)} % du temps"
+    if best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Action de référence : {labels[best]}{played}.']
+    elif evb <= GAIN_MIN_BB: lines = [f"Action de référence : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
+    else: lines = [f"Action de référence : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
     if best != top:
-        lines.append(f"{labels[top]} se vaut presque : {gain_bb(E_(top) - E_(best))} de plus en EV, trop peu pour changer la référence.")
-    accepted = g['verdict'] == 'correct'
-    grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, accepted); after = next_steps(sp, hand, best, action_id, labels)
-    if action_id == best:
-        lines.append('Tu as choisi la meilleure action.')
+        lines.append(f"{_option(sp, labels, top)} vaut presque autant : {gain_bb(E_(top) - E_(best))} de plus en EV ; les deux sont acceptés.")
+    grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
+    if action_id == best: pass                                  # le bandeau le dit déjà
     elif action_id == top:
         lines.append(f"Ton choix {_named(labels[action_id])} est le plus rentable en EV : réponse acceptée.")
     else:
-        r = g['regret_mbb']
-        lines.append(f"Ton choix {_named(labels[action_id])} rapporte {gain_bb(r / 1000)} de moins" + ('.' if best == top else f" que {_low(labels[top])}, la plus rentable."))
+        than = '' if best == top else f" que {_low(labels[top])}, la plus rentable"
+        lines.append(f"Ton choix {_named(labels[action_id])} " + (f"coûte moins de {bb(GAIN_MIN_BB)} BB{than}." if raw <= grading.TOLERANCE_MBB + 1e-9
+                                                                  else f"rapporte {gain_bb(raw / 1000)} de moins{than}."))
         tol, imp = bb(GAIN_MIN_BB), bb(IMPRECISION_BB)
-        if accepted and g['regret_mbb'] > grading.TOLERANCE_MBB:
-            lines.append(f"La stratégie de référence joue cette action {_pct(g['chosen_frequency'])} du temps (jeu mixte) : elle est acceptée.")
-        elif accepted:
-            lines.append(f"Écart sous {tol} BB, " + ('négligeable' if g['ev_source'] == 'exact' else 'dans le bruit de calcul') + ' : réponse acceptée.')
+        if g['verdict'] == 'correct' and raw > grading.TOLERANCE_MBB:
+            lines.append(f"La stratégie de référence joue cette action {shown.get(action_id, round(100 * g['chosen_frequency']))} % du temps : elle est acceptée.")
+        elif g['verdict'] == 'correct':
+            lines.append(f"Écart d'au plus {tol} BB, " + ('négligeable' if g['ev_source'] == 'exact' else 'dans le bruit de calcul') + ' : réponse acceptée.')
         elif g['verdict'] == 'imprécision':
             lines.append(f'Écart entre {tol} et {imp} BB : imprécision, pas erreur.')
         else:
@@ -589,22 +733,24 @@ def correct(version, spot_id, hand, action_id):
         conf = profiles.confidence(1000 * ee); verb = 'gagne' if ee >= 0 else 'perdrait'
         ex = dict(profile=dict(profiles.public(pr, v['gto_pct']), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
                   # 1. référence exploitante : la bonne action contre ce profil, et l'enjeu en fourchette
-                  reference_fr=(f"{labels[best]}.\nTon choix {_named(labels[action_id])} perd {gain_range(g['regret_mbb'] / 1000)}." if action_id != best
+                  reference_fr=(f"{labels[best]}.\nTon choix {_named(labels[action_id])} perd {gain_range(raw / 1000)}." if action_id != best
                                 else f"{labels[best]}.\nPayer {verb} {gain_range(ee)}."),
-                  # 2. comparaison avec la référence GTO
-                  comparison_fr=(f"En GTO, ce serait {labels[gto]}.\n{pr['adaptation_fr']}" if changed else
-                                 "Même décision qu'en GTO : l'écart de range ne suffit pas à la changer."),
-                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains (GTO : {bb(v['gto_pct'])} %).",
-                  choice_loss_fr=(gain_range(g['regret_mbb'] / 1000) if action_id != best else None),
+                  # 2. comparaison avec la référence
+                  comparison_fr=(f"{REF_COMPARE_FR}, ce serait {_low(labels[gto])}.\n{pr['adaptation_fr']}" if changed else
+                                 f"Même décision {REF_SAME_FR} : l'écart de range ne suffit pas à la changer."),
+                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains ({REF_SHORT_FR} : {bb(v['gto_pct'])} %).",
+                  choice_loss_fr=(gain_range(raw / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='enjeu net' if conf == 'élevée' else 'enjeu faible',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
         core = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
         lines = core[:1] + because + core[1:]
     else:
-        core = list(lines); lines += because                     # la stratégie arrondie est affichée à part (barres et grille)
+        core = list(lines) + [principle(sp, hand, best, labels)]; lines = core + because   # la stratégie arrondie est affichée à part
+    loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
-                gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
-                chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
+                top_action=top, chosen_action=action_id, gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
+                chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
+                loss_fr=(None if action_id == best else (gain_range(loss) if v else gain_bb(loss))),
                 ev_source=g['ev_source'], exploit=ex, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core) if core is not None else None)
 
@@ -616,7 +762,8 @@ def summary(version, answers):
     by = {}
     for sid, h, r in answers:
         k = (family(spots[sid]), spots[sid]['hero']); b = by.setdefault(k, [0, 0.0]); b[0] += 1; b[1] += r['points']
-    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'])
+    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'],
+                          loss_fr=r.get('loss_fr'))
                      for sid, h, r in answers if r['verdict'] != 'correct'], key=lambda e: -e['regret_mbb'])
     return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0,
                 verdicts={v: sum(1 for *_, r in answers if r['verdict'] == v) for v in grading.POINTS},

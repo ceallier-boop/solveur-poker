@@ -91,7 +91,7 @@ def test_mixed_strategy_actions_are_never_penalised(built):
         for name, h in s['hands'].items():
             if not h['quiz_eligible']: continue
             for j, a in enumerate(s['actions']):
-                if h['freq'][j] >= grading.MIXED_MIN: assert grading.grade(s, name, a['id'])['verdict'] == 'correct'
+                if grading.reference_freq(s, name)[j] >= grading.MIXED_MIN: assert grading.grade(s, name, a['id'])['verdict'] == 'correct'
 
 
 def test_displayed_mix_rounds_to_100(built):

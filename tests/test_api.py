@@ -101,7 +101,7 @@ def test_exploit_dataset_consistency():
 
 
 def test_gains_are_shown_in_bb_with_floor():
-    assert quiz.gain_bb(0.019) == '<0,02 BB' and quiz.gain_bb(0.02) == '0,02 BB' and quiz.gain_bb(1.234) == '1,23 BB'
+    assert quiz.gain_bb(0.019) == '<0,02 BB' and quiz.gain_bb(0.02) == '<0,02 BB' and quiz.gain_bb(0.021) == '0,021 BB' and quiz.gain_bb(0.0202) == 'un peu plus de 0,02 BB' and quiz.gain_bb(1.234) == '1,23 BB'
     assert quiz.gain_bb(-0.01, signed=True) == '−<0,02 BB' and quiz.gain_bb(0.12, signed=True) == '+0,12 BB'
     seen_small = False
     for ref in (quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT):
@@ -162,7 +162,7 @@ def test_equity_gap_bands_and_next_steps():
                 for line in r['why_fr']:
                     for b in ('Décision serrée', 'Écart moyen', 'Écart large'):
                         if line.startswith(b): bands.add((b, a['id'] == r['best_action']))
-                n = r['next']; kinds.add(bool(n['metrics']))
+                n = r['next'] or dict(metrics=[]); kinds.add(bool(n['metrics']))
                 for m in n['metrics']:
                     assert m['compare'] == ('equal' if round(100 * m['value']) == round(100 * m['average']) else 'above' if m['value'] > m['average'] else 'below')
                 if {t['id']: t['type'] for t in sp['actions']}[r['best_action']] in ('allin', 'call_allin'): assert not n['metrics']
@@ -186,20 +186,24 @@ def test_review_fixes_on_texts():
         for h, x in sp['hands'].items():
             if not x['quiz_eligible']: continue
             shown = dict(grading.displayed_mix(sp, h))
-            for a, f in zip(sp['actions'], x['freq']):                 # une action affichée est toujours acceptée
-                assert (a['id'] in shown) == (f >= grading.MIXED_MIN or f == max(x['freq']) and not any(v >= grading.MIXED_MIN for v in x['freq']))
+            rf = grading.reference_freq(sp, h)
+            for a, f in zip(sp['actions'], rf):                        # une action affichée est toujours acceptée
+                assert (a['id'] in shown) == (f >= grading.MIXED_MIN or f == max(rf) and not any(v >= grading.MIXED_MIN for v in rf))
                 if a['id'] in shown: assert grading.grade(sp, h, a['id'])['verdict'] == 'correct'
             for chosen in types:
                 r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, chosen); n = r['next']; t = types[r['best_action']]
                 text = r['explanation_fr']
-                assert 'aucune n\'est une erreur' not in text and ' fold ' not in history_lines(sp) and '((' not in text and ' : Tu' not in n['intro']
-                if quiz.family(sp) == 'vs_allin': assert not n['metrics'] and 'cote du pot' in n['intro']; seen.add('vs_allin')
-                elif t == 'allin': assert 'se couche' in n['intro'] and not n['metrics']; seen.add('allin')
-                if chosen != r['best_action']: assert n['intro'].startswith('Avec la bonne action'); seen.add('subject')
+                assert 'aucune n\'est une erreur' not in text and ' fold ' not in history_lines(sp) and '((' not in text
+                if t == 'fold': assert n is None; seen.add('fold'); continue                          # rien à dire après le flop
+                if quiz.family(sp) == 'vs_allin':
+                    assert n is None or (not n['metrics'] and quiz.to_act_after(sp)); seen.add('vs_allin'); continue
+                assert ' : Tu' not in n['intro'] and ' : tu pousses :' not in n['intro']
+                if t == 'allin': assert 'se couche' in n['intro'] and not n['metrics']; seen.add('allin')
+                if chosen != r['best_action']: assert n['intro'].startswith("Avec l'action de référence"); seen.add('subject')
                 for m in n['metrics']:
                     assert m['tone'] == ('neutral' if m['compare'] == 'equal' else 'good' if (m['compare'] == 'above') != m['lower_is_better'] else 'bad')
                 if 'à peine mieux que le' in text: seen.add('barely')
-    assert {'vs_allin', 'allin', 'subject'} <= seen
+    assert {'vs_allin', 'allin', 'subject', 'fold'} <= seen
 
 
 def history_lines(sp):
