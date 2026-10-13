@@ -36,7 +36,8 @@ class TreeConfig:
     max_raises: int = 3
     flats_per_level: int = 1
     allow_limp: bool = True
-    unopened_allin_max: float = 0.0   # > 0 : pas de tapis en premier de parole ni face à des limps au-delà de ce tapis effectif (HRC heads-up : 15 BB)
+    unopened_allin_max: float = None  # pas de tapis en premier de parole ni face à des limps au-delà de ce tapis effectif ;
+                                      # None : 15 BB en heads-up (règle HRC), toujours proposé à 3 joueurs ; 0 : toujours proposé
 
 
 @dataclass
@@ -131,7 +132,9 @@ class Tree:
             for size in self._raise_sizes(c, folded, p, raises, last_raise, limpers, callers, aggressor):
                 if size >= cap - EPS or size >= self.cfg.allin_fraction * cap - EPS: continue     # seuil sur le tapis effectif
                 opts.append((f'R{round(size, 4):g}', size, 'raise'))
-            if not (raises == 0 and 0 < self.cfg.unopened_allin_max < cap - EPS and len(opts) > 1 + (to_call > EPS)):
+            lim = self.cfg.unopened_allin_max
+            if lim is None: lim = 15.0 if self.n == 2 else 0.0
+            if not (raises == 0 and 0 < lim < cap - EPS and len(opts) > 1 + (to_call > EPS)):
                 opts.append(('A', cap, 'allin'))
         for lab, amt, typ in opts:
             c2 = list(c); f2 = list(folded); acted2 = set(acted) | {p}

@@ -65,3 +65,27 @@ Heads-up 25 BB, solveur complet avec réalisation, fréquences globales :
 | BB face à la relance : fold / call / relance / tapis | 50,2 / 32,2 / 9,2 / 8,5 | 54,9 / 28,5 / 8,1 / 8,5 | 54,0 / 30,7 / 13,8 / 1,5 |
 
 Écart d'EV du limp du SB pour les paires : +257 mBB sans la règle, +42 mBB avec. Le tapis du BB sur un limp, absent chez HRC, faisait payer les paires du SB et faussait toute la ligne. C'est la cause principale de la surévaluation des paires.
+
+## Benchmark HRC heads-up : règle de tapis et 24 tirages (2026-10-13)
+
+`tools/solver/benchmark_hrc.py --postflop realization --outer 5`. Perte = regret de la stratégie maison mesuré avec les EV HRC (entre parenthèses : regret de HRC lui-même, plancher de bruit), en mBB.
+
+| Tapis | Nœud | Avant | Règle de tapis | Règle + 24 tirages | Plancher HRC |
+|---|---|---|---|---|---|
+| 25 BB | SB premier de parole | 13,6 | 12,6 | 9,4 | 4,3 |
+| 25 BB | BB face au limp | 15,1 | 13,5 | 10,4 | 4,7 |
+| 25 BB | BB face à la relance | 44,5 | 32,8 | 28,1 | 12,8 |
+| 20 BB | SB premier de parole | 8,3 | 8,8 | 6,8 | 3,4 |
+| 20 BB | BB face au limp | 13,8 | 11,8 | 7,9 | 3,5 |
+| 20 BB | BB face à la relance | 40,2 | 30,5 | 28,5 | 12,6 |
+| 16 BB | SB premier de parole | 6,0 | 5,9 | 5,4 | 2,7 |
+| 16 BB | BB face au limp | 9,5 | 8,9 | 5,7 | 4,2 |
+| 16 BB | BB face à la relance | 32,7 | 32,0 | 23,2 | 9,3 |
+
+Limp du SB à 25 BB : 85 % avant, 71,5 % maintenant (HRC 68,8 %). Plus aucune action hors de l'arbre HRC.
+
+Les deux réglages sont désormais ceux par défaut :
+- `TreeConfig.unopened_allin_max` : 15 BB en heads-up ; à 3 joueurs, le tapis reste toujours proposé, car le seuil de HRC y varie selon la position ;
+- `PostflopConfig.rollouts` : 24.
+
+Point restant : le BB face à la relance du SB reste à 2 à 3 fois le plancher HRC.
