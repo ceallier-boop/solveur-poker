@@ -16,7 +16,7 @@ from spinsacademy.solver import postflop as pf
 from spinsacademy.solver.cfr import Solver
 
 REF = 'daa9aaa0'
-OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED = 3, 3000, 16, 0.5, 0.0
+OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED, ROLLOUTS = 3, 3000, 16, 0.5, 0.0, 6
 
 
 def find_export(stacks):
@@ -61,7 +61,7 @@ def run(stacks, iters, model):
     else:
         from spinsacademy.solver.pipeline import solve
         from spinsacademy.postflop.hu_solver import PostflopConfig
-        s, _, _ = solve(st, tcfg, pre_iters=iters, outer=OUTER, post_iters=POST_ITERS, pf_cfg=PostflopConfig(buckets=BUCKETS), damping=DAMP)
+        s, _, _ = solve(st, tcfg, pre_iters=iters, outer=OUTER, post_iters=POST_ITERS, pf_cfg=PostflopConfig(buckets=BUCKETS, rollouts=ROLLOUTS), damping=DAMP)
     dt = time.time() - t0
     rows = compare(s.strategy(), st, nodes)
     return dict(export=d, stacks=st, iters=iters, seconds=dt, expl=s.exploitability(), rows=rows, model=model)
@@ -81,5 +81,7 @@ if __name__ == '__main__':
     ap.add_argument('--outer', type=int, default=3); ap.add_argument('--post-iters', type=int, default=3000)
     ap.add_argument('--buckets', type=int, default=16); ap.add_argument('--damping', type=float, default=0.5)
     ap.add_argument('--unopened-allin-max', type=float, default=0.0, help='règle de tapis HRC heads-up : 15')
-    a = ap.parse_args(); OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED = a.outer, a.post_iters, a.buckets, a.damping, a.unopened_allin_max
+    ap.add_argument('--rollouts', type=int, default=6, help='tirages pour la force des mains au flop et à la turn')
+    a = ap.parse_args()
+    OUTER, POST_ITERS, BUCKETS, DAMP, UNOPENED, ROLLOUTS = a.outer, a.post_iters, a.buckets, a.damping, a.unopened_allin_max, a.rollouts
     show(run([float(x) for x in a.stacks.split(',')], a.iters, a.postflop))
