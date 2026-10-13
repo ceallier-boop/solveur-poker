@@ -13,7 +13,8 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
-const gainBB = (mbb) => (Math.abs(mbb) < 20 ? '<0,02 BB' : bb(Math.abs(mbb) / 1000) + ' BB');   // gains toujours en BB
+const gainBB = (mbb) => { const a = Math.abs(mbb);                 // gains toujours en BB ; 3 décimales autour de 0,06 BB (limite d'imprécision)
+  return a < 20 ? '<0,02 BB' : Math.abs(a - 60) < 5 ? (a / 1000).toFixed(3).replace('.', ',') + ' BB' : bb(a / 1000) + ' BB'; };
 // profils fictifs : symbole (sens et force de l'écart de tapis avec le GTO) et couleur, pour les reconnaître d'un coup d'œil
 const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲' };
 const pbadge = (pr, small) => `<span class="pbadge p-${pr.id}${small ? ' sm' : ''}" aria-hidden="true">${PROFILE_VIS[pr.id] || '?'}</span>`;
@@ -189,16 +190,17 @@ async function answer(id) {
 }
 
 function renderAnswer(r) {
-  const [cls, title] = VERDICT[r.verdict];
+  const [cls, title] = VERDICT[r.verdict]; const ex0 = !!r.exploit;
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
-  v.innerHTML = `${title}<small>${r.chosen_label === r.best_label ? 'Meilleure action jouée.' : `Meilleure action : ${r.best_label}`}</small>`;
+  const sub = r.chosen_label === r.best_label ? 'Meilleure action jouée.' : ex0 ? `Meilleure action : ${r.best_label}` : '';
+  v.innerHTML = title + (sub ? `<small>${sub}</small>` : '');   // GTO : la meilleure action est dans l'explication
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').split('\n').filter((l) => !l.startsWith('Profil fictif')).join('\n');
-  $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${gainBB(r.regret_mbb)} de moins).`;
+  $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
   const ex = r.exploit; $('a-exploit').hidden = !ex;
-  for (const id of ['a-choice', 'a-strategy-title', 'a-strategy']) $(id).hidden = !!ex;   // exploitant : correction courte
+  for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!ex;   // exploitant : correction courte
   if (ex) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce type de profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
 

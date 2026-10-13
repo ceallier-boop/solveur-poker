@@ -164,7 +164,7 @@ def test_equity_gap_bands_and_next_steps():
                         if line.startswith(b): bands.add((b, a['id'] == r['best_action']))
                 n = r['next']; kinds.add(bool(n['metrics']))
                 for m in n['metrics']:
-                    assert m['compare'] == ('equal' if abs(m['value'] - m['average']) < 0.005 else 'above' if m['value'] > m['average'] else 'below')
+                    assert m['compare'] == ('equal' if round(100 * m['value']) == round(100 * m['average']) else 'above' if m['value'] > m['average'] else 'below')
                 if {t['id']: t['type'] for t in sp['actions']}[r['best_action']] in ('allin', 'call_allin'): assert not n['metrics']
         if len(bands) == 6 and kinds == {True, False}: break
     assert len(bands) == 6 and kinds == {True, False}             # trois niveaux d'écart, réponse juste ou fausse
@@ -208,7 +208,21 @@ def history_lines(sp):
 
 def test_profile_catalog_texts():
     from spinsacademy import profiles
-    c = profiles.catalog(); assert c['version'] == '1.2.0'
+    c = profiles.catalog(); assert c['version'] == '1.3.0'
     m = next(p for p in c['profiles'] if p['id'] == 'maniac')
     assert 'mains faibles' not in m['description_fr'] and 'moins forte' in m['description_fr']
     assert all('4 à 25 BB' not in (p['scope_fr'] or '') for p in c['profiles'])
+
+
+def test_second_review_fixes():
+    _, spots = quiz.load()
+    sp = spots['3w-8-8-4-BTN-allin_SB-fold-eee730']                                            # BB couvert : 4 BB effectifs
+    assert quiz.call_terms(sp) == (3.0, 8.5) and quiz.action_label(sp, sp['actions'][1]) == 'Payer le tapis (3 BB de plus)'
+    aa = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], 'AA', 'C')['why_fr'][1]
+    assert '85,' in aa                                                                             # (4,29 + 3) / 8,5
+    assert quiz.gain_bb(0.062) == '0,062 BB' and quiz.gain_bb(0.058) == '0,058 BB' and quiz.gain_bb(0.07) == '0,07 BB'
+    for s in list(spots.values())[::20]:                                                        # la meilleure action affichée figure dans la stratégie affichée
+        for h, x in s['hands'].items():
+            if x['quiz_eligible']: assert quiz.reference_action(s, h) in dict(grading.displayed_mix(s, h))
+    _, ex = quiz.load(quiz.DEFAULT_EXPLOIT)
+    assert all(quiz.adapts(s) for s in quiz.candidates(ex)) and len(quiz.candidates(ex)) < len(ex)

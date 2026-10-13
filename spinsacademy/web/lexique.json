@@ -1,5 +1,5 @@
 {
- "version": "1.2.1",
+ "version": "1.3.0",
  "date": "2026-10-13",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
@@ -423,7 +423,7 @@
     "serré",
     "nit"
    ],
-   "def": "Profil qui part à tapis nettement moins souvent que le GTO, avec ses meilleures mains : il faut payer moins large. Badge ▼▼."
+   "def": "Profil qui part à tapis nettement moins souvent que le GTO et ne garde que ses tapis les plus rentables : sa range de tapis est plus forte, il faut payer moins large. Badge ▼▼."
   },
   {
    "term": "Prudent",
@@ -448,7 +448,7 @@
     "maniaque",
     "maniac"
    ],
-   "def": "Profil qui pousse beaucoup plus souvent que le GTO, avec des mains faibles : il faut payer beaucoup plus large. Badge ▲▲."
+   "def": "Profil qui pousse beaucoup plus souvent que le GTO, avec une range plus large, donc en général moins forte : il faut payer beaucoup plus large. Badge ▲▲."
   },
   {
    "term": "Station d'appel (Fish)",
@@ -486,13 +486,13 @@
    "def": "Plage de fréquence de tapis qui correspond à un type de profil dans la situation affichée. Elle aide à ranger un adversaire réel dans un type, avec prudence."
   },
   {
-   "term": "Écart net, écart modéré",
+   "term": "Enjeu net, enjeu faible",
    "cat": "profils",
    "match": [
-    "écart net",
-    "écart modéré"
+    "enjeu net",
+    "enjeu faible"
    ],
-   "def": "Niveau de confiance de l'adaptation : « net » quand le call vaut au moins 0,06 BB en plus ou en moins contre le profil, « modéré » en dessous."
+   "def": "Ce qui est en jeu dans la décision contre le profil : « enjeu net » quand payer vaut au moins 0,06 BB en plus ou en moins (la limite d'imprécision), « enjeu faible » en dessous. Ne pas confondre avec une « décision serrée », qui parle de la marge d'équité."
   },
   {
    "term": "Bonne réponse, imprécision, erreur",

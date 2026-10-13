@@ -84,3 +84,12 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
   - verdict : seuils dits en clair (moins de 0,02 BB : bruit de calcul ; 0,02 à 0,06 BB : imprécision ; au-delà : erreur ; action jouée au moins 10 % du temps : acceptée). Un gain sous 0,02 BB (la limite entre réponse acceptée et imprécision) est affiché « <0,02 BB » ;
   - « Et ensuite ? » : toujours au sujet de la bonne action (« Avec la bonne action … » quand le joueur en a choisi une autre). Face à un tapis : seule l'équité compte, pas de statistiques de flop. Tapis du joueur : fold equity ou équité, sans décision après le flop. Sinon position après le flop, fréquences au flop comparées à la moyenne des mains du même type (non pairées : paire max ou mieux, deux paires ou mieux, tirage couleur ou quinte ou mieux ; paires : brelan ou mieux, paire plus haute que le board, carte plus haute que la paire au board, où moins est mieux : champ `lower_is_better`, couleur dans `tone`), forces et faiblesses ; équité contre une main au hasard avec cartes retirées (AA : 85 %). Fréquences calculées par énumération exacte des 19 600 flops (`tools/postflop/flop_profiles.py`, `spinsacademy/data/postflop_profiles.json`) ; probabilité de carte plus haute : 1 − C(50 − 4·(cartes au-dessus), 3) / C(50, 3) ;
   - grille 13 × 13.
+
+### Correction après la 2ᵉ relecture joueur (2026-10-13)
+
+- Montants d'un call plafonnés au tapis du joueur (`quiz.call_terms`) : quand un tapis le couvre, l'excédent lui est rendu ; libellé, cote du pot et équité utilisent ces montants (ex. 4 BB effectifs face à 8 BB : 3 BB à payer pour 8,5 BB).
+- Action de référence affichée (`quiz.reference_action`) : la plus jouée par la stratégie quand elle vaut, à la limite d'imprécision près (0,06 BB), la plus rentable en EV ; celle-ci est alors citée (« … se vaut presque »). La notation ne change pas (regret mesuré sur l'EV maximale).
+- Montants entre 0,055 et 0,065 BB affichés à 3 décimales, pour que montant et verdict concordent ; « bruit de calcul » seulement pour une EV HRC.
+- « À la limite » : mains à 2 points d'équité du seuil au plus ; repère de cote du pot exact en heads-up sans tapis couvert.
+- « Et ensuite ? » : tapis à 3 joueurs (« tout le monde se couche »), moins de 5 BB restants après l'action : l'essentiel se joue à l'équité ; comparaisons à la moyenne sur les valeurs affichées.
+- Libellés : « Compléter (0,5 BB de plus) », relances à une décimale, « Tapis (8 BB, 4 BB effectifs) » quand le joueur couvre ses adversaires.
