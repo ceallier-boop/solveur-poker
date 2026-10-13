@@ -326,6 +326,50 @@ $('adapt-reset').addEventListener('click', async () => {
   await api('/users/me/adaptation/reset', { method: 'POST' }); await adaptation();
 });
 
+// ------------------------------------------------------------------ lexique : termes de l'écran affiché, puis tout le lexique
+let LEX = null;
+async function lexique() {
+  if (LEX) return LEX;
+  LEX = window.SA_LEXIQUE || await (await fetch('/static/lexique.json')).json();
+  for (const t of LEX.terms) {                                     // bornes de mot compatibles avec les accents
+    const alt = t.match.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    t.re = new RegExp(`(?<![\\p{L}\\d])(?:${alt})(?![\\p{L}\\d])`, t.case ? 'u' : 'iu');
+  }
+  return LEX;
+}
+const escT = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const termHtml = (t) => `<dt>${escT(t.term)}</dt><dd>${escT(t.def)}</dd>`;
+function screenText() {
+  const s = document.querySelector('.screen:not([hidden])');
+  return s ? s.innerText + ' ' + ($('progress').innerText || '') : '';
+}
+async function renderLex() {
+  const L = await lexique(); const q = $('lex-search').value.trim().toLowerCase(); const body = $('lex-body');
+  if (q) {
+    const hits = L.terms.filter((t) => (t.term + ' ' + t.def + ' ' + t.match.join(' ')).toLowerCase().includes(q));
+    body.innerHTML = hits.length ? `<dl>${hits.map(termHtml).join('')}</dl>` : '<p class="note">Aucun terme ne correspond.</p>';
+    return;
+  }
+  const text = screenText(); const here = L.terms.filter((t) => t.re.test(text));
+  const groups = Object.entries(L.categories).map(([k, label]) => {
+    const ts = L.terms.filter((t) => t.cat === k);
+    return `<details><summary>${label} (${ts.length})</summary><dl>${ts.map(termHtml).join('')}</dl></details>`;
+  }).join('');
+  body.innerHTML = (here.length ? `<h3>Sur cet écran</h3><dl>${here.map(termHtml).join('')}</dl>` : '<p class="note">Aucun terme technique repéré sur cet écran.</p>')
+    + `<h3>Tout le lexique</h3>${groups}<p class="note">Lexique ${L.version} : ${L.note_fr}</p>`;
+}
+let lexReturn = null;
+async function openLex() {
+  lexReturn = document.activeElement; $('lex-search').value = '';
+  await renderLex(); $('lex').hidden = false; $('lex-body').scrollTop = 0; $('lex-close').focus();
+}
+function closeLex() { $('lex').hidden = true; if (lexReturn) lexReturn.focus(); }
+$('lex-btn').addEventListener('click', () => openLex().catch((e) => alert(e.message)));
+$('lex-close').addEventListener('click', closeLex);
+$('lex').addEventListener('click', (e) => { if (e.target === $('lex')) closeLex(); });
+$('lex-search').addEventListener('input', () => renderLex());
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('lex').hidden) closeLex(); });
+
 // ------------------------------------------------------------------ navigation
 $('stats-btn').addEventListener('click', () => stats().catch((e) => alert(e.message)));
 $('st-back').addEventListener('click', home);
@@ -347,7 +391,7 @@ $('back-home').addEventListener('click', home);
 $('home-btn').addEventListener('click', home);
 $('resume').addEventListener('click', () => { state.sid = store.get('sid'); next().catch(home); });
 document.addEventListener('keydown', (e) => {
-  if ($('screen-question').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+  if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
   const k = Number(e.key); const btns = $('actions').querySelectorAll('button');
   if (k >= 1 && k <= btns.length) btns[k - 1].click();
 });

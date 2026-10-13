@@ -12,8 +12,23 @@
 <body>
   <header class="bar">
     <button class="brand" id="home-btn" aria-label="Accueil">Spins<span>Academy</span></button>
-    <div class="progress" id="progress" aria-live="polite"></div>
+    <div class="bar-right">
+      <div class="progress" id="progress" aria-live="polite"></div>
+      <button class="lex-btn" id="lex-btn" aria-haspopup="dialog" aria-controls="lex">Lexique</button>
+    </div>
   </header>
+
+  <div class="lex" id="lex" role="dialog" aria-modal="true" aria-labelledby="lex-title" hidden>
+    <div class="lex-panel">
+      <div class="lex-head">
+        <h2 id="lex-title">Lexique</h2>
+        <button class="lex-close" id="lex-close" aria-label="Fermer le lexique">×</button>
+      </div>
+      <label class="sr-only" for="lex-search">Chercher un terme</label>
+      <input type="search" id="lex-search" placeholder="Chercher un terme (ex. équité, limp, ICM)" autocomplete="off">
+      <div id="lex-body"></div>
+    </div>
+  </div>
 
   <main id="app">
     <!-- Accueil -->

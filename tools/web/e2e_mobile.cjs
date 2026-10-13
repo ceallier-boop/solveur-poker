@@ -10,6 +10,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   if (process.env.MODE === 'exploit') await p.click('.mode-switch [data-value="exploit"]');
   await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
   await p.screenshot({ path: out + '/2_question.png' });
+  await p.click('#lex-btn'); await p.waitForSelector('#lex:not([hidden]) #lex-body dl');            // lexique de l'écran
+  const lexOk = await p.evaluate(() => document.getElementById('lex-body').innerText.includes('Sur cet écran'));
+  if (!lexOk) errors.push('lexique : aucun terme repéré sur l\'écran de question');
+  await p.screenshot({ path: out + '/2b_lexique.png' });
+  await p.fill('#lex-search', 'équité'); await p.waitForTimeout(100);
+  if (!(await p.locator('#lex-body dt').count())) errors.push('lexique : recherche sans résultat');
+  await p.keyboard.press('Escape'); await p.waitForSelector('#lex', { state: 'hidden' });
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])');
     const n = await p.locator('#actions button').count();

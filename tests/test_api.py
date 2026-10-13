@@ -137,3 +137,16 @@ def test_draw_balances_positions_and_skips_no_lesson_hands():
             pos[spots[s]['hero']] += 1
             assert quiz.lesson_gap(spots[s], h) is not None
     assert min(pos.values()) >= 0.25 * sum(pos.values())
+
+
+def test_lexique_is_served_and_well_formed(client):
+    import json, os
+    lex = client.get('/static/lexique.json').json()
+    cats = set(lex['categories'])
+    assert lex['version'] and len(lex['terms']) >= 50
+    for t in lex['terms']:
+        assert t['term'] and t['def'] and t['match'] and t['cat'] in cats
+    terms = {t['term'] for t in lex['terms']}
+    assert len(terms) == len(lex['terms'])                                                 # pas de doublon
+    for needed in ('GTO', 'Équité', 'Cote du pot', 'Range', 'Stratégie mixte', 'ICM'):
+        assert any(x.startswith(needed) for x in terms), needed
