@@ -24,6 +24,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await p.waitForSelector('#screen-answer:not([hidden])');
     if (i === 0) {
       await p.screenshot({ path: out + '/3_correction.png', fullPage: true });
+      if (await p.locator('#a-why-box').isVisible()) await p.click('#a-why-box summary');
+      if (await p.locator('#a-grid-box').isVisible()) await p.click('#a-grid-box summary');
+      await p.screenshot({ path: out + '/3c_pourquoi_grille.png', fullPage: true });
       if (await p.locator('#report').isVisible()) {                                 // absent de la version autonome
       await p.click('#report summary'); await p.check('input[value="unclear"]'); await p.fill('#report-comment', 'test e2e');
       await p.click('#report-form button[type=submit]'); await p.waitForSelector('#report-done:not([hidden])');

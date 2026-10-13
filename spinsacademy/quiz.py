@@ -249,18 +249,68 @@ def range_grid(sp):
     return dict(actions=acts, hands=hands, share_pct=[round(100 * v / tot) if tot else 0 for v in share])
 
 
+def _pct(x): return f"{round(100 * x)} %"
+
+
+def _pct1(x): return f"{100 * x:.1f} %".replace('.', ',')
+
+
+def _low(t): return t[0].lower() + t[1:]
+
+
+def _points(x):
+    n = round(x); return f"{n} point{'s' if n > 1 else ''}" if n >= 1 else 'moins de 1 point'
+
+
 def why(sp, hand, ev, best, labels, grid):
-    """phrase « pourquoi », tirée des données : cote du pot et équité (call d'un tapis à EV exacte), sinon place de la main dans la stratégie"""
+    """« pourquoi », tiré des données : calcul, marge, limites de la décision.
+    Call d'un tapis à EV exacte : cote du pot, équité de la main, marge en points, mains qui paient ou se couchent tout juste.
+    Ailleurs : part de la stratégie, marge sur la deuxième action, jeu mixte, mains à la frontière."""
     ids = [a['id'] for a in sp['actions']]; types = {a['id']: a['type'] for a in sp['actions']}
+    exploit = bool(sp.get('villain')); out = []
     if sp['ev_reference'] == 'exact' and ids == ['F', 'C'] and types['C'] == 'call_allin' and sp['to_call_bb'] > 0:
-        call, final = sp['to_call_bb'], sp['pot_bb'] + sp['to_call_bb']
-        need = 100 * call / final; have = 100 * (ev[1] + call) / final
-        whose = 'la range de ce type de profil' if sp.get('villain') else 'sa range de tapis'
-        return [f"Pour payer, il faut {round(need)} % d'équité : {bb(call)} BB à payer pour un pot final de {bb(final)} BB.",
-                f"Contre {whose}, {hand} a {round(have)} % d'équité."]
-    j = ids.index(best); share = grid['share_pct'][j]
-    verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
-    return [f"Ici, la stratégie {verb} {share} % des mains ; {hand} en fait partie."]
+        call, final = sp['to_call_bb'], sp['pot_bb'] + sp['to_call_bb']; need = call / final
+        eq = {}
+        for h, x in sp['hands'].items():
+            e = (x.get('ev_exact') or [None, None])[1]
+            if e is not None and x.get('reach', 0) > 0: eq[h] = (e + call) / final
+        have = eq[hand]; margin = 100 * (have - need)
+        whose = 'la range de ce type de profil' if exploit else 'sa range de tapis'
+        gain = gain_range(ev[1]) if exploit else gain_bb(ev[1])
+        out.append(f"Cote du pot : {bb(call)} BB à payer pour un pot final de {bb(final)} BB, il faut {_pct(need)} d'équité pour payer.")
+        out.append(f"Contre {whose}, {hand} a {_pct(have)} d'équité : "
+                   + (f"marge de {_points(margin)} au-dessus du seuil, le call gagne {gain}." if margin >= 0
+                      else f"{_points(-margin)} sous le seuil, le call perd {gain}."))
+        if abs(margin) < 3: out.append('Ta main est à la limite : un petit changement de range adverse ou de tapis peut inverser la décision.')
+        callers = sorted((v, h) for h, v in eq.items() if v >= need); folders = sorted(((v, h) for h, v in eq.items() if v < need), reverse=True)
+        if callers and folders:
+            out.append(f'À la limite (seuil {_pct1(need)}), payent encore : ' + ', '.join(f'{h} ({_pct1(v)})' for v, h in callers[:3])
+                       + ' ; se couchent déjà : ' + ', '.join(f'{h} ({_pct1(v)})' for v, h in folders[:3]) + '.')
+        mass = lambda f: sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq if f(h)) / max(sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq), 1e-12)
+        share = mass(lambda h: eq[h] >= need)
+        if exploit:
+            g = mass(lambda h: (sp['hands'][h].get('ev_gto') or [0, -1])[1] > 0)
+            out.append(f"Contre ce type de profil, on paie avec {_pct(share)} des mains ; contre un joueur GTO, avec {_pct(g)}.")
+        else:
+            out.append(f"Ici, on paie avec {_pct(share)} des mains.")
+        return out
+    j = ids.index(best); verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
+    out.append(f"Ici, la stratégie {verb} {grid['share_pct'][j]} % des mains ; {hand} en fait partie.")
+    order = sorted(range(len(ids)), key=lambda k: -ev[k])
+    if len(order) > 1:
+        second = order[1]
+        out.append(f"Marge : {labels[best]} rapporte {gain_bb(ev[j] - ev[second])} de plus que {_low(labels[ids[second]]) if ids[second] != 'F' else 'fold'}.")
+    f = sp['hands'][hand]['freq']
+    if f[j] < 0.8:
+        mix = ', '.join(f'{_low(labels[a])} {p} %' for a, p in grading.displayed_mix(sp, hand))
+        out.append(f"{hand} est jouée en mixte ({mix}) : ses actions ont une valeur proche, aucune n'est une erreur.")
+    edge = sorted(((abs(x['freq'][j] - 0.5), h) for h, x in sp['hands'].items()
+                   if x.get('reach', 0) >= 0.05 and x.get('freq') and 0.2 <= x['freq'][j] <= 0.8 and h != hand))
+    if edge:
+        out.append(f"Mains à la frontière (jouées en partie seulement) : {', '.join(h for _, h in edge[:5])}.")
+    else:
+        out.append('Aucune main n\'est jouée en partie seulement : la frontière de cette action est nette.')
+    return out
 
 
 def correct(version, spot_id, hand, action_id):
@@ -304,10 +354,10 @@ def correct(version, spot_id, hand, action_id):
                   choice_loss_fr=(gain_range(g['regret_mbb'] / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='écart net' if conf == 'élevée' else 'écart modéré',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
-        lines = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}"] + because + [ex['comparison_fr'], ex['note_fr']]
-        core = []
+        core = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
+        lines = core[:1] + because + core[1:]
     else:
-        lines += because                                         # la stratégie arrondie est affichée à part (barres et grille)
+        core = list(lines); lines += because                     # la stratégie arrondie est affichée à part (barres et grille)
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],

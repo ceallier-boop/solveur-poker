@@ -198,14 +198,16 @@ function renderAnswer(r) {
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
   const ex = r.exploit; $('a-exploit').hidden = !ex;
-  for (const id of ['a-choice', 'a-strategy-title', 'a-strategy', 'a-explanation']) $(id).hidden = !!ex;   // exploitant : correction courte
+  for (const id of ['a-choice', 'a-strategy-title', 'a-strategy']) $(id).hidden = !!ex;   // exploitant : correction courte
   if (ex) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce type de profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
-      + (r.why_fr && r.why_fr.length ? `<div><dt>Pourquoi</dt><dd>${r.why_fr.join('\n')}</dd></div>` : '')
+
       + `<div><dt>Par rapport au GTO</dt><dd>${ex.comparison_fr}</dd></div><p class="note">${ex.note_fr}</p>`;
   }
-  $('a-explanation').textContent = r.explanation_fr;
-  $('a-grid-box').hidden = !r.range; if (r.range) renderGrid(r.range, state.q.hand, !!ex);
+  $('a-explanation').hidden = !!ex; $('a-explanation').textContent = r.core_fr || r.explanation_fr;
+  const why = r.why_fr || []; $('a-why-box').hidden = !why.length; $('a-why-box').open = false;
+  $('a-why').innerHTML = why.map((l) => `<p>${l}</p>`).join('');
+  $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, !!ex);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   show('answer'); v.focus({ preventScroll: true });
@@ -230,7 +232,7 @@ function renderGrid(range, hand, exploit) {
   }
   $('a-grid').innerHTML = cells.join('');
   $('a-grid').setAttribute('aria-label', `Grille des 169 mains ; ta main ${hand} est entourée`);
-  $('a-grid-title').textContent = exploit ? 'Contre ce type de profil, sur toutes les mains' : 'Stratégie sur toutes les mains';
+  $('a-grid-title').textContent = exploit ? 'Voir la décision contre ce type de profil sur toutes les mains' : 'Voir la stratégie sur toutes les mains';
   $('a-grid-legend').innerHTML = acts.map((a, j) => `<span><i style="background:${ACT_COLOR[a.type]}"></i>${a.label_fr} ${range.share_pct[j]} %</span>`).join('')
     + '<span><i class="me-key"></i>ta main</span>';
 }
