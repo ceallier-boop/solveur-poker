@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from spinsacademy import catalog, quiz
 
 ADMIN = {'X-Admin-Token': 'jeton-de-test'}
-GTO, OLD, EXP = 'gto_preflop/2026.10.13-1', 'gto_preflop/2026.10.12-1', 'exploit_calls/2026.10.13-2'
+GTO, OLD, EXP = 'gto_preflop/2026.10.13-2', 'gto_preflop/2026.10.12-1', 'exploit_calls/2026.10.13-3'
 
 
 @pytest.fixture()

@@ -404,7 +404,7 @@
     "exploiter",
     "adaptation"
    ],
-   "def": "Mode qui enseigne à s'écarter du GTO pour profiter d'un adversaire qui joue mal, ici un profil fictif qui part à tapis trop ou pas assez souvent."
+   "def": "Mode qui enseigne à s'écarter de l'équilibre pour profiter d'un adversaire qui joue mal : ici un profil fictif qui part à tapis trop ou pas assez souvent par rapport à un joueur équilibré en push/fold (qui ne limpe jamais)."
   },
   {
    "term": "Profil fictif",
@@ -423,7 +423,7 @@
     "serré",
     "nit"
    ],
-   "def": "Profil qui part à tapis nettement moins souvent que le GTO et ne garde que ses tapis les plus rentables : sa range de tapis est plus forte, il faut payer moins large. Badge ▼▼."
+   "def": "Profil qui part à tapis nettement moins souvent qu'un joueur équilibré en push/fold et ne garde que ses tapis les plus rentables : sa range de tapis est plus forte, il faut payer moins large. Badge ▼▼."
   },
   {
    "term": "Prudent",
@@ -431,7 +431,7 @@
    "match": [
     "prudent"
    ],
-   "def": "Profil un peu trop serré : il pousse moins souvent que le GTO, sans excès. Badge ▼."
+   "def": "Profil un peu trop serré : il pousse moins souvent qu'un joueur équilibré en push/fold, sans excès. Badge ▼."
   },
   {
    "term": "Agressif",
@@ -439,7 +439,7 @@
    "match": [
     "agressif"
    ],
-   "def": "Profil un peu trop agressif : il pousse plus souvent que le GTO. Badge ▲."
+   "def": "Profil un peu trop agressif : il pousse plus souvent qu'un joueur équilibré en push/fold. Badge ▲."
   },
   {
    "term": "Maniaque (Maniac)",
@@ -448,7 +448,7 @@
     "maniaque",
     "maniac"
    ],
-   "def": "Profil qui pousse beaucoup plus souvent que le GTO, avec une range plus large, donc en général moins forte : il faut payer beaucoup plus large. Badge ▲▲."
+   "def": "Profil qui pousse beaucoup plus souvent qu'un joueur équilibré en push/fold, avec une range plus large, donc en général moins forte : il faut payer beaucoup plus large. Badge ▲▲."
   },
   {
    "term": "Station d'appel",

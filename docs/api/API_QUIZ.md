@@ -4,8 +4,8 @@ Lancement : `python -m uvicorn spinsacademy.api:app --port 8000`. La documentati
 
 Variables d'environnement :
 - `SPINSACADEMY_DB` : base SQLite des sessions (par défaut `data/app/spinsacademy.sqlite`, hors dépôt) ;
-- `SPINSACADEMY_DATASET` : version du dataset GTO servie (par défaut `2026.10.12-2`) ;
-- `SPINSACADEMY_EXPLOIT` : dataset exploitant servi (par défaut `exploit_calls/2026.10.13-1`, voir `docs/dataset/EXPLOIT_CALLS.md`).
+- `SPINSACADEMY_DATASET` : version du dataset GTO servie (par défaut `2026.10.13-2`) ;
+- `SPINSACADEMY_EXPLOIT` : dataset exploitant servi (par défaut `exploit_calls/2026.10.13-3`, voir `docs/dataset/EXPLOIT_CALLS.md`).
 
 Mode invité au MVP : pas d'authentification. La question 22 du cahier des charges (comptes ou invité) reste à trancher. L'interface génère un identifiant anonyme d'appareil, envoyé dans l'en-tête `X-Player-Id`. Il relie les séries d'un même joueur ; une série créée sans cet en-tête n'entre dans aucune statistique.
 

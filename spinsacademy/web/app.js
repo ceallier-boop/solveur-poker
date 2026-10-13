@@ -144,7 +144,7 @@ function renderQuestion(data) {
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
-  $('ask').textContent = `Avec ${q.hand_display.replace(/([♥♦])/g, '$1\uFE0E')}, que fais-tu ?`;
+  $('ask').innerHTML = `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}\uFE0E</span>`)}, que fais-tu ?`;
   $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;
@@ -156,7 +156,7 @@ function renderQuestion(data) {
     const bar = (label, x, cls, z) => `<div class="vbar ${cls}"><span>${label}</span><em>${z || ''}<i style="width:${w(x)}"></i></em><b>${bb(x)} %</b></div>`;
     const bandTxt = lo == null ? `moins de ${bb(hi)} %` : hi == null ? `plus de ${bb(lo)} %` : `entre ${bb(lo)} et ${bb(hi)} %`;
     $('villain').innerHTML = (pr ? `<div class="vhead">${pbadge(pr)}<span>Profil fictif · <b>${pr.name_fr}</b></span></div><small>${pr.description_fr}</small>` : '')
-      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar('GTO', v.gto_pct, 'gto')}`
+      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar(v.reference === 'nash_pushfold' ? 'Équilibre' : 'GTO', v.gto_pct, 'gto')}`
       + (pr && pr.band_pct ? `<p class="vband"><span class="swatch"></span>Ce type de profil : tapis ${bandTxt} des mains ici.</p>` : '');
   }
   const box = $('actions'); box.innerHTML = '';
@@ -420,7 +420,7 @@ $('st-delete').addEventListener('click', async () => {
 });
 $('quick-start').addEventListener('click', () => start({}));
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
-  exploit: 'Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui poussent moins ou plus souvent que le GTO. Hypothèses de simulation, pas de vrais joueurs.' };
+  exploit: "Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui partent à tapis moins ou plus souvent qu'un joueur équilibré en push/fold. Hypothèses de simulation, pas de vrais joueurs." };
 const EXPLOIT_FAMILIES = ['', 'vs_allin'];                          // le mode exploitant ne couvre que les calls de tapis
 document.querySelector('.mode-switch').addEventListener('click', () => {
   $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';

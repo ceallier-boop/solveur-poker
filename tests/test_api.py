@@ -84,17 +84,21 @@ def test_exploit_mode_series(client):
 
 
 def test_exploit_dataset_consistency():
-    """facteur 1 implicite : l'EV « GTO » stockée = l'EV exacte du spot GTO ; une adaptation change bien l'action"""
-    from spinsacademy import quiz
+    """facteur 1 : l'EV de référence stockée = l'EV exacte du call contre la range d'équilibre push/fold ; une adaptation change bien l'action"""
+    import numpy as np
+    from spinsacademy import quiz, allin, pushfold
     _, ex = quiz.load(quiz.DEFAULT_EXPLOIT); _, gto = quiz.load(quiz.DEFAULT_VERSION)
     n = 0
     for sp in list(ex.values())[:40]:
-        base = gto[sp['base_spot_id']]
+        base = gto[sp['base_spot_id']]; push, _ = pushfold.shover_range(base, sp['villain']['position'])
+        st = dict(zip(sp['players'], sp['stacks_bb'])); L = min(st[sp['hero']], st[sp['villain']['position']])
+        ref = allin.call_ev(push, L, sp['pot_bb'] - sp['hero_committed_bb'] - L, sp['hero_committed_bb'])
+        assert sp['villain']['reference'] == 'nash_pushfold'
         for h, v in sp['hands'].items():
             if 'ev_gto' not in v: continue
-            assert abs(v['ev_gto'][1] - base['hands'][h]['ev_exact'][1]) < 1e-6
+            assert abs(v['ev_gto'][1] - ref[quiz.NAMES.index(h)]) < 1e-4
             if v['kind'] == 'adaptation':
-                assert (v['ev_exact'][1] > 0) != (v['ev_gto'][1] > 0) and abs(v['ev_exact'][1]) * 1000 >= 20; n += 1
+                assert (v['ev_exact'][1] > 0) != (v['ev_gto'][1] > 0) and min(abs(v['ev_exact'][1]), abs(v['ev_gto'][1])) * 1000 >= 20; n += 1
         f = sp['villain']['factor']
         assert (sp['villain']['observed_pct'] > sp['villain']['gto_pct']) == (f > 1)
     assert n > 0
@@ -212,7 +216,7 @@ def history_lines(sp):
 
 def test_profile_catalog_texts():
     from spinsacademy import profiles
-    c = profiles.catalog(); assert c['version'] == '1.3.0'
+    c = profiles.catalog(); assert c['version'] == '1.4.0'
     m = next(p for p in c['profiles'] if p['id'] == 'maniac')
     assert 'mains faibles' not in m['description_fr'] and 'moins forte' in m['description_fr']
     assert all('4 à 25 BB' not in (p['scope_fr'] or '') for p in c['profiles'])

@@ -39,7 +39,9 @@ def shove_ev(caller_reach, caller_call, L, dead=0.0, my_blind=0.0, his_blind=0.0
 #   call : nœud du joueur qui paie -> (nœud et action du shove, indices des deux joueurs, argent mort, blind payée par celui qui paie)
 #   shove : nœud du joueur qui pousse -> (nœud de réponse de l'adversaire, indices, argent mort, blind du héros, blind de l'adversaire)
 CALL_NODES = {
-    2: {'SB-allin': (('root', 'A'), (0, 1), 0.0, 1.0)},
+    2: {'SB-allin': (('root', 'A'), (0, 1), 0.0, 1.0),
+        'SB-call_BB-allin': (('SB-call', 'A'), (0, 1), 0.0, 1.0),          # le SB a complété, le BB pousse
+        'SB-raise3.5_BB-allin': (('SB-raise3.5', 'A'), (0, 1), 0.0, 3.5)},  # le SB a relancé à 3,5 BB, le BB pousse
     3: {'BTN-fold_SB-allin': (('BTN-fold', 'A'), (1, 2), 0.0, 1.0),
         'BTN-allin_SB-fold': (('root', 'A'), (0, 2), 0.5, 1.0)},
 }

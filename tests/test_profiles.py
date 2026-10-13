@@ -34,7 +34,7 @@ def test_question_and_correction_show_profile_and_the_four_parts():
         assert 'hypothèse de simulation' in ex['note_fr'] and ex['profile']['catalog_version'] == profiles.catalog()['version']
         assert r['explanation_fr'].startswith('Contre ce type de profil') and ' BB' in ex['reference_fr']
         assert re.fullmatch(r'.+\.\n.+ (perd|perdrait|gagne) (moins de 0,02 BB|entre [\d,]+ et [\d,]+ BB|plus de 5 BB)\.', ex['reference_fr'], re.S)  # fourchette
-        assert ex['comparison_fr'].startswith('En GTO, ce serait')
+        assert ex['comparison_fr'].startswith("À l'équilibre push/fold, ce serait")
     g = quiz.correct(quiz.DEFAULT_VERSION, *next(iter((s['spot_id'], h) for s in quiz.load()[1].values() for h, x in s['hands'].items() if x['quiz_eligible'])), 'F')
     assert g['exploit'] is None and g['core_fr'] and not any(w in g['core_fr'] for w in g['why_fr'])
     assert quiz.gain_range(0.01) == 'moins de 0,02 BB' and quiz.gain_range(-0.3) == 'entre 0,06 et 0,5 BB' and quiz.gain_range(0.04) == 'entre 0,02 et 0,06 BB' and quiz.gain_range(7) == 'plus de 5 BB'

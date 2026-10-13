@@ -125,3 +125,25 @@ Pour 15 à 25 BB, pots limpés heads-up et à trois : exports postflop HRC (flop
 ### 6.5 ICM
 
 Les calculs restent en chip EV (décision du porteur du projet). Pour les gros multiplicateurs, où plusieurs places sont payées, il faudrait des calculs ICM séparés : hors périmètre actuel.
+
+## 7. Calculs demandés après les relectures croisées (2026-10-13, `docs/audit/RELECTURES_2026-10-13.md`)
+
+Validé par le porteur du projet : ces situations sont à ajouter à la liste d'exports. Même arbre de référence (§0), chip EV.
+
+### 7.1 Tapis à toutes les profondeurs (priorité 1)
+
+L'arbre actuel retire le tapis direct trop tôt : le SB premier à parler (3 joueurs et heads-up) et le BB face à un limp n'ont plus l'option tapis à partir de 16 BB, le BTN premier à parler à partir de 20 BB. Garder l'option tapis de 4 à 25 BB pour chaque nœud (11 spots SB concernés aujourd'hui), pour que l'application n'enseigne pas une coupure artificielle.
+
+### 7.2 Décisions après la première action (priorité 1)
+
+- BTN face à l'iso-relance, à la sur-relance et au tapis du SB ou du BB après son open ou son limp ;
+- SB face au BB après avoir complété à 3 joueurs (`BTN-fold_SB-call_BB-raise` et `BTN-fold_SB-call_BB-allin`) ;
+- multiway : BB face à un limp du BTN puis un complément du SB, squeeze du SB ou du BB après open et call, sur-call d'un tapis.
+
+### 7.3 Tailles d'ouverture (priorité 2)
+
+Ouvertures à 2 et 2,5 BB en plus de 2,3 BB (BTN) et de 3,5 BB (SB), notamment en heads-up sous 12 BB, où une ouverture à 3,5 BB engage plus du tiers du tapis. Complète le §6.2.
+
+### 7.4 Précision (priorité 2)
+
+Sur les mains où l'EV exacte existe, l'EV HRC s'en écarte de 58 mBB en médiane et de 251 mBB au 90e centile (3 à 12 fois la tolérance de correction). En attendant des calculs plus précis, l'application ne tire plus les questions HRC dont la leçon coûte moins de 150 mBB (`quiz.HRC_NOISE_MBB`). Des exports à précision plus élevée (plus d'itérations, mode postflop uniforme : certaines profondeurs viennent de `v2/general`, d'autres de `complement2/simple`) permettraient de baisser ce seuil.

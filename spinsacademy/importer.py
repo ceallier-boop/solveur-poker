@@ -24,7 +24,7 @@ from . import allin
 from .cards import NAMES, W
 from .hrc import ROOT, exports, is_allin, labels, load, positions, preflop_hash, tree_hash
 
-IMPORTER_VERSION = '1.2.0'
+IMPORTER_VERSION = '1.3.0'               # 1.3.0 : calls heads-up exacts face au tapis du BB après limp ou relance
 REF_PREFLOP = 'daa9aaa0'          # arbre préflop retenu (limp du BTN autorisé), voir data/hrc/README.md
 MIN_REACH = 0.05                  # poids d'atteinte minimal pour qu'une main soit proposée en question
 MAX_SELF_REGRET_MBB = 60.0        # incohérence maximale entre la stratégie HRC et l'EV de référence pour proposer la main

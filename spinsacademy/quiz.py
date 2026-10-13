@@ -15,8 +15,8 @@ from .cards import NAMES, W
 from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
-DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-1')                       # gto_preflop
-DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-2')
+DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-2')                       # gto_preflop
+DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-3')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
@@ -165,7 +165,7 @@ def prompt(sp, hand):
     if v:
         pr = profiles.for_villain(v)
         parts.append((f"Profil fictif « {pr['name_fr']} » : ce " if pr else 'Ce ') +
-                     f"{v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation (GTO : {bb(v['gto_pct'])} %).")
+                     f"{v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).")
     parts.append(f"Tu es au {sp['hero']} avec {hand_display(hand)}. Que fais-tu ?")
     return '\n'.join(parts)                                     # une phrase par ligne (lisibilité sur mobile)
 
@@ -326,10 +326,14 @@ def question(version, spot_id, hand):
 
 VERB_FR = {'fold': 'se couche', 'check': 'checke', 'limp': 'limpe', 'call': 'paie', 'call_allin': 'paie', 'raise': 'relance', 'allin': 'part à tapis'}
 BASE_FR = 'des mains qui arrivent à cette décision'
-REF_PLAYER_FR = 'un joueur GTO'  # mode exploitant : la référence à laquelle le profil est comparé
-REF_COMPARE_FR = 'En GTO'
-REF_SAME_FR = "qu'en GTO"
-REF_SHORT_FR = 'GTO'
+# mode exploitant : la référence à laquelle le profil est comparé (générateur 2.0.0 : l'équilibre push/fold)
+REF_NAMES = {'nash_pushfold': dict(player="un joueur équilibré en push/fold", compare="À l'équilibre push/fold", same="qu'à l'équilibre push/fold",
+                                   short='équilibre push/fold'),
+             None: dict(player='un joueur GTO', compare='En GTO', same="qu'en GTO", short='GTO')}
+
+
+def ref_names(sp):
+    return REF_NAMES.get((sp.get('villain') or {}).get('reference'), REF_NAMES[None])
 
 
 def range_grid(sp):
@@ -495,7 +499,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
         share = mass(lambda h: eq[h] >= need)
         if exploit:
             g = mass(lambda h: (sp['hands'][h].get('ev_gto') or [0, -1])[1] > 0)
-            out.append(f"Contre ce profil, on paie avec {_pct(share)} {BASE_FR} ; contre {REF_PLAYER_FR}, avec {_pct(g)}.")
+            out.append(f"Contre ce profil, on paie avec {_pct(share)} {BASE_FR} ; contre {ref_names(sp)['player']}, avec {_pct(g)}.")
         else:
             out.append(f"Ici, on paie avec {_pct(share)} {BASE_FR}.")
         return out
@@ -736,9 +740,9 @@ def correct(version, spot_id, hand, action_id):
                   reference_fr=(f"{labels[best]}.\nTon choix {_named(labels[action_id])} perd {gain_range(raw / 1000)}." if action_id != best
                                 else f"{labels[best]}.\nPayer {verb} {gain_range(ee)}."),
                   # 2. comparaison avec la référence
-                  comparison_fr=(f"{REF_COMPARE_FR}, ce serait {_low(labels[gto])}.\n{pr['adaptation_fr']}" if changed else
-                                 f"Même décision {REF_SAME_FR} : l'écart de range ne suffit pas à la changer."),
-                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains ({REF_SHORT_FR} : {bb(v['gto_pct'])} %).",
+                  comparison_fr=(f"{ref_names(sp)['compare']}, ce serait {_low(labels[gto])}.\n{pr['adaptation_fr']}" if changed else
+                                 f"Même décision {ref_names(sp)['same']} : l'écart de range ne suffit pas à la changer."),
+                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).",
                   choice_loss_fr=(gain_range(raw / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='enjeu net' if conf == 'élevée' else 'enjeu faible',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")

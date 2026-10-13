@@ -93,3 +93,9 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
 - « À la limite » : mains à 2 points d'équité du seuil au plus ; repère de cote du pot exact en heads-up sans tapis couvert.
 - « Et ensuite ? » : tapis à 3 joueurs (« tout le monde se couche »), moins de 5 BB restants après l'action : l'essentiel se joue à l'équité ; comparaisons à la moyenne sur les valeurs affichées.
 - Libellés : « Compléter (0,5 BB de plus) », relances à une décimale, « Tapis (8 BB, 4 BB effectifs) » quand le joueur couvre ses adversaires.
+
+### Relectures croisées (2026-10-13 ; importeur 1.3.0, dataset gto_preflop 2026.10.13-2)
+
+- Importeur 1.3.0 : calls heads-up exacts face au tapis du BB après un limp (`SB-call_BB-allin`) ou une relance (`SB-raise3.5_BB-allin`) du SB. Seuls ces 3 spots changent par rapport à la 2026.10.13-1 (EV de référence exacte au lieu de HRC).
+- Stratégie de référence en EV exacte : l'action la plus rentable (`grading.reference_freq`), pour la notation, les barres, la grille et les parts ; la règle des 10 % s'applique à cette stratégie. Ailleurs, les fréquences HRC.
+- Tirage : questions HRC dont la leçon coûte au moins 150 mBB (`quiz.HRC_NOISE_MBB`), tapis effectif d'au moins 4 BB. Détail : `docs/audit/RELECTURES_2026-10-13.md`.
