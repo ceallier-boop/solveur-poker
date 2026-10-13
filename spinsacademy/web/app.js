@@ -86,17 +86,19 @@ function contributions(q) {
 function renderTable(q) {
   const view = $('table-view'); view.innerHTML = '';
   const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded } = contributions(q);
-  const spots = n === 3 ? [[50, 80], [15, 32], [85, 32]] : [[50, 80], [50, 18]];
+  const spots = n === 3 ? [[50, 84], [17, 22], [83, 22]] : [[50, 84], [50, 18]];
   for (let k = 0; k < n; k++) {
     const i = (hero + k) % n, [x, y] = spots[k];
     const seat = document.createElement('div');
     seat.className = 'seat' + (i === hero ? ' hero' : '') + (folded[i] ? ' folded' : '');
     seat.style.left = x + '%'; seat.style.top = y + '%';
     const left = q.stacks_bb[i] - c[i];
-    seat.innerHTML = `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (c[i] > 0 && !folded[i] ? `<span class="bet">mise ${bb(c[i])}</span>` : (folded[i] ? '<span class="bet">fold</span>' : ''));
+    const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
+    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (c[i] > 0 && !folded[i] ? `<span class="bet">mise ${bb(c[i])}</span>` : (folded[i] ? '<span class="bet">fold</span>' : ''));
     view.appendChild(seat);
   }
   const pot = document.createElement('div'); pot.className = 'pot'; pot.textContent = `Pot ${bb(q.pot_bb)} BB`; view.appendChild(pot);
+  const hole = document.createElement('div'); hole.className = 'cards hole'; hole.id = 'hero-cards'; view.appendChild(hole);   // tes cartes, devant ta place
 }
 
 function renderCards(display) {
@@ -120,7 +122,6 @@ function renderQuestion(data) {
   $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
-  $('prompt').textContent = `Tu as ${q.hand_display}.\nQue fais-tu ?`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;

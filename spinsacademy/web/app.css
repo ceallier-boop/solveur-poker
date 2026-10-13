@@ -55,7 +55,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .history { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .history li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; font-size: .85rem; }
 
-.hero { display: flex; align-items: center; gap: 14px; }
+
 .cards { display: flex; gap: 6px; flex: none; }
 .card { width: 54px; height: 76px; border-radius: 8px; background: #fff; border: 1px solid #c9d1cc; display: flex; flex-direction: column;
   align-items: center; justify-content: center; font-weight: 750; font-size: 1.45rem; line-height: 1; box-shadow: 0 2px 4px rgba(0,0,0,.15); }
@@ -144,3 +144,14 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .seat-line b { color: var(--accent); font-size: 1.3rem; }
 .prompt, .recap, .explanation, .exploit dd, .errors li, .villain { white-space: pre-line; }
 .prompt { font-size: 1.05rem; font-weight: 600; }
+
+/* table : cartes posées devant les joueurs */
+.table-view { height: 290px; }
+.pot { top: 38%; }
+.cards.hole { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%); gap: 6px; }
+.cards.hole .card { width: 50px; height: 70px; box-shadow: 0 3px 8px rgba(0,0,0,.35); }
+.cards.hole .card:first-child { transform: rotate(-4deg); } .cards.hole .card:last-child { transform: rotate(4deg); }
+.backs { display: flex; justify-content: center; gap: 3px; margin-bottom: 3px; }
+.backs i { width: 18px; height: 26px; border-radius: 3px; border: 2px solid #fff;
+  background: repeating-linear-gradient(45deg, #b3261e 0 3px, #8c1d17 3px 6px); }
+.seat { white-space: nowrap; }
