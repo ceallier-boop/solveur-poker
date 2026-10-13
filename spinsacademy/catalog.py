@@ -158,6 +158,13 @@ def validate(ref, statuses=None):
             checks.append(_check('source', 'Chaque spot exploitant renvoie à un spot du dataset GTO source', not orphans, f'source {src} ; {len(orphans)} orphelins'))
         except (OSError, ValueError):
             checks.append(_check('source', 'Dataset GTO source présent', False, f'{src} introuvable'))
+        from . import profiles
+        try:
+            cat = profiles.catalog(); none = [s['spot_id'] for s in rows if not profiles.for_villain(s.get('villain'))]
+            checks.append(_check('profiles', 'Chaque spot exploitant correspond à un profil fictif du catalogue', not none,
+                                 f"catalogue {cat['version']} ; {len(none)} spots sans profil" + (f' (premier : {none[0]})' if none else '')))
+        except FileNotFoundError as e:
+            checks.append(_check('profiles', 'Catalogue des profils fictifs présent', False, str(e)))
         st = (statuses or {}).get(src)
         checks.append(_check('source_status', 'Dataset GTO source publié', st == 'published', f'{src} : {STATUS_FR.get(st, "non enregistré")}', blocking=False))
     ok, detail = _rebuild(ref, manifest, spots)

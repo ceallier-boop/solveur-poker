@@ -67,6 +67,16 @@
             <button type="button" data-value="17-25" aria-pressed="false">17 à 25 BB</button>
           </div>
         </fieldset>
+        <fieldset id="profile-filter" hidden>
+          <legend>Profil fictif du vilain</legend>
+          <div class="chips" data-name="profile">
+            <button type="button" data-value="" aria-pressed="true">Tous</button>
+            <button type="button" data-value="nit" aria-pressed="false">Serré</button>
+            <button type="button" data-value="prudent" aria-pressed="false">Prudent</button>
+            <button type="button" data-value="agressif" aria-pressed="false">Agressif</button>
+            <button type="button" data-value="maniac" aria-pressed="false">Maniaque</button>
+          </div>
+        </fieldset>
         <button class="primary" id="custom-start">Lancer cette série</button>
       </details>
       <p class="error" id="home-error" role="alert" hidden></p>
@@ -93,6 +103,7 @@
       <p class="choice" id="a-choice"></p>
       <h3 id="a-strategy-title">Stratégie de référence</h3>
       <div class="strategy" id="a-strategy"></div>
+      <dl class="exploit" id="a-exploit" hidden></dl>
       <p class="explanation" id="a-explanation"></p>
       <button class="primary big" id="next-btn">Question suivante</button>
       <details class="report" id="report">

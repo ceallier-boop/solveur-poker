@@ -21,7 +21,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import catalog, progress, quiz
+from . import catalog, profiles, progress, quiz
 from .hrc import ROOT
 
 SCHEMA = """
@@ -86,6 +86,7 @@ class Filters(BaseModel):
     family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin)$')
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
+    profile: Optional[str] = Field(None, pattern='^(nit|prudent|agressif|maniac)$')      # mode exploitant
 
 
 class NewSession(BaseModel):
@@ -114,6 +115,12 @@ def index():
 @app.get('/admin', include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(WEB, 'admin.html'))
+
+
+@app.get('/profiles')
+def list_profiles():
+    """catalogue des profils exploitants fictifs (tendances et règles publiques, cahier des charges §6.1)"""
+    return profiles.catalog()
 
 
 @app.get('/health')

@@ -10,7 +10,7 @@ La question envoyée au joueur ne contient jamais la solution.
 """
 import json, os, random
 from functools import lru_cache
-from . import grading
+from . import grading, profiles
 from .cards import NAMES, W
 from .hrc import ROOT
 
@@ -91,7 +91,9 @@ def prompt(sp, hand):
     if not hist: parts.append('Personne n\'a encore parlé.')
     v = sp.get('villain')
     if v:
-        parts.append(f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation (GTO : {bb(v['gto_pct'])} %).")
+        pr = profiles.for_villain(v)
+        parts.append((f"Profil fictif « {pr['name_fr']} » : ce " if pr else 'Ce ') +
+                     f"{v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation (GTO : {bb(v['gto_pct'])} %).")
     parts.append(f"Tu es au {sp['hero']} avec {hand_display(hand)}. Que fais-tu ?")
     return ' '.join(parts)
 
@@ -107,6 +109,7 @@ def candidates(spots, filters=None):
         eff = sp['effective_stack_bb']
         if f.get('min_stack') is not None and eff < f['min_stack']: continue
         if f.get('max_stack') is not None and eff > f['max_stack']: continue
+        if f.get('profile') and (profiles.for_villain(sp.get('villain')) or {}).get('id') != f['profile']: continue
         if sp['eligible_hands'] > 0: out.append(sp)
     return out
 
@@ -117,7 +120,7 @@ def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=No
     _, spots = load(version); rnd = random.Random(seed)
     pool = [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded and sp.get('base_spot_id') not in excluded]
     exploit = is_exploit(version)
-    if exploit: pool = [sp for sp in pool if sp.get('adaptations', 0) > 0]
+    if exploit: pool = [sp for sp in pool if sp.get('adaptations', 0) > 0 and profiles.for_villain(sp['villain'])]   # pas de profil : pas de conseil
     if len(pool) < size: raise ValueError(f'{len(pool)} spots disponibles pour ces filtres, {size} demandés')
     by_fam = {}
     for sp in pool: by_fam.setdefault(family(sp), []).append(sp)
@@ -150,6 +153,7 @@ def question(version, spot_id, hand):
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), mode='exploit' if sp.get('villain') else 'gto',
                 villain=({k: sp['villain'][k] for k in ('position', 'stat', 'observed_pct', 'gto_pct')} if sp.get('villain') else None),
+                profile=(profiles.public(profiles.for_villain(sp['villain'])) if sp.get('villain') else None),
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
 
 
@@ -176,23 +180,32 @@ def correct(version, spot_id, hand, action_id):
             lines.append('L\'écart est trop faible pour être significatif : réponse acceptée.')
         elif g['verdict'] == 'imprécision':
             lines.append('Les deux actions ont une valeur proche : imprécision, pas erreur.')
-    v = sp.get('villain'); h = sp['hands'][hand]
+    v = sp.get('villain'); h = sp['hands'][hand]; ex = None; core = None
     if v:
-        trop = 'pousse plus souvent' if v['factor'] > 1 else 'pousse moins souvent'
-        if h['gto_action'] != best:
-            eg = h['ev_gto'][1]
-            lines.append(f"Adaptation : ce joueur {trop} que le GTO ({bb(v['observed_pct'])} % contre {bb(v['gto_pct'])} %). Contre un joueur GTO, "
-                         f"la bonne action serait {labels[h['gto_action']]} ({'+' if eg >= 0 else '−'}{bb(abs(eg))} BB pour le call) ; contre lui, c'est {labels[best]}.")
-        else:
-            lines.append(f"Même si ce joueur {trop} que le GTO, la bonne action ne change pas : l'écart de range ne suffit pas à retourner la décision.")
-        lines.append('Source : EV exacte du call contre sa range de tapis observée. Le profil est une hypothèse de simulation, pas une lecture d\'un adversaire réel.')
+        pr = profiles.for_villain(v)
+        if pr is None: raise ValueError('aucun profil fictif ne correspond à ce spot : pas de conseil exploitant')
+        eg, ee = h['ev_gto'][1], h['ev_exact'][1]; gto = h['gto_action']; changed = gto != best
+        sign = lambda x: f"{'+' if x >= 0 else '−'}{bb(abs(x))} BB"
+        conf = profiles.confidence(1000 * ee)
+        ex = dict(profile=dict(profiles.public(pr), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
+                  reference_fr=f"contre un joueur GTO, la bonne action est {labels[gto]} ; le call y vaut {sign(eg)}.",
+                  tendency_fr=f"profil fictif « {pr['name_fr']} », ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains au lieu de {bb(v['gto_pct'])} %.",
+                  adaptation_fr=(f"contre lui, la bonne action devient {labels[best]}. {pr['adaptation_fr']}" if changed else
+                                 'la bonne action ne change pas, l\'écart de range ne suffit pas à retourner la décision.'),
+                  changed=changed, confidence=conf,
+                  confidence_fr=f"Confiance {conf} : contre cette range, le call vaut {sign(ee)}. C'est un calcul exact, à condition que le profil soit juste ; "
+                                'le profil est une hypothèse de simulation, pas la lecture d\'un adversaire réel.')
+        core = list(lines)
+        lines += ['Référence GTO : ' + ex['reference_fr'], 'Tendance supposée : ' + ex['tendency_fr'], 'Adaptation : ' + ex['adaptation_fr'], ex['confidence_fr'],
+                  'Source : EV exacte du call contre la range de tapis du profil.']
     else:
         lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
         lines.append('Source : ' + ('EV exacte (décision tout ou rien)' if g['ev_source'] == 'exact' else 'EV du solveur de référence') + '.')
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
-                ev_source=g['ev_source'], explanation_fr=' '.join(lines))
+                ev_source=g['ev_source'], exploit=ex, explanation_fr=' '.join(lines),
+                core_fr=' '.join(core) if core is not None else None)
 
 
 def summary(version, answers):

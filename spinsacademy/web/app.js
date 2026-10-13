@@ -45,6 +45,7 @@ function mode() { return document.querySelector('.mode-switch [aria-pressed="tru
 function filters() {
   const f = {};
   for (const group of document.querySelectorAll('.filters .chips')) {
+    if (group.closest('fieldset').hidden) continue;
     const v = group.querySelector('[aria-pressed="true"]').dataset.value;
     if (!v) continue;
     if (group.dataset.name === 'depth') { const [a, b] = v.split('-').map(Number); f.min_stack = a; f.max_stack = b + 0.5; }
@@ -117,7 +118,9 @@ function renderQuestion(data) {
   $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';
   $('prompt').textContent = q.prompt_fr;
   const v = q.villain; $('villain').hidden = !v;
-  if (v) $('villain').innerHTML = `Le <b>${v.position}</b> part à tapis avec <b>${bb(v.observed_pct)} %</b> de ses mains ici (GTO : ${bb(v.gto_pct)} %).`;
+  const pr = q.profile;
+  if (v) $('villain').innerHTML = (pr ? `<span class="profile">Profil fictif : <b>${pr.name_fr}</b></span><small>${pr.description_fr}</small>` : '')
+    + `Le <b>${v.position}</b> part à tapis avec <b>${bb(v.observed_pct)} %</b> de ses mains ici (GTO : ${bb(v.gto_pct)} %).`;
   const box = $('actions'); box.innerHTML = '';
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
@@ -155,11 +158,18 @@ function renderAnswer(r) {
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   v.innerHTML = `${title}<small>${r.chosen_label === r.best_label ? 'Meilleure action jouée.' : `Meilleure action : ${r.best_label}`}</small>`;
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '');
-  $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${Math.round(r.regret_mbb)} mBB de moins).`;
+  $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${r.regret_mbb < 100 ? Math.round(r.regret_mbb) + ' mBB' : bb(r.regret_mbb / 1000) + ' BB'} de moins).`;
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
-  $('a-explanation').textContent = r.explanation_fr;
+  const ex = r.exploit; $('a-exploit').hidden = !ex;
+  if (ex) {
+    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    $('a-exploit').innerHTML = [['Référence GTO', ex.reference_fr], ['Tendance supposée', ex.tendency_fr], ['Adaptation', ex.adaptation_fr],
+      [`Confiance ${ex.confidence}`, ex.confidence_fr.replace(/^Confiance [^:]+: /, '')]]
+      .map(([k, t]) => `<div><dt>${k}</dt><dd>${cap(t)}</dd></div>`).join('');
+  }
+  $('a-explanation').textContent = ex && r.core_fr ? r.core_fr : r.explanation_fr;
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   show('answer'); v.focus({ preventScroll: true });
@@ -241,8 +251,10 @@ $('st-delete').addEventListener('click', async () => {
 });
 $('quick-start').addEventListener('click', () => start({}));
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
-  exploit: 'Payer ou non un tapis contre un adversaire qui pousse plus ou moins souvent que le GTO. Profils simulés, pas de vrais joueurs.' };
-document.querySelector('.mode-switch').addEventListener('click', () => { $('mode-note').textContent = MODE_NOTE[mode()]; });
+  exploit: 'Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui poussent moins ou plus souvent que le GTO. Hypothèses de simulation, pas de vrais joueurs.' };
+document.querySelector('.mode-switch').addEventListener('click', () => {
+  $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';
+});
 $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);
 $('next-btn').addEventListener('click', () => next().catch((e) => alert(e.message)));
