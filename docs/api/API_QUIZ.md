@@ -22,6 +22,8 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 
 Familles de décision : `first_in` (premier à parler), `vs_limp`, `vs_raise`, `vs_allin`.
 
+Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le filtre `profile` (`nit`, `prudent`, `agressif`, `maniac`) restreint la série à un profil. Chaque question exploitante porte `profile` (sans conseil), et la correction un objet `exploit` : `reference_fr`, `tendency_fr`, `adaptation_fr`, `confidence` (`élevée` ou `moyenne`), `confidence_fr`, `profile` (avec la version du catalogue). Détails : `docs/dataset/EXPLOIT_CALLS.md`.
+
 ## Tirage d'une série (`spinsacademy/quiz.py`)
 
 - Chaque question tire une famille de décision (rotation aléatoire entre les familles disponibles), puis un spot de cette famille, puis une main proposable pondérée par sa fréquence naturelle (combos × atteinte).
