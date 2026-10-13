@@ -52,6 +52,15 @@ def bb(x):
     return s.replace('.', ',')
 
 
+GAIN_MIN_BB = 0.05                # en dessous : « <0,05 BB » (pas de mBB affichés au joueur)
+
+
+def gain_bb(x, signed=False):
+    """montant de gain ou de perte affiché au joueur, toujours en BB"""
+    s = f'<{bb(GAIN_MIN_BB)} BB' if abs(x) < GAIN_MIN_BB else f'{bb(abs(x))} BB'
+    return (('+' if x >= 0 else '−') + s) if signed else s
+
+
 def hand_display(h):
     if len(h) == 2: a, b = SUITS['pair']
     else: a, b = SUITS[h[2]]
@@ -198,12 +207,12 @@ def correct(version, spot_id, hand, action_id):
     base_id = 'F' if 'F' in ids else 'X'                     # référence : fold, ou check quand rien n'est à payer
     evb = ev[ids.index(best)] - ev[ids.index(base_id)]
     if best == base_id or abs(evb) < 0.005: lines = [f'Meilleure action : {labels[best]}.']
-    else: lines = [f"Meilleure action : {labels[best]} ({'+' if evb > 0 else '−'}{bb(abs(evb))} BB par rapport au {'fold' if base_id == 'F' else 'check'})."]
+    else: lines = [f"Meilleure action : {labels[best]} ({gain_bb(evb, signed=True)} par rapport au {'fold' if base_id == 'F' else 'check'})."]
     if action_id == best:
         lines.append('Tu as choisi la meilleure action.')
     else:
         r = g['regret_mbb']
-        lines.append(f"Ton choix, {labels[action_id]}, rapporte {bb(round(r)) + ' mBB' if r < 100 else bb(r / 1000) + ' BB'} de moins.")
+        lines.append(f"Ton choix, {labels[action_id]}, rapporte {gain_bb(r / 1000)} de moins.")
         if g['verdict'] == 'correct' and g['regret_mbb'] > grading.TOLERANCE_MBB:
             lines.append('C\'est une action de la stratégie mixte de référence : elle est acceptée.')
         elif g['verdict'] == 'correct':
@@ -215,7 +224,7 @@ def correct(version, spot_id, hand, action_id):
         pr = profiles.for_villain(v)
         if pr is None: raise ValueError('aucun profil fictif ne correspond à ce spot : pas de conseil exploitant')
         eg, ee = h['ev_gto'][1], h['ev_exact'][1]; gto = h['gto_action']; changed = gto != best
-        sign = lambda x: f"{'+' if x >= 0 else '−'}{bb(abs(x))} BB"
+        sign = lambda x: gain_bb(x, signed=True)
         conf = profiles.confidence(1000 * ee)
         ex = dict(profile=dict(profiles.public(pr), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
                   reference_fr=f"contre un joueur GTO, la bonne action est {labels[gto]} ; le call y vaut {sign(eg)}.",

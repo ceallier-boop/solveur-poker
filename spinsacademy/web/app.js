@@ -13,6 +13,7 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+const gainBB = (mbb) => (Math.abs(mbb) < 50 ? '<0,05 BB' : bb(Math.abs(mbb) / 1000) + ' BB');   // gains toujours en BB
 const pc = (x) => String(x).replace('.', ',') + ' %';
 
 // identifiant anonyme de l'appareil (mode invité) : relie les séries d'un même joueur pour les statistiques
@@ -179,7 +180,7 @@ function renderAnswer(r) {
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   v.innerHTML = `${title}<small>${r.chosen_label === r.best_label ? 'Meilleure action jouée.' : `Meilleure action : ${r.best_label}`}</small>`;
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '');
-  $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${r.regret_mbb < 100 ? Math.round(r.regret_mbb) + ' mBB' : bb(r.regret_mbb / 1000) + ' BB'} de moins).`;
+  $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${gainBB(r.regret_mbb)} de moins).`;
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
@@ -224,7 +225,7 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Mieux : <b>${e.best}</b> (${Math.round(e.regret_mbb)} mBB)</li>`).join('')
+    ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Mieux : <b>${e.best}</b> (${gainBB(e.regret_mbb)} de moins)</li>`).join('')
     : '<li>Aucune erreur sur cette série.</li>';
   show('summary');
 }
@@ -257,7 +258,7 @@ async function stats() {
   $('st-themes').innerHTML = Object.entries(s.by).map(([k, rows]) =>
     `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
   $('st-recurring').innerHTML = s.recurring_errors.length
-    ? s.recurring_errors.map((e, k) => `<li><b>${e.label}</b> : ${e.errors} erreurs sur ${e.questions} questions (${e.regret_mbb} mBB perdus)<br>${e.examples[0] || ''}<br><button class="link" data-k="${k}">S'entraîner sur ce thème</button></li>`).join('')
+    ? s.recurring_errors.map((e, k) => `<li><b>${e.label}</b> : ${e.errors} erreurs sur ${e.questions} questions (${gainBB(e.regret_mbb)} perdus)<br>${e.examples[0] || ''}<br><button class="link" data-k="${k}">S'entraîner sur ce thème</button></li>`).join('')
     : '<li>Pas d\'erreur répétée pour l\'instant.</li>';
   for (const b of $('st-recurring').querySelectorAll('button[data-k]')) b.addEventListener('click', () => start(s.recurring_errors[Number(b.dataset.k)].filters));
   $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;

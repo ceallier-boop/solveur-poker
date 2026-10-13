@@ -98,3 +98,17 @@ def test_exploit_dataset_consistency():
         f = sp['villain']['factor']
         assert (sp['villain']['observed_pct'] > sp['villain']['gto_pct']) == (f > 1)
     assert n > 0
+
+
+def test_gains_are_shown_in_bb_with_floor():
+    assert quiz.gain_bb(0.049) == '<0,05 BB' and quiz.gain_bb(0.05) == '0,05 BB' and quiz.gain_bb(1.234) == '1,23 BB'
+    assert quiz.gain_bb(-0.01, signed=True) == '−<0,05 BB' and quiz.gain_bb(0.12, signed=True) == '+0,12 BB'
+    seen_small = False
+    for ref in (quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT):
+        for sp in list(quiz.pool(ref))[:60]:
+            h = next(x for x, v in sp['hands'].items() if v['quiz_eligible'])
+            for a in sp['actions']:
+                r = quiz.correct(ref, sp['spot_id'], h, a['id'])
+                assert 'mBB' not in r['explanation_fr']
+                seen_small |= '<0,05 BB' in r['explanation_fr']
+    assert seen_small
