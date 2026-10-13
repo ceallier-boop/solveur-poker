@@ -262,7 +262,7 @@ def _points(x):
     n = round(x); return f"{n} point{'s' if n > 1 else ''}" if n >= 1 else 'moins de 1 point'
 
 
-def why(sp, hand, ev, best, labels, grid):
+def why(sp, hand, ev, best, labels, grid, chosen=None):
     """« pourquoi », tiré des données : calcul, marge, limites de la décision.
     Call d'un tapis à EV exacte : cote du pot, équité de la main, marge en points, mains qui paient ou se couchent tout juste.
     Ailleurs : part de la stratégie, marge sur la deuxième action, jeu mixte, mains à la frontière."""
@@ -281,7 +281,16 @@ def why(sp, hand, ev, best, labels, grid):
         out.append(f"Contre {whose}, {hand} a {_pct(have)} d'équité : "
                    + (f"marge de {_points(margin)} au-dessus du seuil, le call gagne {gain}." if margin >= 0
                       else f"{_points(-margin)} sous le seuil, le call perd {gain}."))
-        if abs(margin) < 3: out.append('Ta main est à la limite : un petit changement de range adverse ou de tapis peut inverser la décision.')
+        right = chosen is None or chosen == best; act = _low(labels[best])
+        if abs(margin) < 5:
+            out.append("Décision serrée (moins de 5 points d'écart) : " + ("bien vu, mais un petit changement de range adverse ou de tapis peut la renverser."
+                       if right else "ton erreur coûte peu ; retiens surtout le seuil d'équité, c'est lui qui tranche."))
+        elif abs(margin) <= 10:
+            out.append("Écart moyen (5 à 10 points) : " + ("la décision est claire dès que tu estimes bien la range adverse."
+                       if right else f"il fallait {act} ; l'écart est assez grand pour ne pas hésiter si tu estimes bien la range adverse."))
+        else:
+            out.append("Écart large (plus de 10 points) : " + ("c'est une décision de principe, à prendre sans hésiter."
+                       if right else f"erreur nette, il fallait {act} sans hésiter : la main est loin du seuil."))
         callers = sorted((v, h) for h, v in eq.items() if v >= need); folders = sorted(((v, h) for h, v in eq.items() if v < need), reverse=True)
         if callers and folders:
             out.append(f'À la limite (seuil {_pct1(need)}), payent encore : ' + ', '.join(f'{h} ({_pct1(v)})' for v, h in callers[:3])
@@ -313,6 +322,74 @@ def why(sp, hand, ev, best, labels, grid):
     return out
 
 
+_POSTFLOP = None
+POSTFLOP_FILE = os.path.join(os.path.dirname(__file__), 'data', 'postflop_profiles.json')
+POSTFLOP_ORDER = {3: ('SB', 'BB', 'BTN'), 2: ('BB', 'SB')}       # ordre de parole après le flop
+_R = '23456789TJQKA'
+
+
+def postflop_profile(hand):
+    global _POSTFLOP
+    if _POSTFLOP is None: _POSTFLOP = json.load(open(POSTFLOP_FILE))
+    return _POSTFLOP['hands'][hand]
+
+
+def next_steps(sp, hand, best):
+    """« Et ensuite ? » : forces et faiblesses de la main après le flop (énumération exacte des flops, data/postflop_profiles.json)"""
+    t = {a['id']: a['type'] for a in sp['actions']}[best]
+    p = postflop_profile(hand); pc = lambda x: f"{round(100 * x)} %"
+    pair = len(hand) == 2; suited = hand.endswith('s'); hi, lo = _R.index(hand[0]), _R.index(hand[1])
+    if t in ('allin', 'call_allin'):
+        return dict(intro="Tapis : tout est engagé, il n'y a plus de décision après le flop. Seule ton équité compte.", position=None, metrics=[], forces=[], weaknesses=[])
+    intro = ("Tu te couches : pas de postflop ici. Voici ce que cette main ferait au flop, pour comprendre pourquoi." if t == 'fold' else
+             "Après le flop, voici ce que tu peux attendre de cette main (sur tous les flops possibles).")
+    folded = {h['position'] for h in sp['history'] if h['action'] == 'fold'}
+    order = [x for x in POSTFLOP_ORDER[len(sp['players'])] if x not in folded]
+    position = None
+    if t != 'fold' and sp['hero'] in order and len(order) > 1:
+        position = ("Tu joueras en position : tu parles en dernier à chaque tour, tu vois ce que font les autres avant de décider." if order[-1] == sp['hero'] else
+                    "Tu joueras hors position : tu parles en premier à chaque tour, ce qui rend la main plus difficile à jouer et réduit l'équité que tu réalises.")
+    forces, weak = [], []
+    if pair:
+        forces.append(f"Brelan ou mieux au flop {pc(p['set_plus'])} du temps (environ 1 fois sur 8).")
+        if p['overpair'] >= 0.3: forces.append(f"Ta paire reste plus haute que les trois cartes du board {pc(p['overpair'])} du temps.")
+        if p['overpair'] < 0.5: weak.append(f"Au moins une carte plus haute que ta paire arrive au flop {pc(1 - p['overpair'])} du temps.")
+    else:
+        if p['top_pair_plus'] >= 0.25: forces.append(f"Paire max ou mieux au flop {pc(p['top_pair_plus'])} du temps.")
+        if suited: forces.append(f"Tirage couleur ou couleur au flop {pc(p['flush_draw_plus'])} du temps.")
+        if p['oesd_plus'] >= 0.08: forces.append(f"Tirage quinte par les deux bouts ou quinte {pc(p['oesd_plus'])} du temps, plus un tirage ventral {pc(p['gutshot'])}.")
+        weak.append(f"Tu rates complètement le flop {pc(p['miss'])} du temps : ni paire, ni tirage couleur, ni tirage par les deux bouts.")
+        if hi >= _R.index('T') and lo <= _R.index('7'):
+            weak.append(f"Quand ton {hand[0]} touche, ton kicker {hand[1]} est faible : tu risques d'être dominé par les {hand[0]}x plus forts.")
+        elif p['top_pair_plus'] < 0.12:
+            weak.append(f"Même quand tu touches, c'est rarement la paire max ({pc(p['top_pair_plus'])} du temps) : tes paires seront souvent battues.")
+        if not suited and p['oesd_plus'] < 0.05 and hi - lo >= 4:
+            weak.append("Peu de potentiel de tirage : main dépareillée et déconnectée.")
+    eq = float(_VSR()[NAMES.index(hand)])
+    if eq >= 0.55: forces.append(f"Même sans toucher, {pc(eq)} d'équité contre une main au hasard.")
+    elif eq < 0.42: weak.append(f"Main faible à l'abattage : {pc(eq)} d'équité contre une main au hasard.")
+    if pair:                                                     # une paire se compare aux paires, une main non pairée aux non pairées
+        avg = _POSTFLOP['average_pairs']; ref = 'des paires servies'
+        keys = (('set_plus', 'Brelan ou mieux'), ('overpair', 'Paire plus haute que le board'), ('draw_plus', 'Tirage couleur ou quinte'))
+    else:
+        avg = _POSTFLOP['average_unpaired']; ref = 'des mains non pairées'
+        keys = (('pair_plus', 'Paire ou mieux'), ('top_pair_plus', 'Paire max ou mieux'), ('draw_plus', 'Tirage couleur ou quinte'))
+    cmp = lambda v, a: 'equal' if abs(v - a) < 0.005 else 'above' if v > a else 'below'
+    metrics = [dict(key=k, label_fr=l, value=p[k], average=avg[k], compare=cmp(p[k], avg[k]), reference_fr=ref) for k, l in keys]
+    return dict(intro=intro, position=position, metrics=metrics, forces=forces[:3], weaknesses=weak[:3])
+
+
+_VSR_CACHE = None
+
+
+def _VSR():
+    global _VSR_CACHE
+    if _VSR_CACHE is None:
+        from .allin import E
+        _VSR_CACHE = E @ (W / W.sum())
+    return _VSR_CACHE
+
+
 def correct(version, spot_id, hand, action_id):
     """correction et explication structurée (données du dataset uniquement)"""
     _, spots = load(version); sp = spots[spot_id]
@@ -325,7 +402,7 @@ def correct(version, spot_id, hand, action_id):
     evb = ev[ids.index(best)] - ev[ids.index(base_id)]
     if best == base_id or abs(evb) < 0.005: lines = [f'Meilleure action : {labels[best]}.']
     else: lines = [f"Meilleure action : {labels[best]}, {gain_bb(evb, signed=True)} par rapport au {'fold' if base_id == 'F' else 'check'}."]
-    grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid)
+    grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id); after = next_steps(sp, hand, best)
     if action_id == best:
         lines.append('Tu as choisi la meilleure action.')
     else:
@@ -361,7 +438,7 @@ def correct(version, spot_id, hand, action_id):
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
-                ev_source=g['ev_source'], exploit=ex, why_fr=because, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
+                ev_source=g['ev_source'], exploit=ex, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core) if core is not None else None)
 
 

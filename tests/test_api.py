@@ -150,3 +150,27 @@ def test_lexique_is_served_and_well_formed(client):
     assert len(terms) == len(lex['terms'])                                                 # pas de doublon
     for needed in ('GTO', 'Équité', 'Cote du pot', 'Range', 'Stratégie mixte', 'ICM'):
         assert any(x.startswith(needed) for x in terms), needed
+
+
+def test_equity_gap_bands_and_next_steps():
+    _, spots = quiz.load(); bands = set(); kinds = set()
+    for sp in spots.values():
+        for h, x in sp['hands'].items():
+            if not x['quiz_eligible']: continue
+            for a in sp['actions']:
+                r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, a['id'])
+                for line in r['why_fr']:
+                    for b in ('Décision serrée', 'Écart moyen', 'Écart large'):
+                        if line.startswith(b): bands.add((b, a['id'] == r['best_action']))
+                n = r['next']; kinds.add(bool(n['metrics']))
+                for m in n['metrics']:
+                    assert m['compare'] == ('equal' if abs(m['value'] - m['average']) < 0.005 else 'above' if m['value'] > m['average'] else 'below')
+                if {t['id']: t['type'] for t in sp['actions']}[r['best_action']] in ('allin', 'call_allin'): assert not n['metrics']
+        if len(bands) == 6 and kinds == {True, False}: break
+    assert len(bands) == 6 and kinds == {True, False}             # trois niveaux d'écart, réponse juste ou fausse
+
+
+def test_flop_profiles_match_known_probabilities():
+    assert abs(quiz.postflop_profile('77')['set_plus'] - 0.1176) < 1e-3                      # brelan au flop : 11,8 %
+    assert abs(quiz.postflop_profile('AKs')['flush_draw_plus'] - 0.1179) < 1e-3              # tirage couleur ou couleur : 11,8 %
+    assert 0.32 <= quiz.postflop_profile('K7o')['pair_plus'] <= 0.34                          # paire ou mieux avec une main non pairée

@@ -124,4 +124,4 @@ Les préférences sont incluses dans `GET /users/me/export` et effacées par `DE
 
 ## Lexique
 
-`spinsacademy/web/lexique.json` (servi en `/static/lexique.json`, version 1.0.0) : 56 termes techniques en 5 catégories (table et format, actions, calcul et stratégie, profils exploitants, application). Le bouton « Lexique » de la barre du haut ouvre un panneau : d'abord les termes repérés sur l'écran affiché (sigles BB, SB, BTN, GTO, EV, ICM, mBB repérés en respectant la casse), puis tout le lexique par catégorie, avec une recherche. Les définitions sont à faire relire par un expert poker.
+`spinsacademy/web/lexique.json` (servi en `/static/lexique.json`, version 1.0.0) : 68 termes techniques en 5 catégories (table et format, actions, calcul et stratégie, profils exploitants, application). Le bouton « Lexique » de la barre du haut ouvre un panneau : d'abord les termes repérés sur l'écran affiché (sigles BB, SB, BTN, GTO, EV, ICM, mBB repérés en respectant la casse), puis tout le lexique par catégorie, avec une recherche. Les définitions sont à faire relire par un expert poker.

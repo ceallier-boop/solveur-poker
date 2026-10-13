@@ -207,10 +207,28 @@ function renderAnswer(r) {
   $('a-explanation').hidden = !!ex; $('a-explanation').textContent = r.core_fr || r.explanation_fr;
   const why = r.why_fr || []; $('a-why-box').hidden = !why.length; $('a-why-box').open = false;
   $('a-why').innerHTML = why.map((l) => `<p>${l}</p>`).join('');
+  renderNext(r.next);
   $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, !!ex);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   show('answer'); v.focus({ preventScroll: true });
+}
+
+// ------------------------------------------------------------------ « Et ensuite ? » : la main après le flop, comparée à la moyenne
+function renderNext(n) {
+  $('a-next-box').hidden = !n; $('a-next-box').open = false; if (!n) return;
+  const p100 = (x) => Math.round(100 * x);
+  const top = Math.max(...(n.metrics || []).map((m) => Math.max(m.value, m.average)), 0.01);
+  const TAG = { above: '▲ au-dessus', below: '▼ en dessous', equal: '= dans' };
+  const rows = (n.metrics || []).map((m) => `<div class="mrow ${m.compare}">
+      <span class="mlabel">${m.label_fr}</span>
+      <span class="mtrack"><i style="width:${(100 * m.value / top).toFixed(1)}%"></i><b style="left:${(100 * m.average / top).toFixed(1)}%" title="moyenne"></b></span>
+      <span class="mval">${p100(m.value)} %</span>
+      <span class="mtag">${TAG[m.compare]} de la moyenne (${p100(m.average)} %)</span></div>`).join('');
+  const list = (xs, cls, title) => (xs && xs.length ? `<h4 class="${cls}">${title}</h4><ul class="${cls}">${xs.map((x) => `<li>${x}</li>`).join('')}</ul>` : '');
+  $('a-next').innerHTML = `<p>${n.intro}</p>` + (n.position ? `<p class="pos">${n.position}</p>` : '')
+    + (rows ? `<div class="metrics"><p class="mhead">Au flop, comparé à la moyenne ${n.metrics[0].reference_fr} (repère vertical) :</p>${rows}</div>` : '')
+    + list(n.forces, 'plus', 'Forces') + list(n.weaknesses, 'minus', 'Faiblesses');
 }
 
 // ------------------------------------------------------------------ grille 13 x 13 de la stratégie de référence
