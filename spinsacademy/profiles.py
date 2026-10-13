@@ -36,9 +36,23 @@ def for_villain(villain, version=None):
     return None
 
 
-def public(p):
-    """ce que voit le joueur avant de répondre (pas de conseil d'adaptation)"""
-    return {k: p[k] for k in ('id', 'name_fr', 'description_fr', 'difficulty', 'catalog_version')}
+def _freq(k, p):
+    """fréquence (0..1) d'un joueur dont la cote de tapis vaut k fois celle du GTO (fréquence GTO p)"""
+    return k * p / (1 + (k - 1) * p) if p < 1 else 1.0
+
+
+def band(p, gto_pct):
+    """fourchette de reconnaissance du profil dans une situation : (min %, max %), None pour une borne ouverte"""
+    idf = p.get('identification') or {}; q = gto_pct / 100
+    lo, hi = idf.get('odds_factor_min'), idf.get('odds_factor_max')
+    return (None if lo is None else round(100 * _freq(lo, q), 1), None if hi is None else round(100 * _freq(hi, q), 1))
+
+
+def public(p, gto_pct=None):
+    """ce que voit le joueur avant de répondre (pas de conseil d'adaptation) ; avec gto_pct : fourchette de reconnaissance"""
+    out = {k: p[k] for k in ('id', 'name_fr', 'description_fr', 'difficulty', 'catalog_version')}
+    if gto_pct is not None and p.get('identification'): out['band_pct'] = list(band(p, gto_pct))
+    return out
 
 
 def confidence(ev_mbb):

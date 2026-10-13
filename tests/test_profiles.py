@@ -32,7 +32,7 @@ def test_question_and_correction_show_profile_and_the_four_parts():
         assert ex['confidence'] == ('élevée' if abs(1000 * sp['hands'][h]['ev_exact'][1]) >= exploit.CLEAR_MBB else 'moyenne')
         assert all(ex[k] for k in ('reference_fr', 'comparison_fr', 'tendency_fr', 'confidence_fr', 'note_fr'))
         assert 'hypothèse de simulation' in ex['note_fr'] and ex['profile']['catalog_version'] == profiles.catalog()['version']
-        assert r['explanation_fr'].startswith('Contre ce profil') and ' BB' in ex['reference_fr']
+        assert r['explanation_fr'].startswith('Contre ce type de profil') and ' BB' in ex['reference_fr']
         assert re.fullmatch(r'.+\.\n.+ (perd|gagne) (moins de 0,05 BB|entre [\d,]+ et [\d,]+ BB|plus de 5 BB)\.', ex['reference_fr'], re.S)  # fourchette
         assert ex['comparison_fr'].startswith('En GTO, ce serait')
     g = quiz.correct(quiz.DEFAULT_VERSION, *next(iter((s['spot_id'], h) for s in quiz.load()[1].values() for h, x in s['hands'].items() if x['quiz_eligible'])), 'F')
@@ -59,3 +59,14 @@ def test_spot_without_profile_is_never_asked(monkeypatch):
     with pytest.raises(ValueError): quiz.draw_series(quiz.DEFAULT_EXPLOIT, None, 5, 1)
     sp, h = next(_adaptation())
     with pytest.raises(ValueError): quiz.correct(quiz.DEFAULT_EXPLOIT, sp['spot_id'], h, 'F')
+
+
+def test_identification_band_contains_every_profile_spot():
+    _, spots = quiz.load(quiz.DEFAULT_EXPLOIT)
+    for sp in spots.values():
+        v = sp['villain']; pr = profiles.for_villain(v); lo, hi = profiles.band(pr, v['gto_pct'])
+        assert (lo is None or v['observed_pct'] >= lo - 0.05) and (hi is None or v['observed_pct'] <= hi + 0.05)
+        assert (lo is None) == (pr['id'] == 'nit') and (hi is None) == (pr['id'] == 'maniac')
+        if lo is not None and hi is not None: assert lo < hi
+    q = quiz.question(quiz.DEFAULT_EXPLOIT, sp['spot_id'], next(h for h, x in sp['hands'].items() if x['quiz_eligible']))
+    assert q['profile']['band_pct'] == list(profiles.band(pr, v['gto_pct']))

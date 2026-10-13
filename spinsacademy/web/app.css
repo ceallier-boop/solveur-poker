@@ -176,7 +176,11 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .villain .vhead b { color: var(--text); }
 .villain .vstat { margin: 6px 0 4px; font-size: .85rem; }
 .vbar { display: grid; grid-template-columns: 72px 1fr 52px; align-items: center; gap: 8px; font-size: .82rem; margin-top: 3px; }
-.vbar i { display: block; height: 10px; border-radius: 5px; background: var(--warn); }
+.vbar em { position: relative; display: block; height: 14px; }
+.vbar i { position: absolute; left: 0; top: 2px; display: block; height: 10px; border-radius: 5px; background: var(--warn); }
+.vbar u { position: absolute; top: 0; height: 14px; border-radius: 4px; background: var(--warn); opacity: .22; text-decoration: none; }
+.villain .vband { margin: 6px 0 0; font-size: .82rem; display: flex; align-items: center; gap: 6px; }
+.villain .swatch { width: 14px; height: 10px; border-radius: 3px; background: var(--warn); opacity: .35; flex: none; }
 .vbar.gto i { background: var(--muted); opacity: .6; }
 .vbar b { text-align: right; font-variant-numeric: tabular-nums; color: var(--text) !important; }
 .exploit .ref dt { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; text-transform: none; letter-spacing: 0; font-size: .85rem; }

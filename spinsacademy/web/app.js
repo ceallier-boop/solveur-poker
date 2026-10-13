@@ -146,10 +146,15 @@ function renderQuestion(data) {
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;
   if (v) {
-    const top = Math.max(v.observed_pct, v.gto_pct) * 1.15;
-    const bar = (label, x, cls) => `<div class="vbar ${cls}"><span>${label}</span><i style="width:${(100 * x / top).toFixed(1)}%"></i><b>${bb(x)} %</b></div>`;
+    const [lo, hi] = (pr && pr.band_pct) || [null, null];
+    const top = Math.min(100, Math.max(v.observed_pct, v.gto_pct, hi || 0) * 1.15);
+    const w = (x) => (100 * x / top).toFixed(1) + '%';
+    const zone = pr && pr.band_pct ? `<u style="left:${w(lo || 0)};width:${(100 * ((hi == null ? top : hi) - (lo || 0)) / top).toFixed(1)}%"></u>` : '';
+    const bar = (label, x, cls, z) => `<div class="vbar ${cls}"><span>${label}</span><em>${z || ''}<i style="width:${w(x)}"></i></em><b>${bb(x)} %</b></div>`;
+    const bandTxt = lo == null ? `moins de ${bb(hi)} %` : hi == null ? `plus de ${bb(lo)} %` : `entre ${bb(lo)} et ${bb(hi)} %`;
     $('villain').innerHTML = (pr ? `<div class="vhead">${pbadge(pr)}<span>Profil fictif · <b>${pr.name_fr}</b></span></div><small>${pr.description_fr}</small>` : '')
-      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs')}${bar('GTO', v.gto_pct, 'gto')}`;
+      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar('GTO', v.gto_pct, 'gto')}`
+      + (pr && pr.band_pct ? `<p class="vband"><span class="swatch"></span>Ce type de profil : tapis ${bandTxt} des mains ici.</p>` : '');
   }
   const box = $('actions'); box.innerHTML = '';
   q.options.forEach((o, k) => {
@@ -195,7 +200,7 @@ function renderAnswer(r) {
   const ex = r.exploit; $('a-exploit').hidden = !ex;
   for (const id of ['a-choice', 'a-strategy-title', 'a-strategy', 'a-explanation']) $(id).hidden = !!ex;   // exploitant : correction courte
   if (ex) {
-    $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
+    $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce type de profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
       + `<div><dt>Par rapport au GTO</dt><dd>${ex.comparison_fr}</dd></div><p class="note">${ex.note_fr}</p>`;
   }
   $('a-explanation').textContent = r.explanation_fr;

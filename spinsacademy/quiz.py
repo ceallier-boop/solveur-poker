@@ -204,7 +204,7 @@ def question(version, spot_id, hand):
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), mode='exploit' if sp.get('villain') else 'gto',
                 villain=({k: sp['villain'][k] for k in ('position', 'stat', 'observed_pct', 'gto_pct')} if sp.get('villain') else None),
-                profile=(profiles.public(profiles.for_villain(sp['villain'])) if sp.get('villain') else None),
+                profile=(profiles.public(profiles.for_villain(sp['villain']), sp['villain']['gto_pct']) if sp.get('villain') else None),
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
 
 
@@ -237,10 +237,10 @@ def correct(version, spot_id, hand, action_id):
         if pr is None: raise ValueError('aucun profil fictif ne correspond à ce spot : pas de conseil exploitant')
         eg, ee = h['ev_gto'][1], h['ev_exact'][1]; gto = h['gto_action']; changed = gto != best
         conf = profiles.confidence(1000 * ee); verb = 'gagne' if ee >= 0 else 'perd'
-        ex = dict(profile=dict(profiles.public(pr), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
+        ex = dict(profile=dict(profiles.public(pr, v['gto_pct']), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
                   # 1. référence exploitante : la bonne action contre ce profil, et l'enjeu en fourchette
                   reference_fr=(f"{labels[best]}.\nTon choix, {labels[action_id]}, perd {gain_range(g['regret_mbb'] / 1000)}." if action_id != best
-                                else f"{labels[best]}.\nContre ce profil, le call {verb} {gain_range(ee)}."),
+                                else f"{labels[best]}.\nContre ce type de profil, le call {verb} {gain_range(ee)}."),
                   # 2. comparaison avec la référence GTO
                   comparison_fr=(f"En GTO, ce serait {labels[gto]}.\n{pr['adaptation_fr']}" if changed else
                                  "Même décision qu'en GTO : l'écart de range ne suffit pas à la changer."),
@@ -248,7 +248,7 @@ def correct(version, spot_id, hand, action_id):
                   choice_loss_fr=(gain_range(g['regret_mbb'] / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='écart net' if conf == 'élevée' else 'écart modéré',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
-        lines = [f"Contre ce profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
+        lines = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
         core = []
     else:
         lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
