@@ -129,3 +129,13 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .report label { display: flex; gap: 8px; align-items: center; min-height: 40px; font-size: .93rem; }
 .report textarea { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); resize: vertical; }
 .report-done { margin: 6px 0 0; color: var(--ok); }
+
+.purpose { margin: 0; font-size: .85rem; font-weight: 600; padding: 6px 10px; border-radius: 999px; align-self: flex-start; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.purpose.weak { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.purpose.review { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.adapt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.adapt .switch { display: flex; gap: 10px; align-items: center; min-height: 44px; font-weight: 600; }
+.adapt .switch input { width: 22px; height: 22px; accent-color: var(--accent); }
+.adapt-mode p { margin: 6px 0 2px; font-size: .9rem; }
+.adapt-mode ul { margin: 0; padding-left: 18px; font-size: .9rem; }
+.adapt-mode small { color: var(--muted); }

@@ -112,6 +112,8 @@ function renderCards(display) {
 
 function renderQuestion(data) {
   state.q = data.question; state.index = data.question_index; state.size = data.size;
+  $('purpose').hidden = !data.purpose_fr; $('purpose').textContent = data.purpose_fr || '';
+  $('purpose').className = `purpose ${data.purpose || ''}`;
   const q = state.q;
   progress(`Question ${state.index + 1} / ${state.size}`);
   renderTable(q); renderCards(q.hand_display);
@@ -219,6 +221,7 @@ async function stats() {
   loading(true);
   const s = await api('/users/me/stats');
   progress('');
+  await adaptation();
   if (!s.questions) {
     $('st-score').innerHTML = '—<small>Joue une première série pour voir ta progression.</small>';
     for (const id of ['st-evolution', 'st-weakest', 'st-themes', 'st-recurring']) $(id).innerHTML = '';
@@ -241,6 +244,29 @@ async function stats() {
   $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;
   show('stats');
 }
+
+async function adaptation() {
+  const modes = { gto: 'GTO', exploit: 'Exploitant' }; const parts = []; let first = null;
+  for (const m of Object.keys(modes)) {
+    let a; try { a = await api(`/users/me/adaptation?mode=${m}`); } catch (e) { continue; }       // mode sans dataset publié : ignoré
+    first = first || a;
+    const list = (xs, kind) => xs.map((x) => `<li>${x.label_fr} <small>${x.errors} erreur${x.errors > 1 ? 's' : ''} sur ${x.answers} · difficulté ${x.difficulty_pct} %</small></li>`).join('');
+    parts.push(`<div class="adapt-mode"><b>${modes[m]}</b>${a.weak.length
+      ? `<p>À retravailler :</p><ul>${list(a.weak)}</ul>` : '<p>Aucun thème à retravailler pour l\'instant.</p>'}${a.review.length ? `<p>En révision :</p><ul>${list(a.review)}</ul>` : ''}</div>`);
+  }
+  if (!first) { $('st-adapt').hidden = true; return; }
+  $('st-adapt').hidden = false; $('adapt-on').checked = first.enabled;
+  $('adapt-rule').textContent = first.rule_fr + (first.since ? ` Réinitialisée le ${new Date(first.since).toLocaleDateString('fr-FR')}.` : '');
+  $('adapt-themes').innerHTML = parts.join('');
+}
+$('adapt-on').addEventListener('change', async (e) => {
+  try { await api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ adaptive: e.target.checked }) }); }
+  catch (err) { e.target.checked = !e.target.checked; alert(err.message); }
+});
+$('adapt-reset').addEventListener('click', async () => {
+  if (!confirm('Réinitialiser l\'adaptation ? Ta progression et ton historique sont conservés.')) return;
+  await api('/users/me/adaptation/reset', { method: 'POST' }); await adaptation();
+});
 
 // ------------------------------------------------------------------ navigation
 $('stats-btn').addEventListener('click', () => stats().catch((e) => alert(e.message)));

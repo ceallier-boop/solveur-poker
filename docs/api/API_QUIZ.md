@@ -99,3 +99,24 @@ L'import reste hors ligne : `python -m spinsacademy.importer --version X` (GTO, 
 | `POST /admin/datasets/{dataset}/{version}/disable` | `{reason, actor}` → retire (et les exploitants dérivés) |
 
 `GET /health` indique les versions publiées. Les refus du cycle de vie répondent `409` avec la raison.
+
+## Exercices adaptatifs (cahier des charges §9.3, `spinsacademy/adaptive.py`)
+
+Règle affichée au joueur (`rule_fr`) :
+- thème = famille de décision × position × profondeur, dans le mode de la série ;
+- difficulté d'un thème = (erreurs + 0,5 × imprécisions + 1) / (réponses + 3), taux lissé qui ne conclut pas sur quelques réponses ;
+- thème à retravailler : au moins 3 réponses, au moins 2 erreurs et une difficulté ≥ 40 % ;
+- thème acquis : au moins 5 réponses et une difficulté < 25 % ;
+- une série adaptée : 60 % de questions sur les thèmes à retravailler (tirés au prorata de leur difficulté), 20 % de révision (thèmes acquis les moins récemment travaillés), le reste en découverte (thèmes jamais travaillés, sinon les moins travaillés) ;
+- sans thème à retravailler, la série est tirée normalement.
+
+L'adaptation s'applique à la « série recommandée » d'un joueur identifié (`X-Player-Id`), sans filtre : un thème choisi par le joueur est toujours respecté. Elle ne modifie jamais la correction. Chaque question indique son objectif (`purpose` : `weak`, `review`, `discovery`, `complement` ; `purpose_fr`).
+
+| Route | Rôle |
+|---|---|
+| `POST /sessions` | champ facultatif `adaptive` (sinon : préférence du joueur) ; la réponse contient `adaptive` : `active`, `reason_fr`, `rule_fr` |
+| `GET /users/me/adaptation?mode=gto` | règle, thèmes à retravailler, thèmes en révision, état de la préférence, date de réinitialisation |
+| `GET /users/me/preferences`, `PUT /users/me/preferences` | `{adaptive: true \| false}` (activée par défaut) |
+| `POST /users/me/adaptation/reset` | l'adaptation ne compte plus que les réponses postérieures ; l'historique et les statistiques sont conservés |
+
+Les préférences sont incluses dans `GET /users/me/export` et effacées par `DELETE /users/me`.

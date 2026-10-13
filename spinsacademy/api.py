@@ -21,7 +21,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import catalog, profiles, progress, quiz
+from . import adaptive, catalog, profiles, progress, quiz
 from .hrc import ROOT
 
 SCHEMA = """
@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS reports(id INTEGER PRIMARY KEY AUTOINCREMENT, created
   resolution TEXT, resolved_at TEXT, UNIQUE(session_id, question_index));
 CREATE TABLE IF NOT EXISTS disabled_spots(spot_id TEXT PRIMARY KEY, dataset_version TEXT NOT NULL, reason TEXT NOT NULL,
   report_id INTEGER, disabled_at TEXT NOT NULL, actor TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS preferences(player_id TEXT PRIMARY KEY, adaptive INTEGER NOT NULL DEFAULT 1, adaptation_reset_at TEXT,
+  updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
 """
@@ -56,6 +58,8 @@ def connect():
     con = sqlite3.connect(path); con.row_factory = sqlite3.Row; con.execute('PRAGMA foreign_keys = ON'); con.executescript(SCHEMA)
     if 'player_id' not in {r[1] for r in con.execute('PRAGMA table_info(sessions)')}:      # migration d'une base antérieure
         con.execute('ALTER TABLE sessions ADD COLUMN player_id TEXT')
+    if 'purpose' not in {r[1] for r in con.execute('PRAGMA table_info(questions)')}:      # migration : objectif de la question
+        con.execute('ALTER TABLE questions ADD COLUMN purpose TEXT'); con.execute('ALTER TABLE questions ADD COLUMN purpose_fr TEXT')
     con.execute('CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id)')
     catalog.sync(con); con.commit()
     return con
@@ -94,6 +98,7 @@ class NewSession(BaseModel):
     filters: Filters = Filters()
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
+    adaptive: Optional[bool] = None       # None : préférence du joueur ; ignoré si des filtres sont choisis
 
 
 class Attempt(BaseModel):
@@ -130,22 +135,52 @@ def health():
                     staging_fallback=os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1')
 
 
+def _prefs(con, pid):
+    r = con.execute('SELECT adaptive, adaptation_reset_at FROM preferences WHERE player_id = ?', (pid,)).fetchone() if pid else None
+    return dict(adaptive=bool(r['adaptive']) if r else True, adaptation_reset_at=r['adaptation_reset_at'] if r else None)
+
+
+def _mode_rows(con, pid, mode, since):
+    rows = _player_rows(con, pid)
+    return [r for r in rows if quiz.is_exploit(r['dataset_version']) == (mode == 'exploit') and (since is None or (r['answered_at'] or '') > since)]
+
+
+def _excluded(con):
+    return frozenset(r[0] for r in con.execute('SELECT spot_id FROM disabled_spots'))
+
+
+def _adaptation(con, pid, mode, version, size, seed):
+    rows = _mode_rows(con, pid, mode, _prefs(con, pid)['adaptation_reset_at'])
+    available = {adaptive.theme_of(sp) for sp in quiz.pool(version, None, _excluded(con))}
+    return adaptive.plan(rows, available, size, seed)
+
+
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id)
+    pid = player(x_player_id); filters = body.filters.model_dump(exclude_none=True); info = None
     try:
         with closing(connect()) as con:
-            version = serving_version(con, body.mode)
-            excluded = frozenset(r[0] for r in con.execute('SELECT spot_id FROM disabled_spots'))
-        series = quiz.draw_series(version, body.filters.model_dump(exclude_none=True), body.size, body.seed, excluded)
+            version = serving_version(con, body.mode); excluded = _excluded(con)
+            want = pid is not None and not filters and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
+            info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
+        if info and info['active']:
+            drawn = quiz.draw_plan(version, info['slots'], adaptive.theme_of, body.seed, excluded)
+            series = [(s, h, slot['kind'] if ok or slot['kind'] == 'discovery' else 'complement',
+                       (f"{adaptive.PURPOSE_FR[slot['kind']]} : {adaptive.label(tuple(slot['theme']))}" if ok else
+                        adaptive.PURPOSE_FR['discovery'] if slot['kind'] == 'discovery' else 'Complément : plus de situation libre sur ce thème'))
+                      for s, h, slot, ok in drawn]
+        else:
+            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded)]
     except ValueError as e:
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
         con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
                     (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed, len(series), pid))
-        con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand) VALUES (?, ?, ?, ?)', [(sid, i, s, h) for i, (s, h) in enumerate(series)])
-    return dict(session_id=sid, dataset_version=version, mode=body.mode, size=len(series))
+        con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand, purpose, purpose_fr) VALUES (?, ?, ?, ?, ?, ?)',
+                        [(sid, i, s, h, k, t) for i, (s, h, k, t) in enumerate(series)])
+    adapt = None if info is None else dict(active=info['active'], reason_fr=info['reason_fr'], rule_fr=info['rule_fr'])
+    return dict(session_id=sid, dataset_version=version, mode=body.mode, size=len(series), adaptive=adapt)
 
 
 def _session(con, sid):
@@ -166,7 +201,8 @@ def next_question(session_id: str):
         if row['served_at'] is None:
             con.execute('UPDATE questions SET served_at = ? WHERE session_id = ? AND idx = ?', (_now(), session_id, row['idx']))
         q = quiz.question(s['dataset_version'], row['spot_id'], row['hand'])
-        return dict(done=False, session_id=session_id, question_index=row['idx'], size=s['size'], question=q)
+        return dict(done=False, session_id=session_id, question_index=row['idx'], size=s['size'], question=q,
+                    purpose=row['purpose'], purpose_fr=row['purpose_fr'])
 
 
 @app.post('/attempts')
@@ -212,13 +248,53 @@ def my_stats(x_player_id: Optional[str] = Header(None)):
         return progress.compute(_player_rows(con, pid))
 
 
+class Preferences(BaseModel):
+    adaptive: bool
+
+
+@app.get('/users/me/preferences')
+def get_preferences(x_player_id: Optional[str] = Header(None)):
+    pid = player(x_player_id, required=True)
+    with closing(connect()) as con: return _prefs(con, pid)
+
+
+@app.put('/users/me/preferences')
+def put_preferences(body: Preferences, x_player_id: Optional[str] = Header(None)):
+    pid = player(x_player_id, required=True)
+    with closing(connect()) as con, con:
+        con.execute('INSERT INTO preferences(player_id, adaptive, updated_at) VALUES (?, ?, ?) '
+                    'ON CONFLICT(player_id) DO UPDATE SET adaptive = excluded.adaptive, updated_at = excluded.updated_at', (pid, int(body.adaptive), _now()))
+        return _prefs(con, pid)
+
+
+@app.get('/users/me/adaptation')
+def my_adaptation(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
+    """règle, thèmes à retravailler et thèmes en révision, tels que la prochaine série les utiliserait"""
+    pid = player(x_player_id, required=True)
+    if mode not in ('gto', 'exploit'): raise HTTPException(422, 'mode inconnu')
+    with closing(connect()) as con:
+        info = _adaptation(con, pid, mode, serving_version(con, mode), quiz.SERIES_SIZE, 0); prefs = _prefs(con, pid)
+    return dict(mode=mode, enabled=prefs['adaptive'], since=prefs['adaptation_reset_at'], active=info['active'], rule_fr=info['rule_fr'],
+                reason_fr=info['reason_fr'], weak=info['weak'], review=info['review'])
+
+
+@app.post('/users/me/adaptation/reset')
+def reset_adaptation(x_player_id: Optional[str] = Header(None)):
+    """l'adaptation repart de zéro (les statistiques et l'historique sont conservés)"""
+    pid = player(x_player_id, required=True); now = _now()
+    with closing(connect()) as con, con:
+        con.execute('INSERT INTO preferences(player_id, adaptive, adaptation_reset_at, updated_at) VALUES (?, 1, ?, ?) '
+                    'ON CONFLICT(player_id) DO UPDATE SET adaptation_reset_at = excluded.adaptation_reset_at, updated_at = excluded.updated_at', (pid, now, now))
+        return _prefs(con, pid)
+
+
 @app.get('/users/me/export')
 def my_export(x_player_id: Optional[str] = Header(None)):
     """toutes les données enregistrées pour ce joueur (droit d'accès et de portabilité)"""
     pid = player(x_player_id, required=True)
     with closing(connect()) as con:
         sessions = [dict(r) for r in con.execute('SELECT id, created_at, dataset_version, filters, seed, size FROM sessions WHERE player_id = ?', (pid,))]
-        return dict(player_id=pid, exported_at=_now(), sessions=sessions, answers=_player_rows(con, pid))
+        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid))
 
 
 @app.delete('/users/me', status_code=204)
@@ -230,6 +306,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         for sid in ids:
             con.execute('DELETE FROM attempts WHERE session_id = ?', (sid,)); con.execute('DELETE FROM questions WHERE session_id = ?', (sid,))
         con.execute('DELETE FROM sessions WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
 
 
 # ------------------------------------------------------------------ signalements (cahier des charges §7 et §14)

@@ -114,16 +114,37 @@ def candidates(spots, filters=None):
     return out
 
 
+def pool(version, filters=None, excluded=frozenset()):
+    """spots proposables d'une version : filtres, spots désactivés (et exploitants dérivés), profil obligatoire en exploitant"""
+    _, spots = load(version)
+    out = [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded and sp.get('base_spot_id') not in excluded]
+    if is_exploit(version): out = [sp for sp in out if sp.get('adaptations', 0) > 0 and profiles.for_villain(sp['villain'])]   # pas de profil : pas de conseil
+    return out
+
+
+def _pick_hand(sp, exploit, rnd):
+    hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
+    if exploit:
+        adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
+        other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
+        hands = adapt if adapt and (not other or rnd.random() < ADAPTATION_SHARE) else other
+    weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in hands]
+    return rnd.choices(hands, weights)[0]
+
+
+def _use(sp, items, used, exploit):
+    used.add(sp['spot_id'])
+    if exploit:                                                  # pas deux fois la même situation de base (facteurs différents)
+        used.update(x['spot_id'] for x in items if x.get('base_spot_id') == sp.get('base_spot_id'))
+
+
 def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset()):
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
     excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent)"""
-    _, spots = load(version); rnd = random.Random(seed)
-    pool = [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded and sp.get('base_spot_id') not in excluded]
-    exploit = is_exploit(version)
-    if exploit: pool = [sp for sp in pool if sp.get('adaptations', 0) > 0 and profiles.for_villain(sp['villain'])]   # pas de profil : pas de conseil
-    if len(pool) < size: raise ValueError(f'{len(pool)} spots disponibles pour ces filtres, {size} demandés')
+    rnd = random.Random(seed); items = pool(version, filters, excluded); exploit = is_exploit(version)
+    if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
     by_fam = {}
-    for sp in pool: by_fam.setdefault(family(sp), []).append(sp)
+    for sp in items: by_fam.setdefault(family(sp), []).append(sp)
     order = []; used = set(); out = []
     while len(out) < size:
         if not order: order = list(by_fam); rnd.shuffle(order)
@@ -133,16 +154,25 @@ def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=No
             by_fam.pop(fam)
             if not by_fam: break
             continue
-        sp = rnd.choice(choices); used.add(sp['spot_id'])
-        if exploit:                                              # pas deux fois la même situation de base (facteurs différents)
-            used.update(x['spot_id'] for x in pool if x.get('base_spot_id') == sp.get('base_spot_id'))
-        hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
-        if exploit:
-            adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
-            other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
-            hands = adapt if adapt and (not other or rnd.random() < ADAPTATION_SHARE) else other
-        weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in hands]
-        out.append((sp['spot_id'], rnd.choices(hands, weights)[0]))
+        sp = rnd.choice(choices); _use(sp, items, used, exploit)
+        out.append((sp['spot_id'], _pick_hand(sp, exploit, rnd)))
+    return out
+
+
+def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
+    """série suivant un plan (spinsacademy.adaptive) : [(spot_id, main, emplacement, thème respecté)].
+    Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False)."""
+    rnd = random.Random(seed); items = pool(version, None, excluded); exploit = is_exploit(version)
+    if len(items) < len(slots): raise ValueError(f'{len(items)} spots disponibles, {len(slots)} demandés')
+    used = set(); out = []
+    for slot in slots:
+        t = tuple(slot['theme']) if slot.get('theme') else None
+        choices = [sp for sp in items if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
+        ok = bool(choices) and t is not None
+        if not choices: choices = [sp for sp in items if sp['spot_id'] not in used]
+        if not choices: break
+        sp = rnd.choice(choices); _use(sp, items, used, exploit)
+        out.append((sp['spot_id'], _pick_hand(sp, exploit, rnd), slot, ok))
     return out
 
 

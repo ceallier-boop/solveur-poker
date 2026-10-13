@@ -106,3 +106,22 @@ Benchmark HRC heads-up 25 BB (pertes en mBB : SB premier de parole / BB face au 
 | + pas de donk bet | 9,3 / 9,1 / 26,9 | 69,9 % (HRC 68,8 %) | 315 s |
 
 La règle « pas de donk bet » est retenue par défaut. Les groupes par texture restent une option : gain faible pour un calcul 2,7 fois plus long.
+
+## Seuils de tapis HRC à 3 joueurs (2026-10-13)
+
+Table `UNOPENED_ALLIN` (`spinsacademy/solver/tree.py`) relevée sur les exports : BTN premier de parole 18 BB ; SB après fold du BTN 15 BB ; SB face au limp du BTN 22 BB ; BB face au limp du SB 15 BB ; BB face au limp du BTN 18 BB. L'arbre par défaut reproduit exactement les actions de tous les nœuds HRC exportés (test `test_default_tree_matches_hrc_actions_exactly`).
+
+Benchmark 3 joueurs 25 BB (`--outer 4`, 24 tirages, donk bet autorisé dans les deux cas). Pertes en mBB :
+
+| Nœud | Tapis toujours proposé | Seuils HRC | Plancher HRC |
+|---|---|---|---|
+| BTN premier de parole | 7,5 (hors HRC 0 %) | 7,9 | 3,9 |
+| SB face au limp du BTN | 40,3 (hors HRC 8,9 %) | 27,5 | 17,6 |
+| SB après fold du BTN | 14,2 (hors HRC 2,0 %) | 16,6 | 7,9 |
+| SB face à l'open du BTN | 9,9 | 8,5 | 11,8 |
+| BB face au limp du BTN | 35,9 (hors HRC 16,3 %) | 16,8 | 12,3 |
+| BB face au limp du SB | 18,2 (hors HRC 6,4 %) | 14,3 | 9,2 |
+| BB face à l'open du SB | 36,2 | 35,9 | 16,3 |
+| BB face à l'open du BTN | 51,7 | 43,8 | 16,2 |
+
+Plus aucune action hors de l'arbre HRC. Restent au-dessus de 2 fois le plancher : le BB face à une relance (BTN ou SB) et le SB face au limp du BTN.

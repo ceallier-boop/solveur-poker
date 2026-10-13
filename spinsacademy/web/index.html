@@ -25,7 +25,7 @@
         <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
       </div>
       <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
-      <button class="primary big" id="quick-start">Série rapide</button>
+      <button class="primary big" id="quick-start">Série recommandée</button>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
       <button class="secondary" id="stats-btn">Ma progression</button>
 
@@ -84,6 +84,7 @@
 
     <!-- Question -->
     <section id="screen-question" class="screen" hidden aria-labelledby="q-title">
+      <p class="purpose" id="purpose" hidden></p>
       <h2 id="q-title" class="sr-only">Question</h2>
       <div class="villain" id="villain" hidden></div>
       <div class="table-view" id="table-view" aria-hidden="true"></div>
@@ -145,6 +146,13 @@
       <div id="st-themes"></div>
       <h3>Erreurs récurrentes</h3>
       <ul class="errors" id="st-recurring"></ul>
+      <h3>Exercices adaptatifs</h3>
+      <div class="adapt" id="st-adapt">
+        <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
+        <p class="note" id="adapt-rule"></p>
+        <div id="adapt-themes"></div>
+        <button class="link" id="adapt-reset">Réinitialiser l'adaptation</button>
+      </div>
       <p class="note" id="st-note"></p>
       <button class="link" id="st-back">Retour à l'accueil</button>
       <button class="link danger" id="st-delete">Effacer mes données</button>
