@@ -27,3 +27,7 @@ SPINSACADEMY_ALLOW_STAGING=1 python -m uvicorn spinsacademy.api:app --port 8000 
 BASE_URL=http://localhost:8000/ ADMIN_TOKEN=... node tools/web/e2e_datasets.cjs captures/   # publication des datasets depuis /admin (base neuve)
 BASE_URL=http://localhost:8000/ node tools/web/e2e_mobile.cjs captures/   # parcours mobile complet (Playwright)
 ```
+
+## Exploitation
+
+Déploiement et retour arrière, sauvegardes, sécurité et secrets, tests, dépendances et licences, anomalies connues : `docs/exploitation/`.

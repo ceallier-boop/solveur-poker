@@ -24,7 +24,9 @@ tar -xzf "$ARCHIVE" -C "$BASE/releases"
 PREV=""; [ -L "$BASE/current" ] && PREV=$(readlink -f "$BASE/current")
 TAG=$("$DEST/.venv/bin/python" -c "import json,sys; print(json.load(open(sys.argv[1]))['tag'])" "$DEST/RELEASE.json")
 if [ -n "${SPINSACADEMY_DB:-}" ] && [ -f "$SPINSACADEMY_DB" ]; then
-  "$DEST/.venv/bin/python" "$DEST/tools/ops/backup.py" backup --db "$SPINSACADEMY_DB" --dir "$BASE/shared/backups"
+  AS=(); APP_USER=${APP_USER:-spinsacademy}                      # sauvegarde sous l'utilisateur du service (droits des fichiers)
+  if [ "$(id -u)" = 0 ] && id "$APP_USER" >/dev/null 2>&1; then AS=(runuser -u "$APP_USER" --); fi
+  "${AS[@]}" "$DEST/.venv/bin/python" "$DEST/tools/ops/backup.py" backup --db "$SPINSACADEMY_DB" --dir "$BASE/shared/backups"
 fi
 health() {   # le service répond, et c'est bien la version attendue ($1 : tag)
   for _ in $(seq 1 30); do
