@@ -183,3 +183,18 @@ def compatible(opp, valid, CC):
     for c in range(1326):
         if valid[c]: out[c] = total - allc[CC[c, 0]] - allc[CC[c, 1]] + (opp[c] if opp[c] > 0 else 0.0)
     return out
+
+
+N_TEXTURES = 8
+
+
+def texture(board, k):
+    """classe de texture des k premières cartes du board (0..7) : couleur possible (3 cartes d'une couleur ; au flop,
+    2 suffisent : tirage), board pairé, quinte possible (3 rangs distincts dans une fenêtre de 5, l'As compte aussi pour 1)"""
+    cards = [int(x) for x in board[:k]]
+    suits = [c & 3 for c in cards]; ranks = [c >> 2 for c in cards]
+    flush = max(suits.count(x) for x in range(4)) >= (2 if k == 3 else 3)
+    paired = len(set(ranks)) < len(ranks)
+    rs = set(ranks) | ({-1} if 12 in ranks else set())
+    straight = any(len([r for r in rs if lo <= r <= lo + 4]) >= 3 for lo in range(-1, 9))
+    return int(flush) + 2 * int(paired) + 4 * int(straight)

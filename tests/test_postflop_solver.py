@@ -65,3 +65,30 @@ def test_pipeline_three_handed_runs_and_stays_consistent():
                            pf_cfg=PostflopConfig(rollouts=2), log=None)
     assert model.offsets and len(hist) == 1
     assert max(s.exploitability()) < 0.01
+
+
+def test_no_donk_rule():
+    from spinsacademy.postflop.hu_solver import HUPostflop, PostflopConfig
+    cfg = PostflopConfig(donk=False)
+    g = HUPostflop(7, 21.5, cfg, aggressor=1)                    # IP a relancé préflop : OOP checke au flop
+    assert g.root.actions == ['X'] and 'B0.66' in g.root.children[0].actions
+    bet_call = g.root.children[0].children[1].children[1]          # flop : X, IP mise, OOP paie -> turn : OOP ne mène pas
+    assert bet_call.street == 1 and bet_call.actions == ['X']
+    assert 'B0.66' in g.root.children[0].children[0].actions        # flop checké des deux côtés : OOP peut miser la turn
+    assert 'B0.66' in HUPostflop(7, 21.5, cfg, aggressor=0).root.actions
+    assert 'B0.66' in HUPostflop(7, 21.5, cfg, aggressor=-1).root.actions
+    assert len(HUPostflop(7, 21.5, PostflopConfig(), aggressor=1).nodes) > len(g.nodes)
+
+
+def test_subgames_carry_preflop_aggressor():
+    from spinsacademy.solver.cfr import Solver
+    from spinsacademy.solver.postflop import Realization
+    subs = {x[0].key: x[5] for x in Realization.subgames(Solver((25, 25), postflop=Realization()))}
+    assert subs['SB-call_BB-check'] == -1 and subs['SB-raise3.5_BB-call'] == 1 and subs['SB-call_BB-raise3_SB-call'] == 0
+
+
+def test_texture_classes():
+    from spinsacademy.postflop.kernels import texture
+    assert texture([0, 4, 8], 3) == 5                              # 2-3-4 assortis : tirage couleur + quinte possible
+    assert texture([0, 1, 2, 3, 4], 5) == 2                        # board pairé, ni couleur ni quinte
+    assert texture([48, 44, 1, 6, 30], 5) == 4                     # A-K-2-3-9 : quinte possible par la roue

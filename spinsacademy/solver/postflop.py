@@ -67,17 +67,28 @@ class Realization:
                 - 0.5 * ((D @ (rq * off[q])) * Ds + (D @ (rs * off[s])) * Dq) / NCOMB)
 
     @staticmethod
+    def aggressor(solver, nd):
+        """dernier relanceur préflop (indice du joueur), None si le pot est limpé"""
+        for tok in reversed(nd.key.split('_')):
+            name, _, act = tok.partition('-')
+            if act.startswith('raise') or act == 'allin': return solver.tree.names.index(name)
+        return None
+
+    @staticmethod
     def subgames(solver):
-        """duels postflop à résoudre : (nœud, OOP, IP, pot, tapis restant) ; trois duels par fin de tour à trois"""
+        """duels postflop à résoudre : (nœud, OOP, IP, pot, tapis restant, agresseur du duel : 0 OOP, 1 IP, -1 aucun ou tiers) ;
+        trois duels par fin de tour à trois"""
         out = []
         for nd in solver.tree.terminals():
             if nd.terminal != 'flop': continue
             active = [q for q in range(solver.n) if not nd.folded[q]]
             order = [q for q in POSTFLOP_ORDER[solver.n] if q in active]
             stack = min(solver.tree.st[q] - nd.contrib[q] for q in active)
+            ag = Realization.aggressor(solver, nd)
             for a in range(len(order)):
                 for b in range(a + 1, len(order)):
-                    out.append((nd, order[a], order[b], float(sum(nd.contrib)), float(stack)))
+                    rel = 0 if ag == order[a] else 1 if ag == order[b] else -1
+                    out.append((nd, order[a], order[b], float(sum(nd.contrib)), float(stack), rel))
         return out
 
     def store(self, nd, o, i, d0, d1, damping):

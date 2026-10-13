@@ -11,7 +11,7 @@ Gains comptés depuis le flop : G = gain net à partir du flop, avec G_OOP + G_I
 """
 from dataclasses import dataclass
 import numpy as np
-from .kernels import CC, CLASS_OF, compatible, showdown, strength, combo_ranks
+from .kernels import CC, CLASS_OF, N_TEXTURES, compatible, showdown, strength, combo_ranks, texture
 from . import fast
 
 
@@ -25,6 +25,13 @@ class PostflopConfig:
     max_raises: int = 2               # relances par rue (la dernière possible est toujours un tapis)
     metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
     allin_spr: float = 0.0            # > 0 : le tapis n'est proposé que si tapis restant / pot <= allin_spr (règle HRC : 5)
+    textured: bool = False            # groupes croisés force x texture du board visible (8 classes, kernels.texture)
+    donk: bool = True                 # False : OOP ne peut pas ouvrir les mises d'une rue si IP a été l'agresseur de la rue
+                                      # précédente (le relanceur préflop pour le flop) : règle HRC POSTFLOP_ALLOW_DONK = False
+
+
+    @property
+    def n_buckets(self): return self.buckets * (N_TEXTURES if self.textured else 1)
 
 
 class _N:
@@ -36,12 +43,13 @@ class _N:
 
 
 class HUPostflop:
-    def __init__(self, pot, stack, cfg=None, start_street=0):
-        """start_street : 0 flop (par défaut), 1 turn, 2 river (sous-jeux de contrôle, spinsacademy.postflop.exact)"""
+    def __init__(self, pot, stack, cfg=None, start_street=0, aggressor=-1):
+        """start_street : 0 flop (par défaut), 1 turn, 2 river (sous-jeux de contrôle, spinsacademy.postflop.exact) ;
+        aggressor : dernier relanceur de la rue précédente (0 OOP, 1 IP, -1 aucun), utilisé si cfg.donk est faux"""
         self.P = float(pot); self.S = float(stack); self.cfg = cfg or PostflopConfig(); self.nodes = []
-        self.root = self._street(start_street, (0.0, 0.0))
+        self.root = self._street(start_street, (0.0, 0.0), aggressor)
         self.dec = [n for n in self.nodes if n.kind == 'act']
-        B = self.cfg.buckets
+        B = self.cfg.n_buckets
         self.R = {n.id: np.zeros((B, len(n.actions))) for n in self.dec}
         self.Sg = {n.id: np.zeros((B, len(n.actions))) for n in self.dec}
         self.t = 0
@@ -50,15 +58,17 @@ class HUPostflop:
     def _new(self, kind, street, c, **kw):
         n = _N(len(self.nodes), kind, street, c, **kw); self.nodes.append(n); return n
 
-    def _street(self, street, c):
+    def _street(self, street, c, prev_aggr=-1):
         if street == 3 or min(self.S - c[0], self.S - c[1]) <= 1e-9: return self._new('show', street, c)
-        return self._act(street, c, 0, facing=0.0, raised=0, checked=False)
+        return self._act(street, c, 0, facing=0.0, raised=0, checked=False, prev_aggr=prev_aggr, aggr=-1)
 
-    def _act(self, street, c, p, facing, raised, checked):
-        """raised : nombre de relances déjà faites dans la rue"""
+    def _act(self, street, c, p, facing, raised, checked, prev_aggr=-1, aggr=-1):
+        """raised : nombre de relances déjà faites dans la rue ; prev_aggr : agresseur de la rue précédente ; aggr : de cette rue"""
         n = self._new('act', street, c, player=p); left = self.S - c[p]; pot = self.P + c[0] + c[1]
         shove_ok = self.cfg.allin_spr <= 0 or left / pot <= self.cfg.allin_spr + 1e-9
-        if facing <= 1e-9:
+        if facing <= 1e-9 and not self.cfg.donk and p == 0 and not checked and prev_aggr == 1:
+            opts = [('X', None)]                           # pas de donk bet : OOP checke vers l'agresseur
+        elif facing <= 1e-9:
             opts = [('X', None)]
             bet = self.cfg.bet_fraction * pot
             if bet < self.cfg.allin_fraction * left: opts.append((f'B{self.cfg.bet_fraction:g}', bet))
@@ -73,14 +83,14 @@ class HUPostflop:
                 if shove_ok or not can_raise: opts.append(('A', left))
         for lab, amt in opts:
             if lab == 'X':
-                ch = self._street(street + 1, c) if checked else self._act(street, c, 1 - p, 0.0, raised, True)
+                ch = self._street(street + 1, c, aggr) if checked else self._act(street, c, 1 - p, 0.0, raised, True, prev_aggr, aggr)
             elif lab == 'F':
                 ch = self._new('fold', street, c, winner=1 - p)
             elif lab == 'C':
-                c2 = list(c); c2[p] += min(facing, left); ch = self._street(street + 1, tuple(c2))
+                c2 = list(c); c2[p] += min(facing, left); ch = self._street(street + 1, tuple(c2), aggr)
             else:                                          # mise ou tapis ; face à une mise, c'est une relance
                 c2 = list(c); c2[p] += amt; to_call = c2[p] - c2[1 - p]
-                ch = self._act(street, tuple(c2), 1 - p, to_call, raised + (1 if facing > 0 else 0), False)
+                ch = self._act(street, tuple(c2), 1 - p, to_call, raised + (1 if facing > 0 else 0), False, prev_aggr, p)
             n.actions.append(lab); n.children.append(ch)
         return n
 
@@ -112,7 +122,7 @@ class HUPostflop:
         va = np.stack([v[a] for v in vals], axis=1); vo = sum(v[1 - a] for v in vals)
         node_va = (va * sg).sum(1)
         if update:
-            inst = (va - node_va[:, None]) * valid[:, None]; bb = np.where(valid, b, 0); B = self.cfg.buckets
+            inst = (va - node_va[:, None]) * valid[:, None]; bb = np.where(valid, b, 0); B = self.cfg.n_buckets
             reg = np.stack([np.bincount(bb, weights=inst[:, k], minlength=B) for k in range(len(n.children))], axis=1)
             self.R[n.id] = np.maximum(self.R[n.id] + reg, 0)
             acc = np.stack([np.bincount(bb, weights=r[a] * sg[:, k] * valid, minlength=B) for k in range(len(n.children))], axis=1)
@@ -126,7 +136,7 @@ class HUPostflop:
         B = self.cfg.buckets; seed = int(rng.integers(1 << 30)); bucket = []
         for k in (3, 4, 5):
             s = strength(board, k, board, self.cfg.rollouts, CC, seed + k)
-            bucket.append(np.clip((s * B).astype(np.int64), 0, B - 1))
+            bucket.append(np.clip((s * B).astype(np.int64), 0, B - 1) + (B * texture(board, k) if self.cfg.textured else 0))
         return dict(board=board, ranks=ranks, valid=valid, bucket=bucket)
 
     # ---------------------------------------------------------------- version numba
@@ -140,7 +150,7 @@ class HUPostflop:
         for n in self.nodes:
             for k, ch in enumerate(n.children): child[n.id, k] = ch.id
         assert all(n.id == i for i, n in enumerate(self.nodes)) and all(ch.id > n.id for n in self.nodes for ch in n.children)
-        B = self.cfg.buckets
+        B = self.cfg.n_buckets
         self.Rf = np.zeros((N, B, W_)); self.Sf = np.zeros((N, B, W_))
         self.V = np.zeros((N, 2, 1326)); self.reach = np.zeros((N, 2, 1326))
         self._arr = (kind, player, street, c0, c1, winner, nch, child)

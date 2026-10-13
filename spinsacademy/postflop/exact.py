@@ -12,7 +12,7 @@ Valeurs comptées comme dans hu_solver : gain net à partir du début du sous-je
 """
 import numpy as np
 from numba import njit
-from .kernels import CC, CLASS_OF, combo_ranks, strength, _percentile
+from .kernels import CC, CLASS_OF, combo_ranks, strength, texture, _percentile
 from .fast import _showdown2, _compat
 from .hu_solver import HUPostflop
 
@@ -182,7 +182,7 @@ class ExactHU:
         return (u / M - self.P) / 2 / self.P
 
 
-def abstract_buckets(ex, B, rollouts, seed, metric='ehs'):
+def abstract_buckets(ex, B, rollouts, seed, metric='ehs', textured=False):
     """groupes de force de chaque combo sur chaque contexte du sous-jeu, calculés comme dans fast.board_pool"""
     out = {}
     for i, b in enumerate(ex.boards):
@@ -194,6 +194,7 @@ def abstract_buckets(ex, B, rollouts, seed, metric='ehs'):
         else:
             g = np.clip((s * B).astype(np.int64), 0, B - 1)
         g = np.where(s >= 0, g, 0)
+        if textured: g = g + B * texture(b5, k)
         out[(i, k - 3)] = g
     return out
 

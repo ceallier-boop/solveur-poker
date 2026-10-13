@@ -2,12 +2,13 @@
 réservoir de boards précalculés (valeurs des combos à la river, groupes de force par rue)."""
 import numpy as np
 from numba import njit
-from .kernels import CC, combo_ranks, strength
+from .kernels import CC, combo_ranks, strength, texture
 
 
-def board_pool(n, buckets, rollouts, seed, metric='ehs'):
+def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False):
     """n boards tirés au hasard : valeurs à la river (n, 1326), ordre de tri, validité, groupes de force (n, 3, 1326).
-    metric : 'ehs' (force moyenne) ou 'ehs2' (moyenne du carré, flop et turn ; la river reste le rang exact)."""
+    metric : 'ehs' (force moyenne) ou 'ehs2' (moyenne du carré, flop et turn ; la river reste le rang exact).
+    textured : groupe = force + buckets * classe de texture du board visible (kernels.texture), buckets * 8 groupes en tout."""
     rng = np.random.default_rng(seed)
     ranks = np.zeros((n, 1326), np.int64); order = np.zeros((n, 1326), np.int64)
     bucket = np.zeros((n, 3, 1326), np.int64); valid = np.zeros((n, 1326), np.bool_)
@@ -22,6 +23,7 @@ def board_pool(n, buckets, rollouts, seed, metric='ehs'):
                 bucket[i, k] = np.where(v, np.searchsorted(q, s), 0)
             else:
                 bucket[i, k] = np.clip((s * buckets).astype(np.int64), 0, buckets - 1)
+            if textured: bucket[i, k] += buckets * texture(board, nc)
     return ranks, order, valid, bucket
 
 

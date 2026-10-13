@@ -58,7 +58,7 @@ def _board(i):
     ex = ExactHU(a.pot, a.stack, board, tree=G_['tree'])
     ex.solve(r0, r1, a.exact_iters); e_eq = ex.exploitability(r0, r1)
     eq = ex.values(r0, r1)                                 # solve() laisse la stratégie moyenne dans ex.sig
-    ex.set_abstract(G_['sigma'], abstract_buckets(ex, a.buckets, a.rollouts, int(rng.integers(1 << 30)), a.metric))
+    ex.set_abstract(G_['sigma'], abstract_buckets(ex, a.buckets, a.rollouts, int(rng.integers(1 << 30)), a.metric, a.textured))
     ab = ex.values(r0, r1); e_ab = ex.exploitability(r0, r1)
     m = ex.compat(r0, r1)
     return dict(i=i, eq=eq, ab=ab, m=m, e_eq=e_eq, e_ab=e_ab, sec=time.time() - t0)
@@ -79,17 +79,17 @@ def main():
     ap.add_argument('--boards', type=int, default=200); ap.add_argument('--exact-iters', type=int, default=1000)
     ap.add_argument('--abs-iters', type=int, default=3000); ap.add_argument('--pool', type=int, default=1000)
     ap.add_argument('--buckets', type=int, default=16); ap.add_argument('--rollouts', type=int, default=6)
-    ap.add_argument('--metric', default='ehs'); ap.add_argument('--workers', type=int, default=4)
+    ap.add_argument('--metric', default='ehs'); ap.add_argument('--textured', action='store_true'); ap.add_argument('--workers', type=int, default=4)
     ap.add_argument('--seed', type=int, default=0); ap.add_argument('--out', default=None)
     a = ap.parse_args()
     s, st, nodes = load(a.hrc)
     w0 = hrc_range(nodes, st, a.oop); w1 = hrc_range(nodes, st, a.ip)
     r0 = w0[CLASS_OF]; r1 = w1[CLASS_OF]
     start = 2 if a.street == 'river' else 1
-    cfg = PostflopConfig(buckets=a.buckets, rollouts=a.rollouts, metric=a.metric)
+    cfg = PostflopConfig(buckets=a.buckets, rollouts=a.rollouts, metric=a.metric, textured=a.textured)
     t0 = time.time()
     hp = HUPostflop(a.pot, a.stack, cfg, start_street=start)
-    pool = board_pool(a.pool, a.buckets, a.rollouts, a.seed + 1, a.metric)
+    pool = board_pool(a.pool, a.buckets, a.rollouts, a.seed + 1, a.metric, a.textured)
     hp.fast_solve(w0, w1, pool, iters=a.abs_iters, seed=a.seed)
     print(f'abstrait : {len(hp.nodes)} nœuds, {a.abs_iters} itérations sur {a.pool} boards ({time.time() - t0:.0f} s)', flush=True)
     G_.update(args=a, r0=r0, r1=r1, tree=HUPostflop(a.pot, a.stack, cfg, start_street=start), sigma=average_sigma(hp))
@@ -101,7 +101,7 @@ def main():
                 print(f'  {k + 1}/{a.boards} boards ; exploitabilité exacte {100 * np.mean([x["e_eq"] for x in res]):.2f} % pot, '
                       f'abstraite {100 * np.mean([x["e_ab"] for x in res]):.2f} % pot ({r["sec"]:.0f} s/board)', flush=True)
     out = dict(street=a.street, hrc=a.hrc, oop=a.oop, ip=a.ip, pot=a.pot, stack=a.stack, boards=a.boards, exact_iters=a.exact_iters,
-               abs_iters=a.abs_iters, buckets=a.buckets, metric=a.metric,
+               abs_iters=a.abs_iters, buckets=a.buckets, metric=a.metric, textured=a.textured,
                exploitability_exact_pct_pot=100 * float(np.mean([x['e_eq'] for x in res])),
                exploitability_abstract_pct_pot=100 * float(np.mean([x['e_ab'] for x in res])), players={})
     print(f'\n== {a.street}, pot {a.pot:g} BB, tapis {a.stack:g} BB, {a.boards} boards')
