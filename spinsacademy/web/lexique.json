@@ -1,5 +1,5 @@
 {
- "version": "1.1.0",
+ "version": "1.2.0",
  "date": "2026-10-13",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
@@ -18,7 +18,7 @@
     "spin & go",
     "spin and go"
    ],
-   "def": "Tournoi rapide à trois joueurs (Winamax ; Spin & Go chez d'autres opérateurs). Le gagnant remporte la cagnotte, tirée au sort avant le début. Les tapis de départ sont courts, autour de 25 BB."
+   "def": "Tournoi rapide à trois joueurs (Winamax ; Spin & Go chez d'autres opérateurs). La cagnotte est tirée au sort avant le début ; le gagnant la remporte en général seul, mais les plus gros multiplicateurs paient aussi le 2e et le 3e. Les tapis de départ sont courts, autour de 25 BB."
   },
   {
    "term": "BB (grosse blinde)",
@@ -54,7 +54,6 @@
    "term": "Blinde",
    "cat": "jeu",
    "match": [
-    "blinde",
     "blindes"
    ],
    "def": "Mise obligatoire posée avant la distribution (petite blinde 0,5 BB, grosse blinde 1 BB). Il n'y a pas d'ante en Expresso."
@@ -209,7 +208,7 @@
     "min-raise",
     "min raise"
    ],
-   "def": "Relance au minimum autorisé, soit 2 BB avant le flop."
+   "def": "Relance au minimum autorisé : 2 BB pour une ouverture. Face à une relance, la relance minimale ajoute au moins le même écart (ouverture à 2 BB : sur-relance minimale à 3 BB)."
   },
   {
    "term": "Iso-relance",
@@ -256,7 +255,7 @@
     "GTO"
    ],
    "case": true,
-   "def": "Game Theory Optimal : stratégie d'équilibre, calculée par un solveur, qu'aucun adversaire ne peut exploiter. C'est la référence du mode GTO."
+   "def": "Game Theory Optimal : stratégie d'équilibre, calculée par un solveur, qu'aucun adversaire ne peut exploiter seul. À trois joueurs, c'est une référence solide plutôt qu'une garantie : les erreurs d'un joueur peuvent profiter ou coûter aux deux autres. C'est la référence du mode GTO."
   },
   {
    "term": "Solveur",
@@ -286,7 +285,7 @@
     "chipEV",
     "chip_ev"
    ],
-   "def": "Valeur calculée en jetons, sans tenir compte des places payées. Adapté à l'Expresso classique, où le gagnant prend tout."
+   "def": "Valeur calculée en jetons, sans tenir compte des places payées. C'est une approximation raisonnable en Expresso, où le gagnant prend presque toujours toute la cagnotte ; elle l'est moins pour les gros multiplicateurs, qui paient aussi le 2e et le 3e."
   },
   {
    "term": "ICM",
@@ -322,7 +321,7 @@
     "cote du pot",
     "pot final"
    ],
-   "def": "Rapport entre ce qu'il faut payer et le pot final. Elle donne l'équité minimale pour qu'un call soit rentable : payer 7 BB pour un pot final de 16,5 BB demande 7 / 16,5 = 42 % d'équité."
+   "def": "Rapport entre ce qu'il faut payer et le pot final. Elle donne l'équité minimale pour qu'un call soit rentable : payer 7 BB pour un pot final de 16,5 BB demande 7 / 16,5 = 42 % d'équité. On la dit aussi sous forme de rapport : 9,5 BB à gagner contre 7 à payer, soit environ 1,4 contre 1."
   },
   {
    "term": "Argent mort",
@@ -359,7 +358,7 @@
     "stratégie mixte",
     "mixte"
    ],
-   "def": "Stratégie qui joue une même main de plusieurs façons, avec des fréquences (par exemple relance 60 %, call 40 %). À l'équilibre, ces actions ont la même EV : aucune n'est une erreur."
+   "def": "Stratégie qui joue une même main de plusieurs façons, avec des fréquences (par exemple relance 60 %, call 40 %). Ces actions ont des EV quasi égales : choisir l'une ou l'autre ne coûte presque rien. La correction accepte toute action jouée au moins 10 % du temps ; une action que la main ne joue pas reste une erreur si elle coûte cher."
   },
   {
    "term": "Fréquence",
@@ -549,7 +548,7 @@
     "facile",
     "difficile"
    ],
-   "def": "Facile : la première erreur possible coûte plus de 1 BB. Difficile : moins de 0,2 BB. Moyen : entre les deux."
+   "def": "Pour une question : facile si la moins chère des réponses fausses coûte plus de 1 BB, difficile si elle coûte moins de 0,2 BB, moyen entre les deux. Pour un profil fictif : à quel point sa tendance est facile à repérer (1 facile, 3 difficile)."
   },
   {
    "term": "Jeton de mise",

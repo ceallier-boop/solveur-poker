@@ -22,7 +22,7 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 
 Familles de décision : `first_in` (premier à parler), `vs_limp`, `vs_raise`, `vs_allin`.
 
-Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le filtre `profile` (`nit`, `prudent`, `agressif`, `maniac`) restreint la série à un profil. Chaque question exploitante porte `profile` (sans conseil), et la correction un objet `exploit` : `reference_fr` (contre ce profil, montant en fourchette), `comparison_fr` (par rapport au GTO), `tendency_fr`, `confidence` (`élevée` ou `moyenne`), `confidence_fr` (« écart net » ou « écart modéré »), `note_fr`, `choice_loss_fr`, `profile` (avec la version du catalogue). Détails : `docs/dataset/EXPLOIT_CALLS.md`.
+Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le filtre `profile` (`nit`, `prudent`, `agressif`, `maniac`) restreint la série à un profil. Chaque question exploitante porte `profile` (sans conseil), et la correction un objet `exploit` : `reference_fr` (contre ce profil, montant en fourchette), `comparison_fr` (par rapport au GTO), `tendency_fr`, `confidence` (`élevée` ou `moyenne`), `confidence_fr` (« enjeu net » à partir de 0,06 BB d'écart d'EV, « enjeu faible » en dessous), `note_fr`, `choice_loss_fr`, `profile` (avec la version du catalogue). Détails : `docs/dataset/EXPLOIT_CALLS.md`.
 
 ## Tirage d'une série (`spinsacademy/quiz.py`)
 
@@ -36,8 +36,8 @@ Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le fi
 La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md`). L'explication est construite uniquement à partir des données du spot :
 - la meilleure action et son gain par rapport au fold, ou au check quand rien n'est à payer ;
 - l'écart de l'action choisie ;
-- la raison d'une acceptation : stratégie mixte, ou écart non significatif ;
-- la stratégie de référence arrondie à 5 % ;
+- la raison du verdict, avec son seuil (bruit de calcul sous 0,02 BB, imprécision jusqu'à 0,06 BB, erreur au-delà, action mixte jouée au moins 10 % du temps) ;
+- la stratégie de référence : actions jouées au moins 10 % du temps, arrondies à 5 % ;
 - la source de l'EV.
 
 ## Signalement d'une erreur (cahier des charges §7 et §14)

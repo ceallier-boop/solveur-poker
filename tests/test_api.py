@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from spinsacademy import quiz
+from spinsacademy import grading, quiz
 
 
 @pytest.fixture()
@@ -174,3 +174,41 @@ def test_flop_profiles_match_known_probabilities():
     assert abs(quiz.postflop_profile('77')['set_plus'] - 0.1176) < 1e-3                      # brelan au flop : 11,8 %
     assert abs(quiz.postflop_profile('AKs')['flush_draw_plus'] - 0.1179) < 1e-3              # tirage couleur ou couleur : 11,8 %
     assert 0.32 <= quiz.postflop_profile('K7o')['pair_plus'] <= 0.34                          # paire ou mieux avec une main non pairée
+
+
+def test_review_fixes_on_texts():
+    """relecture joueur : chiffres justes et textes cohérents avec la correction"""
+    assert abs(quiz.overcard_prob('TT') - 0.695) < 1e-3 and quiz.overcard_prob('AA') == 0     # au moins une carte au-dessus de la paire
+    assert abs(float(quiz._VSR()[quiz.NAMES.index('AA')]) - 0.852) < 1e-3                    # AA contre une main au hasard, cartes retirées
+    _, spots = quiz.load(); seen = set()
+    for sp in list(spots.values())[::25]:
+        types = {a['id']: a['type'] for a in sp['actions']}
+        for h, x in sp['hands'].items():
+            if not x['quiz_eligible']: continue
+            shown = dict(grading.displayed_mix(sp, h))
+            for a, f in zip(sp['actions'], x['freq']):                 # une action affichée est toujours acceptée
+                assert (a['id'] in shown) == (f >= grading.MIXED_MIN or f == max(x['freq']) and not any(v >= grading.MIXED_MIN for v in x['freq']))
+                if a['id'] in shown: assert grading.grade(sp, h, a['id'])['verdict'] == 'correct'
+            for chosen in types:
+                r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, chosen); n = r['next']; t = types[r['best_action']]
+                text = r['explanation_fr']
+                assert 'aucune n\'est une erreur' not in text and ' fold ' not in history_lines(sp) and '((' not in text and ' : Tu' not in n['intro']
+                if quiz.family(sp) == 'vs_allin': assert not n['metrics'] and 'cote du pot' in n['intro']; seen.add('vs_allin')
+                elif t == 'allin': assert 'se couche' in n['intro'] and not n['metrics']; seen.add('allin')
+                if chosen != r['best_action']: assert n['intro'].startswith('Avec la bonne action'); seen.add('subject')
+                for m in n['metrics']:
+                    assert m['tone'] == ('neutral' if m['compare'] == 'equal' else 'good' if (m['compare'] == 'above') != m['lower_is_better'] else 'bad')
+                if 'à peine mieux que le' in text: seen.add('barely')
+    assert {'vs_allin', 'allin', 'subject'} <= seen
+
+
+def history_lines(sp):
+    return ' '.join(quiz.history_text(sp)) + ' '
+
+
+def test_profile_catalog_texts():
+    from spinsacademy import profiles
+    c = profiles.catalog(); assert c['version'] == '1.2.0'
+    m = next(p for p in c['profiles'] if p['id'] == 'maniac')
+    assert 'mains faibles' not in m['description_fr'] and 'moins forte' in m['description_fr']
+    assert all('4 à 25 BB' not in (p['scope_fr'] or '') for p in c['profiles'])

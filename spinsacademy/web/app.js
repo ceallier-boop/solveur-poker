@@ -220,7 +220,7 @@ function renderNext(n) {
   const p100 = (x) => Math.round(100 * x);
   const top = Math.max(...(n.metrics || []).map((m) => Math.max(m.value, m.average)), 0.01);
   const TAG = { above: '▲ au-dessus', below: '▼ en dessous', equal: '= dans' };
-  const rows = (n.metrics || []).map((m) => `<div class="mrow ${m.compare}">
+  const rows = (n.metrics || []).map((m) => `<div class="mrow ${m.compare} ${m.tone || (m.compare === 'above' ? 'good' : m.compare === 'below' ? 'bad' : 'neutral')}">
       <span class="mlabel">${m.label_fr}</span>
       <span class="mtrack"><i style="width:${(100 * m.value / top).toFixed(1)}%"></i><b style="left:${(100 * m.average / top).toFixed(1)}%" title="moyenne"></b></span>
       <span class="mval">${p100(m.value)} %</span>

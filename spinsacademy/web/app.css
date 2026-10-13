@@ -244,7 +244,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .mtrack { grid-area: track; position: relative; height: 12px; border-radius: 6px; background: var(--line); }
 .mtrack i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--muted); }
 .mtrack b { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--text); }
-.mrow.above .mtrack i { background: var(--ok); } .mrow.below .mtrack i { background: var(--bad); opacity: .8; }
-.mtag { grid-area: tag; font-size: .78rem; color: var(--muted); } .mrow.above .mtag { color: var(--ok); } .mrow.below .mtag { color: var(--bad); }
+.mrow.good .mtrack i { background: var(--ok); } .mrow.bad .mtrack i { background: var(--bad); opacity: .8; }
+.mtag { grid-area: tag; font-size: .78rem; color: var(--muted); } .mrow.good .mtag { color: var(--ok); } .mrow.bad .mtag { color: var(--bad); }
 .next h4 { margin: 4px 0 0; font-size: .9rem; } .next h4.plus { color: var(--ok); } .next h4.minus { color: var(--bad); }
 .next ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }

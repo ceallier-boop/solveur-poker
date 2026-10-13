@@ -7,7 +7,8 @@ Barème (cahier des charges §4.2), sur l'EV de référence du spot (exacte ou H
                     perdent au plus 60 mBB, donc fréquences et EV concordent) ;
   - « imprécision » : regret <= 3 x TOLERANCE_MBB (actions de valeur proche) ;
   - « erreur »    : au-delà.
-Points : 1 / 0,5 / 0. Les fréquences affichées sont arrondies (pas de DISPLAY_STEP), la correction utilise les valeurs exactes.
+Points : 1 / 0,5 / 0. Les fréquences affichées ne gardent que les actions jouées au moins MIXED_MIN de la fois, renormalisées et arrondies
+(pas de DISPLAY_STEP) ; la correction utilise les valeurs exactes.
 """
 TOLERANCE_MBB = 20.0          # ≈ plancher de bruit de HRC (docs/audit/AUDIT_PHASE0.md §2)
 MIXED_MIN = 0.10
@@ -36,9 +37,13 @@ def grade(spot, hand, action_id):
 
 
 def displayed_mix(spot, hand, step=DISPLAY_STEP):
-    """fréquences arrondies au pas `step`, de somme 100 (méthode du plus fort reste) ; actions à 0 omises"""
+    """fréquences affichées : seules les actions jouées au moins MIXED_MIN de la fois (celles que la correction accepte),
+    renormalisées puis arrondies au pas `step`, de somme 100 (méthode du plus fort reste). Ainsi une action affichée
+    est toujours acceptée, et une action non affichée n'est jamais présentée comme jouée."""
     freq = spot['hands'][hand]['freq']; units = 100 // step
-    raw = [f * units for f in freq]; base = [int(x) for x in raw]
+    kept = [f if f >= MIXED_MIN else 0.0 for f in freq]
+    if not any(kept): kept = [1.0 if f == max(freq) else 0.0 for f in freq]
+    tot = sum(kept); raw = [f / tot * units for f in kept]; base = [int(x) for x in raw]
     for k in sorted(range(len(raw)), key=lambda k: raw[k] - base[k], reverse=True)[:units - sum(base)]:
         base[k] += 1
     return [(a['id'], b * step) for a, b in zip(spot['actions'], base) if b > 0]
