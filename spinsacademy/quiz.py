@@ -61,7 +61,8 @@ def gain_bb(x, signed=False):
     return (('+' if x >= 0 else '−') + s) if signed else s
 
 
-RANGE_BOUNDS_BB = (GAIN_MIN_BB, 0.25, 0.5, 1, 2, 5)
+IMPRECISION_BB = 3 * grading.TOLERANCE_MBB / 1000   # limite entre imprécision et erreur
+RANGE_BOUNDS_BB = (GAIN_MIN_BB, IMPRECISION_BB, 0.5, 1, 2, 5)
 
 
 def gain_range(x):
@@ -280,7 +281,7 @@ def _points(x):
     n = round(x, 1); return f"{n:.1f} point{'s' if n >= 2 else ''}".replace('.', ',')
 
 
-CHEAP_BB = 0.25                   # « coûte peu » seulement en dessous
+CHEAP_BB = IMPRECISION_BB        # « coûte peu » seulement en dessous de la limite d'imprécision
 
 
 def why(sp, hand, ev, best, labels, grid, chosen=None):

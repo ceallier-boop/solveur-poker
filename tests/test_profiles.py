@@ -37,7 +37,7 @@ def test_question_and_correction_show_profile_and_the_four_parts():
         assert ex['comparison_fr'].startswith('En GTO, ce serait')
     g = quiz.correct(quiz.DEFAULT_VERSION, *next(iter((s['spot_id'], h) for s in quiz.load()[1].values() for h, x in s['hands'].items() if x['quiz_eligible'])), 'F')
     assert g['exploit'] is None and g['core_fr'] and not any(w in g['core_fr'] for w in g['why_fr'])
-    assert quiz.gain_range(0.01) == 'moins de 0,02 BB' and quiz.gain_range(-0.3) == 'entre 0,25 et 0,5 BB' and quiz.gain_range(7) == 'plus de 5 BB'
+    assert quiz.gain_range(0.01) == 'moins de 0,02 BB' and quiz.gain_range(-0.3) == 'entre 0,06 et 0,5 BB' and quiz.gain_range(0.04) == 'entre 0,02 et 0,06 BB' and quiz.gain_range(7) == 'plus de 5 BB'
 
 
 def test_profile_filter_and_endpoint(tmp_path, monkeypatch):
