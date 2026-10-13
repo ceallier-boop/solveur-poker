@@ -524,7 +524,8 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
         out.append(f"Repère : il faut {'' if exact else 'environ '}{_pct(call / final)} d'équité pour payer (cote du pot"
                    + ('' if exact else ' ; approximatif, car ' + ('un joueur reste à parler' if to_act_after(sp) else 'le tapis adverse te couvre')) + ').')
     base_id = 'F' if 'F' in ids else 'X'
-    others = sorted((k for k in range(len(ids)) if ids[k] not in (best, chosen, base_id, top)), key=lambda k: -ev[k])
+    tied = {ids[k] for k in range(len(ids)) if 1000 * (max(ev) - ev[k]) <= grading.TOLERANCE_MBB + 1e-9}   # déjà dans « plusieurs bonnes décisions »
+    others = sorted((k for k in range(len(ids)) if ids[k] not in (best, chosen, base_id, top) and ids[k] not in tied), key=lambda k: -ev[k])
     if others:                                                     # le choix du joueur, le fold et l'action la plus rentable sont déjà dans l'explication
         d = ev[j] - ev[others[0]]
         out.append(f"Autre option : {_low(labels[ids[others[0]]])}, {gain_bb(d)} {'de moins' if d >= 0 else 'de plus en EV'}.")
@@ -717,17 +718,23 @@ def correct(version, spot_id, hand, action_id):
     raw = 1000 * (E_(top) - E_(action_id))                   # regret non arrondi : montant et verdict concordent aux bornes
     evb = E_(best) - E_(base_id); ref = 'fold' if base_id == 'F' else 'check'
     played = '' if best == top else f", jouée {shown.get(best, 0)} % du temps"
-    if best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Action de référence : {labels[best]}{played}.']
+    # écart d'EV sous la tolérance : plusieurs bonnes décisions, sans détailler des centièmes de BB
+    good = [a for a in ids if 1000 * (E_(top) - E_(a)) <= grading.TOLERANCE_MBB + 1e-9]
+    good.sort(key=lambda a: (a != best, ids.index(a)))
+    if len(good) > 1:
+        names = [_low(labels[a]) for a in good]
+        lines = [f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)."]
+    elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Action de référence : {labels[best]}{played}.']
     elif evb <= GAIN_MIN_BB: lines = [f"Action de référence : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
     else: lines = [f"Action de référence : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
-    if best != top:
+    if best != top and len(good) == 1:
         lines.append(f"{_option(sp, labels, top)} vaut presque autant : {gain_bb(E_(top) - E_(best))} de plus en EV ; les deux sont acceptés.")
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
-    if action_id == best: pass                                  # le bandeau le dit déjà
+    if action_id == best or (len(good) > 1 and action_id in good): pass       # le bandeau le dit déjà
     elif action_id == top:
         lines.append(f"Ton choix {_named(labels[action_id])} est le plus rentable en EV : réponse acceptée.")
     else:
-        than = '' if best == top else f" que {_low(labels[top])}, la plus rentable"
+        than = '' if best == top or len(good) > 1 else f" que {_low(labels[top])}, la plus rentable"
         lines.append(f"Ton choix {_named(labels[action_id])} " + (f"coûte moins de {bb(GAIN_MIN_BB)} BB{than}." if raw <= grading.TOLERANCE_MBB + 1e-9
                                                                   else f"rapporte {gain_bb(raw / 1000)} de moins{than}."))
         tol, imp = bb(GAIN_MIN_BB), bb(IMPRECISION_BB)
@@ -763,8 +770,9 @@ def correct(version, spot_id, hand, action_id):
     loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 top_action=top, chosen_action=action_id, gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
+                good_actions=(good if len(good) > 1 and not v else []), good_labels=([labels[a] for a in good] if len(good) > 1 and not v else []),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
-                loss_fr=(None if action_id == best else (gain_range(loss) if v else gain_bb(loss))),
+                loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else (gain_range(loss) if v else gain_bb(loss))),
                 ev_source=g['ev_source'], exploit=ex, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core) if core is not None else None)
 

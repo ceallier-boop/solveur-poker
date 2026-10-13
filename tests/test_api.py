@@ -114,7 +114,7 @@ def test_gains_are_shown_in_bb_with_floor():
             for a in sp['actions']:
                 r = quiz.correct(ref, sp['spot_id'], h, a['id'])
                 assert 'mBB' not in r['explanation_fr']
-                seen_small |= '<0,02 BB' in r['explanation_fr']
+                seen_small |= '<0,02 BB' in r['explanation_fr'] or 'moins de 0,02 BB' in r['explanation_fr']
     assert seen_small
 
 
@@ -234,3 +234,21 @@ def test_second_review_fixes():
             if x['quiz_eligible']: assert quiz.reference_action(s, h) in dict(grading.displayed_mix(s, h))
     _, ex = quiz.load(quiz.DEFAULT_EXPLOIT)
     assert all(quiz.adapts(s) for s in quiz.candidates(ex)) and len(quiz.candidates(ex)) < len(ex)
+
+
+def test_several_good_decisions_when_ev_ties():
+    _, spots = quiz.load(); seen = 0
+    for s in quiz.candidates(spots):
+        for h in quiz.teachable(s):
+            ev = grading.reference_ev(s, h); top = max(ev); ids = [a['id'] for a in s['actions']]
+            good = [ids[k] for k, e in enumerate(ev) if 1000 * (top - e) <= grading.TOLERANCE_MBB + 1e-9]
+            if len(good) < 2: continue
+            r = quiz.correct(quiz.DEFAULT_VERSION, s['spot_id'], h, good[-1])
+            assert r['core_fr'].startswith('Plusieurs bonnes décisions') and set(r['good_actions']) == set(good)
+            assert r['verdict'] == 'correct' and r['loss_fr'] is None
+            labels = {a['id']: quiz.action_label(s, a) for a in s['actions']}
+            other = [l for l in r['why_fr'] if l.startswith('Autre option')]
+            assert not any(quiz._low(labels[g]) in l.split(':')[1].split(',')[0] for g in good for l in other)   # une action à égalité n'est pas « autre option »
+            seen += 1
+            if seen >= 20: return
+    assert seen

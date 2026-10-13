@@ -194,7 +194,9 @@ async function answer(id) {
 function renderAnswer(r) {
   const [cls, title] = VERDICT[r.verdict]; const ex0 = !!r.exploit;
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
-  const sub = r.chosen_label === r.best_label ? `Tu as joué l'action de référence : ${r.best_label}.`
+  const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
+  const sub = many ? `Plusieurs bonnes décisions : ${r.good_labels.join(' ou ')}. Ton choix en fait partie.`
+    : r.chosen_label === r.best_label ? `Tu as joué l'action de référence : ${r.best_label}.`
     : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nRéférence : ${r.best_label}`;
   v.innerHTML = title + `<small>${sub}</small>`;
   renderCards(state.q.hand_display, 'a-cards');
