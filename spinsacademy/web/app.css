@@ -139,3 +139,8 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .adapt-mode p { margin: 6px 0 2px; font-size: .9rem; }
 .adapt-mode ul { margin: 0; padding-left: 18px; font-size: .9rem; }
 .adapt-mode small { color: var(--muted); }
+
+.seat-line { margin: 0; font-size: 1.15rem; text-align: center; }
+.seat-line b { color: var(--accent); font-size: 1.3rem; }
+.prompt, .recap, .explanation, .exploit dd, .errors li, .villain { white-space: pre-line; }
+.prompt { font-size: 1.05rem; font-weight: 600; }

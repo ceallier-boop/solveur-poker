@@ -17,9 +17,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await p.waitForSelector('#screen-answer:not([hidden])');
     if (i === 0) {
       await p.screenshot({ path: out + '/3_correction.png', fullPage: true });
+      if (await p.locator('#report').isVisible()) {                                 // absent de la version autonome
       await p.click('#report summary'); await p.check('input[value="unclear"]'); await p.fill('#report-comment', 'test e2e');
       await p.click('#report-form button[type=submit]'); await p.waitForSelector('#report-done:not([hidden])');
       await p.screenshot({ path: out + '/3b_signalement.png', fullPage: true });
+      }
     }
     if (i === 1 && !(await p.locator('#report-done').isHidden())) errors.push('signalement affiché comme envoyé sur une autre question');
     await p.click('#next-btn');

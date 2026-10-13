@@ -95,7 +95,7 @@ def prompt(sp, hand):
         parts.append((f"Profil fictif « {pr['name_fr']} » : ce " if pr else 'Ce ') +
                      f"{v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation (GTO : {bb(v['gto_pct'])} %).")
     parts.append(f"Tu es au {sp['hero']} avec {hand_display(hand)}. Que fais-tu ?")
-    return ' '.join(parts)
+    return '\n'.join(parts)                                     # une phrase par ligne (lisibilité sur mobile)
 
 
 # ------------------------------------------------------------------ tirage
@@ -220,22 +220,20 @@ def correct(version, spot_id, hand, action_id):
         ex = dict(profile=dict(profiles.public(pr), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
                   reference_fr=f"contre un joueur GTO, la bonne action est {labels[gto]} ; le call y vaut {sign(eg)}.",
                   tendency_fr=f"profil fictif « {pr['name_fr']} », ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains au lieu de {bb(v['gto_pct'])} %.",
-                  adaptation_fr=(f"contre lui, la bonne action devient {labels[best]}. {pr['adaptation_fr']}" if changed else
+                  adaptation_fr=(f"contre lui, la bonne action devient {labels[best]}.\n{pr['adaptation_fr']}" if changed else
                                  'la bonne action ne change pas, l\'écart de range ne suffit pas à retourner la décision.'),
                   changed=changed, confidence=conf,
-                  confidence_fr=f"Confiance {conf} : contre cette range, le call vaut {sign(ee)}. C'est un calcul exact, à condition que le profil soit juste ; "
+                  confidence_fr=f"Confiance {conf} : contre cette range, le call vaut {sign(ee)}.\nC'est un calcul exact, à condition que le profil soit juste ; "
                                 'le profil est une hypothèse de simulation, pas la lecture d\'un adversaire réel.')
         core = list(lines)
-        lines += ['Référence GTO : ' + ex['reference_fr'], 'Tendance supposée : ' + ex['tendency_fr'], 'Adaptation : ' + ex['adaptation_fr'], ex['confidence_fr'],
-                  'Source : EV exacte du call contre la range de tapis du profil.']
+        lines += ['Référence GTO : ' + ex['reference_fr'], 'Tendance supposée : ' + ex['tendency_fr'], 'Adaptation : ' + ex['adaptation_fr'], ex['confidence_fr']]
     else:
         lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
-        lines.append('Source : ' + ('EV exacte (décision tout ou rien)' if g['ev_source'] == 'exact' else 'EV du solveur de référence') + '.')
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=p) for a, p in mix],
-                ev_source=g['ev_source'], exploit=ex, explanation_fr=' '.join(lines),
-                core_fr=' '.join(core) if core is not None else None)
+                ev_source=g['ev_source'], exploit=ex, explanation_fr='\n'.join(lines),            # une phrase par ligne
+                core_fr='\n'.join(core) if core is not None else None)
 
 
 def summary(version, answers):

@@ -118,7 +118,10 @@ function renderQuestion(data) {
   progress(`Question ${state.index + 1} / ${state.size}`);
   renderTable(q); renderCards(q.hand_display);
   $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';
-  $('prompt').textContent = q.prompt_fr;
+  const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
+  $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
+  $('prompt').textContent = `Tu as ${q.hand_display}.\nQue fais-tu ?`;
+  $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;
   if (v) $('villain').innerHTML = (pr ? `<span class="profile">Profil fictif : <b>${pr.name_fr}</b></span><small>${pr.description_fr}</small>` : '')

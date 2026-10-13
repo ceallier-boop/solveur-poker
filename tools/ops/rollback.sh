@@ -22,4 +22,7 @@ for _ in $(seq 1 30); do
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) rollback $CUR -> $TARGET" >> "$BASE/shared/deploy.log"; echo "version $TARGET en service"; exit 0
   fi; sleep 1
 done
-echo "la version $TARGET ne répond pas"; exit 1
+echo "la version $TARGET ne répond pas : retour à $CUR"
+ln -sfn "$BASE/releases/$CUR" "$BASE/current.new" && mv -Tf "$BASE/current.new" "$BASE/current"; eval "$RESTART"
+for _ in $(seq 1 30); do curl -fsS "$HEALTH_URL" >/dev/null 2>&1 && break; sleep 1; done
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) échec du retour vers $TARGET, maintien de $CUR" >> "$BASE/shared/deploy.log"; exit 1
