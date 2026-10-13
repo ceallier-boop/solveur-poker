@@ -165,3 +165,23 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .chip-legend { margin: -4px 0 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
 .chip-legend .chip { position: static; transform: none; display: inline-flex; margin-right: -8px; }
 .chip-legend .chip i { width: 18px; height: 18px; font-size: .6rem; border-width: 2px; }
+
+/* profils fictifs : badge, barres de tapis, correction courte */
+.pbadge { --p: #6b7570; display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; background: var(--p);
+  color: #fff; font-weight: 800; font-size: .8rem; letter-spacing: -1px; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.pbadge.sm { min-width: 22px; height: 20px; font-size: .62rem; border-radius: 6px; padding: 0 4px; }
+.seat .pbadge.sm { position: absolute; top: -9px; right: -9px; border: 2px solid #fff; }
+.p-nit { --p: #2f5fa8; } .p-prudent { --p: #2a8a86; } .p-agressif { --p: #d07a1f; } .p-maniac { --p: #c62828; }
+.villain .vhead { display: flex; align-items: center; gap: 10px; font-size: 1rem; }
+.villain .vhead b { color: var(--text); }
+.villain .vstat { margin: 6px 0 4px; font-size: .85rem; }
+.vbar { display: grid; grid-template-columns: 72px 1fr 52px; align-items: center; gap: 8px; font-size: .82rem; margin-top: 3px; }
+.vbar i { display: block; height: 10px; border-radius: 5px; background: var(--warn); }
+.vbar.gto i { background: var(--muted); opacity: .6; }
+.vbar b { text-align: right; font-variant-numeric: tabular-nums; color: var(--text) !important; }
+.exploit .ref dt { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; text-transform: none; letter-spacing: 0; font-size: .85rem; }
+.exploit .ref dt .pbadge { margin: 0; }
+.exploit .ref dd { font-size: 1rem; }
+.exploit .conf { margin-left: auto; font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+.exploit .conf.net { background: var(--ok-bg); color: var(--ok); }
+.exploit .note { margin: 0; font-size: .78rem; color: var(--muted); }

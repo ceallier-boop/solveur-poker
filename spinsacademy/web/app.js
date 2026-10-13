@@ -14,6 +14,9 @@ const store = {
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
 const gainBB = (mbb) => (Math.abs(mbb) < 50 ? '<0,05 BB' : bb(Math.abs(mbb) / 1000) + ' BB');   // gains toujours en BB
+// profils fictifs : symbole (sens et force de l'écart de tapis avec le GTO) et couleur, pour les reconnaître d'un coup d'œil
+const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲' };
+const pbadge = (pr, small) => `<span class="pbadge p-${pr.id}${small ? ' sm' : ''}" aria-hidden="true">${PROFILE_VIS[pr.id] || '?'}</span>`;
 const pc = (x) => String(x).replace('.', ',') + ' %';
 
 // identifiant anonyme de l'appareil (mode invité) : relie les séries d'un même joueur pour les statistiques
@@ -107,7 +110,8 @@ function renderTable(q) {
     seat.style.left = x + '%'; seat.style.top = y + '%';
     const left = q.stacks_bb[i] - c[i];
     const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
-    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
+    const tag = q.profile && q.villain && q.villain.position === q.players[i] ? pbadge(q.profile, true) : '';   // profil du vilain à sa place
+    seat.innerHTML = tag + backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(left)} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
     view.appendChild(seat);
     if (c[i] > 0 && kind[i]) view.appendChild(chip(kind[i], c[i], ...chips[k]));     // un joueur couché laisse sa mise devant lui
   }
@@ -141,8 +145,12 @@ function renderQuestion(data) {
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   const v = q.villain; $('villain').hidden = !v;
   const pr = q.profile;
-  if (v) $('villain').innerHTML = (pr ? `<span class="profile">Profil fictif : <b>${pr.name_fr}</b></span><small>${pr.description_fr}</small>` : '')
-    + `Le <b>${v.position}</b> part à tapis avec <b>${bb(v.observed_pct)} %</b> de ses mains ici (GTO : ${bb(v.gto_pct)} %).`;
+  if (v) {
+    const top = Math.max(v.observed_pct, v.gto_pct) * 1.15;
+    const bar = (label, x, cls) => `<div class="vbar ${cls}"><span>${label}</span><i style="width:${(100 * x / top).toFixed(1)}%"></i><b>${bb(x)} %</b></div>`;
+    $('villain').innerHTML = (pr ? `<div class="vhead">${pbadge(pr)}<span>Profil fictif · <b>${pr.name_fr}</b></span></div><small>${pr.description_fr}</small>` : '')
+      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs')}${bar('GTO', v.gto_pct, 'gto')}`;
+  }
   const box = $('actions'); box.innerHTML = '';
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
@@ -179,19 +187,18 @@ function renderAnswer(r) {
   const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   v.innerHTML = `${title}<small>${r.chosen_label === r.best_label ? 'Meilleure action jouée.' : `Meilleure action : ${r.best_label}`}</small>`;
-  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '');
+  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').split('\n').filter((l) => !l.startsWith('Profil fictif')).join('\n');
   $('a-choice').textContent = r.chosen_label === r.best_label ? '' : `Ton choix : ${r.chosen_label} (${gainBB(r.regret_mbb)} de moins).`;
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
   const ex = r.exploit; $('a-exploit').hidden = !ex;
+  for (const id of ['a-choice', 'a-strategy-title', 'a-strategy', 'a-explanation']) $(id).hidden = !!ex;   // exploitant : correction courte
   if (ex) {
-    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-    $('a-exploit').innerHTML = [['Référence GTO', ex.reference_fr], ['Tendance supposée', ex.tendency_fr], ['Adaptation', ex.adaptation_fr],
-      [`Confiance ${ex.confidence}`, ex.confidence_fr.replace(/^Confiance [^:]+: /, '')]]
-      .map(([k, t]) => `<div><dt>${k}</dt><dd>${cap(t)}</dd></div>`).join('');
+    $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
+      + `<div><dt>Par rapport au GTO</dt><dd>${ex.comparison_fr}</dd></div><p class="note">${ex.note_fr}</p>`;
   }
-  $('a-explanation').textContent = ex && r.core_fr ? r.core_fr : r.explanation_fr;
+  $('a-explanation').textContent = r.explanation_fr;
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   show('answer'); v.focus({ preventScroll: true });

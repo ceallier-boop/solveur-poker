@@ -22,7 +22,7 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 
 Familles de décision : `first_in` (premier à parler), `vs_limp`, `vs_raise`, `vs_allin`.
 
-Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le filtre `profile` (`nit`, `prudent`, `agressif`, `maniac`) restreint la série à un profil. Chaque question exploitante porte `profile` (sans conseil), et la correction un objet `exploit` : `reference_fr`, `tendency_fr`, `adaptation_fr`, `confidence` (`élevée` ou `moyenne`), `confidence_fr`, `profile` (avec la version du catalogue). Détails : `docs/dataset/EXPLOIT_CALLS.md`.
+Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le filtre `profile` (`nit`, `prudent`, `agressif`, `maniac`) restreint la série à un profil. Chaque question exploitante porte `profile` (sans conseil), et la correction un objet `exploit` : `reference_fr` (contre ce profil, montant en fourchette), `comparison_fr` (par rapport au GTO), `tendency_fr`, `confidence` (`élevée` ou `moyenne`), `confidence_fr` (« écart net » ou « écart modéré »), `note_fr`, `choice_loss_fr`, `profile` (avec la version du catalogue). Détails : `docs/dataset/EXPLOIT_CALLS.md`.
 
 ## Tirage d'une série (`spinsacademy/quiz.py`)
 

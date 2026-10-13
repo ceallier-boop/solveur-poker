@@ -61,6 +61,18 @@ def gain_bb(x, signed=False):
     return (('+' if x >= 0 else '−') + s) if signed else s
 
 
+RANGE_BOUNDS_BB = (0.05, 0.25, 0.5, 1, 2, 5)
+
+
+def gain_range(x):
+    """fourchette d'un montant (valeur absolue, en BB) : mode exploitant, où l'hypothèse de profil rend un montant exact trompeur"""
+    x = abs(x); b = RANGE_BOUNDS_BB
+    if x < b[0]: return f'moins de {bb(b[0])} BB'
+    for lo, hi in zip(b, b[1:]):
+        if x < hi: return f'entre {bb(lo)} et {bb(hi)} BB'
+    return f'plus de {bb(b[-1])} BB'
+
+
 def hand_display(h):
     if len(h) == 2: a, b = SUITS['pair']
     else: a, b = SUITS[h[2]]
@@ -224,18 +236,20 @@ def correct(version, spot_id, hand, action_id):
         pr = profiles.for_villain(v)
         if pr is None: raise ValueError('aucun profil fictif ne correspond à ce spot : pas de conseil exploitant')
         eg, ee = h['ev_gto'][1], h['ev_exact'][1]; gto = h['gto_action']; changed = gto != best
-        sign = lambda x: gain_bb(x, signed=True)
-        conf = profiles.confidence(1000 * ee)
+        conf = profiles.confidence(1000 * ee); verb = 'gagne' if ee >= 0 else 'perd'
         ex = dict(profile=dict(profiles.public(pr), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
-                  reference_fr=f"contre un joueur GTO, la bonne action est {labels[gto]} ; le call y vaut {sign(eg)}.",
-                  tendency_fr=f"profil fictif « {pr['name_fr']} », ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains au lieu de {bb(v['gto_pct'])} %.",
-                  adaptation_fr=(f"contre lui, la bonne action devient {labels[best]}.\n{pr['adaptation_fr']}" if changed else
-                                 'la bonne action ne change pas, l\'écart de range ne suffit pas à retourner la décision.'),
-                  changed=changed, confidence=conf,
-                  confidence_fr=f"Confiance {conf} : contre cette range, le call vaut {sign(ee)}.\nC'est un calcul exact, à condition que le profil soit juste ; "
-                                'le profil est une hypothèse de simulation, pas la lecture d\'un adversaire réel.')
-        core = list(lines)
-        lines += ['Référence GTO : ' + ex['reference_fr'], 'Tendance supposée : ' + ex['tendency_fr'], 'Adaptation : ' + ex['adaptation_fr'], ex['confidence_fr']]
+                  # 1. référence exploitante : la bonne action contre ce profil, et l'enjeu en fourchette
+                  reference_fr=(f"{labels[best]}.\nTon choix, {labels[action_id]}, perd {gain_range(g['regret_mbb'] / 1000)}." if action_id != best
+                                else f"{labels[best]}.\nContre ce profil, le call {verb} {gain_range(ee)}."),
+                  # 2. comparaison avec la référence GTO
+                  comparison_fr=(f"En GTO, ce serait {labels[gto]}.\n{pr['adaptation_fr']}" if changed else
+                                 "Même décision qu'en GTO : l'écart de range ne suffit pas à la changer."),
+                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains (GTO : {bb(v['gto_pct'])} %).",
+                  choice_loss_fr=(gain_range(g['regret_mbb'] / 1000) if action_id != best else None),
+                  changed=changed, confidence=conf, confidence_fr='écart net' if conf == 'élevée' else 'écart modéré',
+                  note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
+        lines = [f"Contre ce profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
+        core = []
     else:
         lines.append('Stratégie de référence : ' + ', '.join(f'{labels[a]} {p} %' for a, p in mix) + '.')
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
