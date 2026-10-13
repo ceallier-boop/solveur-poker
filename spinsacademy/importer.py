@@ -5,8 +5,10 @@ la fréquence HRC, l'EV HRC, l'EV exacte quand elle est calculable, et le poids 
 est un couple (spot, main) tiré plus tard parmi les mains qui atteignent le nœud.
 
 Règles :
-  - seuls les exports de l'arbre préflop de référence sont importés ; quand plusieurs exports ont les mêmes
-    stacks, le plus récent est retenu (ordre BASE_PREFERENCE) ;
+  - 1.4.0 : tous les arbres préflop sont importés (tailles d'ouverture différentes : base v3) ; chaque spot porte son
+    arbre (`preflop_tree`) et ses tailles d'ouverture (`open_sizes`). Quand plusieurs exports ont le même arbre et les
+    mêmes stacks, le plus récent est retenu (ordre BASE_PREFERENCE), et à base égale le mode postflop « simple » (le plus
+    répandu : un seul modèle postflop autant que possible) ;
   - EV de référence pour la correction : l'EV exacte quand chaque action autre que fold en a une (décision tout
     ou rien), sinon l'EV HRC ;
   - une main n'est proposée en question que si elle atteint le nœud (reach >= MIN_REACH) et si la stratégie HRC
@@ -24,8 +26,12 @@ from . import allin
 from .cards import NAMES, W
 from .hrc import ROOT, exports, is_allin, labels, load, positions, preflop_hash, tree_hash
 
-IMPORTER_VERSION = '1.3.0'               # 1.3.0 : calls heads-up exacts face au tapis du BB après limp ou relance
-REF_PREFLOP = 'daa9aaa0'          # arbre préflop retenu (limp du BTN autorisé), voir data/hrc/README.md
+IMPORTER_VERSION = '1.4.0'               # 1.4.0 : plusieurs arbres préflop ; 1.3.0 : calls heads-up exacts face au tapis du BB après limp ou relance
+REF_PREFLOP = 'daa9aaa0'          # arbre préflop de référence (limp du BTN autorisé, BTN 2,3 BB, SB 3,5 BB), voir data/hrc/README.md
+POSTFLOP_PREFERENCE = ('simple', 'general')
+TREES = {REF_PREFLOP: 'référence : BTN 2,3 BB, SB 3,5 BB',   # arbres importés (empreinte préflop), base v3 ; c22b0ad6 (sans limp du BTN) reste écarté
+         '821ee345': 'BTN 2,3 BB, SB 3,3 BB', '279f59f1': 'BTN 2 BB, SB 3 BB', '4d2f96f7': 'BTN 2 BB, SB 2,5 BB',
+         '13f58826': 'BTN 2,5 BB, SB 3,5 BB', '100650d1': 'heads-up, SB 2 BB'}
 MIN_REACH = 0.05                  # poids d'atteinte minimal pour qu'une main soit proposée en question
 MAX_SELF_REGRET_MBB = 60.0        # incohérence maximale entre la stratégie HRC et l'EV de référence pour proposer la main
 MAX_MIXED_REGRET_MBB = 60.0       # écart maximal d'une action jouée au moins MIXED_MIN de la fois (sinon : main non proposée)
@@ -154,12 +160,14 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
                         hrc_self_regret_mbb=self_regret,
                         quiz_eligible=bool(r >= MIN_REACH and self_regret <= MAX_SELF_REGRET_MBB and mixed_ok))   # décidé sur les valeurs publiées
     table = '3-handed' if len(st) == 3 else 'heads-up'
-    sid = hashlib.sha256(json.dumps([REF_PREFLOP, table, st, key]).encode()).hexdigest()[:12]
+    tree = preflop_hash(settings); pre = settings['treeconfig']['preflop']['settings']
+    sid = hashlib.sha256(json.dumps([tree, table, st, key]).encode()).hexdigest()[:12]      # même identifiant qu'en 1.3.0 pour l'arbre de référence
     mass = W * reach
     return dict(
         spot_id=f"{'3w' if len(st) == 3 else 'hu'}-{'-'.join(f'{x:g}' for x in st)}-{key}-{sid[:6]}",
         table=table, players=names, stacks_bb=st, blinds_bb=dict(sb=0.5, bb=1.0), ante_bb=0.0, model='chip_ev',
-        hero=names[hero], node_key=key, history=hist,
+        hero=names[hero], node_key=key, history=hist, preflop_tree=tree,
+        open_sizes=dict(BTN=pre.get('SIZES_OPEN_BU'), SB=pre.get('SIZES_OPEN_SB'), BB_iso=pre.get('SIZES_OPEN_BB')),
         pot_bb=round(sum(commit), 4), to_call_bb=round(to_call, 4), hero_committed_bb=round(commit[hero], 4),
         effective_stack_bb=round(min(st[q] for q in range(len(st)) if not folded[q]), 4),
         actions=acts, ev_reference=ev_ref_source, ev_exact_approximate=bool(len(st) == 3 and allin.APPROXIMATE_3WAY and any(e is not None for e, l in zip(exact, labs) if l != 'F')),
@@ -174,15 +182,21 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
 def build_dataset(raw=None):
     spots, rejected, used, skipped = [], [], [], []
     seen = set()
-    for d in (exports(raw) if raw else exports()):
-        s, st, nodes = load(d)
-        if preflop_hash(s) != REF_PREFLOP: skipped.append((d, 'arbre préflop différent')); continue
-        if tuple(st) in seen: skipped.append((d, 'stacks déjà couverts par un export plus récent')); continue
-        seen.add(tuple(st)); sha = _sha256(d); used.append(d)
+    loaded = [(d,) + tuple(load(d)) for d in (exports(raw) if raw else exports())]
+    base = lambda d: d.split(os.sep)[-2]
+    order = {b: k for k, b in enumerate(dict.fromkeys(base(d) for d, *_ in loaded))}
+    mode = lambda s: s['treeconfig']['postflop']['id'].split('.')[-1]
+    loaded.sort(key=lambda x: (order[base(x[0])], POSTFLOP_PREFERENCE.index(mode(x[1])) if mode(x[1]) in POSTFLOP_PREFERENCE else 9))   # tri stable
+    for d, s, st, nodes in loaded:
+        k = (preflop_hash(s), tuple(st))
+        if k[0] not in TREES: skipped.append((d, 'arbre préflop non retenu')); continue
+        if k in seen: skipped.append((d, 'arbre et stacks déjà couverts par un export prioritaire')); continue
+        seen.add(k); sha = _sha256(d); used.append(d)
         for key in sorted(nodes, key=lambda k: (k.count('_'), k)):
             try:
                 sp = build_spot(d, st, nodes, key, s, sha)
-                if sp: spots.append(sp)
+                if sp and sp['eligible_hands'] == 0: skipped.append((d, f'{key} : aucune main proposable (nœud presque jamais atteint)'))
+                elif sp: spots.append(sp)
             except InvalidSpot as e:
                 rejected.append((d, key, str(e)))
     return spots, rejected, used, skipped

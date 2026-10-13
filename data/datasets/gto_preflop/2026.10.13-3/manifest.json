@@ -1,0 +1,248 @@
+{
+ "dataset": "gto_preflop",
+ "version": "2026.10.13-3",
+ "created_at": "2026-10-13T20:14:12+00:00",
+ "importer": "1.4.0",
+ "reference_preflop_tree": "daa9aaa0",
+ "model": "chip_ev",
+ "spots": 2528,
+ "spots_sha256": "57103119abba7c3c136ccf2f3e79952b5944dcfce5f9fcb1557cb704d2df9007",
+ "ev_reference_rule": "EV exacte si chaque action autre que fold en a une, sinon EV HRC",
+ "min_reach_for_questions": 0.05,
+ "max_self_regret_mbb": 60.0,
+ "mixed_min": 0.1,
+ "max_mixed_regret_mbb": 60.0,
+ "questions_eligible": 170989,
+ "sources": [
+  "data/hrc/raw/v3/hand_3",
+  "data/hrc/raw/v3/hand_4",
+  "data/hrc/raw/v3/hand_5",
+  "data/hrc/raw/v3/hand_6",
+  "data/hrc/raw/v3/hand_7",
+  "data/hrc/raw/v3/hand_8",
+  "data/hrc/raw/v3/hand_9",
+  "data/hrc/raw/v3/hand_10",
+  "data/hrc/raw/v3/hand_11",
+  "data/hrc/raw/v3/hand_12",
+  "data/hrc/raw/v3/hand_13",
+  "data/hrc/raw/v3/hand_14",
+  "data/hrc/raw/v3/hand_15",
+  "data/hrc/raw/v3/hand_16",
+  "data/hrc/raw/v3/hand_17",
+  "data/hrc/raw/v3/hand_18",
+  "data/hrc/raw/v3/hand_19",
+  "data/hrc/raw/v3/hand_20",
+  "data/hrc/raw/v3/hand_21",
+  "data/hrc/raw/v3/hand_22",
+  "data/hrc/raw/v3/hand_23",
+  "data/hrc/raw/v3/hand_24",
+  "data/hrc/raw/v3/hand_25",
+  "data/hrc/raw/v3/hand_26",
+  "data/hrc/raw/v3/hand_27",
+  "data/hrc/raw/v3/hand_28",
+  "data/hrc/raw/v3/hand_29",
+  "data/hrc/raw/v3/hand_30",
+  "data/hrc/raw/v3/hand_31",
+  "data/hrc/raw/v3/hand_32",
+  "data/hrc/raw/v3/hand_34",
+  "data/hrc/raw/v3/hand_35",
+  "data/hrc/raw/v3/hand_36",
+  "data/hrc/raw/v3/hand_37",
+  "data/hrc/raw/v3/hand_38",
+  "data/hrc/raw/v3/hand_39",
+  "data/hrc/raw/v3/hand_40",
+  "data/hrc/raw/v3/hand_41",
+  "data/hrc/raw/v3/hand_42",
+  "data/hrc/raw/v3/hand_43",
+  "data/hrc/raw/v3/hand_44",
+  "data/hrc/raw/v3/hand_45",
+  "data/hrc/raw/v3/hand_46",
+  "data/hrc/raw/v3/hand_47",
+  "data/hrc/raw/v3/hand_48",
+  "data/hrc/raw/v3/hand_49",
+  "data/hrc/raw/v3/hand_50",
+  "data/hrc/raw/v3/hand_51",
+  "data/hrc/raw/v3/hand_52",
+  "data/hrc/raw/v3/hand_53",
+  "data/hrc/raw/v3/hand_54",
+  "data/hrc/raw/v3/hand_55",
+  "data/hrc/raw/v3/hand_56",
+  "data/hrc/raw/v3/hand_57",
+  "data/hrc/raw/v3/hand_58",
+  "data/hrc/raw/v3/hand_59",
+  "data/hrc/raw/v3/hand_60",
+  "data/hrc/raw/v3/hand_61",
+  "data/hrc/raw/v3/hand_62",
+  "data/hrc/raw/v3/hand_63",
+  "data/hrc/raw/complement2/hand_1",
+  "data/hrc/raw/complement2/hand_2",
+  "data/hrc/raw/complement2/hand_3",
+  "data/hrc/raw/complement2/hand_4",
+  "data/hrc/raw/complement2/hand_5",
+  "data/hrc/raw/complement2/hand_6",
+  "data/hrc/raw/complement2/hand_8",
+  "data/hrc/raw/complement2/hand_9",
+  "data/hrc/raw/complement2/hand_11",
+  "data/hrc/raw/complement2/hand_13",
+  "data/hrc/raw/complement2/hand_15",
+  "data/hrc/raw/complement2/hand_16",
+  "data/hrc/raw/complement2/hand_17",
+  "data/hrc/raw/complement2/hand_18",
+  "data/hrc/raw/complement2/hand_19",
+  "data/hrc/raw/complement2/hand_20",
+  "data/hrc/raw/complement2/hand_21",
+  "data/hrc/raw/complement/hand_1",
+  "data/hrc/raw/complement/hand_2",
+  "data/hrc/raw/complement/hand_3",
+  "data/hrc/raw/min_raise_hu/hand_20",
+  "data/hrc/raw/min_raise_hu/hand_21",
+  "data/hrc/raw/min_raise_hu/hand_22"
+ ],
+ "skipped": [
+  {
+   "export": "data/hrc/raw/v3/hand_29",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call : aucune main proposable (nœud presque jamais atteint)"
+  },
+  {
+   "export": "data/hrc/raw/v3/hand_29",
+   "reason": "BTN-call_SB-raise4.5_BB-call_BTN-allin_SB-fold : aucune main proposable (nœud presque jamais atteint)"
+  },
+  {
+   "export": "data/hrc/raw/v3/hand_33",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v3/hand_1",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v3/hand_2",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_1",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_2",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_3",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_4",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_5",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_6",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_7",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_8",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_9",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/v2/hand_10",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/complement2/hand_7",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/complement2/hand_10",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/complement2/hand_12",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/complement2/hand_14",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/complement/hand_4",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_15",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_16",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_17",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_18",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_hu/hand_19",
+   "reason": "arbre et stacks déjà couverts par un export prioritaire"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_4",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_5",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_6",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_7",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_8",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_9",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_10",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_11",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_12",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_13",
+   "reason": "arbre préflop non retenu"
+  },
+  {
+   "export": "data/hrc/raw/min_raise_3way/hand_14",
+   "reason": "arbre préflop non retenu"
+  }
+ ],
+ "status": "staging"
+}

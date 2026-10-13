@@ -23,7 +23,7 @@ EPS = 1e-9
 # Les exports étant espacés (15, 16, 18, 20, 22, 25 BB), le seuil retenu est le plus grand tapis où HRC le propose.
 UNOPENED_ALLIN = {(2, 'SB', ()): 15.0, (2, 'BB', ('SB',)): 15.0,
                   (3, 'BTN', ()): 18.0, (3, 'SB', ()): 15.0, (3, 'SB', ('BTN',)): 22.0,
-                  (3, 'BB', ('SB',)): 15.0, (3, 'BB', ('BTN',)): 18.0}
+                  (3, 'BB', ('SB',)): 15.0, (3, 'BB', ('BTN',)): 18.0, (3, 'BB', ('BTN', 'SB')): 22.0}   # dernier : base v3
 
 
 @dataclass
@@ -39,9 +39,10 @@ class TreeConfig:
     threebet_ip: float = 2.5
     threebet_per_caller: float = 1.0
     allin_fraction: float = 0.40
-    max_raises: int = 3
+    max_raises: int = 4               # HRC : jusqu'au 5-bet (tapis par-dessus un tapis quand un tapis plus gros reste en jeu, base v3)
     flats_per_level: int = 1
     allow_limp: bool = True
+    allow_cold_calls: bool = False    # HRC ALLOW_COLD_CALLS : pas de call « à froid » d'une sur-relance (sans avoir mis de jetons volontairement)
     unopened_allin_max: float = None  # pas de tapis en premier de parole ni face à des limps au-delà de ce tapis effectif ;
                                       # None : seuils HRC (UNOPENED_ALLIN) ; 0 : toujours proposé
 
@@ -132,7 +133,9 @@ class Tree:
         else: opts.append(('X', c[p], 'check'))
         if to_call > EPS:
             closes = self._closes(c, folded, p, acted, aggressor)
-            if (raises == 0 and self.cfg.allow_limp) or (raises > 0 and (flats < self.cfg.flats_per_level or closes)):
+            cold = (raises >= 2 and c[p] <= self._blind(p) + EPS and not self.cfg.allow_cold_calls
+                    and self._left(c, aggressor) > EPS and self._cap(c, folded, aggressor) > mx + EPS)   # payer un tapis (même effectif) à froid reste permis
+            if not cold and ((raises == 0 and self.cfg.allow_limp) or (raises > 0 and (flats < self.cfg.flats_per_level or closes))):
                 opts.append(('C', min(mx, self.st[p]), 'call'))
         if raises < self.cfg.max_raises and cap > mx + EPS:
             for size in self._raise_sizes(c, folded, p, raises, last_raise, limpers, callers, aggressor):
@@ -159,6 +162,9 @@ class Tree:
                                 hist + (f'{name}-{t}',))
             node.actions.append(lab); node.children.append(child)
         return node
+
+    def _blind(self, p):
+        return ([0.0, 0.5, 1.0] if self.n == 3 else [0.5, 1.0])[p]
 
     def _closes(self, c, folded, p, acted, aggressor):
         """vrai si, après p, l'action revient à l'agresseur (ou se termine) sans autre joueur à parler"""

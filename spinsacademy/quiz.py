@@ -15,8 +15,8 @@ from .cards import NAMES, W
 from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
-DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-2')                       # gto_preflop
-DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-3')
+DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
+DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-4')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
@@ -106,10 +106,20 @@ def call_terms(sp):
 PREFLOP_ORDER = {3: ('BTN', 'SB', 'BB'), 2: ('SB', 'BB')}
 
 
+def commitments(sp):
+    """mise engagée par chaque joueur, blindes comprises, à ce point du coup"""
+    n = len(sp['players']); c = dict(zip(sp['players'], [0.0, 0.5, 1.0] if n == 3 else [0.5, 1.0]))
+    for h in sp['history']:
+        if h.get('to_bb') is not None: c[h['position']] = h['to_bb']
+    return c
+
+
 def to_act_after(sp):
-    """joueurs qui parleront encore après le joueur dans ce tour (pas encore intervenus)"""
-    order = PREFLOP_ORDER[len(sp['players'])]; acted = {h['position'] for h in sp['history']}
-    return [p for p in order[order.index(sp['hero']) + 1:] if p not in acted]
+    """adversaires qui auront encore à parler après le joueur dans ce tour : ceux qui n'ont pas encore parlé, et ceux qui
+    ont déjà parlé mais doivent compléter une mise plus haute (ni couchés, ni à tapis)"""
+    acted = {h['position'] for h in sp['history']}; c = commitments(sp); top = max(c.values())
+    allin = {h['position'] for h in sp['history'] if h['action'] in ('allin', 'call_allin')}
+    return [p for p in opponents_in(sp) if p not in allin and (p not in acted or c[p] < top - 1e-9)]
 
 
 def opponents_in(sp):
@@ -182,7 +192,7 @@ def candidates(spots, filters=None):
         if f.get('min_stack') is not None and eff < f['min_stack']: continue
         if f.get('max_stack') is not None and eff > f['max_stack']: continue
         if f.get('profile') and (profiles.for_villain(sp.get('villain')) or {}).get('id') != f['profile']: continue
-        if eff < MIN_STACK_BB: continue                            # périmètre : de 4 à 25 BB
+        if not MIN_STACK_BB <= hero_effective(sp) <= MAX_STACK_BB: continue   # périmètre : de 4 à 25 BB de tapis effectif
         if sp.get('villain') and not adapts(sp): continue          # mode exploitant : le profil ne change pas la part de calls
         if sp['eligible_hands'] > 0 and teachable(sp): out.append(sp)
     return out
@@ -232,7 +242,7 @@ def difficulty(gap):
     return 'facile' if gap > EASY_MBB else 'difficile' if gap < HARD_MBB else 'moyen'
 
 
-MIN_STACK_BB = 4
+MIN_STACK_BB, MAX_STACK_BB = 4, 25
 HRC_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 90e centile ≈ 250 mBB (relecture du 2026-10-13)
 _TEACH = {}
 
@@ -401,7 +411,7 @@ def fold_equity(sp, aid):
     key = (sp['node_key'] + '_' if sp['node_key'] != 'root' else '') + f"{sp['hero']}-{_token(sp, a)}"
     p = 1.0
     for _ in opponents_in(sp):
-        nxt = spots.get((tuple(sp['stacks_bb']), key))
+        nxt = spots.get((sp.get('preflop_tree'), tuple(sp['stacks_bb']), key))
         if nxt is None: return None
         ids = [x['id'] for x in nxt['actions']]
         if 'F' not in ids: return None
@@ -415,7 +425,7 @@ _BY_NODE = {}
 
 
 def _index_nodes(spots):
-    idx = {(tuple(x['stacks_bb']), x['node_key']): x for x in spots.values()}
+    idx = {(x.get('preflop_tree'), tuple(x['stacks_bb']), x['node_key']): x for x in spots.values()}
     for x in spots.values(): _BY_NODE[id(x)] = idx
 
 

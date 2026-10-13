@@ -10,16 +10,17 @@ def built():
     return im.build_dataset()
 
 
-def test_no_rejection_and_reference_tree_only(built):
+def test_no_rejection_and_known_trees_only(built):
     spots, rejected, used, skipped = built
     assert not rejected
-    assert all(s['provenance']['hrc_preflop_tree'] == im.REF_PREFLOP for s in spots)
-    assert any('min_raise_3way' in d and 'arbre' in r for d, r in skipped)
+    assert all(s['provenance']['hrc_preflop_tree'] in im.TREES and s['preflop_tree'] == s['provenance']['hrc_preflop_tree'] for s in spots)
+    assert any('min_raise_3way' in d and 'arbre' in r for d, r in skipped)                 # arbre sans limp du BTN : écarté
+    assert {s['preflop_tree'] for s in spots} == set(im.TREES)
 
 
 def test_one_export_per_stack_configuration(built):
     spots, _, used, _ = built
-    keys = [(tuple(s['stacks_bb']), s['node_key']) for s in spots]
+    keys = [(s['preflop_tree'], tuple(s['stacks_bb']), s['node_key']) for s in spots]
     assert len(keys) == len(set(keys))
     assert len({s['spot_id'] for s in spots}) == len(spots)
 

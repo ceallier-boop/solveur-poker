@@ -147,3 +147,14 @@ Ouvertures à 2 et 2,5 BB en plus de 2,3 BB (BTN) et de 3,5 BB (SB), notamment e
 ### 7.4 Précision (priorité 2)
 
 Sur les mains où l'EV exacte existe, l'EV HRC s'en écarte de 58 mBB en médiane et de 251 mBB au 90e centile (3 à 12 fois la tolérance de correction). En attendant des calculs plus précis, l'application ne tire plus les questions HRC dont la leçon coûte moins de 150 mBB (`quiz.HRC_NOISE_MBB`). Des exports à précision plus élevée (plus d'itérations, mode postflop uniforme : certaines profondeurs viennent de `v2/general`, d'autres de `complement2/simple`) permettraient de baisser ce seuil.
+
+## 8. Réception de la base v3 (13 octobre 2026)
+
+| Demande | Statut |
+|---|---|
+| §6.1 tapis déséquilibrés (16 configurations à 3 joueurs, 4 en heads-up) | **reçu** |
+| §6.2 / §7.3 tailles d'ouverture (BTN 2 / 2,3 / 2,5 BB ; SB 2,5 / 3 / 3,3 / 3,5 BB ; heads-up SB 2 BB) | **reçu** (5 arbres en plus de la référence) |
+| §7.2 décisions après la première action, pots à trois, squeeze, sur-call | **reçu** (arbre complet) |
+| §7.1 tapis direct du SB et du BB au-delà de 16 BB, du BTN au-delà de 20 BB | à produire : réglages d'arbre inchangés |
+| §7.4 précision (plus d'itérations) | à produire : moteur et abstractions inchangés, écarts avec l'EV exacte identiques à v2 |
+| §6.3 exploitant au-delà du call d'un tapis, §6.4 postflop | à produire |

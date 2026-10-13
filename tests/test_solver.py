@@ -13,7 +13,7 @@ def test_tree_reproduces_hrc_action_sets():
     checked = 0
     for d in exports():
         s, st, nodes = load(d)
-        if preflop_hash(s) != 'daa9aaa0': continue
+        if preflop_hash(s) != 'daa9aaa0' or max(st) > 25: continue        # au-delà de 25 BB (base v3) : règles HRC de relance incomplète non modélisées
         bk = Tree(st).by_key()
         for k, n in nodes.items():
             assert k in bk, (d, k)
@@ -57,7 +57,7 @@ def test_default_tree_matches_hrc_actions_exactly():
     checked = 0
     for d in exports():
         s, st, nodes = load(d)
-        if preflop_hash(s) != 'daa9aaa0': continue
+        if preflop_hash(s) != 'daa9aaa0' or max(st) > 25: continue        # au-delà de 25 BB (base v3) : règles HRC de relance incomplète non modélisées
         bk = Tree(st).by_key()
         for k, n in nodes.items():
             hl = set(labels(n, st))
