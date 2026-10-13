@@ -21,23 +21,25 @@ tar -xzf "$ARCHIVE" -C "$BASE/releases"
 "$PYTHON" -m venv "$DEST/.venv"
 "$DEST/.venv/bin/pip" install -q --disable-pip-version-check -r "$DEST/requirements-app.lock"
 "$DEST/.venv/bin/python" -c "import spinsacademy.api" || { echo "la version ne se charge pas"; rm -rf "$DEST"; exit 1; }
-PREV=$(readlink -f "$BASE/current" 2>/dev/null || true)
+PREV=""; [ -L "$BASE/current" ] && PREV=$(readlink -f "$BASE/current")
+TAG=$("$DEST/.venv/bin/python" -c "import json,sys; print(json.load(open(sys.argv[1]))['tag'])" "$DEST/RELEASE.json")
 if [ -n "${SPINSACADEMY_DB:-}" ] && [ -f "$SPINSACADEMY_DB" ]; then
   "$DEST/.venv/bin/python" "$DEST/tools/ops/backup.py" backup --db "$SPINSACADEMY_DB" --dir "$BASE/shared/backups"
 fi
-health() {
+health() {   # le service répond, et c'est bien la version attendue ($1 : tag)
   for _ in $(seq 1 30); do
-    if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -q '"status":"ok"'; then return 0; fi; sleep 1
+    out=$(curl -fsS "$HEALTH_URL" 2>/dev/null || true)
+    if echo "$out" | grep -q '"status":"ok"' && echo "$out" | grep -q "\"tag\":\"$1\""; then return 0; fi; sleep 1
   done; return 1
 }
 ln -sfn "$DEST" "$BASE/current.new" && mv -Tf "$BASE/current.new" "$BASE/current"
 eval "$RESTART"
-if health; then
+if health "$TAG"; then
   echo "version $NAME en service ; précédente : ${PREV:-aucune}"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) deploy $NAME (précédente ${PREV:-aucune})" >> "$BASE/shared/deploy.log"
 else
   echo "contrôle de santé en échec : retour à ${PREV:-aucune version}"
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) échec $NAME, retour ${PREV:-aucune}" >> "$BASE/shared/deploy.log"
-  if [ -n "$PREV" ]; then ln -sfn "$PREV" "$BASE/current.new" && mv -Tf "$BASE/current.new" "$BASE/current"; eval "$RESTART"; health || echo "ATTENTION : la version précédente ne répond pas non plus"; fi
+  if [ -n "$PREV" ]; then ln -sfn "$PREV" "$BASE/current.new" && mv -Tf "$BASE/current.new" "$BASE/current"; PTAG=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['tag'])" "$PREV/RELEASE.json"); eval "$RESTART"; health "$PTAG" || echo "ATTENTION : la version précédente ne répond pas non plus"; fi
   exit 1
 fi

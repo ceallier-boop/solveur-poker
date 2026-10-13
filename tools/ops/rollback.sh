@@ -13,10 +13,12 @@ if [ -z "$TARGET" ]; then
   for i in "${!ALL[@]}"; do [ "${ALL[$i]}" = "$CUR" ] && [ "$i" -gt 0 ] && TARGET=${ALL[$((i - 1))]}; done
 fi
 [ -n "$TARGET" ] && [ -d "$BASE/releases/$TARGET" ] || { echo "version cible introuvable"; exit 1; }
+TTAG=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['tag'])" "$BASE/releases/$TARGET/RELEASE.json")
 ln -sfn "$BASE/releases/$TARGET" "$BASE/current.new" && mv -Tf "$BASE/current.new" "$BASE/current"
 eval "$RESTART"
 for _ in $(seq 1 30); do
-  if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -q '"status":"ok"'; then
+  out=$(curl -fsS "$HEALTH_URL" 2>/dev/null || true)
+  if echo "$out" | grep -q '"status":"ok"' && echo "$out" | grep -q "\"tag\":\"$TTAG\""; then
     echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) rollback $CUR -> $TARGET" >> "$BASE/shared/deploy.log"; echo "version $TARGET en service"; exit 0
   fi; sleep 1
 done

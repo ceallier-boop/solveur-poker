@@ -130,10 +130,17 @@ def list_profiles():
     return profiles.catalog()
 
 
+def _release():
+    """version déployée (RELEASE.json écrit par tools/ops/release.sh), None hors paquet de version"""
+    path = os.path.join(ROOT, 'RELEASE.json')
+    try: return json.load(open(path))
+    except (OSError, ValueError): return None
+
+
 @app.get('/health')
 def health():
     with closing(connect()) as con:
-        return dict(status='ok', published={ds: catalog.active(con, ds) for ds in catalog.KINDS},
+        return dict(status='ok', release=_release(), published={ds: catalog.active(con, ds) for ds in catalog.KINDS},
                     staging_fallback=os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1')
 
 
