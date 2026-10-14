@@ -35,3 +35,21 @@ Exports reçus : `Test_HRC_v1.zip`, rangés dans `data/hrc/tests/precision_v1/` 
 - **Demander à HRC** s'il existe un réglage distinct pour la précision des EV par main (échantillonnage de l'évaluation), et confirmer ce qui différait entre les quatre exports.
 - **À défaut, répéter les calculs** : 4 exports identiques par configuration, et l'importeur fait la moyenne des EV (et des fréquences). Écart attendu en heads-up : environ 40 mBB au lieu de 100, ce qui permettrait de baisser le filtre de bruit de 150 à environ 75 mBB et de rendre les décisions serrées.
 - **Refaire le test sur l'arbre de référence** (`ALLOWED_FLATS_PER_RAISE` = `[1, 1, 1, 1, 0]`), pour que les exports soient utilisables tels quels.
+
+## Test 2 : moteur « enumerated » contre « montecarlo »
+
+Exports reçus : `Hand_1.zip` (moteur `enumerated`) et `Hand_2.zip` (moteur `montecarlo`), rangés dans `data/hrc/tests/engine_v1/`. 3 joueurs à 12 BB, arbre de test (ouvertures à 2 BB, pas de limp en premier de parole) ; seule différence entre les deux : le moteur.
+
+| Mesure | enumerated | montecarlo |
+|---|---|---|
+| Convention des EV | tapis final attendu (fold = tapis restant, ici 11 BB) : à normaliser en retirant le tapis restant | écart avec le fold |
+| Écart avec l'EV exacte (calls de tapis, 338 mains) | **médiane 2,5 mBB, 90e centile 5,8, max 9,8 ; biais 0,1** | médiane 100 mBB, 90e centile 248 ; biais −48 |
+| EV d'un check qui mène au flop, comparée à 2 × l'équité contre la range adverse | **0,2 mBB** : le coup est réglé à l'abattage | 140 mBB : le postflop est joué |
+| Nœuds exportés | 13 (pas de branche « BTN relance », jouée 0,1 %) | 22 |
+
+Conclusion : **`enumerated` ne joue pas le postflop.** Dès qu'un flop est vu, il donne à chaque main son équité contre la range adverse, sans mise après le flop. Il est exact et sans bruit, mais il résout un autre jeu :
+- les mains fortes perdent leur valeur postflop (AA dans un pot limpé : 1,69 BB contre 3,94 BB avec le postflop) ;
+- les petites relances perdent leur intérêt (BTN : relance 0,1 % contre 12,5 %) ;
+- les décisions qui mènent au flop sont faussées (BB face à une relance minimale du SB : fold 1,4 % contre 23 %).
+
+Usage possible : là où le flop n'est presque jamais vu (tapis très courts, décisions tapis ou fold), il donnerait des EV exactes. Il ne peut pas remplacer `montecarlo` dès que limps et petites relances comptent.
