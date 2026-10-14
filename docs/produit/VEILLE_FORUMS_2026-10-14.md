@@ -273,3 +273,30 @@ Le script ne télécharge que les portions listées, en 720p, et garde une image
 | HUSNG.com, *Nash vs population* | [3–5 min](https://youtu.be/xnBlnLLq8Ks?t=180) | HU 7 BB : range Nash du SB et range max-exploit contre la population, côte à côte |
 
 Intérêt pour le projet : les ranges « théoriques » affichées servent de contrôle croisé de nos exports HRC aux mêmes profondeurs (15 BB 3 joueurs, 10 BB HU, push/fold 3–7 BB) ; les ranges « adaptées » (Kill Tilt contre récréatifs, HUSNG contre la population) sont des exemples concrets de déformation à comparer à nos profils fictifs.
+
+## 8. Exploiter les vidéos complètes : grilles et mains commentées (2026-10-14)
+
+Les vidéos de review (Kill Tilt, Team BAS, SpinElite, LUCKYSPIN) combinent deux sources : les **grilles de range** affichées et des **mains réelles commentées** par un coach (situation à l'écran, décision et raisonnement dans le commentaire). Rapprochées, elles donnent des exemples de spots annotés par un expert.
+
+**Chaîne de traitement**
+1. Télécharger les vidéos complètes sur un ordinateur personnel (`yt-dlp`, 1080p ; YouTube bloque les serveurs cloud).
+2. `tools/veille/images_cles.sh video.mp4 images/` : une image à chaque changement d'écran (nouvelle main, grille affichée), nommée par son temps (`t043m46s.png`).
+3. `tools/veille/vtt2txt.py` : transcription minute par minute, alignée sur les mêmes temps.
+4. Lecture des images et de la transcription, main par main, pour remplir une fiche par exemple.
+
+**Fiche par main (proposition)**
+
+| Champ | Exemple |
+|---|---|
+| source | vidéo, chaîne, temps de début et de fin |
+| format | Expresso / Nitro / Spin & Go, buy-in, 3 joueurs ou HU |
+| stacks | en BB pour chaque siège, positions |
+| main du héros | `Q9s` |
+| action avant le héros | `BTN tapis 8,5 BB, SB fold` |
+| décision du coach | `call` |
+| raisonnement | « en théorie call évident ; BTN supposé trop serré, Q9s reste rentable contre une range un peu serrée » |
+| profil supposé de l'adversaire | inconnu / récréatif passif / récréatif agressif / reg |
+| range affichée | grille retranscrite (169 mains) si elle est à l'écran, et sa source (théorie ou adaptation) |
+| comparaison | décision et EV dans l'export HRC du même spot ; écart expliqué par le profil ou non |
+
+**Usages pour le projet** : contrôle croisé des exports HRC sur des spots réellement joués ; exemples chiffrés de déformation pour caler les profils fictifs ; base des futurs conseils stratégiques payants (`OFFRE.md`), à condition de les réécrire et de les faire valider par l'expert. Rien n'est copié dans l'application : les vidéos et les images restent des sources d'analyse, hors du dépôt. Pour aller au-delà d'une analyse interne (citer un coach, réutiliser une range), il faut l'accord des créateurs.
