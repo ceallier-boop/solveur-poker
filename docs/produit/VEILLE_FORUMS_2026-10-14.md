@@ -172,7 +172,7 @@ Deuxième passe en français et en anglais avec ces quatre mots-clés. Elle ajou
 
 Méthode : recherche YouTube sur « spin&go », « expresso », « range GTO », « range exploitant » (et équivalents anglais), sélection de 28 vidéos sur le préflop, l'exploitation des récréatifs et la population, récupération des **sous-titres** (automatiques pour la plupart) avec `tools/veille/youtube_subs.sh`, puis lecture des passages qui parlent de tendances de population ou de chiffres. Les transcriptions ne sont pas versionnées (contenus protégés) : seuls la synthèse, les liens et les minutages le sont. Les ranges affichées à l'écran ne sont pas dans les sous-titres.
 
-Limites : 4 vidéos sont réservées aux adultes (connexion YouTube requise), d'autres ont été bloquées par la limite de débit de YouTube (voir §6.4). Toutes les affirmations ci-dessous sont celles des coachs, sans données publiées derrière, sauf mention contraire.
+Limites : 4 vidéos sont réservées aux adultes (connexion YouTube requise) et 1 n'a pas de sous-titres ; les vidéos d'abord bloquées par la limite de débit de YouTube ont été récupérées en relançant plus lentement (§6.4). Toutes les affirmations ci-dessous sont celles des coachs, sans données publiées derrière, sauf mention contraire.
 
 ### 6.1 Chaînes et vidéos exploitées
 
@@ -192,6 +192,10 @@ Limites : 4 vidéos sont réservées aux adultes (connexion YouTube requise), d'
 | **GTO Wizard** (EN) | [Turning fish into chips](https://www.youtube.com/watch?v=EvvQb3Kq7Yc) | 15/08/2024 | Taxonomie de 7 profils de fish sur 20 M de mains (cash) |
 | **SOLVBET_FR** | [Poker GTO vs exploit : la stratégie parfaite](https://www.youtube.com/watch?v=TA--yWDvvtk) | 06/02/2022 | Méthode « fréquence du field verrouillée dans le solveur » |
 | **GTO Poker Charts** (EN) | [Spin and Go GTO poker charts](https://www.youtube.com/watch?v=xrrFa68NrNU) | 27/12/2020 | Produit concurrent : charts par tranche de stack |
+| **LUCKYSPIN – Poker FR** | [Spin ranges : le plan d'action pour devenir gagnant (Expressos, Twister)](https://www.youtube.com/watch?v=XoqBgf_J-Co) ; [Comment progresser en Expresso Nitro sur Winamax 5 €](https://www.youtube.com/watch?v=NKlxX_GB_SQ) | 2023–2024 | « Des ranges contre le limp sont obligatoires : en GTO le BTN ne limpe jamais, en pratique les récréatifs limpent beaucoup au BTN » ; un adversaire Nitro 5 € noté à ≥ 70 % de limp ; plan « 20 % des ranges = 80 % des résultats » + quiz |
+| Team Bas Poker | [Most spin players misread HUD stats](https://www.youtube.com/watch?v=MW8XNNAokD4) | 11/02/2026 | Popup HUD : limp, iso, open shove globaux pour profiler un récréatif sur peu de mains ; tailles de mise favorites par street |
+| **Club Poker** × SpinElite | [La vérité sur les expressos avec la Team SpinElite](https://www.youtube.com/watch?v=W3em_68xhSw) (2 h 14) | 15/06/2026 | Écosystème : staking, coaching, « EV pool » lancé en juin 2026 (plus de 100 joueurs) ; Expresso jusqu'à 500 € chez Winamax ; « ne pas folder contre un fish parce que la range théorique le dit » |
+| **Best Fish Forever** (IT) | [SB 15 bb : stratégie préflop contre les fish passifs ou super agressifs](https://www.youtube.com/watch?v=APC80-cg_dg) | 01/04/2026 | Exploit par node-lock GTO Wizard contre deux profils : fish passif « linéaire » (tapis direct avec paires et Ax off, iso seulement avec broadways fortes, 3-bet surtout value, overfold léger) et fish agressif (iso ≈ 25–30 %, plutôt en bluff) ; contre le passif, pousser Ax off direct faute d'iso-bluffs adverses. Même démarche que nos profils fictifs |
 | Jonathan Little | [Mastering Spin & Go strategy with Ryan O'Donnell](https://www.youtube.com/watch?v=bKIv1ZkbPJ8) | 18/03/2021 | Peu de contenu préflop exploitable |
 
 ### 6.2 Données chiffrées
@@ -219,7 +223,7 @@ Autres chiffres :
 | Les récréatifs **poussent trop serré** de 8 à 15 BB ; au-delà de 15 BB presque jamais d'open shove ; vers 5–6 BB leurs tapis se rapprochent de la théorie | Kill Tilt (3 vidéos), Team BAS, Poker Sciences (§3.1) | Le facteur de déformation devrait **dépendre de la profondeur** (k ≈ 0,2–0,4 à 9–11 BB selon §3.1, proche de 1 sous 6 BB), au lieu d'un k unique par profil |
 | Face à un tapis du BTN, payer moins large que la théorie (bas de range de call, Kx off, A2o–A3o) ; au SB, coller davantage à la théorie | Kill Tilt | Le profil « Serré » est le plus réaliste pour le BTN ; c'est déjà ce que fait le dataset `exploit_calls`, mais il faudrait le décliner par position |
 | La population **folde un peu trop face aux tapis** (« people tend to overfold slightly ») | Team BAS, HUSNG | Justifie un futur mode où le héros pousse face à un profil qui paie trop serré |
-| Limp à ≤ 10 BB = mains faibles ou moyennes qui limp-foldent ; un limp du BTN signale presque toujours un récréatif | Kill Tilt, Team BAS | Profil « récréatif passif » : limpe au lieu de pousser, tapis seulement avec les mains très fortes |
+| Limp à ≤ 10 BB = mains faibles ou moyennes qui limp-foldent ; un limp du BTN signale presque toujours un récréatif (certains limpent ≥ 70 %) | Kill Tilt, Team BAS, LUCKYSPIN | Profil « récréatif passif » : limpe au lieu de pousser, tapis seulement avec les mains très fortes |
 | La BB n'isole pas assez face au limp (alors que la théorie isole 45 % à 10 BB en HU) → limper 100 % au SB contre un récréatif passif jusqu'à ~7 BB | Kill Tilt, Le Wojak, Poker Académie | Situations limp à ajouter quand HRC verrouillé sera disponible (`EXPORTS_A_PRODUIRE.md` §2) |
 | Min-raise d'un récréatif à faible profondeur = range forte, peu de bluffs | Kill Tilt, SpinElite | Indice à donner dans les textes de profil |
 | Expresso = format avec la plus forte proportion de récréatifs ; Winamax en a « beaucoup plus » que GG | Kill Tilt, Team BAS, Poker Builder | Contexte marketing |
@@ -233,3 +237,6 @@ Autres chiffres :
 | [Ces erreurs sont partout en Spin 5 €… voici comment les punir](https://www.youtube.com/watch?v=uyDkiYI_tCE) (SpinElite) | Réservée aux adultes |
 | [How to use preflop charts on Winamax Nitro Expresso](https://www.youtube.com/watch?v=OTJBBsKQXCk) (bitB Spins) | Réservée aux adultes |
 | [Spin & Go preflop strategy, 10 BB training with GTO Wizard](https://www.youtube.com/watch?v=45qHc44RJCY) (Leo Bell) | Réservée aux adultes |
+| [Bien démarrer avec un tracker (Spin & Go, Expressos…)](https://www.youtube.com/watch?v=cXLFalql6Ik) (Poker Spin Tracker FR) | Pas de sous-titres |
+
+Pour les vidéos réservées aux adultes : exporter les cookies d'un compte YouTube connecté et relancer `yt-dlp --cookies cookies.txt …` depuis ton ordinateur, ou me déposer les sous-titres.
