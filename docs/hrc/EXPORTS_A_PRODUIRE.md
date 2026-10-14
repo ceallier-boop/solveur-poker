@@ -203,3 +203,7 @@ ICM (gros multiplicateurs) : calculs séparés avec la structure de gains Expres
 ### Livraison
 
 Une archive par lot, comme la base v3 (dossier `settings.json` + `nodes/` par main). Je vérifie à chaque réception : arbre et réglages, précision contre l'EV exacte, couverture, et je publie un nouveau dataset après contrôle.
+
+### 9.9 Résultat du test de précision (14/10)
+
+Voir `docs/hrc/TEST_PRECISION_2026-10-14.md` : les 4 exports reçus par configuration ne sont pas plus précis les uns que les autres, mais leur moyenne divise l'écart par 2 environ (bruit aléatoire). Ils utilisaient un arbre sans limp en premier de parole (`ALLOWED_FLATS_PER_RAISE` = `[0, 1, 1, 1, 0]`) : à refaire sur l'arbre de référence `[1, 1, 1, 1, 0]`.
