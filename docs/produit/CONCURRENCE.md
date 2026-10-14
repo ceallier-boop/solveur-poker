@@ -75,7 +75,20 @@ Aucun manque majeur sur le préflop : les thèmes préflop enseignés sont déj�
 
 Catégorie « Sng & Expresso » : 120 sujets depuis 2017, dont la moitié sont des annonces de vidéos ; un à deux sujets par mois en 2026.
 
-Synthèse des fils lus : à compléter (collecte en cours, limite de débit du forum).
+Fils lus en entier : 10 (variance, groupes de travail, débutants, montée de limite, livre de ranges, « pool EV », range de call Expresso). 10 autres ciblés n'ont pas pu être lus : le forum a refusé les requêtes même à une par minute, et la limite n'a pas été contournée.
+
+| Constat | Signes dans les fils | Pour SpinsAcademy |
+|---|---|---|
+| Le **cEV** (chips gagnés en EV par partie) est la mesure de référence des joueurs | « 80 de cEV c'est correct, les bons joueurs sont au-dessus de 100 » ; seuil de rentabilité estimé à ~40 de cEV avec 6,85 % de rake ; un joueur à 70 de cEV toujours perdant après 20 000 Spins | Parler le langage des joueurs : relier l'écart d'EV par décision à ce qu'il coûte en cEV par partie |
+| La **variance** angoisse et personne ne sait la lire | « combien de Spins pour lisser la variance ? » ; réponses de 5 000 à plusieurs dizaines de milliers ; seul outil cité : SwongSim | Message produit : juger son jeu par décision, sans attendre 20 000 parties |
+| Les débutants ne savent pas **où ils perdent** | « je push uniquement à moins de 8 BB » ; réponse : « un paquet de pushs corrects que tu rates » ; « encore quelques leaks en BB » selon PT4 | Le push/fold et la BB sont les premières sources d'erreur : vue « où je perds le plus » par famille et position |
+| Besoin d'une **stratégie automatique** pour jouer vite | « une stratégie que tu appliques sur plus de 95 % de tes décisions sans réfléchir » ; « des ranges stables pour contrôler ce que je fais » | Règles à retenir courtes et ranges simplifiées (remarque 12 du plan MVP) |
+| Les ranges GTO brutes déçoivent | Livre « Poker GTO Spin » (39 €) : « ranges arrondies, gratuites sur GTO Wizard », « aucune info sur le soft utilisé », « qu'il faudra encore simplifier » | La traçabilité (source HRC, version, contrôles) et la simplification sont des arguments ; une table de ranges seule ne se vend pas |
+| L'exploitation se pense en **profils** | Expresso 15 BB face à un BB « VPIP 70 / PFR 10 » : « s'il est vraiment aussi nit, call ATo+ et 88+ » | Le mode exploitant parle le langage du forum ; à étendre au-delà du call d'un tapis (remarque 17) |
+| L'EV « hors jackpot » est connue | « pool EV » (Hyperschool) : partage des gains hors gros multiplicateurs | Confirme le choix du chip EV pour juger les décisions, indépendamment des multiplicateurs |
+| On cherche à **progresser ensemble** | Deux groupes de travail Expresso et Spin micro (déc. 2025, juin 2026) : ranges préflop, push/fold, leaks, sessions courtes | Cible et fonctions confirmées ; défis ou comparaison entre amis à étudier |
+
+Autres sujets populaires (titres seulement) : « Bankroll pour expresso » (15 000 vues), « Tableaux de ranges pour les expressos (Winamax) », « Quels outils de travail pour débuter en spin », « Suite aux changements, quelle room choisir pour les SPIN », « Nitro 0,25 ».
 
 ## 5. Ce que cela implique pour SpinsAcademy
 
