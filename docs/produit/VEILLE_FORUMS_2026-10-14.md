@@ -167,3 +167,69 @@ Deuxième passe en français et en anglais avec ces quatre mots-clés. Elle ajou
 - Aucune nouvelle fréquence de population chiffrée : le tableau Poker Sciences du §3.1 reste la seule source quantitative publique trouvée.
 - La table des multiplicateurs est maintenant recoupée par des résultats réels (NitroVariance).
 - Le marché francophone des « ranges GTO + exploitantes » est plus large qu'en première passe (Poker Sciences, Spinelite, Poker Toolkit, bitB, Team BAS via FreeBetRange). Aucun de ces outils ne publie ses hypothèses de profil ni de correction chiffrée par main : nos profils versionnés et notre correction en EV restent des différenciateurs.
+
+## 6. Vidéos YouTube (2026-10-14)
+
+Méthode : recherche YouTube sur « spin&go », « expresso », « range GTO », « range exploitant » (et équivalents anglais), sélection de 28 vidéos sur le préflop, l'exploitation des récréatifs et la population, récupération des **sous-titres** (automatiques pour la plupart) avec `tools/veille/youtube_subs.sh`, puis lecture des passages qui parlent de tendances de population ou de chiffres. Les transcriptions ne sont pas versionnées (contenus protégés) : seuls la synthèse, les liens et les minutages le sont. Les ranges affichées à l'écran ne sont pas dans les sous-titres.
+
+Limites : 4 vidéos sont réservées aux adultes (connexion YouTube requise), d'autres ont été bloquées par la limite de débit de YouTube (voir §6.4). Toutes les affirmations ci-dessous sont celles des coachs, sans données publiées derrière, sauf mention contraire.
+
+### 6.1 Chaînes et vidéos exploitées
+
+| Chaîne | Vidéo | Date | Intérêt |
+|---|---|---|---|
+| **Kill Tilt** (FR) | [Les clés du jeu préflop en Expresso](https://www.youtube.com/watch?v=m6RyRKzR08A) (2 h 28) | 19/02/2026 | Le plus riche : tendances préflop des récréatifs par profondeur |
+| Kill Tilt | [Stratégie simple et efficace pour gagner en Expresso petites limites](https://www.youtube.com/watch?v=Wkd0Uq0i2FE) | — | Calls face aux tapis courts, BTN vs SB |
+| Kill Tilt | [Les 3 principes essentiels pour gagner en Expressos en 2026](https://www.youtube.com/watch?v=27YoUVv32Ag) | 09/02/2026 | Field trop serré à 8–9 BB, proche théorie à 5–6 BB |
+| Kill Tilt | [Arrondir ses fins de mois en Expressos : la vérité en chiffres](https://www.youtube.com/watch?v=tLTEpJqn2jE) | 30/03/2026 | Repères de cEV Nitro |
+| Kill Tilt | [5 principes fondamentaux… Expressos microlimites](https://www.youtube.com/watch?v=XIxCrh3PBKc) ; [Maîtriser les ranges préflop](https://www.youtube.com/watch?v=n_3_Zzc8hJw) | 2024–2025 | Limp SB, 5 paramètres d'adaptation des ranges |
+| **Team Bas Poker** (EN/FR) | [Adjusting to GG Spin & Gold player pool](https://www.youtube.com/watch?v=8EgxqisVIu4) ; [$3 Spin & Gold – easy exploits](https://www.youtube.com/watch?v=YwUxeVIsOTU) ; [Stratégie gagnante à 25 €+ sur Expresso Nitro](https://www.youtube.com/watch?v=FLflTIdL2aE) | 2024–2026 | « Pas de charts GTO contre les récréatifs » ; signaux de profil |
+| **Le Wojak Poker** (FR) | [Mes ranges de spin & go gratuites](https://www.youtube.com/watch?v=sdiLfKofaGc) | 20/04/2025 | Ranges gratuites + mémorisation par flashcards Anki |
+| **SpinElite Poker** (FR) | [12 strats de pro pour dominer le format Nitro](https://www.youtube.com/watch?v=g1_kRGY5PAw) | 09/06/2025 | Limp vs reg, min-raise de récréatif = fort |
+| **Poker Académie** (FR) | [Le préflop en Spin ! On vous dit tout !!](https://www.youtube.com/watch?v=sMoF9yNU6Ek) | 26/05/2021 | Open BTN 38 % théorique, 42–45 % en pratique |
+| **HUSNG.com** (EN) | [Comparing Nash heads-up ranges versus the population](https://www.youtube.com/watch?v=xnBlnLLq8Ks) | 29/10/2012 | **Seule mesure de population chiffrée** (§6.2) |
+| **IMEZRUSPIN Poker** (EN) | [PT4 stacksize filtering – Spin and go general population analysis](https://www.youtube.com/watch?v=DD_9PFkzf-c) | 14/03/2020 | Méthode de rapport de population par tranche de stack |
+| **GTO Wizard** (EN) | [Turning fish into chips](https://www.youtube.com/watch?v=EvvQb3Kq7Yc) | 15/08/2024 | Taxonomie de 7 profils de fish sur 20 M de mains (cash) |
+| **SOLVBET_FR** | [Poker GTO vs exploit : la stratégie parfaite](https://www.youtube.com/watch?v=TA--yWDvvtk) | 06/02/2022 | Méthode « fréquence du field verrouillée dans le solveur » |
+| **GTO Poker Charts** (EN) | [Spin and Go GTO poker charts](https://www.youtube.com/watch?v=xrrFa68NrNU) | 27/12/2020 | Produit concurrent : charts par tranche de stack |
+| Jonathan Little | [Mastering Spin & Go strategy with Ryan O'Donnell](https://www.youtube.com/watch?v=bKIv1ZkbPJ8) | 18/03/2021 | Peu de contenu préflop exploitable |
+
+### 6.2 Données chiffrées
+
+**HUSNG.com, PokerStars heads-up hyper 100 $ (2012), à 7 BB** : modèle bayésien construit sur une base de mains de la population.
+
+| Situation | Nash | Population | Facteur k équivalent (formule `EXPLOIT_CALLS.md`) | Push max-exploit du SB |
+|---|---|---|---|---|
+| BB paie le tapis du SB, moyenne de la population | 49 % | 45 % | ≈ 0,85 | 75 % (Nash : 66 %) |
+| BB lue « serrée » | 49 % | ≤ 39 % | ≈ 0,67 | 95 % |
+| BB lue « large » | 49 % | 51 % | ≈ 1,08 | 63 % |
+
+Ancien, heads-up seul et à 100 $, mais c'est la seule mesure de population publiée en vidéo. Elle va dans le même sens que les coachs Expresso : la population **paie trop serré face aux tapis** (k < 1 sur le call), ce qui contredit en apparence Poker Sciences (§3.1, calls trop larges). En fait, les situations diffèrent : Poker Sciences mesure les calls face à une **relance ou un 3-bet** à 25 BB (les récréatifs paient trop), HUSNG et Kill Tilt parlent des calls face à un **open shove** court (la population paie un peu trop serré, et surtout pousse trop serré).
+
+Autres chiffres :
+- Kill Tilt : en heads-up à 10 BB, la théorie fait isoler la BB **45 %** face au limp du SB ; la population « n'y arrive jamais ».
+- Poker Académie : open BTN 3 joueurs ≈ 38 % en théorie, 42–45 % en pratique ; SB à l'équilibre : 90–95 % des mains jouées.
+- Kill Tilt : repères Nitro hors rakeback, break-even ≈ 23 cEV par partie, moyenne d'un groupe de joueurs qui partagent leurs résultats ≈ 25 cEV, bon joueur ≈ 50 cEV.
+- GTO Wizard (cash, pas spins) : seuils de profils, baleine VPIP ≥ 60 % et PFR < 12 %, « clownfish » PFR ≥ 20 % ; un fish loose-agressif paie ≈ 66 % des 3-bets.
+
+### 6.3 Tendances qualitatives convergentes (Expresso / Spin, petites limites)
+
+| Tendance | Sources | Ce qu'elle implique pour nos profils |
+|---|---|---|
+| Les récréatifs **poussent trop serré** de 8 à 15 BB ; au-delà de 15 BB presque jamais d'open shove ; vers 5–6 BB leurs tapis se rapprochent de la théorie | Kill Tilt (3 vidéos), Team BAS, Poker Sciences (§3.1) | Le facteur de déformation devrait **dépendre de la profondeur** (k ≈ 0,2–0,4 à 9–11 BB selon §3.1, proche de 1 sous 6 BB), au lieu d'un k unique par profil |
+| Face à un tapis du BTN, payer moins large que la théorie (bas de range de call, Kx off, A2o–A3o) ; au SB, coller davantage à la théorie | Kill Tilt | Le profil « Serré » est le plus réaliste pour le BTN ; c'est déjà ce que fait le dataset `exploit_calls`, mais il faudrait le décliner par position |
+| La population **folde un peu trop face aux tapis** (« people tend to overfold slightly ») | Team BAS, HUSNG | Justifie un futur mode où le héros pousse face à un profil qui paie trop serré |
+| Limp à ≤ 10 BB = mains faibles ou moyennes qui limp-foldent ; un limp du BTN signale presque toujours un récréatif | Kill Tilt, Team BAS | Profil « récréatif passif » : limpe au lieu de pousser, tapis seulement avec les mains très fortes |
+| La BB n'isole pas assez face au limp (alors que la théorie isole 45 % à 10 BB en HU) → limper 100 % au SB contre un récréatif passif jusqu'à ~7 BB | Kill Tilt, Le Wojak, Poker Académie | Situations limp à ajouter quand HRC verrouillé sera disponible (`EXPORTS_A_PRODUIRE.md` §2) |
+| Min-raise d'un récréatif à faible profondeur = range forte, peu de bluffs | Kill Tilt, SpinElite | Indice à donner dans les textes de profil |
+| Expresso = format avec la plus forte proportion de récréatifs ; Winamax en a « beaucoup plus » que GG | Kill Tilt, Team BAS, Poker Builder | Contexte marketing |
+| « Pas de charts GTO contre les récréatifs » ; ranges anti-récréatifs gratuites (Team BAS, SpinElite, Le Wojak) | Team BAS, SpinElite, Le Wojak | Concurrence directe sur le gratuit ; notre différence reste la correction chiffrée et les profils explicites |
+
+### 6.4 Vidéos non récupérées
+
+| Vidéo | Raison |
+|---|---|
+| [50 mains pour maîtriser le jeu préflop en Expresso](https://www.youtube.com/watch?v=X6_sVBI0y7U) (Kill Tilt) | Réservée aux adultes |
+| [Ces erreurs sont partout en Spin 5 €… voici comment les punir](https://www.youtube.com/watch?v=uyDkiYI_tCE) (SpinElite) | Réservée aux adultes |
+| [How to use preflop charts on Winamax Nitro Expresso](https://www.youtube.com/watch?v=OTJBBsKQXCk) (bitB Spins) | Réservée aux adultes |
+| [Spin & Go preflop strategy, 10 BB training with GTO Wizard](https://www.youtube.com/watch?v=45qHc44RJCY) (Leo Bell) | Réservée aux adultes |
