@@ -302,3 +302,46 @@ Les vidéos de review (Kill Tilt, Team BAS, SpinElite, LUCKYSPIN) combinent deux
 **Usages pour le projet** : contrôle croisé des exports HRC sur des spots réellement joués ; exemples chiffrés de déformation pour caler les profils fictifs ; base des futurs conseils stratégiques payants (`OFFRE.md`), à condition de les réécrire et de les faire valider par l'expert. Rien n'est copié dans l'application : les vidéos et les images restent des sources d'analyse, hors du dépôt. Pour aller au-delà d'une analyse interne (citer un coach, réutiliser une range), il faut l'accord des créateurs.
 
 **Autres hébergeurs (test du 2026-10-14 depuis l'environnement cloud).** **Twitch fonctionne** : liste des vidéos, téléchargement d'extraits (`yt-dlp --download-sections`) et images en 1080p ; la première image testée (review pédagogique Winamax « Streamgang », MTT) montrait une grille de range parfaitement lisible. Contenu Spin trouvé : 12 vidéos de formation SpinElite (2017, 480p, « Le jeu en Micro », « Introduction au jeu vs Reg ») et quelques extraits Winamax. Les rediffusions complètes de lives ne restent que quelques semaines sur Twitch : il faut suivre les streamers Spin/Expresso actifs et récupérer leurs vidéos au fil de l'eau. Vimeo refuse (403), Kick n'a que du direct, la recherche Dailymotion ne renvoie rien sur ce thème.
+
+## 9. Chaîne Lucho Poker FR (2026-10-14)
+
+[Lucho Poker FR](https://www.youtube.com/@LuchoPokerFR) : joueur pro de Spin « highstakes » (Twister Betclic jusqu'à 400 €, Expresso Winamax, heads-up cash), ≈ 5 500 abonnés, 175 vidéos ; série « Road to 50.000 € » (≈ 2023–2024, 65 épisodes, bankroll Betclic de 500 € à 50 000 €), challenge Expresso de 5 € à 1 000 €, vlogs, reviews d'élèves, coaching payant « Lucho Family » (≈ 30 joueurs), partenaire GTO Wizard (lien de parrainage). Style explicitement **exploitant contre les récréatifs**. Sous-titres de 11 vidéos analysés (1 sans sous-titres : *Comment exploiter un fish*).
+
+### 9.1 Chiffres
+
+**Résultats (cEV = jetons gagnés en moyenne par partie, 500 jetons au départ)**
+
+| Format | Limite | Parties | cEV |
+|---|---|---|---|
+| Expresso Winamax | ≤ 2 € | — | > 100 (« niveau extrêmement faible ») |
+| Expresso Winamax | 5 € | — | 64 |
+| Expresso Winamax | 10 € | — | 51 |
+| Expresso Winamax | total challenge | 11 911 | 77 |
+| Twister Betclic | 20 € | 3 410 | 52 |
+| Twister Betclic | 50 € | ≈ 5 000 puis au-delà | ≈ 50, puis 48 |
+| Twister Betclic | 100–200 € | — | 22 |
+
+Seuils qu'il conseille pour monter de limite : ≥ 80 cEV jusqu'à 2 €, > 60 en 5–10 €, ≈ 50 au-delà, sur au moins 3 000 à 5 000 parties. Avec la variance des multiplicateurs, un résultat à la moitié de l'EV a divisé ses gains en euros par environ 12 sur 5 000 parties en 50 €.
+
+**Rake effectif des rooms en Spin (hors multiplicateurs ≥ x100, ≈ 2023)** : PokerStars 7,20 %, Unibet 7,30 %, Betclic 7,80 %, PartyPoker/PMU 8,33 %, **Winamax 9,33 %**. Niveau du field selon lui : Unibet le plus faible, puis Betclic / PartyPoker / PMU ; PokerStars et Winamax plus relevés. Unibet joue avec antes (préflop différent).
+
+### 9.2 Règles préflop contre les récréatifs (vidéo [Améliore ton préflop](https://www.youtube.com/watch?v=jT7NO9sIxJg), la plus utile)
+
+- « En Spin, 80 % de ton EV vient du préflop. »
+- **Augmenter le VPIP en position** contre les récréatifs, surtout passifs. Exemple GTO Wizard affiché vers 3:40–5:30 : à ~20 BB, l'écart d'EV théorique entre fold et min-raise n'est que de ~0,02 BB jusqu'à K6–K7, Q8, J8, T8 ; contre des joueurs qui 3-bettent et jamment moins que la théorie, ces opens deviennent rentables.
+- **Open jam de toutes les Ax** contre un récréatif non identifié sous 10 BB, et même à 15–20 BB : les récréatifs ne jouent pas assez agressivement leurs AA et paient beaucoup trop avec leurs Ax/Kx. La théorie limpe ces mains parce qu'un reg iso-shove ses as ; le récréatif, lui, n'isole pas.
+- **Isoler « agressivement » face au limp = 46 % en théorie** : même un joueur qui paraît agressif en est loin (Kill Tilt cite 45 % à 10 BB en HU).
+- À 12 BB la théorie fait jouer 94 % des mains ; le field folde bien plus → isoler un limp de récréatif avec une main faible rapporte peu (il limpe des mains qu'il devrait pousser et paie l'iso).
+- Mains mixtes jam / min-raise en théorie : jam en pratique, car le field (même les regs) 3-bette trop peu ; « les 3-bets sizés, on n'en voit quasiment pas en spin ».
+- Autres vidéos : SB à ~14 BB contre un inconnu supposé récréatif, min-raise de la majorité des mains plutôt que limp ; iso 3 BB sur limp de récréatif (il veut voir un flop, peu de fold equity, autant le faire payer large), 4,5 BB pour faire folder un reg derrière ; open BTN très large (K3o, Q4o) et open 3x pour isoler ; contre deux récréatifs, éviter les flips marginaux et voir des flops pas chers ; size up léger des premiums.
+
+### 9.3 Ce qui recoupe les autres sources
+
+| Tendance | Lucho | Autres sources |
+|---|---|---|
+| Les récréatifs n'isolent pas assez face au limp | « on se fera jamais suffisamment isoler / 3-bet » | Kill Tilt (45 % théorique, « n'arrive jamais »), Le Wojak, Poker Académie |
+| Les récréatifs paient trop leurs Ax/Kx face au tapis | oui, justifie l'open jam des Ax | Poker Sciences (calls trop larges face aux relances) ; à rapprocher de HUSNG (population qui paie un peu trop serré face à l'open shove) : la nuance porte sur *quelles* mains paient |
+| Ils limpent des mains qui devraient être poussées et ne jamment qu'avec les très fortes | oui | Kill Tilt, Poker Sciences (open shove 11–21 % contre 30–52 %) |
+| Pas de charts GTO bruts contre les récréatifs | « ranges simplifiées respectées rigoureusement », VPIP maximal | Team BAS, SpinElite |
+
+**Intérêt pour le projet** : (1) le chiffre « isolation théorique 46 % » et l'écart d'EV de ~0,02 BB sur les opens marginaux se vérifient directement dans nos exports HRC ; (2) la règle « open jam des Ax contre un récréatif qui ne sur-isole pas » est un exemple concret de profil (récréatif passif) dont la meilleure réponse se calcule avec le moteur push/fold ; (3) Lucho est un candidat expert validateur (pro francophone, exploitant, partenaire GTO Wizard), à contacter par Instagram ou Discord.
