@@ -158,3 +158,48 @@ Sur les mains où l'EV exacte existe, l'EV HRC s'en écarte de 58 mBB en médian
 | §7.1 tapis direct du SB et du BB au-delà de 16 BB, du BTN au-delà de 20 BB | à produire : réglages d'arbre inchangés |
 | §7.4 précision (plus d'itérations) | à produire : moteur et abstractions inchangés, écarts avec l'EV exacte identiques à v2 |
 | §6.3 exploitant au-delà du call d'un tapis, §6.4 postflop | à produire |
+
+## 9. Commande consolidée après la base v3 (14 octobre 2026)
+
+Ce qui reste à produire pour terminer le plan de l'évaluation du MVP (`docs/produit/PLAN_EVALUATION_MVP_2026-10-14.md`). Réglages de l'arbre de référence (§0, empreinte préflop `daa9aaa0`), mode postflop « simple », **arbre complet** (tous les nœuds préflop, comme la base v3), chip EV.
+
+### 9.1 Précision (priorité 1) : débloque les décisions serrées
+
+Constat : l'EV HRC s'écarte de l'EV exacte de 35 mBB en médiane en heads-up et de 66 mBB à 3 joueurs (jusqu'à 200-300 mBB au 90e centile), à moteur et réglages identiques en v2 et v3. D'où le filtre qui écarte les questions dont la leçon coûte moins de 150 mBB.
+1. **Test d'abord** sur deux mains : 12 / 12 / 12 et heads-up 12 / 12, en doublant puis en quadruplant le nombre d'itérations (ou la cible de convergence). Je mesure l'écart avec l'EV exacte et j'en déduis le réglage utile.
+2. Puis refaire au réglage retenu toutes les profondeurs symétriques : 4, 6, 8, 10, 12, 14, 15, 16, 18, 20, 22, 25 BB, à 3 joueurs et en heads-up.
+
+### 9.2 Tapis direct à toutes les profondeurs (priorité 1)
+
+Dans l'arbre actuel, le tapis direct disparaît : pour le SB premier à parler et le BB face à un limp à partir de 16 BB, pour le BTN premier à parler à partir de 20 BB (`PREFLOP_ADD_ALLIN_SPR` 7, `PREFLOP_ALLIN_THRESHOLD` 40). Toujours proposer le tapis jusqu'à 25 BB effectifs : par exemple `PREFLOP_ADD_ALLIN_SPR` à 30 (à vérifier dans HRC). À combiner avec le 9.1 (mêmes mains : 16, 18, 20, 22, 25 BB, à 3 joueurs et en heads-up).
+
+### 9.3 Heads-up (priorité 1) : cible de 35 % des questions
+
+Déjà couverts sur l'arbre de référence : 2 à 25 BB symétriques, et 4/8, 8/4, 20/30, 30/20, 35/15, 40/10. Manque :
+- **tailles d'ouverture du SB** : 2 BB (min-raise), 2,5 BB et 3 BB à 8, 10, 12, 14, 16, 18, 20, 25 BB (le SB 2 BB n'existe aujourd'hui que de 4 à 16 BB) ;
+- **tapis déséquilibrés** : 10/20, 20/10, 12/18, 18/12, 15/25, 25/15 ;
+- **arbre complet** pour 15/15, 20/20, 4/8, 8/4, 2/2, 4/4, 6/6, aujourd'hui issus d'exports anciens à deux actions au plus.
+
+### 9.4 Arbre complet pour les configurations anciennes à 3 joueurs (priorité 2)
+
+Encore servies depuis les bases `complement` et `complement2` (8 à 11 nœuds au lieu de 30 à 70) : 4/4/4, 6/6/6, 14/14/14, 15/15/15, 4/4/8, 4/8/4, 4/8/8, 8/4/4, 8/4/8, 8/8/4, 12/12/18, 12/18/12, 18/12/12, 18/12/18, 18/18/12, 14/18/18. Les refaire en arbre complet.
+
+### 9.5 Tailles d'ouverture à 3 joueurs (priorité 2)
+
+Les arbres BTN 2 BB / SB 3 BB, BTN 2 BB / SB 2,5 BB et BTN 2,5 BB / SB 3,5 BB n'existent qu'à 12, 16 et 20 BB. Ajouter 8, 10, 14, 18, 22 et 25 BB.
+
+### 9.6 Mode exploitant au-delà du call d'un tapis (priorité 2)
+
+Les 135 calculs verrouillés du §2 (dont 45 en P1 : 12, 15 et 20 BB) : profils nit, fish, maniac, sur les limps, les limp-relances et les opens. À tester d'abord sur un seul nœud pour valider la notation `main:poids`. (L'open-shove contre un joueur qui paie trop ne demande rien : je le calcule exactement.)
+
+### 9.7 Postflop minimal (priorité 3)
+
+Pots limpés à 15-25 BB, heads-up et à trois : exports postflop HRC au flop, avec les ranges d'entrée, sur environ 20 textures de board représentatives (sèche, assortie, connectée, paire, haute, basse). C'est la condition pour un contenu « après le flop » qui ne soit pas seulement statistique.
+
+### 9.8 Hors périmètre sauf décision
+
+ICM (gros multiplicateurs) : calculs séparés avec la structure de gains Expresso, seulement si le porteur du projet sort du chip EV.
+
+### Livraison
+
+Une archive par lot, comme la base v3 (dossier `settings.json` + `nodes/` par main). Je vérifie à chaque réception : arbre et réglages, précision contre l'EV exacte, couverture, et je publie un nouveau dataset après contrôle.
