@@ -122,3 +122,48 @@ Le projet reste en chip EV (`docs/hrc/EXPORTS_A_PRODUIRE.md` §6.5). Si l'ICM de
 2. **Données propres** : le seul moyen d'avoir des fréquences auditables est de compter sur des historiques Winamax consentis, par nœud de l'arbre de référence et tranche de stack (méthode Popoch39 / GTOkiller).
 3. **Différenciation** : face à Poker Sciences (desktop, 390 €) et GTO Wizard (généraliste, profils par incitations fixes), nos atouts sont le mobile, l'Expresso et le Nitro nommés, la correction traçable et des profils chiffrés et versionnés. ICMIZER Coach est le seul quiz Expresso nommé trouvé.
 4. **À surveiller** : SpinSensei, le solveur maison de Poker Sciences, et les profils personnalisés annoncés par GTO Wizard.
+
+## 5. Complément : recherches « spin&go », « expresso », « range GTO », « range exploitant » (2026-10-14)
+
+Deuxième passe en français et en anglais avec ces quatre mots-clés. Elle ajoute surtout des forums francophones, des vendeurs de ranges « GTO + exploitant » et deux jeux de données réels.
+
+### 5.1 Forums et fils supplémentaires
+
+| Forum | Fil | Date | Ce qu'on en tire |
+|---|---|---|---|
+| Poker Académie, section **« Sng & Expresso »** | [Ranges en Expresso / Spin](https://www.poker-academie.com/forum/t/ranges-en-expresso-spin/91657) | 2019 | Sources de ranges citées : Spinelite (réservées aux joueurs affiliés ou stakés), SpinForWin (gratuites, débutants), « PA BOOK ». Un membre juge les ranges GTO inutiles sous 20–25 € : l'exploitation suffit aux petites limites. Pas de chiffres. |
+| Poker Académie, « Sng & Expresso » | [Spin&Go 5 $ – ranges de POF et ranges de call vs shove](https://www.poker-academie.com/forum/t/spin-go-5-ranges-de-pof-et-donc-ranges-de-call-vs-shove/115433) | janv. 2025 | Range de shove SB supposée à 9 BB (22+, A2s+, K2o+, Q6o+, J8o+, T7o+, 87o, 76o) ; « le field cbet trop ». Hypothèses individuelles. |
+| Poker Académie, « Sng & Expresso » | [Analyse de mes stats en Expresso](https://www.poker-academie.com/forum/t/analyse-de-mes-stats-en-expresso/89570) | déc. 2018 | Stats d'une joueuse 1–5 € : VPIP 39, PFR 28, 3-bet 9, fold vs steal 76 % ; des regs à 15 % de 3-bet et 10 % de flat entre 15 et 20 BB. Conseil des intervenants : découper les stats par position et par stack. |
+| Club Poker, « Sit'n Go » | [[Expresso] Range SB > 17 BB](https://www.clubpoker.net/forum-poker/topic/228492-expresso-range-sb-17bb/) | ≈ 2017 | Ancien ; un intervenant : contre les récréatifs et en micro, jouer équilibré fait perdre beaucoup d'EV. |
+| **Kill-Tilt** (kill-tilt.fr) | [[spin petites limites] 3way, défense BB, fréquence vs minraise SB/BTN](https://www.kill-tilt.fr/forums/topic/spin-petites-limites-3way-range-de-defense-bb-frequence-vs-minraise-sbbtn/) ; [Expressos ou spin & go ?](https://www.kill-tilt.fr/forums/topic/expressos-ou-spin-go/) | ? | Forum FR non recensé en première passe ; lecture automatique refusée (HTTP 406). |
+
+### 5.2 Outils et vendeurs de ranges supplémentaires
+
+| Outil | Proximité | Ce qu'il fait | Notes |
+|---|---|---|---|
+| **Poker Sciences – Ranges Spin (bibliothèque)** ([page](https://pokersciences.com/bibliotheque-tableaux)) | ●●● | ≈ 300 ranges préflop, Expresso, Spin & Rush, Spin Gold, Spin & Go ; chaque table GTO a une version exploitante, une version simplifiée et un guide ; trainer gratuit | Confirme la méthode « HRC + plus d'un million de mains contre récréatifs ». Nitro non mentionné. |
+| **Spinelite** (spinelite.fr) | ●● | Structure française de coaching et staking Spin/Nitro ; ranges gratuites, ranges GTO simplifiées et exploitantes réservées aux membres ; Discord | Distingue deux types de ranges exploitantes : contre un field (inconnus) et contre un profil précis. C'est exactement la distinction entre notre mode GTO et nos profils. |
+| **Poker Toolkit** ([page](https://poker-toolkit.com/en/poker-ranges-charts)) | ●● | Éditeur de ranges Expresso / Nitro, ranges de départ par format et position, mémorisation par répétition espacée, coach intégré, accès mobile | Concurrent sur la mémorisation ; ranges construites par l'utilisateur, pas de correction EV. |
+| **Poker Builder** ([formation Expresso](https://poker-builder.com/fr/formation/expresso-exploiter-recreatifs-strategies-de-base)) | ● | Formation française « exploiter les récréatifs en Expresso », tableau push/fold Nash interactif | Affirme que la moitié des adversaires en Expresso sont récréatifs, sans source. |
+| **FreeBetRange** | ●● | Visionneuse et trainer de ranges en navigateur ; héberge les charts Team BAS et des charts GTO avec exercices | Plateforme de distribution de ranges tierces. |
+| **bitB – charts Spin & Go** ([article](https://blog.freebetrange.com/article/spin-go-preflop-charts-by-bitb-poker-school)) | ● | Charts HU SB et SB vs BB 10–13 BB | Exemple d'écart exploitant chiffré en stack : min-raise HU SB maintenu jusqu'à 10 BB contre les récréatifs, là où le GTO s'arrête vers 12–13 BB. |
+| **Poker Academy (poker.academy) – Spin charts** ([page](https://poker.academy/preflop-charts)) | ●● | Centaines de charts 3-max et HU, 5 à 25 BB | Payant. |
+| **Simple Preflop**, **Range Manager**, **MasterRange**, **SpinForWin**, **Full Time Spinners** (Gumroad, 27 €/mois) | ● | Simulation ou vente de ranges, cités par Spinelite et Poker Académie | Pages produit introuvables ou vides pour MasterRange et SpinForWin. |
+| Guides éditoriaux : PokerListings FR (top 20 / 30 / 40 % selon la phase), PokerNews FR, pokerenligne.com | — | Règles simplifiées | Pas de référence utilisable. |
+
+### 5.3 Données supplémentaires
+
+| Donnée | Source | Vérification | Usage possible |
+|---|---|---|---|
+| **Distribution réelle des multiplicateurs Nitro** sur 3 487 tournois 2023 (1 € et 2 € surtout) : x2 59,9 %, x3 26,0 %, x4 8,3 %, x5 4,3 %, x10 1,5 %, x50 0,06 % | `dataset.csv` de [NitroVariance](https://github.com/ThibaultDieudonne/NitroVariance) (colonnes buy-in, multiplicateur, place, résultat, cEV, cEV ajustée) | Recompté le 14/10 ; cohérent avec la table CardPlayer du §3.3 (59,4 / 26,7 / 8,25 / 4 / 1,5 %) | Valide la table de multiplicateurs pour un futur calcul ICM ; Nitro et Expresso classique semblent partager la même table |
+| Historiques de mains Nitro (dossier `history` du même dépôt, ≈ 3 500 tournois selon Popoch39) | NitroVariance | Non ouvert | **Ne pas utiliser** : dépôt sans licence et mains d'autres joueurs (les CGU Winamax interdisent l'exploitation des mains d'autres comptes ; Popoch39 lui-même parle de « zone grise ») |
+| Break-even Nitro ≈ 35,8 % de victoires à 1–5 € (gain moyen ≈ 2,79 buy-ins, rake 7 %) et ≈ 36,2 % à 0,25–0,50 € (rake 8 %) | [Spécification Popoch39](https://github.com/Popoch39/poker_solver/issues/1), d'après la page Winamax du 07/10/2026 | Non recalculé | Contexte pour la page d'accueil ou les textes pédagogiques |
+| 320 000 décisions de joueurs experts sur 8 800 Spin & Go réels (PartyPoker.fr, 50 à 250 €, 2018–2020) ; un modèle reproduit le solveur dans 78 % des décisions | [SpinGPT, Maugin et Cazenave, ACG 2025](https://arxiv.org/abs/2509.22387) | Disponibilité des données non confirmée | Seul jeu de décisions réelles en Spin & Go trouvé ; haut niveau (regs), donc référence « reg » et pas « récréatif ». Contacter les auteurs (université Paris-Dauphine) si besoin. |
+| Exemple GTO simplifié à 15 BB : A6o en BB contre open 2 BB du BTN → call 48,6 %, relance 26,2 %, tapis 25,1 % | [Spinelite](https://spinelite.fr/blog/limportance-des-ranges-en-spin) | Solveur non nommé | Contrôle ponctuel d'un export HRC |
+| « La moitié des adversaires en Expresso sont récréatifs » ; ils limpent ou min-raisent au lieu de pousser et paient trop large | [Poker Builder](https://poker-builder.com/fr/formation/expresso-exploiter-recreatifs-strategies-de-base) | Sans source | Confirme qualitativement le §3.1 |
+
+### 5.4 Ce que cette passe change
+
+- Aucune nouvelle fréquence de population chiffrée : le tableau Poker Sciences du §3.1 reste la seule source quantitative publique trouvée.
+- La table des multiplicateurs est maintenant recoupée par des résultats réels (NitroVariance).
+- Le marché francophone des « ranges GTO + exploitantes » est plus large qu'en première passe (Poker Sciences, Spinelite, Poker Toolkit, bitB, Team BAS via FreeBetRange). Aucun de ces outils ne publie ses hypothèses de profil ni de correction chiffrée par main : nos profils versionnés et notre correction en EV restent des différenciateurs.
