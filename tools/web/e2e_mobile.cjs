@@ -31,7 +31,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
       if (await p.locator('#report').isVisible()) {
       await p.click('#report summary'); await p.check('input[value="unclear"]'); await p.fill('#report-comment', 'test e2e');
       await p.click('#report-form button[type=submit]');
-      await p.waitForSelector('#report-done:not([hidden]), #demo-toast:not([hidden])');   // démo hors claude.ai : message d'indisponibilité
+      await p.waitForSelector('#report-done:not([hidden]), #demo-toast:not([hidden]), #notice:not([hidden])');   // démo hors claude.ai : message d'indisponibilité
       await p.screenshot({ path: out + '/3b_signalement.png', fullPage: true });
       }
     }

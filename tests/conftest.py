@@ -11,3 +11,9 @@ needs_raw = pytest.mark.skipif(not HAS_RAW, reason='exports HRC bruts absents (d
 def _staging_fallback(monkeypatch):
     """sans dataset publié dans la base de test, l'API sert les versions par défaut (tests du catalogue : voir test_catalog)"""
     monkeypatch.setenv('SPINSACADEMY_ALLOW_STAGING', '1')
+
+
+@pytest.fixture(autouse=True)
+def _no_rate_limit(monkeypatch):
+    """limitation des requêtes coupée dans les tests (sauf test_ratelimit, qui la remet)"""
+    monkeypatch.setenv('SPINSACADEMY_RATE_LIMIT', '0')

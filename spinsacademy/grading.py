@@ -7,12 +7,15 @@ Barème (cahier des charges §4.2), sur l'EV de référence du spot (exacte ou H
                     (stratégie mixte : jamais sanctionnée ; l'importeur 1.2.0 ne propose que des mains où ces actions
                     perdent au plus 60 mBB, donc fréquences et EV concordent) ;
   - « imprécision » : regret <= 3 x TOLERANCE_MBB (actions de valeur proche) ;
-  - « erreur »    : au-delà.
+  - « erreur »    : au-delà ;
+  - EV HRC (bruitée : environ 0,1 BB d'un export à l'autre, docs/hrc/TEST_PRECISION_2026-10-14.md) : une action à
+    PERTINENT_MBB ou moins de la meilleure est « pertinente » : au pire une imprécision, jamais une erreur.
 Points : 1 / 0,5 / 0. Les fréquences affichées ne gardent que les actions jouées au moins MIXED_MIN de la fois, renormalisées et arrondies
 (pas de DISPLAY_STEP) ; la correction utilise les valeurs exactes.
 """
 TOLERANCE_MBB = 20.0          # ≈ plancher de bruit de HRC (docs/audit/AUDIT_PHASE0.md §2)
 MIXED_MIN = 0.10
+PERTINENT_MBB = 100.0         # EV HRC : en dessous, l'action reste pertinente (décision du porteur du projet, 2026-10-14)
 DISPLAY_STEP = 5              # en points de pourcentage
 POINTS = {'correct': 1.0, 'imprécision': 0.5, 'erreur': 0.0}
 
@@ -40,11 +43,13 @@ def grade(spot, hand, action_id):
     best = max(range(len(ev)), key=lambda k: ev[k])
     regret = 1000 * (ev[best] - ev[j])
     mixed_ok = freq[j] >= MIXED_MIN
+    pertinent = spot['ev_reference'] == 'hrc' and regret <= PERTINENT_MBB
     if regret <= TOLERANCE_MBB or mixed_ok: verdict = 'correct'
-    elif regret <= 3 * TOLERANCE_MBB: verdict = 'imprécision'
+    elif regret <= 3 * TOLERANCE_MBB or pertinent: verdict = 'imprécision'
     else: verdict = 'erreur'
     return dict(verdict=verdict, points=POINTS[verdict], regret_mbb=round(regret, 1), best_action=ids[best],
-                chosen_frequency=freq[j], mixed=bool(mixed_ok and regret > TOLERANCE_MBB), ev_source=spot['ev_reference'])
+                chosen_frequency=freq[j], mixed=bool(mixed_ok and regret > TOLERANCE_MBB), ev_source=spot['ev_reference'],
+                pertinent=bool(pertinent and regret > TOLERANCE_MBB))
 
 
 def displayed_mix(spot, hand, step=DISPLAY_STEP):

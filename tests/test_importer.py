@@ -76,7 +76,9 @@ def test_grading_rules(built):
             for j, a in enumerate(mixed['actions']):
                 r = grading.grade(mixed, h, a['id'])
                 if H['freq'][j] >= grading.MIXED_MIN and r['regret_mbb'] <= 3 * grading.TOLERANCE_MBB: assert r['verdict'] == 'correct'
-                if r['regret_mbb'] > 3 * grading.TOLERANCE_MBB: assert r['verdict'] == 'erreur'   # la stratégie mixte ne couvre pas une action coûteuse
+                if r['regret_mbb'] > grading.PERTINENT_MBB: assert r['verdict'] == 'erreur'   # la stratégie mixte ne couvre pas une action coûteuse
+                elif r['regret_mbb'] > 3 * grading.TOLERANCE_MBB:                          # EV HRC à moins de 0,1 BB : action pertinente
+                    assert r['verdict'] in ('correct', 'imprécision') and r['pertinent'] == (r['verdict'] == 'imprécision')
                 checked += 1
     assert checked > 1000
 

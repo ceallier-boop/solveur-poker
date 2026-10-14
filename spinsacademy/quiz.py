@@ -236,6 +236,12 @@ def lesson_gap(sp, hand):
     return min(gaps) if gaps else None
 
 
+def error_gap(sp, hand):
+    """écart (mBB) de l'action notée « erreur » la moins coûteuse ; None s'il n'y en a pas"""
+    gaps = [g['regret_mbb'] for g in (grading.grade(sp, hand, a['id']) for a in sp['actions']) if g['verdict'] == 'erreur']
+    return min(gaps) if gaps else None
+
+
 def difficulty(gap):
     if gap is None: return None
     return 'facile' if gap > EASY_MBB else 'difficile' if gap < HARD_MBB else 'moyen'
@@ -260,14 +266,15 @@ def impossible_ev(sp, hand):
 def teachable(sp):
     """mains proposables dont la leçon dépasse le bruit du calcul : une action sanctionnée existe et, sur une EV HRC,
     la moins chère coûte au moins HRC_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
-    questions dont le verdict tiendrait dans l'imprécision de HRC."""
+    questions dont le verdict tiendrait dans l'imprécision de HRC. Le seuil porte sur la moins chère des vraies erreurs : une
+    action proche (moins de grading.PERTINENT_MBB) n'empêche pas la question, elle reçoit une nuance."""
     k = id(sp)
     if k not in _TEACH:
         floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
         out = []
         for h in NAMES:
             if not sp['hands'][h].get('quiz_eligible') or impossible_ev(sp, h): continue
-            g = lesson_gap(sp, h)
+            g = error_gap(sp, h)                       # la moins chère des vraies erreurs (les actions « pertinentes » ont une nuance)
             if g is not None and g >= floor: out.append(h)
         _TEACH[k] = (sp, out)                                      # garder sp : l'identifiant reste valable
     return _TEACH[k][1]
@@ -725,6 +732,90 @@ def reference_action(sp, hand):
     return ids[m] if f[m] > f[top] and ev[top] - ev[m] <= IMPRECISION_BB + 1e-9 else ids[top]
 
 
+_RK = 'AKQJT98765432'
+
+
+def range_text(hands, max_groups=8):
+    """une range en notation poker : 22+, A2+, KTs+, 76s… (groupes contigus ; assorties et dépareillées fusionnées quand
+    elles coïncident) ; None si elle est trop longue pour être lisible"""
+    hs = set(hands); out = []
+    def runs(idx):
+        rr = [[idx[0]]]
+        for i in idx[1:]:
+            if i == rr[-1][-1] + 1: rr[-1].append(i)
+            else: rr.append([i])
+        return rr
+    pairs = sorted(_RK.index(r) for r in _RK if r + r in hs)
+    if pairs:
+        for run in runs(pairs):
+            hi, lo = _RK[run[0]], _RK[run[-1]]
+            out.append(f'{lo}{lo}+' if hi == 'A' and lo != 'A' else (f'{hi}{hi}' if hi == lo else f'{lo}{lo}-{hi}{hi}'))
+    for i, h in enumerate(_RK[:-1]):
+        groups = {}
+        for suit in ('s', 'o'):
+            idx = [_RK.index(k) for k in _RK[i + 1:] if h + k + suit in hs]
+            for run in (runs(idx) if idx else []):
+                top, bot = _RK[run[0]], _RK[run[-1]]
+                key = (f'{h}{bot}+' if run[0] == i + 1 and len(run) > 1 else f'{h}{top}' if len(run) == 1 else f'{h}{bot}-{h}{top}')
+                groups.setdefault(key, set()).add(suit)
+        for key, suits in groups.items():
+            if len(suits) == 2: out.append(key)                                   # assorties et dépareillées : « A2+ »
+            else:
+                sfx = suits.pop(); out.append(key.replace('+', sfx + '+') if key.endswith('+') else '-'.join(x + sfx for x in key.split('-')))
+    return ', '.join(out) if len(out) <= max_groups else None
+
+
+SITUATION_FR = {'first_in': 'premier à parler', 'vs_limp': 'face à un limp', 'vs_raise': 'face à une relance', 'vs_allin': 'face à un tapis'}
+
+
+RULE_MAX_GROUPS = 12             # au-delà, la règle n'est plus « simple » : on donne la part des mains
+RULE_MIN_FIT = 0.93               # « À retenir » : la règle à seuils doit classer au moins 93 % des mains (pondérées) comme la référence
+
+
+def threshold_rule(inside, weight):
+    """règle à seuils la plus fidèle : pour les paires et pour chaque carte haute (assorties, dépareillées), un kicker
+    minimal (« A7+ », « K9s+ », « 55+ ») ; renvoie (texte, part des mains bien classées). inside : {main: bool} ; weight : {main: poids}"""
+    groups = [('pair', [r + r for r in _RK])] + [(h + sfx, [h + k + sfx for k in _RK[i + 1:]]) for i, h in enumerate(_RK[:-1]) for sfx in ('s', 'o')]
+    tot = sum(weight.values()) or 1; good = 0.0; parts = {}
+    for name, hs in groups:                                   # hs du plus fort au plus faible : seuil = nombre de mains gardées
+        hs = [h for h in hs if h in weight]
+        if not hs: continue
+        best = max(range(len(hs) + 1), key=lambda n: sum(weight[h] for h in hs[:n] if inside[h]) + sum(weight[h] for h in hs[n:] if not inside[h]))
+        good += sum(weight[h] for h in hs[:best] if inside[h]) + sum(weight[h] for h in hs[best:] if not inside[h])
+        if best: parts[name] = hs[best - 1]
+    out = []
+    if 'pair' in parts: out.append(f"{parts['pair']}+" if parts['pair'] != 'AA' else 'AA')
+    for i, h in enumerate(_RK[:-1]):
+        s_, o_ = parts.get(h + 's'), parts.get(h + 'o')
+        last = lambda x: x[1]
+        if s_ and o_ and last(s_) == last(o_): out.append(f"{h}{last(s_)}+" if last(s_) != _RK[i + 1] else f"{h}{last(s_)}")
+        else:
+            for x, sfx in ((s_, 's'), (o_, 'o')):
+                if x: out.append(f"{h}{last(x)}{sfx}+" if last(x) != _RK[i + 1] else f"{h}{last(x)}{sfx}")
+    return ', '.join(out), good / tot
+
+
+def rule_to_remember(sp, best, labels):
+    """« À retenir » : la range de l'action de référence (mains qui la jouent au moins 50 %) résumée en règle à seuils,
+    affichée seulement si elle est fidèle (RULE_MIN_FIT) ; sinon la part des mains. Pour un fold : ce qu'on joue."""
+    j = [a['id'] for a in sp['actions']].index(best)
+    live = {h: x for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq')}
+    t = {a['id']: a['type'] for a in sp['actions']}[best]
+    plays = {h: grading.reference_freq(sp, h)[j] >= 0.5 for h in live}
+    weight = {h: W[NAMES.index(h)] * live[h]['reach'] for h in live}
+    share = round(100 * sum(weight[h] for h in live if plays[h]) / (sum(weight.values()) or 1))
+    verb = {'fold': 'on se couche', 'check': 'on checke', 'limp': 'on complète' if sp['hero'] == 'SB' else 'on limpe', 'call': 'on paie',
+            'call_allin': 'on paie', 'raise': 'on relance', 'allin': 'on part à tapis'}[t]
+    where = f"au {sp['hero']} {SITUATION_FR[family(sp)]} à {bb(hero_effective(sp))} BB" + (' (heads-up)' if sp['table'] == 'heads-up' else '')
+    target = {h: not v for h, v in plays.items()} if t == 'fold' else plays
+    txt, fit = threshold_rule(target, weight)
+    if txt and fit >= RULE_MIN_FIT and 0 < share < 100 and txt.count(',') < RULE_MAX_GROUPS:
+        n = 100 - share if t == 'fold' else share
+        what = f"on ne joue que {txt}" if t == 'fold' else f"{verb} avec {txt}"
+        return f"À retenir : {where}, {what} (environ {n} % des mains qui arrivent ici ; règle simplifiée, juste pour {round(100 * fit)} % d'entre elles)."
+    return f"À retenir : {where}, {verb} avec environ {share} % des mains qui arrivent ici."
+
+
 def _option(sp, labels, aid):
     """une action en sujet de phrase : « Le fold », « Le check », « L'option (…) »"""
     t = {a['id']: a['type'] for a in sp['actions']}[aid]
@@ -756,6 +847,12 @@ def correct(version, spot_id, hand, action_id):
     else: lines = [f"Action de référence : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
     if best != top and len(good) == 1:
         lines.append(f"{_option(sp, labels, top)} vaut presque autant : {gain_bb(E_(top) - E_(best))} de plus en EV ; les deux sont acceptés.")
+    # EV HRC : une autre action à moins de PERTINENT_MBB de la plus rentable reste pertinente (nuance, sans changer la référence)
+    near = [x for x in ids if x not in good and x != best and sp['ev_reference'] == 'hrc' and 1000 * (E_(top) - E_(x)) <= grading.PERTINENT_MBB + 1e-9]
+    if near and not sp.get('villain'):
+        names = ' ou '.join(_low(labels[x]) for x in near)
+        lines.append(f"Nuance : {names} {'est aussi pertinente' if len(near) == 1 else 'sont aussi pertinentes'} "
+                     f"(moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart, dans la marge d'incertitude du calcul).")
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
     if action_id == best or (len(good) > 1 and action_id in good): pass       # le bandeau le dit déjà
     elif action_id == top:
@@ -769,6 +866,8 @@ def correct(version, spot_id, hand, action_id):
             lines.append(f"La stratégie de référence joue cette action {shown.get(action_id, round(100 * g['chosen_frequency']))} % du temps : elle est acceptée.")
         elif g['verdict'] == 'correct':
             lines.append(f"Écart d'au plus {tol} BB, " + ('négligeable' if g['ev_source'] == 'exact' else 'dans le bruit de calcul') + ' : réponse acceptée.')
+        elif g['verdict'] == 'imprécision' and g.get('pertinent') and raw > 3 * grading.TOLERANCE_MBB:
+            lines.append(f"Écart sous {bb(grading.PERTINENT_MBB / 1000)} BB : ton choix reste pertinent, mais la référence est meilleure. Imprécision, pas erreur.")
         elif g['verdict'] == 'imprécision':
             lines.append(f'Écart entre {tol} et {imp} BB : imprécision, pas erreur.')
         else:
@@ -793,7 +892,9 @@ def correct(version, spot_id, hand, action_id):
         core = [f"Contre ce type de profil « {pr['name_fr']} » : {ex['reference_fr']}", ex['comparison_fr'], ex['note_fr']]
         lines = core[:1] + because + core[1:]
     else:
-        core = list(lines) + [principle(sp, hand, best, labels)]; lines = core + because   # la stratégie arrondie est affichée à part
+        core = list(lines) + [principle(sp, hand, best, labels)]
+        if g['verdict'] != 'correct': core.append(rule_to_remember(sp, best, labels))      # après une erreur ou une imprécision : une règle simple
+        lines = core + because                                     # la stratégie arrondie est affichée à part
     loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 top_action=top, chosen_action=action_id, gto_action=(h['gto_action'] if v else None), gto_label=(labels[h['gto_action']] if v else None),

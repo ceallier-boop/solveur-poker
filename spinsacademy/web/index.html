@@ -42,6 +42,8 @@
       <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <button class="primary big" id="quick-start">Série recommandée</button>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
+      <button class="secondary review-btn" id="review-btn" hidden>Revoir mes erreurs</button>
+      <p class="note" id="review-note" hidden></p>
       <button class="secondary" id="stats-btn">Ma progression</button>
 
       <details class="filters" id="filters">
@@ -163,6 +165,7 @@
       <ul class="verdicts" id="s-verdicts"></ul>
       <h3>À revoir</h3>
       <ul class="errors" id="s-errors"></ul>
+      <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes erreurs » sur l'accueil).</p>
       <button class="primary big" id="again-btn">Nouvelle série</button>
       <button class="link" id="back-home">Retour à l'accueil</button>
     </section>
@@ -171,12 +174,13 @@
     <section id="screen-stats" class="screen" hidden aria-labelledby="st-title">
       <h2 id="st-title">Ma progression</h2>
       <div class="score" id="st-score"></div>
-      <div class="evolution" id="st-evolution" aria-label="Score des dernières séries"></div>
-      <div id="st-weakest"></div>
+      <div class="focus" id="st-focus" role="status"></div>
+      <h3>Score des dernières séries</h3>
+      <div class="evo-wrap"><div class="evo-axis" aria-hidden="true"><span>100 %</span><span>50 %</span><span>0 %</span></div>
+        <div class="evolution" id="st-evolution" aria-label="Score des dernières séries, de la plus ancienne à la plus récente"></div></div>
+      <p class="note evo-x" aria-hidden="true">← plus ancienne · plus récente →</p>
       <h3>Par thème</h3>
       <div id="st-themes"></div>
-      <h3>Erreurs récurrentes</h3>
-      <ul class="errors" id="st-recurring"></ul>
       <h3>Exercices adaptatifs</h3>
       <div class="adapt" id="st-adapt">
         <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
@@ -190,6 +194,8 @@
     </section>
 
     <div class="loading" id="loading" hidden>Chargement…</div>
+    <div class="notice" id="notice" role="alert" hidden><span id="notice-text"></span>
+      <button class="secondary" id="notice-retry" hidden>Réessayer</button><button class="link" id="notice-close" aria-label="Fermer le message">✕</button></div>
   </main>
   <script src="/static/app.js"></script>
 </body>

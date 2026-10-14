@@ -136,6 +136,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .purpose { margin: 0; font-size: .85rem; font-weight: 600; padding: 6px 10px; border-radius: 999px; align-self: flex-start; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
 .purpose.weak { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
 .purpose.review { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.purpose.spaced { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
 .adapt { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .adapt .switch { display: flex; gap: 10px; align-items: center; min-height: 44px; font-weight: 600; }
 .adapt .switch input { width: 22px; height: 22px; accent-color: var(--accent); }
@@ -269,3 +270,15 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 
 /* écran de correction : « Question suivante » toujours à portée du pouce */
 #screen-answer #next-btn { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+/* progression : un seul diagnostic, graphique avec repères */
+.focus { border-radius: var(--radius); padding: 14px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.focus p { margin: 0; } .focus .focus-title { font-weight: 700; color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+.focus.weak { border-color: var(--warn); background: var(--warn-bg); }
+.evo-wrap { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: stretch; }
+.evo-axis { display: flex; flex-direction: column; justify-content: space-between; font-size: .7rem; color: var(--muted); text-align: right; }
+.evo-x { margin: 0; text-align: center; font-size: .75rem; }
+
+.notice { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; gap: 8px; align-items: center;
+  background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); border-radius: 12px; padding: 10px 12px; font-size: .92rem; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.notice span { flex: 1; } .notice button { min-height: 40px; }

@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 12] [--hands-
 """
 import argparse, base64, gzip, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import quiz
+from spinsacademy import adaptive, quiz, review
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -126,7 +126,7 @@ const DEMO = (() => {
         for (const b of [total, ...Object.entries(keys).map(([d, k]) => (dims[d][k] = dims[d][k] || bucket()))]) { b.questions += 1; b.points += r.points; b.errors += err; }
         verdicts[r.verdict] += 1; sp += r.points;
         const tk = [it.m, it.q.family, it.q.hero, keys.depth].join('|');
-        const t = (themes[tk] = themes[tk] || { errors: 0, questions: 0, regret: 0, examples: [] }); t.questions += 1;
+        const t = (themes[tk] = themes[tk] || { errors: 0, imprecisions: 0, questions: 0, regret: 0, examples: [] }); t.questions += 1; t.imprecisions += r.verdict === 'imprécision';
         if (err) { t.errors += 1; t.regret += r.regret_mbb; if (t.examples.length < 2) t.examples.push(it.q.prompt_fr); }
       }
       sessions.push({ session_id: s.id, date: s.created_at, questions: rows.length, score_pct: Math.round(1000 * sp / rows.length) / 10 });
@@ -149,8 +149,27 @@ const DEMO = (() => {
         examples: t.examples, filters: Object.assign({ mode: m, hero: h }, df[d], m === 'gto' ? { family: f } : {}) };
     }).sort((a, b) => b.errors - a.errors || b.regret_mbb - a.regret_mbb).slice(0, 3);
     const n = total.questions;
+    // un seul diagnostic, même règle que progress.focus et les séries adaptées (taux lissé, 3 réponses et 2 erreurs au moins)
+    const smooth = (t) => (t.errors + 0.5 * t.imprecisions + 1) / (t.questions + 3);
+    const cand = Object.entries(themes).filter(([, t]) => t.questions >= __MIN_ANSWERS__ && t.errors >= __MIN_ERRORS__)
+      .sort((a, b) => smooth(b[1]) - smooth(a[1]) || b[1].errors - a[1].errors);
+    let focus;
+    if (cand.length) {
+      const [k, t] = cand[0]; const [m, f, h, d] = k.split('|'); const weak = smooth(t) >= __WEAK_RATE__;
+      focus = { kind: weak ? 'weak' : 'watch', label: `${MODE_FR[m]} · ${FAMILY_FR[f]} · ${h} · ${dl[d]}`, examples: t.examples.slice(0, 1),
+        reason_fr: `${t.errors} erreurs sur ${t.questions} questions (taux lissé ${Math.round(100 * smooth(t))} %) : `
+          + (weak ? "c'est ton thème le plus fragile." : 'à surveiller, sans être encore un point faible.'),
+        filters: Object.assign({ mode: m, hero: h }, df[d], m === 'gto' ? { family: f } : {}) };
+    } else if (weakest) {
+      focus = { kind: 'dimension', label: weakest.label, filters: weakest.filters, examples: [],
+        reason_fr: `Ton score le plus bas : ${String(weakest.score_pct).replace('.', ',')} % sur ${weakest.questions} questions.` };
+    } else {
+      const need = Math.max(MIN_SAMPLE - n, 0);
+      focus = { kind: 'none', label: null, filters: null, examples: [], reason_fr: need
+        ? `Pas encore assez de réponses pour un diagnostic : encore ${need} question${need > 1 ? 's' : ''}.` : "Rien à retravailler pour l'instant : continue avec des séries rapides." };
+    }
     return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null,
-      verdicts, min_sample: MIN_SAMPLE, by, evolution: sessions.slice(-20), recurring_errors: recurring, weakest };
+      verdicts, min_sample: MIN_SAMPLE, by, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
   }
 
   // signalements : base de données partagée de l'artefact (lue par le porteur du projet), un document par signalement
@@ -180,6 +199,25 @@ const DEMO = (() => {
     return [201, { report_id: rid, status: 'open' }];
   }
 
+  // révision espacée, même règle que l'application (spinsacademy/review.py) : 1 jour, puis 3, puis 7 ; une erreur fait repartir à 1 jour
+  const DAY = 864e5, INTERVALS = __INTERVALS__;
+  function reviewItems(mode) {
+    const st = {}; const ev = [];
+    for (const s of Object.values(load().sessions)) if (s.mode === mode) s.items.forEach((i, k) => { const a = s.answers[k]; if (a && a.at) ev.push([a.at, i, a.verdict]); });
+    ev.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    for (const [at, i, v] of ev) {
+      const t = Date.parse(at);
+      if (v !== 'correct') st[i] = { stage: 0, since: t, miss: t };
+      else if (st[i] && st[i].stage < INTERVALS.length && t >= st[i].since + INTERVALS[st[i].stage] * DAY) { st[i].stage += 1; st[i].since = t; }
+    }
+    return Object.entries(st).filter(([, x]) => x.stage < INTERVALS.length)
+      .map(([i, x]) => ({ i: Number(i), stage: x.stage + 1, miss: x.miss, due_at: x.since + INTERVALS[x.stage] * DAY })).sort((a, b) => a.due_at - b.due_at);
+  }
+  function reviews(mode) {
+    const it = reviewItems(mode), t = Date.now(), due = it.filter((x) => x.due_at <= t), later = it.filter((x) => x.due_at > t);
+    return { rule_fr: __REVIEW_RULE__, due: due.length, pending: later.length, next_due_at: later.length ? new Date(later[0].due_at).toISOString() : null, mode };
+  }
+
   async function route(path, opts) {
     await ready;
     const url = new URL(path, 'https://demo.local/'); const p = url.pathname; const method = (opts && opts.method) || 'GET';
@@ -187,10 +225,16 @@ const DEMO = (() => {
     const db = load();
     if (p === '/sessions' && method === 'POST') {
       const f = Object.assign({}, body.filters || {}); const mode = f.mode || body.mode || 'gto'; delete f.mode;
-      const picked = draw(mode, f, body.size || 5);
-      if (!picked) return [422, { detail: 'pas assez de situations pour ces filtres' }];
+      const size = body.size || 5; let picked = draw(mode, f, size); const purposes = {};
+      if (body.review) {
+        const due = reviewItems(mode).filter((x) => x.due_at <= Date.now()).slice(0, size);
+        const rest = (picked || []).filter((i) => !due.some((x) => x.i === i));
+        due.forEach((x, k) => { purposes[k] = `Révision de ton erreur du ${new Date(x.miss).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} (étape ${x.stage} sur ${INTERVALS.length})`; });
+        picked = due.map((x) => x.i).concat(rest).slice(0, size);
+      }
+      if (!picked || !picked.length) return [422, { detail: 'pas assez de situations pour ces filtres' }];
       const id = Math.random().toString(16).slice(2) + Date.now().toString(16);
-      db.sessions[id] = { id, created_at: now(), mode, items: picked, answers: {} }; save();
+      db.sessions[id] = { id, created_at: now(), mode, items: picked, answers: {}, purposes }; save();
       return [201, { session_id: id, mode, size: picked.length, adaptive: null }];
     }
     const sm = p.match(/^\/sessions\/([^/]+)\/summary$/);
@@ -199,7 +243,8 @@ const DEMO = (() => {
       const s = db.sessions[url.searchParams.get('session_id')]; if (!s) return [404, { detail: 'session inconnue' }];
       const k = s.items.findIndex((_, i) => !s.answers[i]);
       if (k < 0) return [200, { done: true, session_id: s.id }];
-      return [200, { done: false, session_id: s.id, question_index: k, size: s.items.length, question: ITEMS[s.items[k]].q, purpose: null, purpose_fr: null }];
+      return [200, { done: false, session_id: s.id, question_index: k, size: s.items.length, question: ITEMS[s.items[k]].q,
+        purpose: (s.purposes || {})[k] ? 'spaced' : null, purpose_fr: (s.purposes || {})[k] || null }];
     }
     if (p === '/attempts' && method === 'POST') {
       const s = db.sessions[body.session_id]; if (!s) return [404, { detail: 'session inconnue' }];
@@ -208,11 +253,12 @@ const DEMO = (() => {
       if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { range: GRIDS[it.q.spot_id] || null, already_answered: true })] : [409, { detail: 'question déjà répondue' }];
       const r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
       const r = Object.assign({}, r0, { range: GRIDS[it.q.spot_id] || null });
-      s.answers[body.question_index] = Object.assign({ action_id: body.action_id }, r0); save();       // sans la grille : stockage léger
+      s.answers[body.question_index] = Object.assign({ action_id: body.action_id, at: now() }, r0); save();       // sans la grille : stockage léger
       return [200, Object.assign({}, r, { already_answered: false })];
     }
     if (p === '/reports' && method === 'POST') return report(body);
     if (p === '/users/me/stats') return [200, stats()];
+    if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
   }
@@ -220,7 +266,7 @@ const DEMO = (() => {
     const [status, data] = await route(String(path), opts);
     return new Response(status === 204 ? null : JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
   };
-  // la page hébergée n'affiche pas les boîtes de dialogue du navigateur
+  // la page hébergée n'affiche pas les boîtes de dialogue du navigateur : message dans l'écran (filet de sécurité)
   window.alert = (msg) => { const t = document.getElementById('demo-toast'); t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 5000); };
   return { ready };
 })();
@@ -251,12 +297,11 @@ def build(out, k_gto, k_exp):
         body = body.replace(hide, hide + ' hidden', 1)
     body = body.replace('<h3>Exercices adaptatifs</h3>', '<h3 hidden>Exercices adaptatifs</h3>', 1)
     body = body.replace('id="quick-start">Série recommandée<', 'id="quick-start">Série rapide<', 1)
-    js = js.replace("if (!confirm('Effacer définitivement toutes tes séries et ta progression ?')) return;", '')
     page = (f'<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

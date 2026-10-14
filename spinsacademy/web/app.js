@@ -43,6 +43,22 @@ function show(name) {
   window.scrollTo(0, 0);
 }
 function loading(on) { $('loading').hidden = !on; }
+
+// messages dans l'écran (pas de boîte de dialogue du navigateur) : erreur avec « Réessayer », confirmation en deux temps
+function notify(msg, retry) {
+  const n = $('notice'); $('notice-text').textContent = msg; n.hidden = false;
+  $('notice-retry').hidden = !retry;
+  $('notice-retry').onclick = () => { n.hidden = true; retry(); };
+  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; }, 6000);
+}
+const netMsg = (e, what) => (e && e.status ? e.message : `Connexion perdue : ${what}. Vérifie ta connexion, puis réessaie.`);
+const retryable = (e) => !e || !e.status || e.status === 429;                 // coupure réseau ou trop de requêtes : « Réessayer »
+function confirmTwice(btn, question) {                              // 1er appui : demande ; 2e appui dans les 5 s : confirme
+  if (btn.dataset.armed) { clearTimeout(btn._t); delete btn.dataset.armed; btn.textContent = btn.dataset.label; return true; }
+  btn.dataset.label = btn.dataset.label || btn.textContent; btn.dataset.armed = '1'; btn.textContent = question;
+  btn._t = setTimeout(() => { delete btn.dataset.armed; btn.textContent = btn.dataset.label; }, 5000);
+  return false;
+}
 function progress(text) { $('progress').textContent = text || ''; }
 
 // ------------------------------------------------------------------ accueil
@@ -65,10 +81,10 @@ for (const group of document.querySelectorAll('.chips')) {
   });
 }
 
-async function start(f) {
+async function start(f, review = false) {
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     await next();
   } catch (e) {
@@ -187,7 +203,7 @@ async function answer(id) {
     renderAnswer(r);
   } catch (e) {
     for (const b of $('actions').querySelectorAll('button')) b.disabled = false;
-    alert(e.status ? e.message : 'Connexion perdue : ta réponse n\'a pas été enregistrée, réessaie.');
+    notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id) : null);
   } finally { state.busy = false; }
 }
 
@@ -287,7 +303,7 @@ async function sendReport(e) {
   try {
     await api('/reports', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, reason, comment: $('report-comment').value || null }) });
   } catch (err) {
-    if (err.status !== 409) { alert(err.message); return; }                  // 409 : déjà signalée, on remercie quand même
+    if (err.status !== 409) { notify(netMsg(err, "le signalement n'a pas été envoyé"), retryable(err) ? () => $('report-form').requestSubmit() : null); return; }   // 409 : déjà signalée
   } finally { state.busy = false; }
   (state.reported = state.reported || new Set()).add(`${state.sid}:${state.index}`);
   $('report-form').hidden = true; $('report-done').hidden = false;
@@ -303,6 +319,7 @@ async function summary() {
   $('s-errors').innerHTML = s.errors.length
     ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Référence : <b>${e.best}</b> (${e.loss_fr || gainBB(e.regret_mbb)} de moins)</li>`).join('')
     : '<li>Aucune erreur sur cette série.</li>';
+  $('s-review').hidden = !s.errors.length;
   show('summary');
 }
 
@@ -320,23 +337,23 @@ async function stats() {
   await adaptation();
   if (!s.questions) {
     $('st-score').innerHTML = '—<small>Joue une première série pour voir ta progression.</small>';
-    for (const id of ['st-evolution', 'st-weakest', 'st-themes', 'st-recurring']) $(id).innerHTML = '';
+    for (const id of ['st-evolution', 'st-themes']) $(id).innerHTML = '';
+    $('st-focus').className = 'focus none'; $('st-focus').innerHTML = '<p class="focus-title">À travailler maintenant</p><p>Joue une première série pour un diagnostic.</p>';
     $('st-note').textContent = ''; show('stats'); return;
   }
   $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`;
   $('st-evolution').innerHTML = s.evolution.length > 1
     ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
     : '<span>L\'évolution s\'affiche après deux séries.</span>';
-  const w = s.weakest;
-  $('st-weakest').innerHTML = w ? `<div class="weak"><span>Point à travailler : <b>${w.label}</b> (${pc(w.score_pct)} sur ${w.questions} questions)</span>`
-    + `<button class="primary" id="train-weak">M'entraîner sur ce thème</button></div>` : '';
-  if (w) $('train-weak').addEventListener('click', () => start(w.filters));
+  const f = s.focus || { kind: 'none', reason_fr: '' };                // un seul diagnostic (même règle que les séries adaptées)
+  $('st-focus').className = `focus ${f.kind}`;
+  $('st-focus').innerHTML = `<p class="focus-title">À travailler maintenant</p>`
+    + (f.label ? `<p><b>${f.label}</b></p>` : '') + `<p>${f.reason_fr}</p>`
+    + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
+    + (f.filters ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
+  if (f.filters) $('train-focus').addEventListener('click', () => start(f.filters));
   $('st-themes').innerHTML = Object.entries(s.by).map(([k, rows]) =>
     `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
-  $('st-recurring').innerHTML = s.recurring_errors.length
-    ? s.recurring_errors.map((e, k) => `<li><b>${e.label}</b> : ${e.errors} erreurs sur ${e.questions} questions (${gainBB(e.regret_mbb)} perdus)<br>${e.examples[0] || ''}<br><button class="link" data-k="${k}">S'entraîner sur ce thème</button></li>`).join('')
-    : '<li>Pas d\'erreur répétée pour l\'instant.</li>';
-  for (const b of $('st-recurring').querySelectorAll('button[data-k]')) b.addEventListener('click', () => start(s.recurring_errors[Number(b.dataset.k)].filters));
   $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;
   show('stats');
 }
@@ -347,8 +364,7 @@ async function adaptation() {
     let a; try { a = await api(`/users/me/adaptation?mode=${m}`); } catch (e) { continue; }       // mode sans dataset publié : ignoré
     first = first || a;
     const list = (xs, kind) => xs.map((x) => `<li>${x.label_fr} <small>${x.errors} erreur${x.errors > 1 ? 's' : ''} sur ${x.answers} · difficulté ${x.difficulty_pct} %</small></li>`).join('');
-    parts.push(`<div class="adapt-mode"><b>${modes[m]}</b>${a.weak.length
-      ? `<p>À retravailler :</p><ul>${list(a.weak)}</ul>` : '<p>Aucun thème à retravailler pour l\'instant.</p>'}${a.review.length ? `<p>En révision :</p><ul>${list(a.review)}</ul>` : ''}</div>`);
+    if (a.review.length) parts.push(`<div class="adapt-mode"><b>${modes[m]}</b><p>En révision :</p><ul>${list(a.review)}</ul></div>`);   // à retravailler : bloc « À travailler maintenant »
   }
   if (!first) { $('st-adapt').hidden = true; return; }
   $('st-adapt').hidden = false; $('adapt-on').checked = first.enabled;
@@ -357,10 +373,10 @@ async function adaptation() {
 }
 $('adapt-on').addEventListener('change', async (e) => {
   try { await api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ adaptive: e.target.checked }) }); }
-  catch (err) { e.target.checked = !e.target.checked; alert(err.message); }
+  catch (err) { e.target.checked = !e.target.checked; notify(netMsg(err, "le réglage n'a pas été enregistré")); }
 });
 $('adapt-reset').addEventListener('click', async () => {
-  if (!confirm('Réinitialiser l\'adaptation ? Ta progression et ton historique sont conservés.')) return;
+  if (!confirmTwice($('adapt-reset'), 'Confirmer la réinitialisation (progression conservée)')) return;
   await api('/users/me/adaptation/reset', { method: 'POST' }); await adaptation();
 });
 
@@ -402,7 +418,7 @@ async function openLex() {
   await renderLex(); $('lex').hidden = false; $('lex-body').scrollTop = 0; $('lex-close').focus();
 }
 function closeLex() { $('lex').hidden = true; if (lexReturn) lexReturn.focus(); }
-$('lex-btn').addEventListener('click', () => openLex().catch((e) => alert(e.message)));
+$('lex-btn').addEventListener('click', () => openLex().catch((e) => notify(netMsg(e, "le lexique n'a pas pu s'ouvrir"))));
 $('lex-close').addEventListener('click', closeLex);
 $('lex').addEventListener('click', (e) => { if (e.target === $('lex')) closeLex(); });
 $('lex-search').addEventListener('input', () => renderLex());
@@ -418,17 +434,35 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ------------------------------------------------------------------ navigation
-$('stats-btn').addEventListener('click', () => stats().catch((e) => alert(e.message)));
+const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
+$('stats-btn').addEventListener('click', openStats);
 $('st-back').addEventListener('click', home);
+$('notice-close').addEventListener('click', () => { $('notice').hidden = true; });
 $('st-delete').addEventListener('click', async () => {
-  if (!confirm('Effacer définitivement toutes tes séries et ta progression ?')) return;
+  if (!confirmTwice($('st-delete'), 'Confirmer : tout effacer définitivement')) return;
   await api('/users/me', { method: 'DELETE' }); store.del('sid'); stats();
 });
 $('quick-start').addEventListener('click', () => start({}));
+$('review-btn').addEventListener('click', () => start({}, true));
+
+// révision espacée : bouton quand des mains ratées sont arrivées à échéance (1, 3 puis 7 jours)
+async function reviews() {
+  $('review-btn').hidden = true; $('review-note').hidden = true;
+  let r; try { r = await api(`/users/me/reviews?mode=${mode()}`); } catch (e) { return; }
+  if (r.due > 0) {
+    $('review-btn').textContent = `Revoir mes erreurs (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
+    $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
+  } else if (r.pending > 0 && r.next_due_at) {
+    const d = new Date(r.next_due_at);
+    $('review-note').textContent = `Prochaine révision de tes erreurs : ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} (${r.pending} main${r.pending > 1 ? 's' : ''}).`;
+    $('review-note').hidden = false;
+  }
+}
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
   exploit: "Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui partent à tapis moins ou plus souvent qu'un joueur équilibré en push/fold. Hypothèses de simulation, pas de vrais joueurs." };
 const EXPLOIT_FAMILIES = ['', 'vs_allin'];                          // le mode exploitant ne couvre que les calls de tapis
 document.querySelector('.mode-switch').addEventListener('click', () => {
+  reviews();
   $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';
   const ex = mode() === 'exploit'; const fam = document.querySelector('.chips[data-name="family"]');
   for (const b of fam.querySelectorAll('button')) {
@@ -439,7 +473,8 @@ document.querySelector('.mode-switch').addEventListener('click', () => {
 });
 $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);
-$('next-btn').addEventListener('click', () => next().catch((e) => alert(e.message)));
+const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });
+$('next-btn').addEventListener('click', goNext);
 $('again-btn').addEventListener('click', () => start({ mode: state.mode || mode() }));
 $('back-home').addEventListener('click', home);
 $('home-btn').addEventListener('click', home);
@@ -453,7 +488,7 @@ document.addEventListener('keydown', (e) => {
 async function home() {
   progress(''); show('home');
   const sid = store.get('sid');
-  $('resume').hidden = true;
+  $('resume').hidden = true; reviews();
   if (!sid) return;
   try {
     const s = await api(`/sessions/${encodeURIComponent(sid)}/summary`);

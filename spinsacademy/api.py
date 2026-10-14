@@ -4,6 +4,7 @@
   GET  /quiz/next?session_id=    question suivante non répondue (sans solution) ; done=true à la fin
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
+  GET  /users/me/reviews         révision espacée des erreurs (J+1, J+3, J+7) ; POST /sessions avec review=true pour la lancer
   GET  /users/me/stats           progression du joueur (en-tête X-Player-Id) ; GET /users/me/export, DELETE /users/me
   POST /reports                  signaler une erreur sur une question répondue (une fois par question)
   GET  /admin/reports, POST /admin/reports/{id}/resolve, GET /admin/disabled, DELETE /admin/disabled/{spot_id},
@@ -17,11 +18,11 @@ Base : SPINSACADEMY_DB (par défaut data/app/spinsacademy.sqlite) ; dataset : SP
 import datetime, hmac, json, os, re, sqlite3, uuid
 from contextlib import closing
 from typing import Optional
-from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, profiles, progress, quiz
+from . import adaptive, catalog, profiles, progress, quiz, ratelimit, review
 from .hrc import ROOT
 
 SCHEMA = """
@@ -101,6 +102,7 @@ class NewSession(BaseModel):
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
     adaptive: Optional[bool] = None       # None : préférence du joueur ; ignoré si des filtres sont choisis
+    review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
 
 
 class Attempt(BaseModel):
@@ -112,6 +114,15 @@ class Attempt(BaseModel):
 app = FastAPI(title='SpinsAcademy', version='0.1.0')
 WEB = os.path.join(os.path.dirname(__file__), 'web')
 app.mount('/static', StaticFiles(directory=WEB), name='static')
+
+
+@app.middleware('http')
+async def rate_limit(request: Request, call_next):
+    pid = request.headers.get('x-player-id')
+    wait = ratelimit.check(request.method, request.url.path, ratelimit.client_ip(request.headers, request.client.host if request.client else None),
+                           pid if pid and PLAYER_RE.match(pid) else None)
+    if wait: return JSONResponse({'detail': ratelimit.MESSAGE_FR.format(s=wait)}, status_code=429, headers={'Retry-After': str(wait)})
+    return await call_next(request)
 
 
 @app.get('/', include_in_schema=False)
@@ -166,13 +177,19 @@ def _adaptation(con, pid, mode, version, size, seed):
 
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id); filters = body.filters.model_dump(exclude_none=True); info = None
+    pid = player(x_player_id, required=body.review); filters = body.filters.model_dump(exclude_none=True); info = None
     try:
         with closing(connect()) as con:
             version = serving_version(con, body.mode); excluded = _excluded(con)
-            want = pid is not None and not filters and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
+            want = pid is not None and not filters and not body.review and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
-        if info and info['active']:
+            due = review.summary(_mode_rows(con, pid, body.mode, None), version)['due_items'] if body.review else None
+        if due is not None:
+            series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
+            taken = {(s, h) for s, h, _, _ in series}
+            for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded):
+                if len(series) < body.size and (s, h) not in taken: series.append((s, h, None, None)); taken.add((s, h))
+        elif info and info['active']:
             drawn = quiz.draw_plan(version, info['slots'], adaptive.theme_of, body.seed, excluded)
             series = [(s, h, slot['kind'] if ok or slot['kind'] == 'discovery' else 'complement',
                        (f"{adaptive.PURPOSE_FR[slot['kind']]} : {adaptive.label(tuple(slot['theme']))}" if ok else
@@ -285,6 +302,16 @@ def my_adaptation(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
         info = _adaptation(con, pid, mode, serving_version(con, mode), quiz.SERIES_SIZE, 0); prefs = _prefs(con, pid)
     return dict(mode=mode, enabled=prefs['adaptive'], since=prefs['adaptation_reset_at'], active=info['active'], rule_fr=info['rule_fr'],
                 reason_fr=info['reason_fr'], weak=info['weak'], review=info['review'])
+
+
+@app.get('/users/me/reviews')
+def my_reviews(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
+    """révision espacée (1, 3 puis 7 jours) : mains ratées prêtes à revoir, et date de la prochaine"""
+    pid = player(x_player_id, required=True)
+    if mode not in ('gto', 'exploit'): raise HTTPException(422, 'mode inconnu')
+    with closing(connect()) as con:
+        res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode))
+    return dict(res, mode=mode, due_items=res['due_items'][:quiz.SERIES_SIZE * 4])
 
 
 @app.post('/users/me/adaptation/reset')
