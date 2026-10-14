@@ -206,7 +206,10 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .grid-legend { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .8rem; color: var(--muted); }
 .grid-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .grid-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-.grid-legend i.me-key { background: transparent; outline: 2px solid var(--text); outline-offset: -2px; }
+.grid-legend i.me-key { background: transparent; outline: 2px solid var(--warn); outline-offset: -2px; }
+.grid-legend i.out-key { background: var(--line); opacity: .5; }
+.grid-legend .lg-head { flex-basis: 100%; }
+.range-grid span { cursor: pointer; }
 
 /* lexique */
 .bar-right { display: flex; align-items: center; gap: 10px; }
@@ -263,3 +266,6 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .lex-btn, .brand, .filters summary, .chips button, .report summary { min-height: 44px; }
 .verdict small { white-space: pre-line; }
 .suit-s { color: var(--spade); } .suit-h { color: var(--heart); } .suit-d { color: var(--diamond); } .suit-c { color: var(--club); }
+
+/* écran de correction : « Question suivante » toujours à portée du pouce */
+#screen-answer #next-btn { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 3; box-shadow: 0 6px 18px rgba(0,0,0,.18); }

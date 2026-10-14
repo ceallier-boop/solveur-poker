@@ -135,12 +135,17 @@ def test_correction_has_grid_and_why():
 
 def test_draw_balances_positions_and_skips_no_lesson_hands():
     import collections
-    _, spots = quiz.load(); pos = collections.Counter()
-    for seed in range(60):
-        for s, h in quiz.draw_series(quiz.DEFAULT_VERSION, None, 5, seed):
-            pos[spots[s]['hero']] += 1
+    _, spots = quiz.load(); pos = collections.Counter(); table = collections.Counter(); diff = collections.Counter()
+    for seed in range(120):
+        series = quiz.draw_series(quiz.DEFAULT_VERSION, None, 5, seed)
+        assert len({h for _, h in series}) == len(series)                       # pas deux fois la même main dans une série
+        for s, h in series:
+            pos[spots[s]['hero']] += 1; table[spots[s]['table']] += 1; diff[quiz.difficulty(quiz.lesson_gap(spots[s], h))] += 1
             assert quiz.lesson_gap(spots[s], h) is not None
-    assert min(pos.values()) >= 0.25 * sum(pos.values())
+    n = sum(pos.values())
+    assert 0.25 <= table['heads-up'] / n <= 0.45                                # cible validée : 35 % de heads-up
+    assert diff['facile'] / n <= 0.15                                           # plafond validé : 15 % de questions faciles
+    assert min(pos['SB'], pos['BB']) >= 0.25 * n and pos['BTN'] >= 0.15 * n     # le BTN ne joue pas en heads-up
 
 
 def test_lexique_is_served_and_well_formed(client):

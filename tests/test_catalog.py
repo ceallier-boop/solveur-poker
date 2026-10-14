@@ -35,6 +35,10 @@ def copy(tmp_path, monkeypatch):
     quiz.load.cache_clear()
 
 
+from conftest import needs_raw
+
+
+@needs_raw
 def test_tampered_file_is_rejected(copy):
     lines = open(copy / 'spots.jsonl').read().splitlines()
     sp = json.loads(lines[0]); sp['hands']['AA']['freq'] = [0.2, 0.2]; lines[0] = json.dumps(sp)

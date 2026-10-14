@@ -225,7 +225,6 @@ def pool(version, filters=None, excluded=frozenset()):
 
 EASY_MBB = 1000          # la première action sanctionnée coûte plus de 1 BB : question facile, tirée 4 fois moins souvent
 HARD_MBB = 200           # moins de 0,2 BB : question difficile
-EASY_WEIGHT = 0.25
 
 
 def lesson_gap(sp, hand):
@@ -247,6 +246,17 @@ HRC_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 
 _TEACH = {}
 
 
+def impossible_ev(sp, hand):
+    """vrai si l'EV de référence d'un call perd plus que le montant à payer : impossible en chip EV (au pire on perd sa mise),
+    c'est un artefact du calcul HRC (évaluation du 2026-10-14 : 304 cas). La main n'est pas tirée."""
+    ev = grading.reference_ev(sp, hand); call = None
+    for a, e in zip(sp['actions'], ev):
+        if a['type'] in ('call', 'call_allin') and e is not None:
+            call = call if call is not None else call_terms(sp)[0]
+            if -e > call + 0.005: return True
+    return False
+
+
 def teachable(sp):
     """mains proposables dont la leçon dépasse le bruit du calcul : une action sanctionnée existe et, sur une EV HRC,
     la moins chère coûte au moins HRC_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
@@ -256,23 +266,32 @@ def teachable(sp):
         floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
         out = []
         for h in NAMES:
-            if not sp['hands'][h].get('quiz_eligible'): continue
+            if not sp['hands'][h].get('quiz_eligible') or impossible_ev(sp, h): continue
             g = lesson_gap(sp, h)
             if g is not None and g >= floor: out.append(h)
         _TEACH[k] = (sp, out)                                      # garder sp : l'identifiant reste valable
     return _TEACH[k][1]
 
 
-def _pick_hand(sp, exploit, rnd):
+EASY_SHARE = 0.06         # part visée des questions faciles tirées à dessein ; avec les spots qui n'offrent que des faciles, le total reste sous le plafond validé de 15 %
+HU_SHARE = 0.35          # part visée de questions heads-up (validée le 2026-10-14)
+
+
+def _pick_hand(sp, exploit, rnd, seen=frozenset()):
+    """main d'une question : jamais deux fois la même main dans une série si possible ; une question facile
+    (la moins chère des réponses fausses coûte plus de 1 BB) seulement EASY_SHARE du temps quand le spot offre mieux"""
     hands = list(teachable(sp))
     if exploit:
         adapt = [h for h in hands if sp['hands'][h]['kind'] == 'adaptation']
         other = [h for h in hands if sp['hands'][h]['kind'] != 'adaptation']
         hands = adapt if adapt and (not other or rnd.random() < ADAPTATION_SHARE) else other
+    hands = [h for h in hands if h not in seen] or hands
     gaps = {h: lesson_gap(sp, h) for h in hands}
     useful = [h for h in hands if gaps[h] is not None] or hands       # une question où tout est accepté n'apprend rien
-    weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] * (EASY_WEIGHT if (gaps[h] or 0) > EASY_MBB else 1.0) for h in useful]
-    return rnd.choices(useful, weights)[0]
+    easy = [h for h in useful if (gaps[h] or 0) > EASY_MBB]; rest = [h for h in useful if h not in easy]
+    pool_ = easy if easy and (not rest or rnd.random() < EASY_SHARE) else rest
+    weights = [W[NAMES.index(h)] * sp['hands'][h]['reach'] ** 0.5 for h in pool_]   # racine : les mains qui atteignent tous les nœuds (AA…) ne dominent plus
+    return rnd.choices(pool_, weights)[0]
 
 
 def _use(sp, items, used, exploit):
@@ -283,26 +302,33 @@ def _use(sp, items, used, exploit):
 
 def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset()):
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
-    excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent)"""
+    excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent).
+    Tirage : format (heads-up HU_SHARE du temps quand les filtres le permettent), puis rotation sur la position du joueur
+    et sur la famille de décision (sans elle, le BB domine) ; une main ne revient pas deux fois dans la série."""
     rnd = random.Random(seed); items = pool(version, filters, excluded); exploit = is_exploit(version)
     if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
-    # rotation sur la position du joueur (BTN, SB, BB), puis sur la famille de décision : sans elle, le BB domine
-    by_pos = {}
-    for sp in items: by_pos.setdefault(sp['hero'], {}).setdefault(family(sp), []).append(sp)
-    pos_order = []; fam_order = {}; used = set(); out = []
-    while len(out) < size and by_pos:
-        if not pos_order: pos_order = sorted(by_pos); rnd.shuffle(pos_order)
-        pos = pos_order.pop(); fams = by_pos.get(pos)
+    tree = {}
+    for sp in items: tree.setdefault(sp['table'], {}).setdefault(sp['hero'], {}).setdefault(family(sp), []).append(sp)
+    pos_order = {}; fam_order = {}; used = set(); seen = set(); out = []
+    while len(out) < size and tree:
+        tables = sorted(tree)
+        table = (('heads-up' if rnd.random() < HU_SHARE else '3-handed') if set(tables) == {'heads-up', '3-handed'} else tables[0])
+        by_pos = tree[table]
+        if not pos_order.get(table): pos_order[table] = sorted(by_pos); rnd.shuffle(pos_order[table])
+        pos = pos_order[table].pop(); fams = by_pos.get(pos)
         if not fams: continue
-        if not fam_order.get(pos): fam_order[pos] = sorted(fams); rnd.shuffle(fam_order[pos])
-        fam = fam_order[pos].pop()
+        key = (table, pos)
+        if not fam_order.get(key): fam_order[key] = sorted(fams); rnd.shuffle(fam_order[key])
+        fam = fam_order[key].pop()
         choices = [sp for sp in fams.get(fam, []) if sp['spot_id'] not in used]
         if not choices:
             fams.pop(fam, None)
-            if not fams: by_pos.pop(pos)
+            if not fams: by_pos.pop(pos, None)
+            if not by_pos: tree.pop(table)
             continue
         sp = rnd.choice(choices); _use(sp, items, used, exploit)
-        out.append((sp['spot_id'], _pick_hand(sp, exploit, rnd)))
+        h = _pick_hand(sp, exploit, rnd, seen); seen.add(h)
+        out.append((sp['spot_id'], h))
     return out
 
 
@@ -311,7 +337,7 @@ def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
     Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False)."""
     rnd = random.Random(seed); items = pool(version, None, excluded); exploit = is_exploit(version)
     if len(items) < len(slots): raise ValueError(f'{len(items)} spots disponibles, {len(slots)} demandés')
-    used = set(); out = []
+    used = set(); seen = set(); out = []
     for slot in slots:
         t = tuple(slot['theme']) if slot.get('theme') else None
         choices = [sp for sp in items if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
@@ -319,7 +345,8 @@ def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
         if not choices: choices = [sp for sp in items if sp['spot_id'] not in used]
         if not choices: break
         sp = rnd.choice(choices); _use(sp, items, used, exploit)
-        out.append((sp['spot_id'], _pick_hand(sp, exploit, rnd), slot, ok))
+        h = _pick_hand(sp, exploit, rnd, seen); seen.add(h)
+        out.append((sp['spot_id'], h, slot, ok))
     return out
 
 

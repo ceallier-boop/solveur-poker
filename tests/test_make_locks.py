@@ -2,6 +2,7 @@ import glob, json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools', 'hrc'))
 import make_locks as ml
+from conftest import needs_raw
 
 
 def _nodes():
@@ -14,6 +15,7 @@ def _nodes():
             if len(n['actions']) >= 2: yield st, n
 
 
+@needs_raw
 def test_deformation_reaches_target_and_stays_normalised():
     checked = 0
     for st, n in _nodes():

@@ -19,8 +19,8 @@ def items(gto_ref, exploit_ref, k_gto, k_exp, seed=1):
     rnd = random.Random(seed); out = []
     for ref, k in ((gto_ref, k_gto), (exploit_ref, k_exp)):
         for sp in quiz.pool(ref):
-            hands = [h for h in NAMES if sp['hands'][h]['quiz_eligible']]
-            picked = sorted(set(rnd.choices(hands, [W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in hands], k=k)))
+            hands = list(quiz.teachable(sp))                       # mêmes mains que l'application (bruit HRC, EV impossibles exclus)
+            picked = sorted(set(rnd.choices(hands, [W[NAMES.index(h)] * sp['hands'][h]['reach'] ** 0.5 for h in hands], k=k)))
             for h in picked:
                 q = quiz.question(ref, sp['spot_id'], h)
                 out.append(dict(m='exploit' if quiz.is_exploit(ref) else 'gto', q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
@@ -59,6 +59,9 @@ const DEMO = (() => {
   const MIN_SAMPLE = 10;
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
 
+  // même règle que quiz.draw_series : format (heads-up HU_SHARE du temps), puis position, puis famille ; une main ne
+  // revient pas dans la série ; une question facile seulement EASY_SHARE du temps quand la situation offre mieux
+  const HU_SHARE = __HU_SHARE__, EASY_SHARE = __EASY_SHARE__;
   function draw(mode, f, size) {
     const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === mode
       && (!f.table || it.q.table === f.table) && (!f.hero || it.q.hero === f.hero) && (!f.family || it.q.family === f.family)
@@ -66,15 +69,34 @@ const DEMO = (() => {
       && (!f.profile || (it.q.profile && it.q.profile.id === f.profile)));
     const spots = {}; for (const [it, i] of pool) (spots[it.q.spot_id] = spots[it.q.spot_id] || []).push(i);
     if (Object.keys(spots).length < size) return null;
-    const byFam = {}; for (const sid of Object.keys(spots)) { const fam = ITEMS[spots[sid][0]].q.family; (byFam[fam] = byFam[fam] || []).push(sid); }
-    const used = new Set(); const usedBase = new Set(); const out = []; let order = [];
-    while (out.length < size && Object.keys(byFam).length) {
-      if (!order.length) order = Object.keys(byFam).sort(() => Math.random() - 0.5);
-      const fam = order.pop(); if (!byFam[fam]) continue;
-      const choices = byFam[fam].filter((s) => !used.has(s) && !usedBase.has(ITEMS[spots[s][0]].base || s));
-      if (!choices.length) { delete byFam[fam]; continue; }
-      const sid = rnd(choices); used.add(sid); usedBase.add(ITEMS[spots[sid][0]].base || sid);
-      out.push(rnd(spots[sid]));
+    const tree = {};
+    for (const sid of Object.keys(spots)) {
+      const q = ITEMS[spots[sid][0]].q; const t = (tree[q.table] = tree[q.table] || {}); const p = (t[q.hero] = t[q.hero] || {});
+      (p[q.family] = p[q.family] || []).push(sid);
+    }
+    const used = new Set(), usedBase = new Set(), seen = new Set(), out = [], posOrder = {}, famOrder = {};
+    const shuffle = (a) => a.sort(() => Math.random() - 0.5);
+    while (out.length < size && Object.keys(tree).length) {
+      const tables = Object.keys(tree);
+      const table = tables.length === 2 ? (Math.random() < HU_SHARE ? 'heads-up' : '3-handed') : tables[0];
+      const byPos = tree[table];
+      if (!(posOrder[table] || []).length) posOrder[table] = shuffle(Object.keys(byPos));
+      const pos = posOrder[table].pop(); const fams = byPos[pos]; if (!fams) continue;
+      const key = table + '|' + pos;
+      if (!(famOrder[key] || []).length) famOrder[key] = shuffle(Object.keys(fams));
+      const fam = famOrder[key].pop();
+      const choices = (fams[fam] || []).filter((s) => !used.has(s) && !usedBase.has(ITEMS[spots[s][0]].base || s));
+      if (!choices.length) {
+        delete fams[fam]; if (!Object.keys(fams).length) delete byPos[pos]; if (!Object.keys(byPos).length) delete tree[table];
+        continue;
+      }
+      const hasRest = (x) => spots[x].some((i) => ITEMS[i].q.difficulty !== 'facile');
+      const better = choices.filter(hasRest);                    // une situation qui n'offre que des faciles : seulement EASY_SHARE du temps
+      const sid = rnd(better.length && Math.random() >= EASY_SHARE ? better : choices); used.add(sid); usedBase.add(ITEMS[spots[sid][0]].base || sid);
+      let cand = spots[sid].filter((i) => !seen.has(ITEMS[i].q.hand)); if (!cand.length) cand = spots[sid];
+      const easy = cand.filter((i) => ITEMS[i].q.difficulty === 'facile'), rest = cand.filter((i) => ITEMS[i].q.difficulty !== 'facile');
+      const i = rnd(easy.length && (!rest.length || Math.random() < EASY_SHARE) ? easy : rest);
+      seen.add(ITEMS[i].q.hand); out.push(i);
     }
     return out.length === size ? out : null;
   }
@@ -234,7 +256,7 @@ def build(out, k_gto, k_exp):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp))};</script>\n'
-            f'<script>\n{SHIM}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

@@ -1,4 +1,10 @@
+import os
 import pytest
+from spinsacademy.hrc import RAW
+
+HAS_RAW = os.path.isdir(RAW) and any(os.scandir(RAW))
+# exports HRC bruts : présents dans le dépôt, absents des archives d'audit et des livraisons ; sans eux, test ignoré (pas en échec)
+needs_raw = pytest.mark.skipif(not HAS_RAW, reason='exports HRC bruts absents (data/hrc/raw) : reconstruction depuis les sources impossible')
 
 
 @pytest.fixture(autouse=True)

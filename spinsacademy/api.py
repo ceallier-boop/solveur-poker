@@ -14,7 +14,7 @@ Mode invité au MVP : pas d'authentification (cahier des charges §19, question 
 identifiant anonyme envoyé dans l'en-tête X-Player-Id ; il relie les séries d'un même joueur pour les statistiques.
 Base : SPINSACADEMY_DB (par défaut data/app/spinsacademy.sqlite) ; dataset : SPINSACADEMY_DATASET.
 """
-import datetime, json, os, re, sqlite3, uuid
+import datetime, hmac, json, os, re, sqlite3, uuid
 from contextlib import closing
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException
@@ -346,7 +346,8 @@ def report(body: Report, x_player_id: Optional[str] = Header(None)):
 def admin(token):
     expected = os.environ.get('SPINSACADEMY_ADMIN_TOKEN')
     if not expected: raise HTTPException(403, 'administration désactivée (SPINSACADEMY_ADMIN_TOKEN non défini)')
-    if token != expected: raise HTTPException(403, 'jeton d\'administration invalide')
+    if not hmac.compare_digest((token or '').encode(), expected.encode()):          # comparaison à temps constant
+        raise HTTPException(403, 'jeton d\'administration invalide')
     return 'admin'
 
 

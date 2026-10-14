@@ -254,18 +254,22 @@ function renderGrid(range, hand, exploit) {
         bg = `linear-gradient(90deg, ${stops.join(', ')})`;
         const main = mix.indexOf(Math.max(...mix)); light = ['fold', 'raise'].includes(acts[main].type);
       }
-      cells.push(`<span class="${h === hand ? 'me' : ''}${mix ? '' : ' out'}${light ? ' lt' : ''}" style="background:${bg}">${h}</span>`);
+      cells.push(`<span data-h="${h}" class="${h === hand ? 'me' : ''}${mix ? '' : ' out'}${light ? ' lt' : ''}" style="background:${bg}">${h}</span>`);
     }
   }
   $('a-grid').innerHTML = cells.join('');
   $('a-grid').setAttribute('aria-label', `Grille des 169 mains ; ta main ${hand} est entourée`);
   $('a-grid-title').textContent = exploit ? 'Voir la décision contre ce type de profil sur toutes les mains' : 'Voir la stratégie sur toutes les mains';
-  $('a-grid-legend').innerHTML = acts.map((a, j) => `<span><i style="background:${ACT_COLOR[a.type]}"></i>${a.label_fr} ${range.share_pct[j]} %</span>`).join('')
-    + '<span><i class="me-key"></i>ta main</span>';
-  const mine = range.hands[hand];
+  $('a-grid-legend').innerHTML = '<span class="lg-head">Sur les mains qui arrivent à cette décision :</span>'
+    + acts.map((a, j) => `<span><i style="background:${ACT_COLOR[a.type]}"></i>${a.label_fr} ${range.share_pct[j]} %</span>`).join('')
+    + '<span><i class="out-key"></i>n\'arrive pas ici (jouée autrement plus tôt)</span><span><i class="me-key"></i>ta main</span>';
+  const line = (h) => { const m = range.hands[h];                      // une case touchée : sa stratégie en clair
+    return m ? `${h} : ` + acts.map((a, j) => (m[j] ? `${a.label_fr} ${m[j]} %` : '')).filter(Boolean).join(', ')
+      : `${h} : n'arrive pas à cette décision (jouée autrement plus tôt dans le coup).`; };
   const me = $('a-grid-me') || Object.assign(document.createElement('p'), { id: 'a-grid-me', className: 'grid-me' });
-  me.textContent = mine ? `${hand} : ` + acts.map((a, j) => (mine[j] ? `${a.label_fr} ${mine[j]} %` : '')).filter(Boolean).join(', ') : '';
+  me.setAttribute('aria-live', 'polite'); me.textContent = line(hand);
   $('a-grid').after(me);
+  $('a-grid').onclick = (e) => { const c = e.target.closest('[data-h]'); if (c) me.textContent = line(c.dataset.h); };
   $('a-grid').setAttribute('aria-label', `Grille des 169 mains. ` + acts.map((a, j) => `${a.label_fr} : ${range.share_pct[j]} % des mains`).join(', ') + `. ${me.textContent}`);
 }
 

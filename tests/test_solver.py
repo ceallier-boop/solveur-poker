@@ -4,10 +4,12 @@ from spinsacademy.cards import W
 from spinsacademy.hrc import exports, labels, load, preflop_hash
 from spinsacademy.solver.cfr import Solver, layers
 from spinsacademy.solver.tree import Tree, TreeConfig
+from conftest import needs_raw
 
 pct = lambda f: 100 * float((W * f).sum() / W.sum())
 
 
+@needs_raw
 def test_tree_reproduces_hrc_action_sets():
     """sur tous les nœuds exportés par HRC (arbre de référence), mêmes actions, hors tapis toujours proposé et fold gratuit retiré"""
     checked = 0
@@ -52,6 +54,7 @@ def test_full_tree_heads_up_converges_and_is_zero_sum():
     assert abs(ev[0] + ev[1]) < 1e-6                           # jeu à somme nulle (heads-up : pondération exacte)
 
 
+@needs_raw
 def test_default_tree_matches_hrc_actions_exactly():
     """avec les seuils de tapis HRC (réglage par défaut), l'arbre reproduit exactement les actions HRC, tapis compris"""
     checked = 0

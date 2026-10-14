@@ -3,6 +3,8 @@ import numpy as np
 import pytest
 from spinsacademy import importer as im, grading
 from spinsacademy.cards import NAMES, W
+from conftest import needs_raw
+pytestmark = needs_raw                    # tout le module reconstruit les datasets depuis les exports bruts
 
 
 @pytest.fixture(scope='module')

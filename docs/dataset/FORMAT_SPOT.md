@@ -99,3 +99,9 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
 - Importeur 1.3.0 : calls heads-up exacts face au tapis du BB après un limp (`SB-call_BB-allin`) ou une relance (`SB-raise3.5_BB-allin`) du SB. Seuls ces 3 spots changent par rapport à la 2026.10.13-1 (EV de référence exacte au lieu de HRC).
 - Stratégie de référence en EV exacte : l'action la plus rentable (`grading.reference_freq`), pour la notation, les barres, la grille et les parts ; la règle des 10 % s'applique à cette stratégie. Ailleurs, les fréquences HRC.
 - Tirage : questions HRC dont la leçon coûte au moins 150 mBB (`quiz.HRC_NOISE_MBB`), tapis effectif d'au moins 4 BB. Détail : `docs/audit/RELECTURES_2026-10-13.md`.
+
+### Tirage après l'évaluation du MVP (2026-10-14)
+
+- Format d'abord : heads-up `quiz.HU_SHARE` (35 %) du temps quand les filtres laissent les deux formats, puis rotation sur la position et la famille.
+- Une main ne revient pas deux fois dans une série ; une question facile n'est tirée à dessein que `quiz.EASY_SHARE` (6 %) du temps quand la situation offre mieux (plafond validé : 15 % au total) ; poids de tirage = combos × racine du poids d'atteinte.
+- Mains exclues du tirage quand l'EV de référence d'un call perd plus que le montant à payer (`quiz.impossible_ev`, artefact HRC).

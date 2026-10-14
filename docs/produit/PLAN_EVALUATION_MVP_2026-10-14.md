@@ -67,3 +67,19 @@ Lot : **0** = immédiat (sans dépendance), **1** = avant la bêta ouverte, **2*
 4. Choix de l'expert pour la relecture (300 questions, seuils, facteurs des profils, règles à retenir).
 5. Démarche auprès de HoldemResources pour les droits sur les données dérivées.
 6. Commande des exports HRC : heads-up à toutes les profondeurs et tailles, précision accrue, tapis direct au-delà de 16 BB (`docs/hrc/EXPORTS_A_PRODUIRE.md` §7 et §8).
+
+## 5. Avancement
+
+**Lot 0 réalisé le 14/10** (cibles validées par le porteur du projet : 35 % de heads-up, au plus 15 % de questions faciles).
+
+| # | Fait | Mesure après correction |
+|---|---|---|
+| 1 | Tests qui exigent les exports bruts marqués `needs_raw` (`tests/conftest.py`) | sans `data/hrc/raw` : 61 réussis, 15 ignorés, 0 échec ; avec : 76 réussis |
+| 2 | `e2e_datasets.cjs` lit les versions dans `PUBLICATIONS.md` | publie `gto_preflop/2026.10.13-3` et `exploit_calls/2026.10.13-4` sur une base neuve |
+| 3 | « Question suivante » fixé en bas de l'écran de correction | — |
+| 4 | Grille : légende « sur les mains qui arrivent à cette décision », case grise légendée, case touchée détaillée | — |
+| 5 | Mains dont la perte HRC d'un call dépasse le montant à payer retirées du tirage (`quiz.impossible_ev`) | 135 551 questions tirables (135 853 avant) |
+| 6 | Questions faciles tirées à dessein 6 % du temps, aucune main répétée dans une série, poids d'atteinte en racine carrée | faciles 11,8 % (27 % avant) ; AA 1,7 % (2,2 % avant) ; démo : 5 % |
+| 7 | Rotation sur le format avant la position (`quiz.HU_SHARE` = 0,35), démo comprise | heads-up 34 % (7 % avant) ; démo : 36 % ; positions : BTN 21 %, SB 40 %, BB 39 % |
+| 8 | Section renommée « Potentiel de la main au flop » | — |
+| 26 | Jeton d'administration comparé à temps constant (`hmac.compare_digest`) | — |
