@@ -240,3 +240,36 @@ Autres chiffres :
 | [Bien démarrer avec un tracker (Spin & Go, Expressos…)](https://www.youtube.com/watch?v=cXLFalql6Ik) (Poker Spin Tracker FR) | Pas de sous-titres |
 
 Pour les vidéos réservées aux adultes : exporter les cookies d'un compte YouTube connecté et relancer `yt-dlp --cookies cookies.txt …` depuis ton ordinateur, ou me déposer les sous-titres.
+
+## 7. Passages vidéo où une range est affichée à l'écran (2026-10-14)
+
+**Repérage.** `tools/veille/reperes_ranges.py` cherche dans les transcriptions les minutes où l'orateur montre quelque chose (« tableau », « à l'écran », « en vert / en orange », « je vous affiche la range », « chart »…) en parlant de range ; 90 minutes candidates ont été relues à la main, en écartant les mentions sans image (« ne vous contentez pas de tableaux », publicités, cash game). Il en reste **23 passages** dans [`reperes_ranges_youtube.csv`](reperes_ranges_youtube.csv), classés par priorité : 1 = Spin/Expresso avec une situation identifiable, 2 = utile mais moins précis, 3 = MTT ou consultation rapide d'un tableau.
+
+**Capture.** Les images ne peuvent pas être récupérées depuis cet environnement : YouTube le bloque désormais (« confirmez que vous n'êtes pas un robot »), et les miniatures de navigation (storyboards) sont trop petites pour lire une grille 13×13. Sur un ordinateur personnel :
+
+```bash
+pip install yt-dlp            # ffmpeg requis
+tools/veille/captures_ranges.sh docs/produit/reperes_ranges_youtube.csv captures/ 1            # priorité 1
+tools/veille/captures_ranges.sh docs/produit/reperes_ranges_youtube.csv captures/ 1 cookies.txt  # si YouTube demande une connexion
+```
+
+Le script ne télécharge que les portions listées, en 720p, et garde une image par changement d'écran. Les images restent hors du dépôt ; une fois déposées, chaque grille lisible peut être retranscrite (main par main, action, profondeur, position) et comparée aux exports HRC.
+
+**Passages de priorité 1**
+
+| Vidéo | Passage | Ce qui devrait être affiché |
+|---|---|---|
+| Kill Tilt, *Les clés du jeu préflop en Expresso* | [40–46 min](https://youtu.be/m6RyRKzR08A?t=2400) | Range d'open théorique du BTN à 3 joueurs, 15 BB (orange = min-raise, jaune = open shove), puis défense de la BB face au min-raise |
+| | [70–72 min](https://youtu.be/m6RyRKzR08A?t=4200) | Simplification de range proposée par le coach (limp) |
+| | [74–83 min](https://youtu.be/m6RyRKzR08A?t=4440) | Open shove au-delà de 15 BB contre récréatifs ; BB face à l'open shove à 10 BB (bas de range théorique) |
+| | [89–92 min](https://youtu.be/m6RyRKzR08A?t=5340) | HU SB vs BB 25 BB : théorie (vert = limp, orange = relance) et adaptation |
+| Kill Tilt, *Stratégie simple et efficace… petites limites* | [14–18 min](https://youtu.be/Wkd0Uq0i2FE?t=840) | BB à 15 BB ; ranges à 8–10 BB ; BB face au tapis du SB à 6–7 BB |
+| | [30–39 min](https://youtu.be/Wkd0Uq0i2FE?t=1800) | BB face au limp du BTN ; call face au tapis du SB à 3–4 BB et du BTN (range à 4 BB) ; open shove à 3,2 BB ; range du BTN |
+| | [69–72 min](https://youtu.be/Wkd0Uq0i2FE?t=4140) | HU 10 BB : call face au 3-bet tapis du SB (vert) ; SB limp contre relance |
+| Kill Tilt, *Les 3 principes essentiels… 2026* | [39–41 min](https://youtu.be/27YoUVv32Ag?t=2340) | Range d'iso-shove à 3 joueurs (en haut à gauche de l'écran) |
+| | [47–53 min](https://youtu.be/27YoUVv32Ag?t=2820) | Limp contre tapis ; BB face au tapis du BTN à 8–9 BB ; open shove à 5 BB ; call à 3 BB |
+| Poker Académie, *Le préflop en Spin !* | [0–6 min](https://youtu.be/sMoF9yNU6Ek?t=0) | Range d'open du BTN à 3 joueurs (38 % théorique, 42–45 % en pratique) ; range du SB |
+| | [11–16 min](https://youtu.be/sMoF9yNU6Ek?t=660) | Tableaux Nash push/fold du SB (~6–7 BB), récapitulatif en fin de vidéo |
+| HUSNG.com, *Nash vs population* | [3–5 min](https://youtu.be/xnBlnLLq8Ks?t=180) | HU 7 BB : range Nash du SB et range max-exploit contre la population, côte à côte |
+
+Intérêt pour le projet : les ranges « théoriques » affichées servent de contrôle croisé de nos exports HRC aux mêmes profondeurs (15 BB 3 joueurs, 10 BB HU, push/fold 3–7 BB) ; les ranges « adaptées » (Kill Tilt contre récréatifs, HUSNG contre la population) sont des exemples concrets de déformation à comparer à nos profils fictifs.
