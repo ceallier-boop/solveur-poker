@@ -274,6 +274,7 @@ const DEMO = (() => {
 """
 
 EXTRA_CSS = """
+#st-export { display: none; }   /* l'hôte de la démo n'autorise pas les téléchargements : export réservé à l'application */
 .demo-note { margin: 0; font-size: .85rem; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
 #demo-toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 5; background: var(--text); color: var(--bg);
   padding: 12px 14px; border-radius: 12px; font-size: .92rem; }
