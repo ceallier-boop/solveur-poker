@@ -93,7 +93,7 @@ class Filters(BaseModel):
     family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin)$')
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
-    profile: Optional[str] = Field(None, pattern='^(nit|prudent|agressif|maniac)$')      # mode exploitant
+    profile: Optional[str] = Field(None, pattern='^(nit|prudent|agressif|maniac|station)$')      # mode exploitant
 
 
 class NewSession(BaseModel):

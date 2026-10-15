@@ -1,3 +1,4 @@
+import re
 import pytest
 from fastapi.testclient import TestClient
 from spinsacademy import grading, quiz
@@ -76,9 +77,11 @@ def test_exploit_mode_series(client):
     for i in range(r['size']):
         q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
         assert q['mode'] == 'exploit' and q['villain']['observed_pct'] != q['villain']['gto_pct']
-        assert [o['id'] for o in q['options']] == ['F', 'C'] and 'part à tapis avec' in q['prompt_fr']
-        bases.add(q['spot_id'].rsplit('-x', 1)[0])
-        a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': 'C'}).json()
+        ids = [o['id'] for o in q['options']]
+        assert ids in (['F', 'C'], ['F', 'A'])                         # payer un tapis, ou pousser contre un joueur qui paie trop
+        assert ('part à tapis avec' if ids == ['F', 'C'] else 'paie un tapis avec') in q['prompt_fr']
+        bases.add(re.sub(r'-[xs][\d.]+$', '', q['spot_id']))
+        a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': ids[1]}).json()
         assert a['gto_label'] and 'hypothèse de simulation' in a['explanation_fr']
     assert len(bases) == r['size']                                     # jamais deux fois la même situation de base
 
@@ -89,7 +92,7 @@ def test_exploit_dataset_consistency():
     from spinsacademy import quiz, allin, pushfold
     _, ex = quiz.load(quiz.DEFAULT_EXPLOIT); _, gto = quiz.load(quiz.DEFAULT_VERSION)
     n = 0
-    for sp in list(ex.values())[:40]:
+    for sp in [s for s in ex.values() if not s.get('push_fold')][:40]:
         base = gto[sp['base_spot_id']]; push, _ = pushfold.shover_range(base, sp['villain']['position'])
         st = dict(zip(sp['players'], sp['stacks_bb'])); L = min(st[sp['hero']], st[sp['villain']['position']])
         ref = allin.call_ev(push, L, sp['pot_bb'] - sp['hero_committed_bb'] - L, sp['hero_committed_bb'])
@@ -221,7 +224,7 @@ def history_lines(sp):
 
 def test_profile_catalog_texts():
     from spinsacademy import profiles
-    c = profiles.catalog(); assert c['version'] == '1.4.0'
+    c = profiles.catalog(); assert c['version'] == '1.5.0'
     m = next(p for p in c['profiles'] if p['id'] == 'maniac')
     assert 'mains faibles' not in m['description_fr'] and 'moins forte' in m['description_fr']
     assert all('4 à 25 BB' not in (p['scope_fr'] or '') for p in c['profiles'])

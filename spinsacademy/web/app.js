@@ -16,7 +16,7 @@ const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
 const gainBB = (mbb) => { const a = Math.abs(mbb);                 // gains toujours en BB ; 3 décimales autour de 0,06 BB (limite d'imprécision)
   return a < 20 ? '<0,02 BB' : Math.abs(a - 60) < 5 ? (a / 1000).toFixed(3).replace('.', ',') + ' BB' : bb(a / 1000) + ' BB'; };
 // profils fictifs : symbole (sens et force de l'écart de tapis avec le GTO) et couleur, pour les reconnaître d'un coup d'œil
-const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲' };
+const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲', station: '◆' };
 const pbadge = (pr, small) => `<span class="pbadge p-${pr.id}${small ? ' sm' : ''}" aria-hidden="true">${PROFILE_VIS[pr.id] || '?'}</span>`;
 const pc = (x) => String(x).replace('.', ',') + ' %';
 
@@ -172,8 +172,10 @@ function renderQuestion(data) {
     const bar = (label, x, cls, z) => `<div class="vbar ${cls}"><span>${label}</span><em>${z || ''}<i style="width:${w(x)}"></i></em><b>${bb(x)} %</b></div>`;
     const bandTxt = lo == null ? `moins de ${bb(hi)} %` : hi == null ? `plus de ${bb(lo)} %` : `entre ${bb(lo)} et ${bb(hi)} %`;
     $('villain').innerHTML = (pr ? `<div class="vhead">${pbadge(pr)}<span>Profil fictif · <b>${pr.name_fr}</b></span></div><small>${pr.description_fr}</small>` : '')
-      + `<p class="vstat">Tapis du ${v.position} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar(v.reference === 'nash_pushfold' ? 'Équilibre' : 'GTO', v.gto_pct, 'gto')}`
-      + (pr && pr.band_pct ? `<p class="vband"><span class="swatch"></span>Ce type de profil : tapis ${bandTxt} des mains ici.</p>` : '');
+      + `<p class="vstat">${v.stat === 'call_pct' ? `Calls du ${v.position} face à un tapis` : `Tapis du ${v.position}`} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar(v.reference === 'nash_pushfold' ? 'Équilibre' : 'GTO', v.gto_pct, 'gto')}`
+      + (pr && pr.band_pct ? `<p class="vband"><span class="swatch"></span>Ce type de profil : ${v.stat === 'call_pct' ? 'paie' : 'tapis'} ${bandTxt} des mains ici.</p>` : '')
+      + (pr && pr.recognize ? `<details class="recognize"><summary>Reconnaître ce profil</summary><ul>${pr.recognize.signs_fr.map((x) => `<li>${x}</li>`).join('')}</ul>`
+        + (pr.recognize.sample_fr ? `<p>${pr.recognize.sample_fr}</p>` : '') + `<p class="caution">${pr.recognize.caution_fr}</p></details>` : '');
   }
   const box = $('actions'); box.innerHTML = '';
   q.options.forEach((o, k) => {
@@ -438,6 +440,14 @@ const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, 
 $('stats-btn').addEventListener('click', openStats);
 $('st-back').addEventListener('click', home);
 $('notice-close').addEventListener('click', () => { $('notice').hidden = true; });
+$('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
+  try {
+    const data = await api('/users/me/export');
+    const a = document.createElement('a'); a.download = 'spinsacademy-mes-donnees.json';
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  } catch (e) { notify(netMsg(e, "l'export n'a pas pu être préparé")); }
+});
 $('st-delete').addEventListener('click', async () => {
   if (!confirmTwice($('st-delete'), 'Confirmer : tout effacer définitivement')) return;
   await api('/users/me', { method: 'DELETE' }); store.del('sid'); stats();
@@ -459,8 +469,8 @@ async function reviews() {
   }
 }
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
-  exploit: "Payer ou non un tapis contre des profils fictifs (Serré, Prudent, Agressif, Maniaque) qui partent à tapis moins ou plus souvent qu'un joueur équilibré en push/fold. Hypothèses de simulation, pas de vrais joueurs." };
-const EXPLOIT_FAMILIES = ['', 'vs_allin'];                          // le mode exploitant ne couvre que les calls de tapis
+  exploit: "Contre des profils fictifs : payer ou non un tapis de joueurs qui poussent moins ou plus souvent qu'un joueur équilibré en push/fold (Serré, Prudent, Agressif, Maniaque), ou pousser contre un joueur qui paie trop (Station d'appel). Hypothèses de simulation, pas de vrais joueurs." };
+const EXPLOIT_FAMILIES = ['', 'vs_allin', 'first_in'];              // le mode exploitant couvre les calls de tapis et les tapis du SB
 document.querySelector('.mode-switch').addEventListener('click', () => {
   reviews();
   $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';

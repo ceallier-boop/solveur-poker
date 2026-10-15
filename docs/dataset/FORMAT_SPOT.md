@@ -55,7 +55,7 @@ Un spot est un nœud de décision de l'arbre HRC. Une question de quiz est un co
 | Verdict | Condition | Points |
 |---|---|---|
 | correct | regret ≤ 20 mBB, ou regret ≤ 60 mBB pour une action jouée par HRC au moins 10 % du temps quand l'EV de référence est celle de HRC | 1 |
-| imprécision | regret ≤ 60 mBB | 0,5 |
+| imprécision | regret ≤ 60 mBB, ou regret ≤ 100 mBB quand l'EV de référence est celle de HRC (`PERTINENT_MBB`, champ `pertinent` de la correction ; 2026-10-14) | 0,5 |
 | erreur | au-delà | 0 |
 
 Les stratégies affichées ne gardent que les actions jouées au moins 10 % du temps (celles que la correction accepte), renormalisées puis arrondies au pas de 5 %, avec une somme de 100 % (méthode du plus fort reste). Une action affichée est donc toujours acceptée. La correction utilise les valeurs non arrondies.
@@ -105,3 +105,4 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
 - Format d'abord : heads-up `quiz.HU_SHARE` (35 %) du temps quand les filtres laissent les deux formats, puis rotation sur la position et la famille.
 - Une main ne revient pas deux fois dans une série ; une question facile n'est tirée à dessein que `quiz.EASY_SHARE` (6 %) du temps quand la situation offre mieux (plafond validé : 15 % au total) ; poids de tirage = combos × racine du poids d'atteinte.
 - Mains exclues du tirage quand l'EV de référence d'un call perd plus que le montant à payer (`quiz.impossible_ev`, artefact HRC).
+- Lot 1 (2026-10-14) : en EV HRC, une main n'est proposée que si la moins chère des vraies erreurs coûte au moins 150 mBB (`quiz.error_gap`, seuil de bruit `HRC_NOISE_MBB`) ; une action à moins de 0,1 BB n'empêche plus la question, elle reçoit une nuance. En EV exacte, toute main avec une erreur est proposable.

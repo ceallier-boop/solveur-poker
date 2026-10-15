@@ -6,5 +6,6 @@ L'état de publication vit dans la base de l'application (`datasets`, journal `/
 |---|---|---|---|---|---|
 | 2026-10-13 | `gto_preflop` | `2026.10.13-3` | réussi | publication demandée par le porteur du projet (base HRC v3 : arbre complet, tapis déséquilibrés, tailles d'ouverture) | aucune version publiée sur ce serveur |
 | 2026-10-13 | `exploit_calls` | `2026.10.13-4` | réussi (source GTO publiée) | idem (profils sur l'équilibre push/fold, générateur 2.0.0) | aucune version publiée sur ce serveur |
+| 2026-10-14 | `exploit_calls` | `2026.10.14-1` | réussi (source GTO publiée, reconstruction identique) | lot 1 de l'évaluation du MVP : tapis du SB contre la Station d'appel (générateur 2.1.0, catalogue de profils 1.5.0) | `exploit_calls/2026.10.13-4` |
 
 Serveur concerné : instance de travail de la session (`data/app/spinsacademy.sqlite`). Aucun serveur de production n'est encore en service ; au premier déploiement (`docs/exploitation/DEPLOIEMENT.md`), rejouer ces deux contrôles et publications depuis `/admin`.

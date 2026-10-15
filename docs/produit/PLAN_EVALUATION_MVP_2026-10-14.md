@@ -83,3 +83,22 @@ Lot : **0** = immédiat (sans dépendance), **1** = avant la bêta ouverte, **2*
 | 7 | Rotation sur le format avant la position (`quiz.HU_SHARE` = 0,35), démo comprise | heads-up 34 % (7 % avant) ; démo : 36 % ; positions : BTN 21 %, SB 40 %, BB 39 % |
 | 8 | Section renommée « Potentiel de la main au flop » | — |
 | 26 | Jeton d'administration comparé à temps constant (`hmac.compare_digest`) | — |
+
+**Lot 1 réalisé les 14 et 15/10** (sauf ce qui attend une décision, un expert ou des exports HRC).
+
+| # | Fait | Mesure ou état |
+|---|---|---|
+| 9 | Un seul bloc « À travailler maintenant » (`progress.focus`, même règle que les séries adaptées), graphique avec axes 0 / 50 / 100 % | — |
+| 10 | Bandeau d'erreur dans l'écran avec « Réessayer » (coupure réseau, 429) ; confirmations en deux temps ; plus aucun `alert()` ni `confirm()` | — |
+| 11 | Journal d'usage de la bêta | **en attente** : accord du porteur du projet sur les événements collectés |
+| 12 | « À retenir » après chaque erreur ou imprécision : range de la référence en règle à seuils (« 22+, A2+, K7s+ »), affichée si elle classe bien au moins 93 % des mains, sinon la part des mains | règle à seuils dans 77 % des cas (échantillon de 400) ; validation experte comprise dans la relecture |
+| — | Décision du porteur du projet (14/10) : en EV HRC, une action à moins de 0,1 BB de la meilleure est « pertinente » : au pire une imprécision, et la correction garde la référence avec une nuance « … est aussi pertinente » | `grading.PERTINENT_MBB` ; questions retenues sur l'écart de la moins chère des vraies erreurs |
+| 14 | Échantillon stratifié de 300 questions, consignes, grilles par lots de 50, outil de fusion (accord, kappa, décision par question) : `docs/relecture/` | **en attente** des trois relecteurs IA du porteur du projet |
+| 15 | Précision HRC | **en attente** des nouveaux exports (`docs/hrc/EXPORTS_A_PRODUIRE.md` §9) |
+| 17 | Tapis du SB contre un BB qui paie trop (profil « Station d'appel », cote de call × 2), EV exacte en tapis ou fold, de 4 à 16 BB : générateur exploitant 2.1.0, dataset `exploit_calls/2026.10.14-1` publié sur l'instance de travail | 39 situations, 6 395 questions dont 790 adaptations |
+| 18 | Fiche « Reconnaître ce profil » (catalogue de profils 1.5.0) : signes observables, nombre d'occasions nécessaire dans la situation, prudence | ex. 46 % à l'équilibre : Serré 41, Prudent 147, Agressif 159, Maniaque 38 occasions ; signes à valider par la relecture |
+| 21 | Révision espacée des erreurs à J+1, J+3, J+7 (`review.py`, `GET /users/me/reviews`, série `review: true`, bouton d'accueil, rappel au bilan, démo) | — |
+| 24 | Projet de politique de confidentialité (`docs/produit/POLITIQUE_CONFIDENTIALITE.md`) et bouton « Exporter mes données » | **à faire relire** par un juriste |
+| 25 | Limitation des requêtes par adresse et par joueur (`ratelimit.py`, 429 + `Retry-After`) | proxy : module Caddy à ajouter si plusieurs processus |
+
+Contrôles : 89 tests réussis ; parcours mobiles (application et démo, GTO et exploitant, thèmes clair et sombre) sans erreur ni défilement horizontal.

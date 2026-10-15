@@ -15,7 +15,9 @@ RULE_FR = "Une main ratée revient 1 jour, puis 3 jours, puis 7 jours après. Un
 
 
 def _t(s):
-    return datetime.datetime.fromisoformat(s) if s else None
+    if not s: return None
+    d = datetime.datetime.fromisoformat(s)
+    return d if d.tzinfo else d.replace(tzinfo=datetime.timezone.utc)      # date sans fuseau (ancienne ligne, saisie manuelle) : UTC
 
 
 def items(rows, version, now=None):

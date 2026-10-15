@@ -36,9 +36,25 @@ Mode exploitant : `GET /profiles` donne le catalogue des profils fictifs ; le fi
 La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md`). L'explication est construite uniquement à partir des données du spot :
 - la meilleure action et son gain par rapport au fold, ou au check quand rien n'est à payer ;
 - l'écart de l'action choisie ;
-- la raison du verdict, avec son seuil (bruit de calcul sous 0,02 BB, imprécision jusqu'à 0,06 BB, erreur au-delà, action mixte jouée au moins 10 % du temps) ;
+- la raison du verdict, avec son seuil (bruit de calcul sous 0,02 BB, imprécision jusqu'à 0,06 BB, erreur au-delà, action mixte jouée au moins 10 % du temps) ; pour une EV HRC, une action à moins de 0,1 BB de la meilleure reste « pertinente » : au pire une imprécision, et la correction de la référence ajoute « Nuance : … est aussi pertinente » (décision du porteur du projet, 2026-10-14) ;
+- après une erreur ou une imprécision (mode GTO), une ligne « À retenir » : la range de la référence en règle à seuils (« 22+, A2+, K7s+ »), affichée seulement si elle classe bien au moins 93 % des mains pondérées, sinon la part des mains ;
 - la stratégie de référence : actions jouées au moins 10 % du temps, arrondies à 5 % ;
 - la source de l'EV.
+
+## Révision espacée des erreurs (`spinsacademy/review.py`, évaluation du MVP, remarque 21)
+
+Une main ratée (erreur ou imprécision) revient 1 jour, puis 3 jours, puis 7 jours après ; une bonne réponse à l'échéance la fait avancer, une réussite avant l'échéance ne compte pas, une nouvelle erreur la fait repartir à 1 jour. Après la révision à 7 jours, la main est acquise. Seules les mains dont la situation existe dans le dataset servi (même `spot_id`) et y reste proposable sont révisées.
+
+| Route | Rôle |
+|---|---|
+| `GET /users/me/reviews?mode=gto` | règle, nombre de mains prêtes (`due`) et à venir (`pending`), date de la prochaine, mains prêtes (20 au plus) |
+| `POST /sessions` avec `review: true` | série qui commence par les mains prêtes, complétée par un tirage normal ; `purpose: "spaced"`, `purpose_fr` « Révision de ton erreur du 14/10 (étape 1 sur 3) » ; exige `X-Player-Id` |
+
+Accueil : bouton « Revoir mes erreurs (N mains prêtes) », ou date de la prochaine révision ; le bilan d'une série avec des erreurs le rappelle. La démo applique la même règle dans le navigateur.
+
+## Limitation du nombre de requêtes (`spinsacademy/ratelimit.py`, remarque 25)
+
+Plafonds par minute : 300 par adresse IP, 120 par joueur, 30 créations de série et 10 signalements par joueur ; au-delà, 429 avec `Retry-After` et un message en français (l'interface propose « Réessayer »). Détails et réglages : `docs/exploitation/SECURITE.md`.
 
 ## Signalement d'une erreur (cahier des charges §7 et §14)
 

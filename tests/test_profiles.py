@@ -7,11 +7,12 @@ from spinsacademy import exploit, profiles, quiz
 def test_catalog_covers_every_factor_once():
     c = profiles.catalog()
     avail = [p for p in c['profiles'] if p['available']]
-    assert sorted(p['tendency']['odds_factor'] for p in avail) == sorted(exploit.FACTORS)
+    assert sorted(p['tendency']['odds_factor'] for p in avail if p['tendency']['stat'] == 'shove_pct') == sorted(exploit.FACTORS)
+    assert sorted(p['tendency']['odds_factor'] for p in avail if p['tendency']['stat'] == 'call_pct') == sorted(exploit.CALL_FACTORS)
     for p in c['profiles']:
         assert p['id'] and p['name_fr'] and p['description_fr'] and p['scope_fr']
         if p['available']: assert p['difficulty'] in (1, 2, 3) and p['adaptation_fr'] and p['tendency']['rule_fr']
-    assert {p['id'] for p in c['profiles'] if not p['available']} == {'station', 'shark'}       # profils du cahier non couverts, dits comme tels
+    assert {p['id'] for p in c['profiles'] if not p['available']} == {'shark'}       # profil du cahier non couvert, dit comme tel
 
 
 def _adaptation():
@@ -66,7 +67,42 @@ def test_identification_band_contains_every_profile_spot():
     for sp in spots.values():
         v = sp['villain']; pr = profiles.for_villain(v); lo, hi = profiles.band(pr, v['gto_pct'])
         assert (lo is None or v['observed_pct'] >= lo - 0.05) and (hi is None or v['observed_pct'] <= hi + 0.05)
-        assert (lo is None) == (pr['id'] == 'nit') and (hi is None) == (pr['id'] == 'maniac')
+        assert (lo is None) == (pr['id'] == 'nit') and (hi is None) == (pr['id'] in ('maniac', 'station'))
         if lo is not None and hi is not None: assert lo < hi
     q = quiz.question(quiz.DEFAULT_EXPLOIT, sp['spot_id'], next(h for h, x in sp['hands'].items() if x['quiz_eligible']))
     assert q['profile']['band_pct'] == list(profiles.band(pr, v['gto_pct']))
+
+
+def test_recognition_sheet():
+    c = profiles.catalog()
+    for p in (x for x in c['profiles'] if x['available']):
+        r = profiles.recognition(p, 45.7)
+        assert r and len(r['signs_fr']) >= 2 and 'hasard' in r['caution_fr'] and str(r['occasions']) in r['sample_fr']
+    by = {p['id']: p['tendency']['odds_factor'] for p in c['profiles'] if p['available']}
+    assert profiles.occasions_needed(by['maniac'], 45.7) < profiles.occasions_needed(by['agressif'], 45.7)   # plus l'écart est grand, moins il faut d'occasions
+    assert profiles.occasions_needed(1.0, 45.7) is None
+    q = quiz.question(quiz.DEFAULT_EXPLOIT, *next((sp['spot_id'], sorted(quiz.teachable(sp))[0]) for sp in quiz.pool(quiz.DEFAULT_EXPLOIT) if quiz.teachable(sp)))
+    assert q['profile']['recognize']['sample_fr']
+
+
+def test_station_shoves_are_exact_and_explained():
+    _, spots = quiz.load(quiz.DEFAULT_EXPLOIT)
+    shoves = [sp for sp in spots.values() if sp.get('push_fold')]
+    assert shoves and all(profiles.for_villain(sp['villain'])['id'] == 'station' and [a['id'] for a in sp['actions']] == ['F', 'A'] for sp in shoves)
+    sp = next(s for s in shoves if s['table'] == 'heads-up' and s['effective_stack_bb'] == 10)
+    from spinsacademy import pushfold
+    push, call, value = pushfold.heads_up(10.0)
+    import numpy as np
+    from spinsacademy.cards import NAMES
+    assert all(abs(sp['hands'][h]['ev_gto'][1] - round(float(value[i]), 5)) < 1e-9 for i, h in enumerate(NAMES))   # référence : équilibre push/fold
+    weak = [h for h, x in sp['hands'].items() if x['ev_gto'][1] > 0 and x['ev_exact'][1] < 0]
+    assert weak and all(sp['hands'][h]['fold_pct'] < sp['hands'][h]['fold_pct_gto'] for h in weak)         # il se couche moins souvent
+    assert sp['hands']['AA']['ev_exact'][1] > sp['hands']['AA']['ev_gto'][1]                               # la valeur gagne plus
+    h = next(h for h, x in sp['hands'].items() if x['kind'] == 'adaptation' and x['quiz_eligible'])
+    q = quiz.question(quiz.DEFAULT_EXPLOIT, sp['spot_id'], h)
+    assert 'paie un tapis avec' in q['prompt_fr'] and 'Tu joues en tapis ou fold.' in q['prompt_fr']
+    r = quiz.correct(quiz.DEFAULT_EXPLOIT, sp['spot_id'], h, 'A' if r_best(sp, h) == 'F' else 'F')
+    assert 'Il se couche' in r['explanation_fr'] and 'on part à tapis avec' in r['explanation_fr'] and r['verdict'] != 'correct'
+
+
+def r_best(sp, h): return 'A' if sp['hands'][h]['ev_exact'][1] > 0 else 'F'

@@ -258,6 +258,7 @@ const DEMO = (() => {
     }
     if (p === '/reports' && method === 'POST') return report(body);
     if (p === '/users/me/stats') return [200, stats()];
+    if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
@@ -297,7 +298,7 @@ def build(out, k_gto, k_exp):
         body = body.replace(hide, hide + ' hidden', 1)
     body = body.replace('<h3>Exercices adaptatifs</h3>', '<h3 hidden>Exercices adaptatifs</h3>', 1)
     body = body.replace('id="quick-start">Série recommandée<', 'id="quick-start">Série rapide<', 1)
-    page = (f'<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
+    page = (f'<meta charset="utf-8">\n<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp))};</script>\n'

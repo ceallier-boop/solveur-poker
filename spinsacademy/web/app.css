@@ -175,7 +175,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
   color: #fff; font-weight: 800; font-size: .8rem; letter-spacing: -1px; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
 .pbadge.sm { min-width: 22px; height: 20px; font-size: .62rem; border-radius: 6px; padding: 0 4px; }
 .seat .pbadge.sm { position: absolute; top: -9px; right: -9px; border: 2px solid #fff; }
-.p-nit { --p: #2f5fa8; } .p-prudent { --p: #2a8a86; } .p-agressif { --p: #d07a1f; } .p-maniac { --p: #c62828; }
+.p-nit { --p: #2f5fa8; } .p-prudent { --p: #2a8a86; } .p-agressif { --p: #d07a1f; } .p-maniac { --p: #c62828; } .p-station { --p: #7b4bb3; }
 .villain .vhead { display: flex; align-items: center; gap: 10px; font-size: 1rem; }
 .villain .vhead b { color: var(--text); }
 .villain .vstat { margin: 6px 0 4px; font-size: .85rem; }
@@ -282,3 +282,10 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .notice { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 6; display: flex; gap: 8px; align-items: center;
   background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); border-radius: 12px; padding: 10px 12px; font-size: .92rem; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 .notice span { flex: 1; } .notice button { min-height: 40px; }
+
+.recognize { margin-top: 8px; font-size: .9rem; }
+.recognize summary { cursor: pointer; font-weight: 600; color: var(--accent, var(--text)); min-height: 44px; display: flex; align-items: center; }
+.recognize ul { margin: 4px 0 8px; padding-left: 1.2em; }
+.recognize li { margin: 2px 0; }
+.recognize p { margin: 6px 0; }
+.recognize .caution { color: var(--muted); }

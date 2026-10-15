@@ -16,7 +16,7 @@ from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
-DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.13-4')
+DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.14-1')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
@@ -57,6 +57,7 @@ GAIN_MIN_BB = grading.TOLERANCE_MBB / 1000   # en dessous : « <0,02 BB », la l
 
 
 IMPRECISION_BB = 3 * grading.TOLERANCE_MBB / 1000   # limite entre imprécision et erreur
+PERTINENT_BB = grading.PERTINENT_MBB / 1000   # EV HRC : en dessous, l'autre action reste « pertinente » (nuance)
 NEAR_BB = 0.005                   # autour de la limite d'imprécision : 3 décimales, pour que montant et verdict concordent
 
 
@@ -67,7 +68,7 @@ def gain_bb(x, signed=False):
     if a <= GAIN_MIN_BB + 1e-12: s = f'<{bb(GAIN_MIN_BB)} BB'
     elif a - GAIN_MIN_BB < 0.0005: s = f'un peu plus de {bb(GAIN_MIN_BB)} BB'
     elif abs(a - IMPRECISION_BB) < 0.0005: s = f"un peu {'plus' if a > IMPRECISION_BB + 1e-12 else 'moins'} de {bb(IMPRECISION_BB)} BB"
-    elif abs(a - IMPRECISION_BB) < NEAR_BB or a - GAIN_MIN_BB < NEAR_BB: s = f'{a:.3f} BB'.replace('.', ',')
+    elif abs(a - IMPRECISION_BB) < NEAR_BB or a - GAIN_MIN_BB < NEAR_BB or abs(a - PERTINENT_BB) < NEAR_BB: s = f'{a:.3f} BB'.replace('.', ',')
     else: s = f'{bb(a)} BB'
     return (('+' if x >= 0 else '−') + s) if signed else s
 
@@ -174,10 +175,17 @@ def prompt(sp, hand):
     v = sp.get('villain')
     if v:
         pr = profiles.for_villain(v)
-        parts.append((f"Profil fictif « {pr['name_fr']} » : ce " if pr else 'Ce ') +
-                     f"{v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains dans cette situation ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).")
+        parts.append((f"Profil fictif « {pr['name_fr']} » : ce " if pr else 'Ce ') + f"{v['position']} {tendency_text(v)}"
+                     f" ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).")
+    if sp.get('push_fold'): parts.append('Tu joues en tapis ou fold.')
     parts.append(f"Tu es au {sp['hero']} avec {hand_display(hand)}. Que fais-tu ?")
     return '\n'.join(parts)                                     # une phrase par ligne (lisibilité sur mobile)
+
+
+def tendency_text(v, here='dans cette situation'):
+    """statistique observée du vilain, après « ce BB » : « part à tapis avec 54 % de ses mains dans cette situation »"""
+    what = 'paie un tapis' if v['stat'] == 'call_pct' else 'part à tapis'
+    return f"{what} avec {bb(v['observed_pct'])} % de ses mains {here}"
 
 
 # ------------------------------------------------------------------ tirage
@@ -363,7 +371,7 @@ def question(version, spot_id, hand):
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), difficulty=difficulty(lesson_gap(sp, hand)), mode='exploit' if sp.get('villain') else 'gto',
-                villain=({k: sp['villain'][k] for k in ('position', 'stat', 'observed_pct', 'gto_pct')} if sp.get('villain') else None),
+                villain=({k: sp['villain'].get(k) for k in ('position', 'stat', 'observed_pct', 'gto_pct', 'reference')} if sp.get('villain') else None),
                 profile=(profiles.public(profiles.for_villain(sp['villain']), sp['villain']['gto_pct']) if sp.get('villain') else None),
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
 
@@ -507,6 +515,20 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
     exploit = bool(sp.get('villain')); out = []; accepted = verdict == 'correct'
     money = (lambda x: gain_range(x)) if exploit else (lambda x: gain_bb(x))
     top = ids[max(range(len(ev)), key=lambda k: ev[k])]
+    if sp.get('push_fold') and ids == ['F', 'A']:
+        x = sp['hands'][hand]; e, g = x['ev_exact'][1], x['ev_gto'][1]; L = hero_effective(sp)
+        out.append(f"Il se couche {_pct(x['fold_pct'] / 100)} du temps face à ton tapis ({ref_names(sp)['short']} : {_pct(x['fold_pct_gto'] / 100)}) : "
+                   f"tu gagnes alors sa blinde (1 BB).")
+        out.append(f"Quand il paie, {hand} a {_pct1(x['equity_called'])} d'équité contre sa range de call ({ref_names(sp)['short']} : {_pct1(x['equity_called_gto'])}) "
+                   f"et tout se joue à tapis ({bb(L)} BB effectifs).")
+        if (e > 0) != (g > 0):
+            out.append("Contre ce profil, " + ("ses calls trop larges rendent ton tapis rentable : tu gagnes plus quand il paie avec pire que ce que tu perds en folds."
+                       if e > 0 else "tu perds trop de folds : ton tapis vivait de ses abandons, et ta main est trop faible quand il paie."))
+        tot = sum(W[NAMES.index(h)] * y['reach'] for h, y in sp['hands'].items()) or 1.0
+        mass = lambda f: sum(W[NAMES.index(h)] * y['reach'] for h, y in sp['hands'].items() if f(y)) / tot
+        out.append(f"Contre ce profil, on part à tapis avec {_pct(mass(lambda y: y['ev_exact'][1] > 0))} {BASE_FR} ; "
+                   f"contre {ref_names(sp)['player']}, avec {_pct(mass(lambda y: y['ev_gto'][1] > 0))}.")
+        return out
     if sp['ev_reference'] == 'exact' and ids == ['F', 'C'] and types['C'] == 'call_allin' and sp['to_call_bb'] > 0:
         call, final = call_terms(sp); need = call / final
         eq = {}
@@ -559,6 +581,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
                    + ('' if exact else ' ; approximatif, car ' + ('un joueur reste à parler' if to_act_after(sp) else 'le tapis adverse te couvre')) + ').')
     base_id = 'F' if 'F' in ids else 'X'
     tied = {ids[k] for k in range(len(ids)) if 1000 * (max(ev) - ev[k]) <= grading.TOLERANCE_MBB + 1e-9}   # déjà dans « plusieurs bonnes décisions »
+    if sp['ev_reference'] == 'hrc': tied |= {ids[k] for k in range(len(ids)) if 1000 * (max(ev) - ev[k]) <= grading.PERTINENT_MBB + 1e-9}   # déjà dans la nuance
     others = sorted((k for k in range(len(ids)) if ids[k] not in (best, chosen, base_id, top) and ids[k] not in tied), key=lambda k: -ev[k])
     if others:                                                     # le choix du joueur, le fold et l'action la plus rentable sont déjà dans l'explication
         d = ev[j] - ev[others[0]]
@@ -812,7 +835,8 @@ def rule_to_remember(sp, best, labels):
     if txt and fit >= RULE_MIN_FIT and 0 < share < 100 and txt.count(',') < RULE_MAX_GROUPS:
         n = 100 - share if t == 'fold' else share
         what = f"on ne joue que {txt}" if t == 'fold' else f"{verb} avec {txt}"
-        return f"À retenir : {where}, {what} (environ {n} % des mains qui arrivent ici ; règle simplifiée, juste pour {round(100 * fit)} % d'entre elles)."
+        exact = '' if fit >= 0.995 else f" ; règle simplifiée, exacte pour {round(100 * fit)} % d'entre elles"
+        return f"À retenir : {where}, {what} (environ {n} % des mains qui arrivent ici{exact})."
     return f"À retenir : {where}, {verb} avec environ {share} % des mains qui arrivent ici."
 
 
@@ -848,7 +872,8 @@ def correct(version, spot_id, hand, action_id):
     if best != top and len(good) == 1:
         lines.append(f"{_option(sp, labels, top)} vaut presque autant : {gain_bb(E_(top) - E_(best))} de plus en EV ; les deux sont acceptés.")
     # EV HRC : une autre action à moins de PERTINENT_MBB de la plus rentable reste pertinente (nuance, sans changer la référence)
-    near = [x for x in ids if x not in good and x != best and sp['ev_reference'] == 'hrc' and 1000 * (E_(top) - E_(x)) <= grading.PERTINENT_MBB + 1e-9]
+    near = [x for x in ids if x not in good and x != best and sp['ev_reference'] == 'hrc' and 1000 * (E_(top) - E_(x)) <= grading.PERTINENT_MBB + 1e-9
+            and grading.grade(sp, hand, x)['verdict'] != 'correct']                 # une action acceptée (jeu mixte) est déjà dite ailleurs
     if near and not sp.get('villain'):
         names = ' ou '.join(_low(labels[x]) for x in near)
         lines.append(f"Nuance : {names} {'est aussi pertinente' if len(near) == 1 else 'sont aussi pertinentes'} "
@@ -881,11 +906,11 @@ def correct(version, spot_id, hand, action_id):
         ex = dict(profile=dict(profiles.public(pr, v['gto_pct']), adaptation_fr=pr['adaptation_fr'], tendency_rule_fr=pr['tendency']['rule_fr'], scope_fr=pr['scope_fr']),
                   # 1. référence exploitante : la bonne action contre ce profil, et l'enjeu en fourchette
                   reference_fr=(f"{labels[best]}.\nTon choix {_named(labels[action_id])} perd {gain_range(raw / 1000)}." if action_id != best
-                                else f"{labels[best]}.\nPayer {verb} {gain_range(ee)}."),
+                                else f"{labels[best]}.\n{'Partir à tapis' if sp.get('push_fold') else 'Payer'} {verb} {gain_range(ee)}."),
                   # 2. comparaison avec la référence
                   comparison_fr=(f"{ref_names(sp)['compare']}, ce serait {_low(labels[gto])}.\n{pr['adaptation_fr']}" if changed else
                                  f"Même décision {ref_names(sp)['same']} : l'écart de range ne suffit pas à la changer."),
-                  tendency_fr=f"Ce {v['position']} part à tapis avec {bb(v['observed_pct'])} % de ses mains ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).",
+                  tendency_fr=f"Ce {v['position']} {tendency_text(v, '')}".rstrip() + f" ({ref_names(sp)['short']} : {bb(v['gto_pct'])} %).",
                   choice_loss_fr=(gain_range(raw / 1000) if action_id != best else None),
                   changed=changed, confidence=conf, confidence_fr='enjeu net' if conf == 'élevée' else 'enjeu faible',
                   note_fr="Profil fictif : une hypothèse de simulation, pas la lecture d'un vrai joueur.")
