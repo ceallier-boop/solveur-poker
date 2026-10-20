@@ -107,3 +107,14 @@ def test_engine_v4_2_checks():
     assert r['ev_limp'][i] > max(r['ev_raw'][i], 0)                       # J2s à 8 BB contre un rec inconnu : on limpe (audit)
     g = ee.limp_ev('hu', 8, '', '0C', 1.0)[0]
     assert abs(g[i] - ee.hero_ev_hrc('hu', 8, '', 'C')[i]) < 1e-12          # contre un BB GTO, l'estimation rend l'EV HRC
+
+
+def test_profiles_follow_field_shares():
+    """v4.2 : chaque profil au plus à sa part dans le field ; le rec passif (profil par défaut) complète la banque"""
+    sys.path.insert(0, os.path.join(ROOT, 'tools', 'field'))
+    import profils_field as pf
+    from collections import Counter
+    F = [s['field'] for s in _spots().values()]; c = Counter(f['internal_profile'] for f in F); n = len(F)
+    for p in pf.PROFILES:
+        if p != pf.DEFAULT: assert c[p] <= round(400 * pf.prevalence(p)) + 1, (p, c[p])
+    assert c[pf.DEFAULT] / n >= 0.5                                        # le rec passif domine, comme dans le field

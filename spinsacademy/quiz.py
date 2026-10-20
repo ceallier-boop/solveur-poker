@@ -17,7 +17,7 @@ from .hrc import ROOT
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
 DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.14-1')
-DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.20-1')                 # mode « Field » (spinsacademy.field)
+DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.20-2')                 # mode « Field » (spinsacademy.field)
 MODES = ('gto', 'exploit', 'field')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5

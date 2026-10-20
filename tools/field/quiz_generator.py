@@ -158,6 +158,9 @@ PROFIL_OPTIONS = ['Rec passif', 'Reg', 'Calling station', 'Dégène', 'Nit']    
 PROFIL_KEY = {'Rec passif': pf.DEFAULT, 'Reg': 'Reg', 'Calling station': 'Calling station', 'Dégène': 'Dégène', 'Nit': 'Nit'}
 GROUP = {lab: (key,) for lab, key in PROFIL_KEY.items()}
 PROFIL_N = (40, 80, 150)
+REG_PER_CELL = 6
+QUOTA_RELAX = 1.0         # v4.2 : aucun profil au-delà de sa part dans le field (2 x en v4.1) ; le rec passif prend les places libres
+INCONNU_MAX = 30          # v4.2 : « inconnu » par (stack, réponse) (22 en v4.1)
 MIX_MAX = 0.30            # v4.2 : HRC joue déjà la réponse 30 % du temps ou plus → pas une vraie déviation
 TRAP_MIN_GAP = 5.0        # v4.2 : un piège montre un vilain écarté d'au moins 5 points du GTO
 TRAP_MAX_MARGIN = 10.0    # v4.2 : au-delà de 10 x le bruit, la décision est triviale
@@ -262,11 +265,11 @@ def make(seed=11, per_cell=30):
                         r = reg
                         ok = r['valid'] & ~incoherent & ~prem & (r['gto'] == r['expl'])
                         idx = [i for i in np.where(ok)[0] if 3 * noise <= margin(spec, r, i) <= TRAP_MAX_MARGIN * noise]
-                        for i in rnd.sample(idx, min(4, len(idx))):      # v4.1 : 4 par cellule (le reg pesait 7 % pour 15 % du field)
+                        for i in rnd.sample(idx, min(REG_PER_CELL, len(idx))):      # v4.1 : 4 par cellule ; v4.2 : 6 (le reg pesait 9 % pour 15 % du field)
                             cands.append(build_q('piège', 'Reg', n, lam, kind, name, spec, S, noise, r, r, i, 'R11', '', 0.0))
                 for pname in advers:
                     fobs = pf.factors(pname, S)
-                    ns = (0,) if pname == pf.DEFAULT else N_OBS + N_THIN
+                    ns = (0,) + N_OBS if pname == pf.DEFAULT else N_OBS + N_THIN      # v4.2 : le rec passif observé (il pousse et paie moins) a aussi ses questions
                     effs = {n: (pf.posterior(fobs, S, n) if n else pf.factors(pf.DEFAULT, S)) for n in ns}
                     res = ee.run_spot(kind, S, name, spec, profiles={n: f for n, f in effs.items()})
                     robs = full[pname]
@@ -343,11 +346,11 @@ def make(seed=11, per_cell=30):
     for strict in (True, False):
         for q in keyed:
             if len(out) >= N_TARGET: break
-            cap = quota[q['profil']] if strict else 2 * quota[q['profil']]      # v4 : jamais plus de 2 x la part du profil dans le field
+            cap = quota[q['profil']] if strict else round(QUOTA_RELAX * quota[q['profil']]) + (N_TARGET if q['profil'] == pf.DEFAULT else 0)   # v4.2 : profils à leur part ; le rec passif complète
             if q['id'] in taken or used[q['profil']] >= cap: continue
             if q['type'] == 'inconnu':      # v4.1 : pas plus de 22 « inconnu » par (stack, réponse) : évite 57 « Pousser » à 8 BB
                 kk = (q['stack'], q['bonne_reponse'])
-                if inc[kk] >= 22: continue
+                if inc[kk] >= INCONNU_MAX: continue
                 inc[kk] += 1
             if q['type'] in ('piège', 'échantillon'):
                 if n_trap >= 0.35 * N_TARGET: continue
