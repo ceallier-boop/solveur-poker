@@ -66,7 +66,7 @@ function disabledCard(d) {
   </article>`;
 }
 
-const DS_FR = { gto_preflop: 'Préflop GTO', exploit_calls: 'Exploitant : payer un tapis' };
+const DS_FR = { gto_preflop: 'Préflop GTO', exploit_calls: 'Exploitant : profils fictifs', exploit_field: 'Field : joueurs du field (coachs)' };
 function checksList(rep) {
   return `<ul class="checks">${rep.checks.map((c) => `<li class="${c.level}">${esc(c.label_fr)}<small>${esc(c.details_fr)}</small></li>`).join('')}</ul>`;
 }

@@ -10,13 +10,15 @@ La question envoyée au joueur ne contient jamais la solution.
 """
 import json, os, random
 from functools import lru_cache
-from . import grading, profiles
+from . import field, grading, profiles
 from .cards import NAMES, W
 from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
 DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.14-1')
+DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.20-1')                 # mode « Field » (spinsacademy.field)
+MODES = ('gto', 'exploit', 'field')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
@@ -28,7 +30,15 @@ def ref_path(ref):
     return os.path.join(DATASETS, *(ref.split('/', 1) if '/' in ref else ('gto_preflop', ref)))
 
 
-def is_exploit(ref): return ref.startswith('exploit_')
+def is_exploit(ref): return ref.startswith('exploit_calls')
+
+
+def is_field(ref): return ref.startswith('exploit_field')
+
+
+def mode_of(ref):
+    """mode d'entraînement d'une version de dataset : gto, exploit (profils fictifs) ou field (joueurs du field)"""
+    return 'field' if is_field(ref) else 'exploit' if is_exploit(ref) else 'gto'
 
 
 @lru_cache(maxsize=8)
@@ -40,6 +50,7 @@ def load(version=DEFAULT_VERSION):
 
 
 def family(sp):
+    if sp.get('field_family'): return sp['field_family']        # mode Field : famille portée par la question (« read » sans main)
     prior = [h for h in sp['history'] if h['action'] != 'fold']
     if not prior: return 'first_in'
     if any(h['action'] == 'allin' for h in prior): return 'vs_allin'
@@ -167,6 +178,7 @@ def history_text(sp):
 
 
 def prompt(sp, hand):
+    if sp.get('field'): return sp['prompt_fr']
     table = '3 joueurs' if sp['table'] == '3-handed' else 'Heads-up'
     stacks = ' / '.join(bb(x) for x in sp['stacks_bb']); pos = ' / '.join(sp['players'])
     hist = history_text(sp)
@@ -276,6 +288,7 @@ def teachable(sp):
     la moins chère coûte au moins HRC_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
     questions dont le verdict tiendrait dans l'imprécision de HRC. Le seuil porte sur la moins chère des vraies erreurs : une
     action proche (moins de grading.PERTINENT_MBB) n'empêche pas la question, elle reçoit une nuance."""
+    if sp.get('field'): return list(sp['hands'])                  # mode Field : une question = une main (ou aucune)
     k = id(sp)
     if k not in _TEACH:
         floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
@@ -317,11 +330,16 @@ def _use(sp, items, used, exploit):
 
 def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset()):
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
+    Mode Field : tirage propre aux questions fixes (spinsacademy.field.draw).
     excluded : spots désactivés par l'administration (un spot GTO désactivé exclut aussi les spots exploitants qui en dérivent).
     Tirage : format (heads-up HU_SHARE du temps quand les filtres le permettent), puis rotation sur la position du joueur
     et sur la famille de décision (sans elle, le BB domine) ; une main ne revient pas deux fois dans la série."""
     rnd = random.Random(seed); items = pool(version, filters, excluded); exploit = is_exploit(version)
     if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
+    if is_field(version):
+        out = field.draw(items, size, seed)
+        if len(out) < size: raise ValueError(f'{len(out)} questions du field disponibles pour ces filtres, {size} demandées')
+        return out
     tree = {}
     for sp in items: tree.setdefault(sp['table'], {}).setdefault(sp['hero'], {}).setdefault(family(sp), []).append(sp)
     pos_order = {}; fam_order = {}; used = set(); seen = set(); out = []
@@ -368,6 +386,7 @@ def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
 def question(version, spot_id, hand):
     """ce que voit le joueur : état du jeu et options, sans solution"""
     _, spots = load(version); sp = spots[spot_id]
+    if sp.get('field'): return field.question(sp)
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), difficulty=difficulty(lesson_gap(sp, hand)), mode='exploit' if sp.get('villain') else 'gto',
@@ -849,6 +868,7 @@ def _option(sp, labels, aid):
 def correct(version, spot_id, hand, action_id):
     """correction et explication structurée (données du dataset uniquement)"""
     _, spots = load(version); sp = spots[spot_id]
+    if sp.get('field'): return field.correct(sp, action_id)
     g = grading.grade(sp, hand, action_id)
     labels = {a['id']: action_label(sp, a) for a in sp['actions']}
     ev = grading.reference_ev(sp, hand)

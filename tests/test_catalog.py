@@ -53,7 +53,7 @@ def test_tampered_file_is_rejected(copy):
 
 def test_nothing_is_served_before_publication(client):
     assert client.post('/sessions', json={}).status_code == 503
-    assert client.get('/health').json()['published'] == {'gto_preflop': None, 'exploit_calls': None}
+    assert client.get('/health').json()['published'] == {'gto_preflop': None, 'exploit_calls': None, 'exploit_field': None}
     rows = {r['ref']: r for r in client.get('/admin/datasets', headers=ADMIN).json()}
     assert {r['status'] for r in rows.values()} == {'staging'} and {GTO, OLD, EXP} <= set(rows)
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='trop tôt').status_code == 409     # pas encore contrôlé

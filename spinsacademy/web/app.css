@@ -113,7 +113,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .weak { background: var(--warn-bg); color: var(--text); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .weak b { color: var(--warn); }
 
-.mode-switch { display: grid; grid-template-columns: 1fr 1fr; }
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr 1fr; }
 .mode-switch button { min-height: 48px; font-weight: 650; }
 .villain { background: var(--warn-bg); border-radius: var(--radius); padding: 10px 12px; font-size: .92rem; }
 .villain b { color: var(--warn); }
@@ -289,3 +289,10 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .recognize li { margin: 2px 0; }
 .recognize p { margin: 6px 0; }
 .recognize .caution { color: var(--muted); }
+
+/* mode Field : statistiques observées du vilain (k sur n), type de question, correction courte */
+.fstats { background: var(--warn-bg); border-radius: var(--radius); padding: 10px 12px; font-size: .92rem; display: flex; flex-direction: column; gap: 6px; }
+.fstats .ftype { align-self: flex-start; font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.fstats .fnone { margin: 0; color: var(--text); }
+.fstats .fn { margin: 0; font-size: .82rem; color: var(--muted); }
+.fstats .vbar { grid-template-columns: 112px 1fr 52px; }

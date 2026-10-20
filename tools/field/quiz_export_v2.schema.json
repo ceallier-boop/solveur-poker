@@ -1,0 +1,24 @@
+{
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "Export v2 des questions exploitantes SpinsAcademy",
+ "type": "object",
+ "required": ["meta", "spots", "questions"],
+ "properties": {
+  "meta": {"type": "object", "required": ["export_version", "generated_at", "locale", "units", "thresholds_mbb", "rules", "counts", "caveats"]},
+  "spots": {"type": "array", "items": {"type": "object", "required": ["spot_id", "table", "hero_position", "villain_positions", "action_history", "decision_type", "villain_stat", "description_fr"],
+    "properties": {"decision_type": {"enum": ["CALL_OR_FOLD", "SHOVE_OR_FOLD", "SHOVE_LIMP_OR_FOLD"]}, "villain_stat": {"enum": ["SHOVE_PCT", "CALL_PCT"]}, "table": {"enum": ["3-handed", "heads-up"]}}}},
+  "questions": {"type": "array", "items": {"type": "object",
+   "required": ["id", "type", "difficulty", "stack_bb", "table", "spot_id", "hero", "action_history", "villain_stats", "observations", "villain_known", "prompt_fr", "options", "correct_option_id", "explanation_fr", "rule_code", "leak_code", "internal_profile", "data_level", "content_hash"],
+   "properties": {
+    "type": {"enum": ["ADAPTATION", "TRAP", "IDENTIFICATION", "UNKNOWN_VILLAIN", "THIN_SAMPLE", "PROFILE_READ"]},
+    "difficulty": {"enum": ["EASY", "MEDIUM", "HARD"]},
+    "stack_bb": {"enum": [4, 6, 8, 10, 12]},
+    "rule_code": {"enum": ["R0", "R1", "R2", "R3", "R4", "R5", "R7", "R9", "R10", "R11"]},
+    "internal_profile": {"enum": ["DEFAULT_REC", "STATION", "DEGENE", "NIT", "REG"], "description": "usage interne : ne jamais afficher"},
+    "observations": {"type": "integer", "minimum": 0},
+    "options": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "object", "required": ["id", "label_fr"]}},
+    "correct_option_id": {"enum": ["A", "B", "C", "D"]},
+    "villain_stats": {"type": "array", "items": {"type": "object", "required": ["villain", "stat", "observations", "hits", "observed_pct", "gto_pct"]}}
+   }}}
+ }
+}

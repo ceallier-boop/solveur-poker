@@ -16,7 +16,7 @@ import numpy as np
 from . import quiz
 from .cards import NAMES
 
-KINDS = ('gto_preflop', 'exploit_calls')
+KINDS = ('gto_preflop', 'exploit_calls', 'exploit_field')
 STATUS_FR = {'staging': 'À contrôler', 'validated': 'Contrôlé', 'rejected': 'Refusé au contrôle', 'published': 'Publié',
              'retired': 'Remplacé', 'disabled': 'Retiré'}
 SCHEMA = """
@@ -110,6 +110,13 @@ def _rebuild(ref, manifest, spots):
             missing = [s for s in manifest.get('sources', []) if not os.path.isdir(os.path.join(quiz.ROOT, s))]
             if missing: return None, f'{len(missing)} exports sources absents de ce poste : reconstruction non exécutée'
             rebuilt = {sp['spot_id']: sp for sp in importer.build_dataset()[0]}
+        elif ds == 'exploit_field':
+            from . import field
+            if manifest.get('builder') != field.BUILDER_VERSION:
+                return None, f"générateur {manifest.get('builder')} ≠ version actuelle {field.BUILDER_VERSION} : reconstruction non comparable"
+            if not os.path.isdir(os.path.join(quiz.ROOT, 'data', 'hrc', 'raw', 'min_raise_hu')):
+                return None, 'exports HRC absents de ce poste : reconstruction non exécutée'
+            rebuilt = {sp['spot_id']: sp for sp in field.build(manifest.get('seed', field.SEED))}
         else:
             from . import exploit
             if manifest.get('builder') != exploit.BUILDER_VERSION:
@@ -144,6 +151,19 @@ def validate(ref, statuses=None):
     dup = len(ids) - len(set(ids))
     checks.append(_check('duplicates', 'Aucun spot en double', dup == 0, f'{dup} doublons' if dup else 'aucun doublon'))
     exploit = ds == 'exploit_calls'; problems = {}
+    if ds == 'exploit_field':                             # questions fixes du mode Field (spinsacademy.field)
+        from . import field
+        for sp in rows:
+            pr = field.problems(sp)
+            if pr: problems[sp.get('spot_id')] = pr
+        first = next(iter(problems.items()), None)
+        checks.append(_check('spots', 'Chaque question est complète, sa bonne réponse est la plus rentable, aucun montant en mBB ni profil interne affiché', not problems,
+                             f"{len(problems)} questions en anomalie ; premier : {first[0]} : {', '.join(first[1])}" if first else f'{len(rows)} questions conformes',
+                             count=len(problems)))
+        checks.append(_check('questions', 'Questions proposables conformes au manifeste', len(rows) == manifest.get('questions_eligible'), f'{len(rows)} questions', count=len(rows)))
+        ok, detail = _rebuild(ref, manifest, spots)
+        checks.append(_check('rebuild', 'Test de référence : reconstruction depuis les exports HRC', ok is True, detail, blocking=ok is not None))
+        return _report(ref, checks, sha)
     for sp in rows:
         pr = _spot_problems(sp, manifest, exploit)
         if pr: problems[sp.get('spot_id')] = pr

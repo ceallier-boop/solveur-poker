@@ -1,6 +1,6 @@
 """API du quiz (FastAPI + SQLite), routes du cahier des charges §13.1.
 
-  POST /sessions                 créer une série (mode gto ou exploit, filtres, taille, graine) liée à une version de dataset
+  POST /sessions                 créer une série (mode gto, exploit ou field, filtres, taille, graine) liée à une version de dataset
   GET  /quiz/next?session_id=    question suivante non répondue (sans solution) ; done=true à la fin
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
@@ -68,11 +68,15 @@ def connect():
     return con
 
 
+DATASET_OF = {'gto': 'gto_preflop', 'exploit': 'exploit_calls', 'field': 'exploit_field'}
+DEFAULT_OF = {'gto': quiz.DEFAULT_VERSION, 'exploit': quiz.DEFAULT_EXPLOIT, 'field': quiz.DEFAULT_FIELD}
+
+
 def serving_version(con, mode):
     """version publiée du mode ; SPINSACADEMY_ALLOW_STAGING=1 (développement, tests) : version par défaut si rien n'est publié"""
-    ref = catalog.active(con, 'exploit_calls' if mode == 'exploit' else 'gto_preflop')
+    ref = catalog.active(con, DATASET_OF[mode])
     if ref: return ref
-    if os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1': return quiz.DEFAULT_EXPLOIT if mode == 'exploit' else quiz.DEFAULT_VERSION
+    if os.environ.get('SPINSACADEMY_ALLOW_STAGING') == '1': return DEFAULT_OF[mode]
     raise HTTPException(503, 'aucun dataset publié pour ce mode : l\'administration doit en publier un')
 
 
@@ -90,14 +94,14 @@ def player(x_player_id, required=False):
 class Filters(BaseModel):
     table: Optional[str] = Field(None, pattern='^(3-handed|heads-up)$')
     hero: Optional[str] = Field(None, pattern='^(BTN|SB|BB)$')
-    family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin)$')
+    family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin|read)$')     # read : lecture du vilain (mode Field)
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
     profile: Optional[str] = Field(None, pattern='^(nit|prudent|agressif|maniac|station)$')      # mode exploitant
 
 
 class NewSession(BaseModel):
-    mode: str = Field('gto', pattern='^(gto|exploit)$')
+    mode: str = Field('gto', pattern='^(gto|exploit|field)$')
     filters: Filters = Filters()
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
@@ -162,7 +166,7 @@ def _prefs(con, pid):
 
 def _mode_rows(con, pid, mode, since):
     rows = _player_rows(con, pid)
-    return [r for r in rows if quiz.is_exploit(r['dataset_version']) == (mode == 'exploit') and (since is None or (r['answered_at'] or '') > since)]
+    return [r for r in rows if quiz.mode_of(r['dataset_version']) == mode and (since is None or (r['answered_at'] or '') > since)]
 
 
 def _excluded(con):
@@ -181,7 +185,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     try:
         with closing(connect()) as con:
             version = serving_version(con, body.mode); excluded = _excluded(con)
-            want = pid is not None and not filters and not body.review and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
+            want = pid is not None and not filters and not body.review and body.mode != 'field' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
             due = review.summary(_mode_rows(con, pid, body.mode, None), version)['due_items'] if body.review else None
         if due is not None:
@@ -297,7 +301,7 @@ def put_preferences(body: Preferences, x_player_id: Optional[str] = Header(None)
 def my_adaptation(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
     """règle, thèmes à retravailler et thèmes en révision, tels que la prochaine série les utiliserait"""
     pid = player(x_player_id, required=True)
-    if mode not in ('gto', 'exploit'): raise HTTPException(422, 'mode inconnu')
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     with closing(connect()) as con:
         info = _adaptation(con, pid, mode, serving_version(con, mode), quiz.SERIES_SIZE, 0); prefs = _prefs(con, pid)
     return dict(mode=mode, enabled=prefs['adaptive'], since=prefs['adaptation_reset_at'], active=info['active'], rule_fr=info['rule_fr'],
@@ -308,7 +312,7 @@ def my_adaptation(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
 def my_reviews(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
     """révision espacée (1, 3 puis 7 jours) : mains ratées prêtes à revoir, et date de la prochaine"""
     pid = player(x_player_id, required=True)
-    if mode not in ('gto', 'exploit'): raise HTTPException(422, 'mode inconnu')
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     with closing(connect()) as con:
         res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode))
     return dict(res, mode=mode, due_items=res['due_items'][:quiz.SERIES_SIZE * 4])

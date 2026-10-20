@@ -15,15 +15,20 @@ from spinsacademy.cards import NAMES, W
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
 
 
-def items(gto_ref, exploit_ref, k_gto, k_exp, seed=1):
+def items(gto_ref, exploit_ref, k_gto, k_exp, seed=1, field_ref=None):
     rnd = random.Random(seed); out = []
+    if field_ref:                                                  # mode Field : toutes les questions fixes de la banque
+        for sp in quiz.pool(field_ref):
+            h = next(iter(sp['hands'])); q = quiz.question(field_ref, sp['spot_id'], h)
+            out.append(dict(m='field', q=q, eff=sp['effective_stack_bb'], base=None,
+                            c={o['id']: quiz.correct(field_ref, sp['spot_id'], h, o['id']) for o in q['options']}))
     for ref, k in ((gto_ref, k_gto), (exploit_ref, k_exp)):
         for sp in quiz.pool(ref):
             hands = list(quiz.teachable(sp))                       # mêmes mains que l'application (bruit HRC, EV impossibles exclus)
             picked = sorted(set(rnd.choices(hands, [W[NAMES.index(h)] * sp['hands'][h]['reach'] ** 0.5 for h in hands], k=k)))
             for h in picked:
                 q = quiz.question(ref, sp['spot_id'], h)
-                out.append(dict(m='exploit' if quiz.is_exploit(ref) else 'gto', q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
+                out.append(dict(m=quiz.mode_of(ref), q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
                                 c={o['id']: quiz.correct(ref, sp['spot_id'], h, o['id']) for o in q['options']}))
     return out
 
@@ -52,8 +57,8 @@ const DEMO = (() => {
   function load() { if (mem) return mem; try { mem = JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { mem = null; } return (mem = mem || { sessions: {} }); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { /* stockage indisponible : la série reste en mémoire */ } }
   const now = () => new Date().toISOString().slice(0, 19) + '+00:00';
-  const FAMILY_FR = { first_in: 'Premier à parler', vs_limp: 'Face à un limp', vs_raise: 'Face à une relance', vs_allin: 'Face à un tapis' };
-  const TABLE_FR = { '3-handed': '3 joueurs', 'heads-up': 'Heads-up' }; const MODE_FR = { gto: 'GTO', exploit: 'Exploitant' };
+  const FAMILY_FR = { first_in: 'Premier à parler', vs_limp: 'Face à un limp', vs_raise: 'Face à une relance', vs_allin: 'Face à un tapis', read: 'Lecture du vilain' };
+  const TABLE_FR = { '3-handed': '3 joueurs', 'heads-up': 'Heads-up' }; const MODE_FR = { gto: 'GTO', exploit: 'Exploitant', field: 'Field' };
   const DEPTHS = [['lt10', 'Moins de 10 BB', 0, 9.5], ['10_16', '10 à 16 BB', 9.5, 16.5], ['17_25', '17 à 25 BB', 16.5, 99]];
   const depthOf = (s) => (DEPTHS.find(([, , lo, hi]) => s >= lo && s < hi) || DEPTHS[2])[0];
   const MIN_SAMPLE = 10;
@@ -146,7 +151,7 @@ const DEMO = (() => {
     const recurring = Object.entries(themes).filter(([, t]) => t.errors >= 2).map(([k, t]) => {
       const [m, f, h, d] = k.split('|');
       return { label: `${MODE_FR[m]} · ${FAMILY_FR[f]} · ${h} · ${dl[d]}`, errors: t.errors, questions: t.questions, regret_mbb: Math.round(t.regret),
-        examples: t.examples, filters: Object.assign({ mode: m, hero: h }, df[d], m === 'gto' ? { family: f } : {}) };
+        examples: t.examples, filters: Object.assign({ mode: m, hero: h }, df[d], m !== 'exploit' ? { family: f } : {}) };
     }).sort((a, b) => b.errors - a.errors || b.regret_mbb - a.regret_mbb).slice(0, 3);
     const n = total.questions;
     // un seul diagnostic, même règle que progress.focus et les séries adaptées (taux lissé, 3 réponses et 2 erreurs au moins)
@@ -159,7 +164,7 @@ const DEMO = (() => {
       focus = { kind: weak ? 'weak' : 'watch', label: `${MODE_FR[m]} · ${FAMILY_FR[f]} · ${h} · ${dl[d]}`, examples: t.examples.slice(0, 1),
         reason_fr: `${t.errors} erreurs sur ${t.questions} questions (taux lissé ${Math.round(100 * smooth(t))} %) : `
           + (weak ? "c'est ton thème le plus fragile." : 'à surveiller, sans être encore un point faible.'),
-        filters: Object.assign({ mode: m, hero: h }, df[d], m === 'gto' ? { family: f } : {}) };
+        filters: Object.assign({ mode: m, hero: h }, df[d], m !== 'exploit' ? { family: f } : {}) };
     } else if (weakest) {
       focus = { kind: 'dimension', label: weakest.label, filters: weakest.filters, examples: [],
         reason_fr: `Ton score le plus bas : ${String(weakest.score_pct).replace('.', ',')} % sur ${weakest.questions} questions.` };
@@ -283,15 +288,15 @@ EXTRA_CSS = """
 
 def build(out, k_gto, k_exp):
     html = open(os.path.join(WEB, 'index.html')).read(); css = open(os.path.join(WEB, 'app.css')).read(); js = open(os.path.join(WEB, 'app.js')).read()
-    data = items(quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT, k_gto, k_exp)
+    data = items(quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT, k_gto, k_exp, field_ref=quiz.DEFAULT_FIELD)
     grids = {}                                                    # grille de stratégie : une par spot, pas une par réponse
     for it in data:
         for r in it['c'].values(): grids[it['q']['spot_id']] = r.pop('range', None)
     blob = base64.b64encode(gzip.compress(json.dumps(dict(items=data, grids=grids), ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
     body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
     body = re.sub(r'<script[^>]*></script>', '', body)
-    gto, exp = quiz.load(quiz.DEFAULT_VERSION)[0]['version'], quiz.load(quiz.DEFAULT_EXPLOIT)[0]['version']
-    note = (f'<p class="demo-note">Version de démonstration : {len(data)} questions tirées des datasets {gto} (GTO) et {exp} (exploitant). '
+    gto, exp, fld = (quiz.load(r)[0]['version'] for r in (quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT, quiz.DEFAULT_FIELD))
+    note = (f'<p class="demo-note">Version de démonstration : {len(data)} questions tirées des datasets {gto} (GTO), {exp} (exploitant) et {fld} (field). '
             'Ta progression reste dans ce navigateur ; tes signalements sont transmis au porteur du projet. Adaptation et administration sont réservées à l\'application complète.</p>')
     body = body.replace('<section id="screen-home" class="screen" aria-labelledby="home-title">',
                         '<section id="screen-home" class="screen" aria-labelledby="home-title">\n      ' + note, 1)
@@ -302,7 +307,7 @@ def build(out, k_gto, k_exp):
     page = (f'<meta charset="utf-8">\n<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
-            f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp))};</script>\n'
+            f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=exp, field=fld))};</script>\n'
             f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
