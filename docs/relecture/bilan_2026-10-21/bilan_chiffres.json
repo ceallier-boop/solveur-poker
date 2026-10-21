@@ -1,0 +1,46 @@
+{
+ "gto": {
+  "version": "2026.10.13-3",
+  "spots": 2528,
+  "questions": 145975
+ },
+ "exploit": {
+  "version": "exploit_field/2026.10.21-2",
+  "questions": 4400
+ },
+ "familles": {
+  "3-handed vs_allin": {
+   "questions": 66948,
+   "servie_pct": 19.9
+  },
+  "3-handed vs_limp": {
+   "questions": 19497,
+   "servie_pct": 13.2
+  },
+  "3-handed first_in": {
+   "questions": 10098,
+   "servie_pct": 12.6
+  },
+  "3-handed vs_raise": {
+   "questions": 35749,
+   "servie_pct": 19.8
+  },
+  "heads-up vs_allin": {
+   "questions": 6105,
+   "servie_pct": 11.6
+  },
+  "heads-up vs_limp": {
+   "questions": 846,
+   "servie_pct": 5.8
+  },
+  "heads-up first_in": {
+   "questions": 2575,
+   "servie_pct": 5.8
+  },
+  "heads-up vs_raise": {
+   "questions": 4157,
+   "servie_pct": 11.2
+  }
+ },
+ "gto_echantillon_corrections": 566
+}
