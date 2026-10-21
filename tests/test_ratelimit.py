@@ -24,15 +24,15 @@ def test_series_creation_is_capped_per_player(client):
 
 def test_ip_cap_and_exemptions(client):
     for _ in range(40): assert client.get('/health').status_code == 200                 # non limitée
-    codes = [client.get('/profiles').status_code for _ in range(31)]
-    assert codes.count(200) == 30 and codes[-1] == 429
+    codes = [client.get('/quiz/next', params={'session_id': 'x'}).status_code for _ in range(31)]
+    assert codes.count(429) == 1 and codes[-1] == 429
 
 
 def test_window_slides(monkeypatch):
     ratelimit.reset(); monkeypatch.setenv('SPINSACADEMY_RATE_LIMIT', '0.1')
-    assert all(ratelimit.check('GET', '/profiles', '1.2.3.4', None, now=t) is None for t in range(30))
-    assert ratelimit.check('GET', '/profiles', '1.2.3.4', None, now=30) == 30
-    assert ratelimit.check('GET', '/profiles', '1.2.3.4', None, now=61) is None          # la première requête est sortie de la fenêtre
+    assert all(ratelimit.check('GET', '/quiz/next', '1.2.3.4', None, now=t) is None for t in range(30))
+    assert ratelimit.check('GET', '/quiz/next', '1.2.3.4', None, now=30) == 30
+    assert ratelimit.check('GET', '/quiz/next', '1.2.3.4', None, now=61) is None          # la première requête est sortie de la fenêtre
     ratelimit.reset()
 
 

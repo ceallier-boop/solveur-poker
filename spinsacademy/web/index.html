@@ -37,7 +37,7 @@
       <p class="lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
       <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
         <button type="button" data-value="gto" aria-pressed="true">GTO</button>
-        <button type="button" data-value="field" aria-pressed="false">Exploitant</button>
+        <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
       </div>
       <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <button class="primary big" id="quick-start">Série recommandée</button>
@@ -83,24 +83,6 @@
             <button type="button" data-value="0-9" aria-pressed="false">Moins de 10 BB</button>
             <button type="button" data-value="10-16" aria-pressed="false">10 à 16 BB</button>
             <button type="button" data-value="17-25" aria-pressed="false">17 à 25 BB</button>
-          </div>
-        </fieldset>
-        <fieldset id="opp-filter" hidden>
-          <legend>Adversaires</legend>
-          <div class="chips" data-name="opponents">
-            <button type="button" data-value="" aria-pressed="true">Joueurs du field</button>
-            <button type="button" data-value="fictifs" aria-pressed="false">Profils fictifs (calcul exact)</button>
-          </div>
-        </fieldset>
-        <fieldset id="profile-filter" hidden>
-          <legend>Profil fictif du vilain</legend>
-          <div class="chips" data-name="profile">
-            <button type="button" data-value="" aria-pressed="true">Tous</button>
-            <button type="button" data-value="nit" aria-pressed="false">Serré</button>
-            <button type="button" data-value="prudent" aria-pressed="false">Prudent</button>
-            <button type="button" data-value="agressif" aria-pressed="false">Agressif</button>
-            <button type="button" data-value="maniac" aria-pressed="false">Maniaque</button>
-            <button type="button" data-value="station" aria-pressed="false">Station d'appel</button>
           </div>
         </fieldset>
         <p class="error" id="home-error" role="alert" tabindex="-1" hidden></p>

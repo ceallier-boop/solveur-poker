@@ -18,7 +18,7 @@ DEPTHS = (('lt10', 'Moins de 10 BB', 0, 9.5), ('10_16', '10 à 16 BB', 9.5, 16.5
 FAMILY_FR = {'first_in': 'Premier à parler', 'vs_limp': 'Face à un limp', 'vs_raise': 'Face à une relance', 'vs_allin': 'Face à un tapis',
              'read': 'Lecture du vilain'}
 TABLE_FR = {'3-handed': '3 joueurs', 'heads-up': 'Heads-up'}
-MODE_FR = {'gto': 'GTO', 'field': 'Exploitant', 'exploit': 'Exploitant (profils fictifs)'}
+MODE_FR = {'gto': 'GTO', 'exploit': 'Exploitant'}
 
 
 def depth_of(stack):
@@ -43,6 +43,7 @@ def compute(rows):
     dims = {'mode': defaultdict(_bucket), 'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
     sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None))
     themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[]))
+    rows = [r for r in rows if quiz.mode_of(r['dataset_version']) in MODE_FR]      # l'ancien mode des profils fictifs (retiré) ne compte plus
     for r in rows:
         _, spots = quiz.load(r['dataset_version']); sp = spots[r['spot_id']]
         fam, hero, table, depth = quiz.family(sp), sp['hero'], sp['table'], depth_of(sp['effective_stack_bb'])
@@ -67,7 +68,7 @@ def compute(rows):
     weakest = min(reliable, key=lambda x: x['score_pct']) if reliable else None
     recurring = sorted(([dict(label=f"{MODE_FR[m]} · {FAMILY_FR[f]} · {h} · {depth_label[d]}", errors=t['errors'], questions=t['questions'],
                               regret_mbb=round(t['regret']), examples=t['examples'],
-                              filters=dict(mode=m, hero=h, **depth_filter[d], **({'family': f} if m != 'exploit' else {})))
+                              filters=dict(mode=m, hero=h, **depth_filter[d], family=f))
                          for (m, f, h, d), t in themes.items() if t['errors'] >= 2]), key=lambda x: (-x['errors'], -x['regret_mbb']))[:3]
     evolution = [dict(session_id=k, date=v['date'], questions=v['questions'], score_pct=round(100 * v['points'] / v['questions'], 1))
                  for k, v in sorted(sessions.items(), key=lambda kv: kv[1]['date'] or '')]
@@ -90,7 +91,7 @@ def focus(themes, weakest, n, depth_label, depth_filter):
         return dict(kind='weak' if weak else 'watch', label=f"{MODE_FR[m]} · {FAMILY_FR[f]} · {h} · {depth_label[dp]}",
                     reason_fr=(f"{t['errors']} erreurs sur {t['questions']} questions (taux lissé {round(100 * d)} %) : "
                                + ("c'est ton thème le plus fragile, les séries adaptées y reviennent." if weak else "à surveiller, sans être encore un point faible.")),
-                    filters=dict(mode=m, hero=h, **depth_filter[dp], **({'family': f} if m != 'exploit' else {})), examples=t['examples'][:1])
+                    filters=dict(mode=m, hero=h, **depth_filter[dp], family=f), examples=t['examples'][:1])
     if weakest:
         return dict(kind='dimension', label=weakest['label'], filters=weakest['filters'], examples=[],
                     reason_fr=f"Ton score le plus bas : {str(weakest['score_pct']).replace('.', ',')} % sur {weakest['questions']} questions.")

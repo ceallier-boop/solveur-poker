@@ -74,3 +74,10 @@ Décision du porteur du projet : le mode des joueurs du field devient le mode **
 - Textes : plus de mention des coachs ni de la marge de précision du moteur dans l'application ; à la place, des éléments théoriques chiffrés (cote du pot et équité contre la range de tapis, fold equity et équité quand il paie, coût du limp et fréquence d'iso, valeur du check sur un limp).
 - Section **« Gérer le postflop »** quand la main peut voir un flop (limp du SB, check du BB) : SPR et seuil d'engagement, position, « ce qui avantage ta main » (paire max, tirages, équité contre la range qui voit le flop, range adverse plafonnée) et « ce qui avantage la range adverse » (flops ratés, kicker faible, avantage de range, mains fortes cachées dans un check ou un limp).
 - Lexique 1.5.0 : SPR, range plafonnée, avantage de range, isoler, rec passif, read.
+
+## Relecture des limps, banque agrandie et retrait de l'ancien mode (21/10/2026, `exploit_field/2026.10.21-1`)
+
+- Relecture des 60 questions « BB face au limp du SB » par trois experts IA : décisions validées, position fausse en heads-up (bloquant), règles R12 / R13 mal justifiées, textes trop longs. Constats et corrections : `docs/relecture/limp_2026-10-21/SYNTHESE.md`.
+- Moteur v4.3 : position selon la table, règles R12 à R15 tirées des stats affichées, stat de call lue à partir de 10 limps, plus de quasi-égalités (moins de 0,05 BB) ni de doublons d'EV, mains isolées à 3 BB par HRC retirées.
+- Banque : 2173 questions (× 4,9 au lieu de × 10 visé) ; au-delà, le rec passif passerait sous 50 %.
+- Ancien mode exploitant (profils fictifs, `exploit_calls`, `/profiles`) retiré du code, des données et de l'interface.

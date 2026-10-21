@@ -1,12 +1,12 @@
 {
- "version": "1.5.0",
- "date": "2026-10-13",
+ "version": "1.6.0",
+ "date": "2026-10-21",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
   "jeu": "Table et format",
   "actions": "Actions",
   "calcul": "Calcul et stratégie",
-  "profils": "Profils exploitants",
+  "profils": "Profils des joueurs",
   "appli": "Dans l'application"
  },
  "terms": [
@@ -404,67 +404,25 @@
     "exploiter",
     "adaptation"
    ],
-   "def": "Mode qui enseigne à s'écarter de l'équilibre pour profiter d'un adversaire qui joue mal : ici un profil fictif qui part à tapis trop ou pas assez souvent par rapport à un joueur équilibré en push/fold (qui ne limpe jamais)."
+   "def": "Mode qui t'apprend à t'écarter de la théorie pour profiter des erreurs des vrais joueurs d'Expresso : tu lis leurs stats, puis tu choisis le coup le plus rentable contre eux."
   },
   {
-   "term": "Profil fictif",
-   "cat": "profils",
-   "match": [
-    "profil fictif",
-    "type de profil",
-    "profil"
-   ],
-   "def": "Adversaire simulé, défini par une règle chiffrée (fréquence de tapis par rapport au GTO). C'est une hypothèse d'entraînement, pas la lecture d'un vrai joueur."
-  },
-  {
-   "term": "Serré (Nit)",
+   "term": "Nit (serré)",
    "cat": "profils",
    "match": [
     "serré",
     "nit"
    ],
-   "def": "Profil qui part à tapis nettement moins souvent qu'un joueur équilibré en push/fold et ne garde que ses tapis les plus rentables : sa range de tapis est plus forte, il faut payer moins large. Badge ▼▼."
+   "def": "Joueur qui joue trop peu de mains : il pousse et paie rarement. Quand il part à tapis, il a une bonne main : paie plus serré, vole-le plus souvent."
   },
   {
-   "term": "Prudent",
+   "term": "Calling station",
    "cat": "profils",
    "match": [
-    "prudent"
-   ],
-   "def": "Profil un peu trop serré : il pousse moins souvent qu'un joueur équilibré en push/fold, sans excès. Badge ▼."
-  },
-  {
-   "term": "Agressif",
-   "cat": "profils",
-   "match": [
-    "agressif"
-   ],
-   "def": "Profil un peu trop agressif : il pousse plus souvent qu'un joueur équilibré en push/fold. Badge ▲."
-  },
-  {
-   "term": "Maniaque (Maniac)",
-   "cat": "profils",
-   "match": [
-    "maniaque",
-    "maniac"
-   ],
-   "def": "Profil qui pousse beaucoup plus souvent qu'un joueur équilibré en push/fold, avec une range plus large, donc en général moins forte : il faut payer beaucoup plus large. Badge ▲▲."
-  },
-  {
-   "term": "Station d'appel",
-   "cat": "profils",
-   "match": [
+    "calling station",
     "station"
    ],
-   "def": "Joueur qui paie trop souvent. C'est souvent un joueur faible (un « fish »), mais un fish n'est pas toujours une station d'appel. Pas encore couvert par les exercices."
-  },
-  {
-   "term": "Shark",
-   "cat": "profils",
-   "match": [
-    "shark"
-   ],
-   "def": "Joueur solide, proche du GTO : rien à exploiter, on s'entraîne en mode GTO."
+   "def": "Joueur qui paie beaucoup trop souvent. Ne le bluffe pas : pousse et mise avec des mains qui battent ses calls."
   },
   {
    "term": "Fréquence de tapis",
@@ -474,24 +432,6 @@
     "part à tapis avec"
    ],
    "def": "Part des mains avec lesquelles un joueur part à tapis dans une situation donnée."
-  },
-  {
-   "term": "Fourchette de reconnaissance",
-   "cat": "profils",
-   "match": [
-    "ce type de profil : tapis",
-    "fourchette"
-   ],
-   "def": "Plage de fréquence de tapis qui correspond à un type de profil dans la situation affichée. Elle aide à ranger un adversaire réel dans un type, avec prudence."
-  },
-  {
-   "term": "Enjeu net, enjeu faible",
-   "cat": "profils",
-   "match": [
-    "enjeu net",
-    "enjeu faible"
-   ],
-   "def": "Ce qui est en jeu dans la décision contre le profil : « enjeu net » quand payer vaut au moins 0,06 BB en plus ou en moins (la limite d'imprécision), « enjeu faible » en dessous. Ne pas confondre avec une « décision serrée », qui parle de la marge d'équité."
   },
   {
    "term": "Bonne réponse, imprécision, erreur",
@@ -511,7 +451,7 @@
     "action de référence",
     "référence"
    ],
-   "def": "Ce que joue le solveur dans la situation : les actions jouées au moins 10 % du temps, arrondies à 5 %. Quand l'EV est calculée exactement (calls de tapis), la référence est l'action la plus rentable. L'action de référence est celle que la stratégie joue le plus, à 0,06 BB près de la plus rentable. En mode exploitant : l'action la plus rentable contre le profil."
+   "def": "Ce que joue le solveur dans la situation : les actions jouées au moins 10 % du temps, arrondies à 5 %. En mode exploitant : le coup le plus rentable contre ce vilain."
   },
   {
    "term": "<0,02 BB",
@@ -548,7 +488,7 @@
     "facile",
     "difficile"
    ],
-   "def": "Pour une question : facile si la moins chère des réponses fausses coûte plus de 1 BB, difficile si elle coûte moins de 0,2 BB, moyen entre les deux. Pour un profil fictif : à quel point sa tendance est facile à repérer (1 facile, 3 difficile)."
+   "def": "Facile si la moins chère des réponses fausses coûte plus de 1 BB, difficile si elle coûte moins de 0,2 BB, moyen entre les deux."
   },
   {
    "term": "Jeton de mise",
@@ -714,7 +654,7 @@
     "rapport tapis / pot"
    ],
    "case": true,
-   "def": "Tapis restant divisé par le pot au flop. Bas (3 ou moins), une paire max ou un bon tirage suffit pour mettre tapis ; plus haut, il faut une main plus forte pour s'engager."
+   "def": "Tapis restant divisé par le pot au flop. À 3 ou moins, une paire max ou un gros tirage suffit pour mettre tapis ; au-dessus, il faut une main plus forte."
   },
   {
    "term": "Range plafonnée",
@@ -723,15 +663,7 @@
     "plafonnée",
     "plafonné"
    ],
-   "def": "Range qui ne contient presque plus de mains fortes, parce que le joueur les aurait relancées ou poussées plus tôt. Contre elle, on peut miser souvent."
-  },
-  {
-   "term": "Avantage de range",
-   "cat": "calcul",
-   "match": [
-    "avantage de range"
-   ],
-   "def": "Équité moyenne d'une range contre l'autre. Celui qui a l'avantage peut miser plus souvent ; l'autre joue surtout ce qui a touché."
+   "def": "Range qui a peu de grosses mains, parce que le joueur les aurait relancées plus tôt. Contre elle, tu peux miser souvent."
   },
   {
    "term": "Isoler (iso)",
@@ -749,7 +681,7 @@
    "match": [
     "rec passif"
    ],
-   "def": "Joueur récréatif qui paie et relance moins que la théorie : le profil le plus fréquent en Expresso, à supposer par défaut tant qu'on n'a pas de read."
+   "def": "Joueur récréatif qui paie et relance moins que la théorie. C'est le joueur le plus fréquent en Expresso : sans info, joue contre lui."
   },
   {
    "term": "Read",
@@ -757,7 +689,32 @@
    "match": [
     "read"
    ],
-   "def": "Information sur un adversaire tirée de ses actions observées. Elle ne vaut que par son nombre d'occasions : quelques mains ne font pas une tendance."
+   "def": "Ce que tu sais d'un adversaire grâce à ses actions passées. Il ne vaut que par le nombre de coups observés : trois coups ne prouvent rien."
+  },
+  {
+   "term": "Reg",
+   "cat": "profils",
+   "match": [
+    "reg"
+   ],
+   "case": true,
+   "def": "Joueur régulier et solide, proche de la théorie. Rien à exploiter : joue la théorie."
+  },
+  {
+   "term": "Dégène",
+   "cat": "profils",
+   "match": [
+    "dégène"
+   ],
+   "def": "Joueur très agressif qui pousse et relance beaucoup trop. Paie plus large contre lui, et folde le bas de ta range quand il relance tout."
+  },
+  {
+   "term": "Pastille",
+   "cat": "profils",
+   "match": [
+    "pastille"
+   ],
+   "def": "Étiquette que tu poses sur un adversaire (rec passif, reg, calling station, dégène, nit) d'après ses stats."
   }
  ]
 }

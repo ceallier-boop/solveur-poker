@@ -15,9 +15,6 @@ const store = {
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
 const gainBB = (mbb) => { const a = Math.abs(mbb);                 // gains toujours en BB ; 3 décimales autour de 0,06 BB (limite d'imprécision)
   return a < 20 ? '<0,02 BB' : Math.abs(a - 60) < 5 ? (a / 1000).toFixed(3).replace('.', ',') + ' BB' : bb(a / 1000) + ' BB'; };
-// profils fictifs : symbole (sens et force de l'écart de tapis avec le GTO) et couleur, pour les reconnaître d'un coup d'œil
-const PROFILE_VIS = { nit: '▼▼', prudent: '▼', agressif: '▲', maniac: '▲▲', station: '◆' };
-const pbadge = (pr, small) => `<span class="pbadge p-${pr.id}${small ? ' sm' : ''}" aria-hidden="true">${PROFILE_VIS[pr.id] || '?'}</span>`;
 const pc = (x) => String(x).replace('.', ',') + ' %';
 
 // identifiant anonyme de l'appareil (mode invité) : relie les séries d'un même joueur pour les statistiques
@@ -62,17 +59,11 @@ function confirmTwice(btn, question) {                              // 1er appui
 function progress(text) { $('progress').textContent = text || ''; }
 
 // ------------------------------------------------------------------ accueil
-// deux modes à l'accueil : GTO et Exploitant ; l'exploitant joue contre les joueurs du field (mode « field »), ou, en option,
-// contre les profils fictifs en calcul exact (mode « exploit »)
-function mode() {
-  const m = document.querySelector('.mode-switch [aria-pressed="true"]').dataset.value;
-  if (m === 'gto') return 'gto';
-  return document.querySelector('.chips[data-name="opponents"] [aria-pressed="true"]').dataset.value === 'fictifs' ? 'exploit' : 'field';
-}
+function mode() { return document.querySelector('.mode-switch [aria-pressed="true"]').dataset.value; }   // gto ou exploit (joueurs du field)
 function filters() {
   const f = {};
   for (const group of document.querySelectorAll('.filters .chips')) {
-    if (group.closest('fieldset').hidden || group.dataset.name === 'opponents') continue;   // adversaires : choisit le mode, pas un filtre
+    if (group.closest('fieldset').hidden) continue;
     const v = group.querySelector('[aria-pressed="true"]').dataset.value;
     if (!v) continue;
     if (group.dataset.name === 'depth') { const [a, b] = v.split('-').map(Number); f.min_stack = a; f.max_stack = b + 0.5; }
@@ -133,8 +124,7 @@ function renderTable(q) {
     seat.className = 'seat' + (i === hero ? ' hero' : '') + (folded[i] ? ' folded' : '');
     seat.style.left = x + '%'; seat.style.top = y + '%';
     const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
-    const tag = q.profile && q.villain && q.villain.position === q.players[i] ? pbadge(q.profile, true) : '';   // profil du vilain à sa place
-    seat.innerHTML = tag + backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(q.stacks_bb[i])} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
+    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(q.stacks_bb[i])} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
     view.appendChild(seat);
     if (c[i] > 0 && kind[i]) view.appendChild(chip(kind[i], c[i], ...chips[k]));     // un joueur couché laisse sa mise devant lui
   }
@@ -162,7 +152,7 @@ function renderQuestion(data) {
   const q = state.q;
   progress(`Question ${state.index + 1} / ${state.size}`);
   renderTable(q); renderCards(q.hand_display);
-  const noHand = !q.hand || !!(q.field && q.field.ask_fr); $('hero-cards').hidden = noHand;   // mode Field : questions de lecture, sans main
+  const noHand = !q.hand || !!(q.field && q.field.ask_fr); $('hero-cards').hidden = noHand;   // questions de lecture du vilain : sans main
   for (const id of ['seat-line', 'table-view', 'chip-legend', 'history']) $(id).hidden = noHand;   // pas de coup joué : ni table ni historique
   $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
@@ -170,23 +160,8 @@ function renderQuestion(data) {
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   $('ask').innerHTML = !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}\uFE0E</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
   $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
-  const v = q.villain; $('villain').hidden = !v && !q.field;
-  const pr = q.profile;
-  $('villain').className = 'villain';
+  $('villain').hidden = !q.field; $('villain').className = 'villain';
   if (q.field) renderFieldStats(q.field, noHand ? q.prompt_fr.split('\n').filter((l) => !/^Sur \d+ occasions|\?$/.test(l)).join(' ') : '');
-  else if (v) {
-    const [lo, hi] = (pr && pr.band_pct) || [null, null];
-    const top = Math.min(100, Math.max(v.observed_pct, v.gto_pct, hi || 0) * 1.15);
-    const w = (x) => (100 * x / top).toFixed(1) + '%';
-    const zone = pr && pr.band_pct ? `<u style="left:${w(lo || 0)};width:${(100 * ((hi == null ? top : hi) - (lo || 0)) / top).toFixed(1)}%"></u>` : '';
-    const bar = (label, x, cls, z) => `<div class="vbar ${cls}"><span>${label}</span><em>${z || ''}<i style="width:${w(x)}"></i></em><b>${bb(x)} %</b></div>`;
-    const bandTxt = lo == null ? `moins de ${bb(hi)} %` : hi == null ? `plus de ${bb(lo)} %` : `entre ${bb(lo)} et ${bb(hi)} %`;
-    $('villain').innerHTML = (pr ? `<div class="vhead">${pbadge(pr)}<span>Profil fictif · <b>${pr.name_fr}</b></span></div><small>${pr.description_fr}</small>` : '')
-      + `<p class="vstat">${v.stat === 'call_pct' ? `Calls du ${v.position} face à un tapis` : `Tapis du ${v.position}`} dans cette situation :</p>${bar(pr ? pr.name_fr.split(' (')[0] : v.position, v.observed_pct, 'obs', zone)}${bar(v.reference === 'nash_pushfold' ? 'Équilibre' : 'GTO', v.gto_pct, 'gto')}`
-      + (pr && pr.band_pct ? `<p class="vband"><span class="swatch"></span>Ce type de profil : ${v.stat === 'call_pct' ? 'paie' : 'tapis'} ${bandTxt} des mains ici.</p>` : '')
-      + (pr && pr.recognize ? `<details class="recognize"><summary>Reconnaître ce profil</summary><ul>${pr.recognize.signs_fr.map((x) => `<li>${x}</li>`).join('')}</ul>`
-        + (pr.recognize.sample_fr ? `<p>${pr.recognize.sample_fr}</p>` : '') + `<p class="caution">${pr.recognize.caution_fr}</p></details>` : '');
-  }
   const box = $('actions'); box.innerHTML = '';
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
@@ -228,13 +203,14 @@ async function answer(id) {
     const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id }) });
     renderAnswer(r);
   } catch (e) {
+    if (!e.status) console.error(e);                              // erreur d'affichage : visible dans la console
     for (const b of $('actions').querySelectorAll('button')) b.disabled = false;
     notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id) : null);
   } finally { state.busy = false; }
 }
 
 function renderAnswer(r) {
-  const [cls, title] = VERDICT[r.verdict]; const ex0 = !!r.exploit;
+  const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
   const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${r.best_label}.` : `Ta lecture : ${r.chosen_label}\nLa bonne : ${r.best_label}`)
@@ -243,29 +219,24 @@ function renderAnswer(r) {
     : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nRéférence : ${r.best_label}`;
   v.innerHTML = title + `<small>${sub}</small>`;
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
-  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').split('\n').filter((l) => !l.startsWith('Profil fictif')).join('\n');
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
   $('a-strategy').innerHTML = r.strategy.map((s) =>
     `<div class="srow${s.id === r.best_action ? ' best' : ''}${s.chosen ? ' mine' : ''}"><span>${s.label_fr}</span><span class="pct">${s.pct} %</span><div class="sbar"><i style="width:${s.pct}%"></i></div></div>`).join('');
-  const ex = r.exploit, fd = r.field; $('a-exploit').hidden = !ex && !fd;
-  for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!ex || !!fd;   // exploitant, field : correction courte
+  const fd = r.field; $('a-exploit').hidden = !fd;
+  for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!fd;         // exploitant : correction courte
   if (fd) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${fd.read ? 'Bonne lecture' : 'Contre ce vilain'}${fd.gain_fr ? `<span class="conf net">${fd.gain_fr} de plus que la théorie</span>` : ''}</dt><dd>${escT(r.best_label)}</dd></div>`
       + (fd.gto_label ? `<div><dt>En théorie (HRC)</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')
-      + (fd.evs.length ? `<div><dt>EV par rapport au fold</dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
+      + (fd.evs.length ? `<div><dt>Gain par rapport au fold <small>(HRC, ajusté à ce vilain)</small></dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
       + `<p class="note">${fd.type_fr} · règle ${fd.rule}</p>`;
-  } else if (ex) {
-    $('a-exploit').innerHTML = `<div class="ref"><dt>${pbadge(ex.profile, true)} Contre ce type de profil · <b>${ex.profile.name_fr}</b><span class="conf ${ex.confidence === 'élevée' ? 'net' : ''}">${ex.confidence_fr}</span></dt><dd>${ex.reference_fr}</dd></div>`
-
-      + `<div><dt>Par rapport au GTO</dt><dd>${ex.comparison_fr}</dd></div><p class="note">${ex.note_fr}</p>`;
   }
-  $('a-explanation').hidden = !!ex; $('a-explanation').textContent = r.core_fr || r.explanation_fr;
-  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '').split('\n').filter((l) => !l.startsWith('Profil fictif')).join('\n');
+  $('a-explanation').hidden = false; $('a-explanation').textContent = r.core_fr || r.explanation_fr;
+  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
   const why = r.why_fr || []; $('a-why-box').hidden = !why.length; $('a-why-box').open = false;
   $('a-why').innerHTML = why.map((l) => `<p>${l}</p>`).join('');
   renderNext(r.next);
-  $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, !!ex);
+  $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, false);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   show('answer'); v.focus({ preventScroll: true });
@@ -285,7 +256,7 @@ function renderNext(n) {
   const list = (xs, cls, title) => (xs && xs.length ? `<h4 class="${cls}">${title}</h4><ul class="${cls}">${xs.map((x) => `<li>${x}</li>`).join('')}</ul>` : '');
   $('a-next').innerHTML = `<p>${n.intro}</p>` + (n.position ? `<p class="pos">${n.position}</p>` : '')
     + (rows ? `<div class="metrics"><p class="mhead">Au flop, comparé à la moyenne ${n.metrics[0].reference_fr} (repère vertical) :</p>${rows}</div>` : '')
-    + list(n.forces, 'plus', n.plus_fr || 'Forces') + list(n.weaknesses, 'minus', n.minus_fr || 'Faiblesses');
+    + list(n.plan, 'plan', n.plan_fr || 'Ton plan') + list(n.forces, 'plus', n.plus_fr || 'Forces') + list(n.weaknesses, 'minus', n.minus_fr || 'Faiblesses');
   $('a-next-title').textContent = n.title_fr || 'Potentiel de la main au flop';
 }
 
@@ -393,7 +364,7 @@ async function stats() {
 }
 
 async function adaptation() {
-  const modes = { gto: 'GTO', exploit: 'Exploitant (profils fictifs)' }; const parts = []; let first = null;   // le mode Field n'a pas de série adaptée
+  const modes = { gto: 'GTO' }; const parts = []; let first = null;   // pas de série adaptée en mode exploitant
   for (const m of Object.keys(modes)) {
     let a; try { a = await api(`/users/me/adaptation?mode=${m}`); } catch (e) { continue; }       // mode sans dataset publié : ignoré
     first = first || a;
@@ -500,16 +471,13 @@ async function reviews() {
     $('review-note').hidden = false;
   }
 }
-const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
-  field: "Contre les joueurs réels d'Expresso, de 4 à 12 BB : sans information, le vilain est un rec passif (il paie et relance moins que la théorie) ; ses statistiques observées (k sur n) disent s'il pousse, complète ou paie trop.",
-  exploit: "Profils fictifs, en calcul exact : payer ou non un tapis de joueurs qui poussent moins ou plus souvent qu'un joueur équilibré en push/fold (Serré, Prudent, Agressif, Maniaque), ou pousser contre un joueur qui paie trop (Station d'appel). Hypothèses de simulation, pas de vrais joueurs." };
-const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'vs_allin', 'first_in'],    // calls de tapis et tapis du SB
-  field: ['', 'first_in', 'vs_limp', 'vs_allin', 'read'] };        // field : tapis, limps, calls de tapis, lecture du vilain
-const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'], field: ['', '0-9', '10-16'] };   // field : 4 à 12 BB
+const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
+  exploit: "Contre les vrais joueurs d'Expresso (4 à 12 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, complète ou paie trop." };
+const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_allin', 'read'] };
+const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16'] };   // exploitant : 4 à 12 BB
 function onMode() {
   reviews();
-  $('opp-filter').hidden = mode() === 'gto';
-  $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';
+  $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
     for (const b of grp.querySelectorAll('button')) {
@@ -520,7 +488,6 @@ function onMode() {
   }
 }
 document.querySelector('.mode-switch').addEventListener('click', onMode);
-document.querySelector('.chips[data-name="opponents"]').addEventListener('click', onMode);
 $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });

@@ -1,0 +1,61 @@
+﻿id;engine_id;format;stack;main;type;profil_interne;reponse;gto
+L01;3w-6-255206;3w;6;KQs;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L02;3w-6-41b48d;3w;6;KJs;adaptation;Calling station;Tapis (6 BB);Check
+L03;3w-6-484bfe;3w;6;J7o;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L04;3w-6-50e18e;3w;6;Q7s;échantillon;Dégène;Tapis (6 BB);Tapis (6 BB)
+L05;3w-6-8c961c;3w;6;K7s;piège;Rec passif (défaut);Tapis (6 BB);Tapis (6 BB)
+L06;3w-6-8d8aa9;3w;6;Q5o;échantillon;Dégène;Tapis (6 BB);Tapis (6 BB)
+L07;3w-6-8e1c5e;3w;6;87s;échantillon;Nit;Check;Check
+L08;3w-6-9e2980;3w;6;K7s;échantillon;Dégène;Tapis (6 BB);Tapis (6 BB)
+L09;3w-6-b27e8b;3w;6;Q8s;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L10;3w-6-c4f8db;3w;6;J8s;piège;Reg;Check;Check
+L11;3w-6-c8b880;3w;6;T9s;inconnu;Rec passif (défaut);Tapis (6 BB);Check
+L12;3w-6-f3795e;3w;6;QTo;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L13;3w-6-f8ebe2;3w;6;Q7o;adaptation;Dégène;Check;Tapis (6 BB)
+L14;3w-8-07cf77;3w;8;82s;piège;Reg;Check;Check
+L15;3w-8-093d9b;3w;8;76o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L16;3w-8-1120ec;3w;8;J2s;piège;Rec passif (défaut);Tapis (8 BB);Tapis (8 BB)
+L17;3w-8-146417;3w;8;95s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L18;3w-8-292f41;3w;8;J5o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L19;3w-8-40f1fa;3w;8;32s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L20;3w-8-76b6ef;3w;8;K6o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L21;3w-8-9167bd;3w;8;T5s;adaptation;Nit;Tapis (8 BB);Check
+L22;3w-8-96340f;3w;8;Q9o;inconnu;Rec passif (défaut);Tapis (8 BB);Check
+L23;3w-8-a7b0ed;3w;8;T5s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L24;3w-8-abe16b;3w;8;96s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L25;3w-8-b09169;3w;8;64o;inconnu;Rec passif (défaut);Tapis (8 BB);Check
+L26;3w-8-b1b2cd;3w;8;K8o;piège;Rec passif (défaut);Tapis (8 BB);Tapis (8 BB)
+L27;3w-8-b67d24;3w;8;K5o;échantillon;Dégène;Tapis (8 BB);Tapis (8 BB)
+L28;3w-8-b8cec1;3w;8;54o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L29;3w-8-d5bc5f;3w;8;87s;échantillon;Nit;Check;Check
+L30;3w-8-f96070;3w;8;T9o;piège;Dégène;Check;Check
+L31;hu-6-0141c5;hu;6;KTs;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L32;hu-6-0e5487;hu;6;K3s;échantillon;Dégène;Tapis (6 BB);Tapis (6 BB)
+L33;hu-6-145002;hu;6;84s;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L34;hu-6-20ffc0;hu;6;J7o;adaptation;Calling station;Tapis (6 BB);Check
+L35;hu-6-26d262;hu;6;K4s;adaptation;Dégène;Check;Tapis (6 BB)
+L36;hu-6-37c9cf;hu;6;33;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L37;hu-6-43f2cc;hu;6;KK;échantillon;Calling station;Check;Check
+L38;hu-6-55a1ad;hu;6;97s;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L39;hu-6-72312e;hu;6;43o;inconnu;Rec passif (défaut);Tapis (6 BB);Check
+L40;hu-6-7cbc8b;hu;6;JTs;adaptation;Rec passif (défaut);Tapis (6 BB);Check
+L41;hu-6-c16b4d;hu;6;Q3o;piège;Calling station;Tapis (6 BB);Tapis (6 BB)
+L42;hu-6-c9f748;hu;6;AA;piège;Reg;Check;Check
+L43;hu-6-dc32ae;hu;6;62s;adaptation;Nit;Tapis (6 BB);Check
+L44;hu-6-f01be8;hu;6;87s;inconnu;Rec passif (défaut);Tapis (6 BB);Check
+L45;hu-8-05b86b;hu;8;86s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L46;hu-8-08091e;hu;8;62s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L47;hu-8-385234;hu;8;QJs;échantillon;Calling station;Check;Check
+L48;hu-8-3ac475;hu;8;86s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L49;hu-8-4434e3;hu;8;T3s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L50;hu-8-53541b;hu;8;76o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L51;hu-8-7e0881;hu;8;A6o;piège;Dégène;Tapis (8 BB);Tapis (8 BB)
+L52;hu-8-815d33;hu;8;K9s;piège;Rec passif (défaut);Tapis (8 BB);Tapis (8 BB)
+L53;hu-8-8cc126;hu;8;63s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L54;hu-8-93de5b;hu;8;T5o;inconnu;Rec passif (défaut);Tapis (8 BB);Check
+L55;hu-8-b65676;hu;8;72o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L56;hu-8-ba67db;hu;8;J6o;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L57;hu-8-d32712;hu;8;94s;échantillon;Dégène;Tapis (8 BB);Tapis (8 BB)
+L58;hu-8-fc150f;hu;8;86s;adaptation;Rec passif (défaut);Tapis (8 BB);Check
+L59;hu-10-0852d9;hu;10;T4o;adaptation;Nit;Tapis (10 BB);Check
+L60;hu-10-85856f;hu;10;AKo;piège;Calling station;Tapis (10 BB);Tapis (10 BB)

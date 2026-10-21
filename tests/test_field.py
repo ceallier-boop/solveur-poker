@@ -28,7 +28,7 @@ def test_dataset_is_valid_and_hides_internal_profile():
         h = next(iter(sp['hands'])); q = quiz.question(quiz.DEFAULT_FIELD, sp['spot_id'], h)
         blob = json.dumps(q, ensure_ascii=False)
         assert 'internal_profile' not in blob and sp['field']['internal_profile'] not in q['prompt_fr']
-        assert 'correct' not in q['field'] and 'mBB' not in blob and q['mode'] == 'field'
+        assert 'correct' not in q['field'] and 'mBB' not in blob and q['mode'] == 'exploit'
         for o in sp['field']['options']:
             r = quiz.correct(quiz.DEFAULT_FIELD, sp['spot_id'], h, o['id'])
             assert 'mBB' not in r['explanation_fr'] + ' '.join(r['why_fr'])                      # montants en BB, jamais en mBB
@@ -70,12 +70,12 @@ def test_catalog_validates_field_dataset():
 
 
 def test_field_series_api(client):
-    r = client.post('/sessions', json={'mode': 'field', 'seed': 7}, headers=H)
+    r = client.post('/sessions', json={'mode': 'exploit', 'seed': 7}, headers=H)
     assert r.status_code == 201 and r.json()['dataset_version'].startswith('exploit_field/') and r.json()['adaptive'] is None
     sid = r.json()['session_id']; traps = reads = 0; hands = []
     for i in range(5):
         q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
-        assert q['mode'] == 'field' and q['field']['type_fr'] and q['options']
+        assert q['mode'] == 'exploit' and q['field']['type_fr'] and q['options']
         traps += q['field']['type'] in ('piège', 'échantillon'); reads += q['field']['type'] in field.READ
         if q['field']['type'] not in field.READ: hands.append(q['hand'])
         a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': q['options'][-1]['id']}).json()
@@ -87,12 +87,12 @@ def test_field_series_api(client):
     s = client.get(f'/sessions/{sid}/summary').json(); assert s['complete'] and s['questions'] == 5
     st = client.get('/users/me/stats', headers=H).json()
     assert any(x['label'] == 'Exploitant' for x in st['by']['mode'])
-    assert client.get('/users/me/reviews', params={'mode': 'field'}, headers=H).status_code == 200
-    f = client.post('/sessions', json={'mode': 'field', 'seed': 2, 'filters': {'family': 'read'}}, headers=H)
+    assert client.get('/users/me/reviews', params={'mode': 'exploit'}, headers=H).status_code == 200
+    f = client.post('/sessions', json={'mode': 'exploit', 'seed': 2, 'filters': {'family': 'read'}}, headers=H)
     assert f.status_code == 201                                          # série « lecture du vilain » : pas de plafond de lecture
     q = client.get('/quiz/next', params={'session_id': f.json()['session_id']}).json()['question']
     assert q['field']['type'] in field.READ and q['field']['ask_fr']
-    g = client.post('/sessions', json={'mode': 'field', 'seed': 2, 'filters': {'table': 'heads-up', 'hero': 'SB'}}, headers=H).json()
+    g = client.post('/sessions', json={'mode': 'exploit', 'seed': 2, 'filters': {'table': 'heads-up', 'hero': 'SB'}}, headers=H).json()
     q = client.get('/quiz/next', params={'session_id': g['session_id']}).json()['question']
     assert q['table'] == 'heads-up' and q['hero'] == 'SB'
 
@@ -110,13 +110,13 @@ def test_engine_v4_2_checks():
 
 
 def test_profiles_follow_field_shares():
-    """v4.2 : chaque profil au plus à sa part dans le field ; le rec passif (profil par défaut) complète la banque"""
+    """v4.3 : chaque profil proche de sa part dans la banque de référence (440 questions) ; le rec passif reste majoritaire"""
     sys.path.insert(0, os.path.join(ROOT, 'tools', 'field'))
     import profils_field as pf, quiz_generator as qg
     from collections import Counter
     F = [s['field'] for s in _spots().values()]; c = Counter(f['internal_profile'] for f in F); n = len(F)
-    for p in pf.PROFILES:
-        if p != pf.DEFAULT: assert c[p] <= round(qg.N_TARGET * pf.prevalence(p)) + 1, (p, c[p])
+    for p, k in qg.REF_SHARES['profil'].items():
+        if p != pf.DEFAULT: assert abs(c[p] / n - k / qg.REF_N) <= 0.06, (p, c[p] / n)
     assert c[pf.DEFAULT] / n >= 0.5                                        # le rec passif domine, comme dans le field
 
 
@@ -138,6 +138,8 @@ def test_limp_situations_theory_and_postflop():
                 assert any("d'équité" in l for l in r['why_fr'])                                # éléments théoriques chiffrés
             if any(x['id'] in ('L', 'X') for x in sp['field']['options']) and sp['field']['type'] not in field.READ:
                 n = r['next']; assert n and n['title_fr'] == 'Gérer le postflop' and n['plus_fr'] and n['minus_fr']
-                assert 'SPR' in n['intro'] and (n['forces'] or n['weaknesses'])
+                assert 'SPR' in n['intro'] and n['forces'] and len(n['plan']) == 3
+                hu_bb = sp['table'] == 'heads-up' and sp['hero'] == 'BB'
+                assert ('premier' in n['position']) == (hu_bb or (sp['table'] == '3-handed' and sp['hero'] == 'SB'))   # heads-up : le SB est au bouton
             elif sp['field']['type'] not in field.READ:
                 assert r['next'] is None                                                        # tout à tapis : pas de postflop

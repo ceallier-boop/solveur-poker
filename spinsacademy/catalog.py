@@ -1,13 +1,13 @@
 """Cycle de vie des datasets (cahier des charges §2, §13.1 et §16) : contrôle, publication, retrait.
 
 Un dataset est un dossier immuable data/datasets/<dataset>/<version> (manifest.json + spots.jsonl) produit hors ligne
-par spinsacademy.importer (GTO) ou spinsacademy.exploit (exploitant) : c'est l'import, en « staging ».
+par spinsacademy.importer (GTO) ou spinsacademy.field (exploitant) : c'est l'import, en « staging ».
 Son statut vit dans la base de l'application (table datasets) :
   staging  -> validated (contrôles passés) | rejected (au moins un contrôle bloquant en échec)
   validated -> published : la version servie aux nouvelles séries ; l'ancienne version publiée devient « retired »
   published / retired / validated -> disabled : retrait immédiat (motif obligatoire)
   retired / disabled -> published : retour arrière, si le rapport de contrôle est toujours valable (fichiers inchangés)
-Une seule version publiée par dataset. Un dataset exploitant ne peut être publié que si son dataset GTO source l'est.
+Une seule version publiée par dataset.
 Les séries déjà commencées gardent leur version pour la correction ; une version retirée (disabled) ne sert plus de
 question. Chaque action est inscrite au journal d'administration (acteur, date, motif).
 """
@@ -16,7 +16,7 @@ import numpy as np
 from . import quiz
 from .cards import NAMES
 
-KINDS = ('gto_preflop', 'exploit_calls', 'exploit_field')
+KINDS = ('gto_preflop', 'exploit_field')
 STATUS_FR = {'staging': 'À contrôler', 'validated': 'Contrôlé', 'rejected': 'Refusé au contrôle', 'published': 'Publié',
              'retired': 'Remplacé', 'disabled': 'Retiré'}
 SCHEMA = """
@@ -59,7 +59,7 @@ def _check(cid, label, ok, details='', blocking=True, count=None):
                 details_fr=details, count=count)
 
 
-def _spot_problems(sp, manifest, exploit):
+def _spot_problems(sp, manifest):
     """liste des anomalies d'un spot (chaînes en français)"""
     p = []
     for k in ('spot_id', 'table', 'players', 'stacks_bb', 'hero', 'node_key', 'history', 'pot_bb', 'to_call_bb', 'actions', 'ev_reference', 'hands'):
@@ -87,7 +87,7 @@ def _spot_problems(sp, manifest, exploit):
         eligible += 1
         ev = x.get('ev_exact') if sp['ev_reference'] == 'exact' else x.get('ev_hrc')
         if ev is None or len(ev) != n or any(e is None or not np.isfinite(e) for e in ev): bad_ev += 1
-        if x['reach'] < min_reach - 1e-9 or (not exploit and max_regret is not None and x.get('hrc_self_regret_mbb', 0) > max_regret + 1e-9): bad_rule += 1
+        if x['reach'] < min_reach - 1e-9 or (max_regret is not None and x.get('hrc_self_regret_mbb', 0) > max_regret + 1e-9): bad_rule += 1
         elif manifest.get('max_mixed_regret_mbb') is not None and ev is not None and all(e is not None for e in ev) and x.get('freq'):
             if any(f >= manifest['mixed_min'] and 1000 * (max(ev) - ev[j]) > manifest['max_mixed_regret_mbb'] + 1e-6 for j, f in enumerate(x['freq'])): bad_rule += 1
     if bad_norm: p.append(f'{bad_norm} mains aux fréquences non normalisées')
@@ -95,7 +95,6 @@ def _spot_problems(sp, manifest, exploit):
     if bad_rule: p.append(f'{bad_rule} mains proposables hors des règles d\'éligibilité du manifeste')
     if eligible == 0: p.append('aucune main proposable')
     if sp.get('eligible_hands') != eligible: p.append('compte de mains proposables incohérent')
-    if exploit and not sp.get('villain'): p.append('profil du vilain manquant')
     return p
 
 
@@ -118,10 +117,7 @@ def _rebuild(ref, manifest, spots):
                 return None, 'exports HRC absents de ce poste : reconstruction non exécutée'
             rebuilt = {sp['spot_id']: sp for sp in field.build(manifest.get('seed', field.SEED))}
         else:
-            from . import exploit
-            if manifest.get('builder') != exploit.BUILDER_VERSION:
-                return None, f"générateur {manifest.get('builder')} ≠ version actuelle {exploit.BUILDER_VERSION} : reconstruction non comparable"
-            rebuilt = {sp['spot_id']: sp for sp in exploit.build(manifest['source_gto_dataset'])[1]}
+            return None, f'dataset {ds} inconnu'
     except Exception as e:                                  # source illisible : on le dit, on ne bloque pas en silence
         return False, f'reconstruction impossible : {e}'
     norm = lambda o: json.loads(json.dumps(o))
@@ -150,8 +146,8 @@ def validate(ref, statuses=None):
     checks.append(_check('count', 'Nombre de spots conforme au manifeste', len(rows) == manifest.get('spots'), f'{len(rows)} spots', count=len(rows)))
     dup = len(ids) - len(set(ids))
     checks.append(_check('duplicates', 'Aucun spot en double', dup == 0, f'{dup} doublons' if dup else 'aucun doublon'))
-    exploit = ds == 'exploit_calls'; problems = {}
-    if ds == 'exploit_field':                             # questions fixes du mode Field (spinsacademy.field)
+    problems = {}
+    if ds == 'exploit_field':                             # questions fixes du mode exploitant (spinsacademy.field)
         from . import field
         for sp in rows:
             pr = field.problems(sp)
@@ -165,7 +161,7 @@ def validate(ref, statuses=None):
         checks.append(_check('rebuild', 'Test de référence : reconstruction depuis les exports HRC', ok is True, detail, blocking=ok is not None))
         return _report(ref, checks, sha)
     for sp in rows:
-        pr = _spot_problems(sp, manifest, exploit)
+        pr = _spot_problems(sp, manifest)
         if pr: problems[sp.get('spot_id')] = pr
     first = next(iter(problems.items()), None)
     checks.append(_check('spots', 'Chaque spot est complet, légal et noté sur des données valides', not problems,
@@ -173,22 +169,6 @@ def validate(ref, statuses=None):
                          count=len(problems)))
     elig = sum(sp.get('eligible_hands', 0) for sp in rows)
     checks.append(_check('questions', 'Questions proposables conformes au manifeste', elig == manifest.get('questions_eligible'), f'{elig} questions', count=elig))
-    if exploit:
-        src = full_ref(manifest.get('source_gto_dataset', ''))
-        try:
-            _, gto = quiz.load(src); orphans = [s for s in rows if s.get('base_spot_id') not in gto]
-            checks.append(_check('source', 'Chaque spot exploitant renvoie à un spot du dataset GTO source', not orphans, f'source {src} ; {len(orphans)} orphelins'))
-        except (OSError, ValueError):
-            checks.append(_check('source', 'Dataset GTO source présent', False, f'{src} introuvable'))
-        from . import profiles
-        try:
-            cat = profiles.catalog(); none = [s['spot_id'] for s in rows if not profiles.for_villain(s.get('villain'))]
-            checks.append(_check('profiles', 'Chaque spot exploitant correspond à un profil fictif du catalogue', not none,
-                                 f"catalogue {cat['version']} ; {len(none)} spots sans profil" + (f' (premier : {none[0]})' if none else '')))
-        except FileNotFoundError as e:
-            checks.append(_check('profiles', 'Catalogue des profils fictifs présent', False, str(e)))
-        st = (statuses or {}).get(src)
-        checks.append(_check('source_status', 'Dataset GTO source publié', st == 'published', f'{src} : {STATUS_FR.get(st, "non enregistré")}', blocking=False))
     ok, detail = _rebuild(ref, manifest, spots)
     checks.append(_check('rebuild', 'Test de référence : reconstruction depuis les sources', ok is True, detail, blocking=ok is not None))
     return _report(ref, checks, sha)
@@ -256,9 +236,6 @@ def publish(con, ref, actor, reason):
     path = os.path.join(quiz.ref_path(ref), 'spots.jsonl')
     if not os.path.isfile(path): raise LifecycleError('fichiers du dataset absents de ce serveur')
     if _sha(path) != r['spots_sha256']: raise LifecycleError('fichiers modifiés depuis le contrôle : recontrôler')
-    if r['dataset'] == 'exploit_calls':
-        m = json.load(open(os.path.join(quiz.ref_path(ref), 'manifest.json')))
-        if status_of(con, m['source_gto_dataset']) != 'published': raise LifecycleError(f"le dataset GTO source {full_ref(m['source_gto_dataset'])} n'est pas publié")
     prev = active(con, r['dataset'])
     if prev and prev != ref:
         con.execute("UPDATE datasets SET status = 'retired', updated_at = ?, actor = ?, reason = ? WHERE ref = ?", (_now(), actor, f'remplacé par {ref}', prev))
@@ -271,19 +248,13 @@ def disable(con, ref, actor, reason):
     if r['status'] == 'disabled': raise LifecycleError('déjà retiré')
     con.execute("UPDATE datasets SET status = 'disabled', updated_at = ?, actor = ?, reason = ? WHERE ref = ?", (_now(), actor, reason, ref))
     dependants = []
-    if r['dataset'] == 'gto_preflop':                       # un exploitant publié dont la source est retirée est retiré aussi
-        for x in con.execute("SELECT ref FROM datasets WHERE dataset = 'exploit_calls' AND status = 'published'").fetchall():
-            m = json.load(open(os.path.join(quiz.ref_path(x[0]), 'manifest.json')))
-            if full_ref(m['source_gto_dataset']) == ref:
-                con.execute("UPDATE datasets SET status = 'disabled', updated_at = ?, actor = ?, reason = ? WHERE ref = ?",
-                            (_now(), actor, f'source {ref} retirée : {reason}', x[0])); dependants.append(x[0])
     return dependants
 
 
 def listing(con):
     sync(con); out = []
     manifests = dict(folders())
-    for r in con.execute("SELECT * FROM datasets ORDER BY dataset = 'exploit_calls', version DESC"):
+    for r in con.execute("SELECT * FROM datasets WHERE dataset IN (%s) ORDER BY dataset = 'exploit_field', version DESC" % ','.join('?' * len(KINDS)), KINDS):
         m = manifests.get(r['ref'], {}); rep = json.loads(r['report']) if r['report'] else None
         out.append(dict(ref=r['ref'], dataset=r['dataset'], version=r['version'], status=r['status'], status_fr=STATUS_FR[r['status']],
                         on_disk=r['ref'] in manifests, created_at=m.get('created_at'), spots=m.get('spots'), questions=m.get('questions_eligible'),

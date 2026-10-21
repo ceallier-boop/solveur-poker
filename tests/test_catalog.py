@@ -4,7 +4,8 @@ from fastapi.testclient import TestClient
 from spinsacademy import catalog, quiz
 
 ADMIN = {'X-Admin-Token': 'jeton-de-test'}
-GTO, OLD, EXP = 'gto_preflop/2026.10.13-3', 'gto_preflop/2026.10.12-1', 'exploit_calls/2026.10.13-4'
+GTO, OLD = 'gto_preflop/2026.10.13-3', 'gto_preflop/2026.10.12-1'
+EXP = quiz.DEFAULT_FIELD
 
 
 @pytest.fixture()
@@ -53,7 +54,7 @@ def test_tampered_file_is_rejected(copy):
 
 def test_nothing_is_served_before_publication(client):
     assert client.post('/sessions', json={}).status_code == 503
-    assert client.get('/health').json()['published'] == {'gto_preflop': None, 'exploit_calls': None, 'exploit_field': None}
+    assert client.get('/health').json()['published'] == {'gto_preflop': None, 'exploit_field': None}
     rows = {r['ref']: r for r in client.get('/admin/datasets', headers=ADMIN).json()}
     assert {r['status'] for r in rows.values()} == {'staging'} and {GTO, OLD, EXP} <= set(rows)
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='trop tôt').status_code == 409     # pas encore contrôlé
@@ -63,8 +64,6 @@ def test_full_lifecycle(client):
     assert post(client, f'/admin/datasets/{OLD}/validate').json()['status'] == 'rejected'
     assert post(client, f'/admin/datasets/{OLD}/publish', reason='forcer').status_code == 409
     assert post(client, f'/admin/datasets/{EXP}/validate').json()['status'] == 'validated'
-    r = post(client, f'/admin/datasets/{EXP}/publish', reason='source pas publiée')
-    assert r.status_code == 409 and 'source' in r.json()['detail']
     assert post(client, f'/admin/datasets/{GTO}/validate').json()['ok']
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='validé par l\'expert').json()['status'] == 'published'
     assert post(client, f'/admin/datasets/{EXP}/publish', reason='validé par l\'expert').status_code == 200
@@ -72,7 +71,7 @@ def test_full_lifecycle(client):
     e = client.post('/sessions', json={'mode': 'exploit', 'seed': 1}).json(); assert e['dataset_version'] == EXP
     assert client.get('/quiz/next', params={'session_id': s['session_id']}).status_code == 200
     d = post(client, f'/admin/datasets/{GTO}/disable', reason='erreur détectée').json()
-    assert d['also_disabled'] == [EXP]                                                   # l'exploitant dérivé est retiré aussi
+    assert d['also_disabled'] == []                                                      # l'exploitant ne dépend pas du dataset GTO
     assert client.get('/quiz/next', params={'session_id': s['session_id']}).status_code == 410
     assert client.post('/sessions', json={}).status_code == 503
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='retour arrière après vérification').status_code == 200

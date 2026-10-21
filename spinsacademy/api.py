@@ -1,6 +1,6 @@
 """API du quiz (FastAPI + SQLite), routes du cahier des charges §13.1.
 
-  POST /sessions                 créer une série (mode gto, exploit ou field, filtres, taille, graine) liée à une version de dataset
+  POST /sessions                 créer une série (mode gto ou exploit, filtres, taille, graine) liée à une version de dataset
   GET  /quiz/next?session_id=    question suivante non répondue (sans solution) ; done=true à la fin
   POST /attempts                 répondre à une question : correction et explication ; une réponse est définitive
   GET  /sessions/{id}/summary    bilan : score, verdicts, thèmes, erreurs à revoir
@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, profiles, progress, quiz, ratelimit, review
+from . import adaptive, catalog, progress, quiz, ratelimit, review
 from .hrc import ROOT
 
 SCHEMA = """
@@ -68,8 +68,8 @@ def connect():
     return con
 
 
-DATASET_OF = {'gto': 'gto_preflop', 'exploit': 'exploit_calls', 'field': 'exploit_field'}
-DEFAULT_OF = {'gto': quiz.DEFAULT_VERSION, 'exploit': quiz.DEFAULT_EXPLOIT, 'field': quiz.DEFAULT_FIELD}
+DATASET_OF = {'gto': 'gto_preflop', 'exploit': 'exploit_field'}
+DEFAULT_OF = {'gto': quiz.DEFAULT_VERSION, 'exploit': quiz.DEFAULT_FIELD}
 
 
 def serving_version(con, mode):
@@ -97,11 +97,10 @@ class Filters(BaseModel):
     family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin|read)$')     # read : lecture du vilain (mode Field)
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
-    profile: Optional[str] = Field(None, pattern='^(nit|prudent|agressif|maniac|station)$')      # mode exploitant
 
 
 class NewSession(BaseModel):
-    mode: str = Field('gto', pattern='^(gto|exploit|field)$')
+    mode: str = Field('gto', pattern='^(gto|exploit)$')
     filters: Filters = Filters()
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
@@ -137,12 +136,6 @@ def index():
 @app.get('/admin', include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(WEB, 'admin.html'))
-
-
-@app.get('/profiles')
-def list_profiles():
-    """catalogue des profils exploitants fictifs (tendances et règles publiques, cahier des charges §6.1)"""
-    return profiles.catalog()
 
 
 def _release():
@@ -185,7 +178,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     try:
         with closing(connect()) as con:
             version = serving_version(con, body.mode); excluded = _excluded(con)
-            want = pid is not None and not filters and not body.review and body.mode != 'field' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
+            want = pid is not None and not filters and not body.review and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
             due = review.summary(_mode_rows(con, pid, body.mode, None), version)['due_items'] if body.review else None
         if due is not None:

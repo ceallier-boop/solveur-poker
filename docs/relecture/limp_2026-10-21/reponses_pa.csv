@@ -1,0 +1,61 @@
+﻿id;expert;reponse_ok;action_attendue;theorie_ok;postflop_ok;texte_clair;gravite;commentaire
+L01;pa;incertain;Check (ou tapis, quasi égal);non;oui;non;majeur;R12 déclenchée sur 2 limps (10 % vs 8 % = bruit) alors qu'il a payé 1/2 : « se couche face au tapis » est faux. Recalcul avec les chiffres du Pourquoi : tapis ≈ +1,55 < check +1,59. KQs domine et joue très bien en position : dire « profil par défaut, check et tapis se valent ».
+L02;pa;oui;;non;sans objet;non;majeur;Tapis juste (KJs domine un limp large) mais pas pour la raison donnée : 3 limps, 1 call, et le Pourquoi dit qu'il se couche MOINS que la théorie (59 % vs 65 %). Vraie raison : value contre un limp large. EV tapis affichée +1,88, recalcul +1,74.
+L03;pa;oui;;non;sans objet;non;mineur;Tapis OK (J7o offsuit joue mal, limp large). Mais R12 sur 5 limps avec 2 calls sur 5 (plus que la théorie) : « se couche » contredit l'énoncé. Présenter comme profil par défaut.
+L04;pa;oui;;oui;sans objet;oui;aucun;Conforme : Q7s domine un limp faible, R10 bien appliquée (3 occasions).
+L05;pa;oui;;oui;sans objet;oui;aucun;Conforme : K7s domine le limp, tapis = théorie.
+L06;pa;oui;;oui;sans objet;oui;mineur;Conforme (= HRC) mais marge quasi nulle au recalcul (+0,98 vs +0,97) : préciser que le check est aussi correct.
+L07;pa;oui;;oui;oui;oui;aucun;Conforme : 87s en position se joue au flop (réalisation d'équité) plutôt qu'à tapis.
+L08;pa;oui;;oui;sans objet;oui;aucun;Conforme : Kx domine, tapis = théorie.
+L09;pa;oui;;non;sans objet;non;mineur;Tapis défendable avec le profil par défaut (Qx domine). Mais R12 sur 3 limps et 1 call n'est pas une tendance : basculer en R10.
+L10;pa;oui;;oui;oui;non;mineur;Check juste (J8s en position). « Reg identifié » n'est pas déductible de l'énoncé : écrire « ses fréquences collent à la théorie, joue la théorie ».
+L11;pa;incertain;Check acceptable;non;oui;oui;mineur;Contre un rec passif inconnu, T9s en position peut se jouer au flop (jouabilité, il paie trop après le flop). Marge 0,13 BB et Pourquoi incohérent avec l'EV (recalcul tapis +1,33 vs +1,11 affiché). R0 « tapis en BvB » trop général : un rec passif limpe aussi ses Ax.
+L12;pa;oui;;oui;sans objet;oui;mineur;Tapis juste (QTo domine, il paie 2/8). 8 limps seulement : parler de « tendance probable ».
+L13;pa;oui;;non;oui;non;majeur;Check juste contre un limp serré (5 % sur 80 occasions, donc fort : Q7o n'a que 20 % contre sa range de call). Mais R13 dit « il paie ton tapis » alors qu'il a payé 1/4. Vraie raison : son limp est fort.
+L14;pa;oui;;oui;oui;non;mineur;Check juste (82s). « Reg identifié » non déductible : ses fréquences sont celles de la théorie, le dire.
+L15;pa;oui;;oui;sans objet;oui;aucun;Conforme : offsuit peu jouable, limp large (19/80) qui folde 14 fois sur 19 : tapis.
+L16;pa;oui;;oui;sans objet;oui;aucun;Conforme : tapis = théorie, limp très large.
+L17;pa;oui;;non;sans objet;oui;mineur;Tapis OK avec le profil par défaut, mais 5 limps / 1 call ne confirment rien : ne pas présenter comme R12.
+L18;pa;oui;;oui;sans objet;oui;aucun;Conforme (12 limps, 3 calls).
+L19;pa;oui;;oui;sans objet;oui;aucun;Conforme : 32s réalise mal, la fold equity suffit.
+L20;pa;oui;;oui;sans objet;oui;aucun;Conforme : Kx domine un limp large (hauteur roi en BB, c'est fort).
+L21;pa;non;Check;non;oui;non;majeur;Contradiction : « ne complète pas assez » puis règle « complète trop ». Limp serré (10 %) = range plus forte et le 0/3 au call ne prouve rien. T5s : check, comme la théorie.
+L22;pa;oui;;oui;sans objet;oui;mineur;Tapis OK (Q9o domine le limp d'un rec). Nuancer R0 : un rec passif limpe aussi des Ax, son limp n'est pas que du vent.
+L23;pa;oui;;non;sans objet;oui;mineur;Tapis OK mais 7 limps / 2 calls : profil par défaut, pas R12. Marge faible (recalcul +0,88 vs +0,82).
+L24;pa;oui;;oui;sans objet;oui;aucun;Conforme (8 limps : tendance encore fragile).
+L25;pa;oui;;oui;sans objet;oui;mineur;Tapis OK (64o ne joue pas). Même nuance R0 que L22.
+L26;pa;oui;;oui;sans objet;non;mineur;Tapis juste (K8o). Fiche « Piège » sans aucune statistique : « l'écart de fréquence » n'a pas d'objet pour le joueur.
+L27;pa;oui;;oui;sans objet;oui;aucun;Conforme : Kx, tapis = théorie, R10 OK.
+L28;pa;oui;;oui;sans objet;oui;aucun;Conforme, échantillon solide (120 occasions, 28 limps).
+L29;pa;oui;;oui;oui;non;mineur;Check OK (87s en position) mais EV affichées à égalité (+0,76 / +0,76) : dire « les deux se valent ». Pourquoi incohérent (recalcul tapis ≈ +1,05).
+L30;pa;oui;;oui;oui;oui;mineur;Check juste (T9o en position, il a payé 1/2). Sur 2 limps, R10 suffit, R9 inutile.
+L31;pa;oui;;non;non;non;bloquant;Tapis juste (KTs domine, hors de position le check réalise mal). Mais il paie 5/14 = théorie : R12 « se couche » faux. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L32;pa;oui;;non;non;non;bloquant;Tapis conforme (K3s, R10). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L33;pa;oui;;non;non;non;bloquant;Tapis OK (84s, hors de position). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L34;pa;oui;;non;non;non;bloquant;Tapis OK mais il paie 4/8 (plus que la théorie) : R12 « se couche » contredit. Vraie raison : limp large et J7o injouable hors de position. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L35;pa;oui;;oui;non;non;bloquant;Check défendable contre un limp serré (8 % sur 120) qui paie 4/10. Vérifier que l'EV du check n'est pas calculée comme en position. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L36;pa;oui;;non;non;non;bloquant;Petite paire : tapis (mieux vaut faire folder que flipper hors de position). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L37;pa;oui;;non;non;non;bloquant;KK : check-piège OK, hors de position prévoir check-raise / tapis au flop. Les lignes « avantage de range » n'ont aucun intérêt avec KK. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L38;pa;oui;;non;non;non;bloquant;Tapis OK hors de position, marge faible (recalcul +0,88 vs +0,84). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L39;pa;oui;;non;non;non;bloquant;Tapis OK contre inconnu (43o ne joue pas hors de position). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L40;pa;oui;;non;non;non;bloquant;Tapis OK mais 5 limps / 2 calls : profil par défaut, pas R12. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L41;pa;oui;;non;non;non;bloquant;Tapis = théorie, Q3o garde 41 % contre le call d'une calling station : OK. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L42;pa;oui;;non;non;non;bloquant;AA check OK. « Reg identifié » non déductible de l'énoncé. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L43;pa;incertain;Check ou tapis;non;non;non;bloquant;« Ne complète pas assez » + R12 « complète trop » : contradictoire. Limp serré = range forte (62s n'a que 17 % contre son call), seul le 2/8 au call soutient le tapis. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L44;pa;oui;;non;non;non;bloquant;Tapis OK hors de position contre inconnu. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L45;pa;oui;;non;non;non;bloquant;Tapis conforme (limp 50 %, paie 2/10). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L46;pa;oui;;non;non;non;bloquant;Tapis conforme (limp 50 %, paie 7/30). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L47;pa;oui;;non;non;non;bloquant;Check ≈ tapis (écart 0,06 BB) : QJs garde de la jouabilité, dire que les deux se valent. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L48;pa;oui;;non;non;non;bloquant;Tapis conforme (61 limps, 15 calls). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L49;pa;oui;;non;non;non;bloquant;Tapis conforme (T3s). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L50;pa;oui;;non;non;non;bloquant;Tapis conforme (76o). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L51;pa;oui;;non;non;non;bloquant;Tapis conforme (A6o domine). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L52;pa;oui;;non;non;non;bloquant;Tapis conforme (K9s). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L53;pa;oui;;non;non;non;bloquant;Tapis conforme (63s, 10 limps). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L54;pa;oui;;non;non;non;bloquant;Tapis OK contre inconnu (T5o). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L55;pa;oui;;non;non;non;bloquant;Tapis conforme, marge faible (72o). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L56;pa;oui;;non;non;non;bloquant;Tapis conforme (J6o). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L57;pa;oui;;non;non;non;bloquant;Tapis = théorie, R10 OK. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L58;pa;oui;;non;non;non;bloquant;Tapis conforme (doublon de L48). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L59;pa;oui;;non;non;non;bloquant;Tapis juste : il folde 25/29. Libellé contradictoire (« ne complète pas assez » + R12 « complète trop ») : la règle devrait dire « il se couche trop face au tapis ». À 10 BB une iso à 2,5 BB (non proposée) gagnerait les mêmes folds pour moins cher. Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.
+L60;pa;oui;;non;non;non;bloquant;Value pure contre calling station (AKo). Postflop/Pourquoi : en HU le BB est HORS de position (le SB est au bouton et parle en dernier après le flop), « en position » est faux.

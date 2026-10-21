@@ -170,25 +170,15 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .chip-legend .chip { position: static; transform: none; display: inline-flex; margin-right: -8px; }
 .chip-legend .chip i { width: 18px; height: 18px; font-size: .6rem; border-width: 2px; }
 
-/* profils fictifs : badge, barres de tapis, correction courte */
-.pbadge { --p: #6b7570; display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; background: var(--p);
+/* barres des statistiques du vilain, correction courte */
   color: #fff; font-weight: 800; font-size: .8rem; letter-spacing: -1px; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
-.pbadge.sm { min-width: 22px; height: 20px; font-size: .62rem; border-radius: 6px; padding: 0 4px; }
-.seat .pbadge.sm { position: absolute; top: -9px; right: -9px; border: 2px solid #fff; }
-.p-nit { --p: #2f5fa8; } .p-prudent { --p: #2a8a86; } .p-agressif { --p: #d07a1f; } .p-maniac { --p: #c62828; } .p-station { --p: #7b4bb3; }
-.villain .vhead { display: flex; align-items: center; gap: 10px; font-size: 1rem; }
-.villain .vhead b { color: var(--text); }
 .villain .vstat { margin: 6px 0 4px; font-size: .85rem; }
 .vbar { display: grid; grid-template-columns: 72px 1fr 52px; align-items: center; gap: 8px; font-size: .82rem; margin-top: 3px; }
 .vbar em { position: relative; display: block; height: 14px; }
 .vbar i { position: absolute; left: 0; top: 2px; display: block; height: 10px; border-radius: 5px; background: var(--warn); }
-.vbar u { position: absolute; top: 0; height: 14px; border-radius: 4px; background: var(--warn); opacity: .22; text-decoration: none; }
-.villain .vband { margin: 6px 0 0; font-size: .82rem; display: flex; align-items: center; gap: 6px; }
-.villain .swatch { width: 14px; height: 10px; border-radius: 3px; background: var(--warn); opacity: .35; flex: none; }
 .vbar.gto i { background: var(--muted); opacity: .6; }
 .vbar b { text-align: right; font-variant-numeric: tabular-nums; color: var(--text) !important; }
 .exploit .ref dt { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; text-transform: none; letter-spacing: 0; font-size: .85rem; }
-.exploit .ref dt .pbadge { margin: 0; }
 .exploit .ref dd { font-size: 1rem; }
 .exploit .conf { margin-left: auto; font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--line); color: var(--muted); }
 .exploit .conf.net { background: var(--line); color: var(--text); }
@@ -254,7 +244,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .mtrack b { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--text); }
 .mrow.good .mtrack i { background: var(--ok); } .mrow.bad .mtrack i { background: var(--bad); opacity: .8; }
 .mtag { grid-area: tag; font-size: .78rem; color: var(--muted); } .mrow.good .mtag { color: var(--ok); } .mrow.bad .mtag { color: var(--bad); }
-.next h4 { margin: 4px 0 0; font-size: .9rem; } .next h4.plus { color: var(--ok); } .next h4.minus { color: var(--bad); }
+.next h4 { margin: 4px 0 0; font-size: .9rem; } .next h4.plus { color: var(--ok); } .next h4.minus { color: var(--bad); } .next h4.plan { color: var(--accent, inherit); }
 .next ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 
 /* relecture du 2026-10-13 : consigne visible, cartes dans la correction, choix du joueur marqué */
@@ -283,12 +273,6 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
   background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad); border-radius: 12px; padding: 10px 12px; font-size: .92rem; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 .notice span { flex: 1; } .notice button { min-height: 40px; }
 
-.recognize { margin-top: 8px; font-size: .9rem; }
-.recognize summary { cursor: pointer; font-weight: 600; color: var(--accent, var(--text)); min-height: 44px; display: flex; align-items: center; }
-.recognize ul { margin: 4px 0 8px; padding-left: 1.2em; }
-.recognize li { margin: 2px 0; }
-.recognize p { margin: 6px 0; }
-.recognize .caution { color: var(--muted); }
 
 /* mode Field : statistiques observées du vilain (k sur n), type de question, correction courte */
 .fstats { background: var(--warn-bg); border-radius: var(--radius); padding: 10px 12px; font-size: .92rem; display: flex; flex-direction: column; gap: 6px; }

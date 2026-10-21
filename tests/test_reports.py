@@ -70,14 +70,6 @@ def test_disable_spot_excludes_it_from_draws_then_enable(client):
     assert [e['action'] for e in log] == ['resolve_report', 'enable_spot'] and log[0]['actor'] == 'expert' and log[0]['details']['disabled_spot'] == spot
 
 
-def test_disabled_gto_spot_excludes_derived_exploit_spots():
-    _, spots = quiz.load(quiz.DEFAULT_EXPLOIT)
-    base = next(sp['base_spot_id'] for sp in spots.values() if sp.get('adaptations', 0) > 0)
-    for seed in range(10):
-        series = quiz.draw_series(quiz.DEFAULT_EXPLOIT, None, 10, seed, frozenset([base]))
-        assert all(spots[s]['base_spot_id'] != base for s, _ in series)
-
-
 def test_rejected_report_keeps_spot(client):
     sid, spot = answered(client, mode='exploit')
     rid = client.post('/reports', json={'session_id': sid, 'question_index': 0, 'reason': 'illegal_action'}).json()['report_id']

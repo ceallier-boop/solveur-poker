@@ -1,4 +1,4 @@
-"""Mode « Field » : questions exploitantes contre les joueurs du field Expresso (moteur exploitant v4.2, tools/field).
+"""Mode exploitant : questions contre les joueurs du field Expresso (moteur exploitant v4.3, tools/field).
 
 Le moteur (tools/field, porté du moteur exploitant v4.1 et corrigé après l'audit Lucho / PA / Lucky du 2026-10-20)
 part des exports HRC (stacks de 4 à 12 BB), déforme la stratégie du vilain selon un profil du field (rec passif par
@@ -18,15 +18,14 @@ import argparse, datetime, hashlib, json, os, random, sys
 from . import grading
 from .hrc import ROOT
 
-BUILDER_VERSION = '4.2.0'
+BUILDER_VERSION = '4.3.0'
 OUT = os.path.join(ROOT, 'data', 'datasets', 'exploit_field')
 TOOLS = os.path.join(ROOT, 'tools', 'field')
 SEED = 11
 HU_SHARE = 0.35
 MAX_TRAPS, MAX_READ = 2, 1             # par série de 5 : au plus 2 pièges ou échantillons, 1 question de lecture (sauf série « lecture du vilain »)
 READ = ('identification', 'profil')
-READ_RULE_FR = ("Lis un vilain sur ses fréquences ET sur leur nombre d'occasions : quelques mains ne font pas une tendance, "
-                "plusieurs dizaines permettent de trancher. Sans read solide, reste sur le profil par défaut (rec passif).")
+READ_RULE_FR = "Regarde ses stats ET le nombre de coups : quelques coups ne prouvent rien, plusieurs dizaines oui. Sans info solide, joue contre un rec passif."
 
 TYPE_FR = {'adaptation': 'Adaptation', 'inconnu': 'Vilain inconnu', 'piège': 'Piège', 'échantillon': 'Petit échantillon',
            'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
@@ -49,7 +48,8 @@ ENGINE = {'paie': 'Payer', 'pousse': 'Pousser all-in', 'limpe': 'Limp', 'fold': 
 VERB = {'C': 'payer', 'A': 'tapis', 'L': 'compléter (limp)', 'F': 'fold', 'X': 'check'}
 LEAK_FR = {'pousse trop souvent': 'part à tapis trop souvent', 'ne pousse pas assez': 'ne part pas assez à tapis',
            'paie trop souvent': 'paie trop souvent', 'ne paie pas assez': 'ne paie pas assez',
-           'complète trop souvent': 'complète trop souvent', 'ne complète pas assez': 'ne complète pas assez'}
+           'complète trop souvent': 'complète trop souvent', 'ne complète pas assez': 'ne complète pas assez',
+           'paie souvent ton tapis': 'paie souvent ton tapis après son limp', 'se couche souvent face au tapis': 'se couche souvent face au tapis après son limp'}
 
 
 def _engine():
@@ -167,7 +167,7 @@ def to_spot(q, qg):
                          theory=q.get('theorie') if q['type'] not in READ else None, postflop=q.get('postflop') if q['type'] not in READ else None,
                          engine_explanation_fr=q['explication'], data_level=q['niveau_donnees'], weight=q.get('poids', 1.0),
                          internal_profile=q['profil']),
-              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.2)', engine_id=q['id'],
+              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.3)', engine_id=q['id'],
                               intensity=q.get('intensite', 1.0), factors=q.get('facteurs')))
     return sp
 
@@ -187,13 +187,15 @@ def publish(version, out=OUT, seed=SEED):
     digest = hashlib.sha256(open(os.path.join(target, 'spots.jsonl'), 'rb').read()).hexdigest()
     from collections import Counter
     m = dict(dataset='exploit_field', version=version, created_at=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
-             builder=BUILDER_VERSION, seed=seed, spots=len(items), questions_eligible=len(items), spots_sha256=digest,
+             builder=BUILDER_VERSION, scale=qg.SCALE, seed=seed, spots=len(items), questions_eligible=len(items), spots_sha256=digest,
              by_type=dict(Counter(i['field']['type'] for i in items)), by_rule=dict(Counter(i['field']['rule'] for i in items)),
              noise_mbb={str(k): round(1000 * v) for k, v in qg.ee.NOISE_BB.items()}, rules=qg.RULES,
              reference_fr="Exports HRC (chip EV, blinds 0,5 / 1, sans ante), stacks de 4 à 12 BB ; profils du field (hypothèses, non mesurées)",
              caveats_fr=["Facteurs des profils : hypothèses, à recaler sur de vraies mains (tools/field/calibrate_profiles.py).",
                          "Limp du SB : EV estimée en heads-up (décomposition de l'EV HRC), borne basse en BvB à 3 joueurs. Check du BB sur un limp : EV HRC corrigée de l'écart d'équité.",
-                         "Domaine : tout ou rien, limp du SB, check ou tapis du BB sur un limp ; stacks égaux de 4 à 12 BB ; min-raise et iso non all-in exclus."],
+                         "Domaine : tout ou rien, limp du SB, check ou tapis du BB sur un limp ; stacks égaux de 4 à 12 BB ; min-raise et iso non all-in exclus "
+                         "(les mains que HRC isole à 3 BB au moins 30 % du temps sont retirées).",
+                         "Banque x 10 visée, environ x 5 atteinte : doublons d'EV et quasi-égalités retirés, rec passif gardé à au moins 50 %."],
              audit='docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md', status='staging')
     json.dump(m, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return m
@@ -207,7 +209,7 @@ def question(sp):
     opts = [dict(id=o['id'], label_fr=o.get('label_fr') or action_label(sp, o)) for o in f['options']]
     return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=sp['prompt_fr'], table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
-                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='field',
+                pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
                 field=dict(type=f['type'], type_fr=f['type_fr'], observations=f['observations'], villains=f['villains'], stats=f['stats'], ask_fr=f['ask_fr']))
 
@@ -219,85 +221,86 @@ def _label(sp, aid):
 
 
 def theory_lines(sp, f, lab, hand):
-    """éléments théoriques, exacts et préflop : cote du pot et équité contre la range (call), fold equity et équité quand il
-    paie (tapis), coût et intérêt du limp, valeur du check sur un limp"""
-    t = f.get('theory'); v = f['villains'][0]
+    """le « pourquoi » en deux ou trois lignes : la stat qui compte, l'équité de ta main, ce que ça implique"""
+    t = f.get('theory')
     if not t or not hand: return []
     out = []
     if t['kind'] == 'call':
-        out.append(f"Cote du pot : tu paies {str(t['call_bb']).replace('.', ',').rstrip('0').rstrip(',')} BB pour un pot final de "
-                   f"{str(t['pot_bb']).replace('.', ',').rstrip('0').rstrip(',')} BB : il faut {pct(t['need_pct'])} % d'équité pour payer.")
-        out.append(f"Sa range de tapis : {pct(t['range_pct'])} % des mains (théorie : {pct(t['range_gto_pct'])} %). Contre elle, {hand} a "
-                   f"{pct(t['eq_pct'])} % d'équité ; contre la range théorique, {pct(t['eq_gto_pct'])} %.")
-        out.append(("Au-dessus du seuil : payer gagne des jetons à long terme." if t['eq_pct'] >= t['need_pct'] else
-                    "Sous le seuil : payer perd des jetons à long terme, même si la main gagne parfois.")
-                   + (" Plus sa range est large, plus elle contient de mains faibles, et plus tes mains moyennes passent le seuil."
-                      if t['range_pct'] > t['range_gto_pct'] else " Plus sa range est serrée, plus elle est forte : tes mains moyennes passent sous le seuil."))
+        out.append(f"Tu paies {num(t['call_bb'])} BB pour un pot de {num(t['pot_bb'])} BB : il te faut {pct(t['need_pct'])} % d'équité.")
+        out.append(f"Il pousse environ {pct(t['range_pct'])} % de ses mains (théorie : {pct(t['range_gto_pct'])} %). Contre ces mains, {hand} a "
+                   f"{pct(t['eq_pct'])} % d'équité : " + ("assez pour payer." if t['eq_pct'] >= t['need_pct'] else "pas assez pour payer."))
     elif t['kind'] == 'shove':
-        gain = 'les blindes (1,5 BB)' if t['win_bb'] == 1.5 else 'la blinde du BB (1 BB)'
         who = 'tout le monde se couche' if t['win_bb'] == 1.5 else 'il se couche'
-        out.append(f"Face à ton tapis, {who} {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu gagnes alors {gain}, sans abattage.")
-        out.append(f"Quand il paie ({pct(t['call_pct'])} % de ses mains, théorie : {pct(t['call_gto_pct'])} %), {hand} a {pct(t['eq_called_pct'])} % d'équité "
-                   f"contre sa range de call (théorie : {pct(t['eq_called_gto_pct'])} %).")
-        out.append("Ton tapis rapporte par deux voies : les folds (fold equity) et l'équité quand il paie. Contre un joueur qui se couche trop, "
-                   "les mains faibles deviennent rentables ; contre un joueur qui paie trop, seules les mains qui tiennent à l'abattage le restent.")
+        out.append(f"Face à ton tapis, {who} environ {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : "
+                   f"tu gagnes {'1,5 BB' if t['win_bb'] == 1.5 else '1 BB'} sans abattage.")
+        out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         if t.get('iso_pct') is not None:
-            out.append(f"Compléter coûte 0,5 BB et te fait voir le flop quand le BB checke : ici, il relance ton limp {pct(t['iso_pct'])} % du temps "
-                       f"(théorie : {pct(t['iso_gto_pct'])} %). Moins il relance, plus le limp garde de mains dans le coup à bon prix.")
+            out.append(f"Si tu complètes, il relance environ {pct(t['iso_pct'])} % du temps (théorie : {pct(t['iso_gto_pct'])} %) : "
+                       "moins il relance, plus le limp est rentable.")
     elif t['kind'] == 'iso':
-        out.append(f"Son limp : {pct(t['limp_pct'])} % des mains (théorie : {pct(t['limp_gto_pct'])} %). Face à ton tapis, il se couche "
-                   f"{pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu gagnes alors le pot de 2 BB.")
-        out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité contre sa range de call (théorie : {pct(t['eq_called_gto_pct'])} %) ; "
-                   f"contre tout son limp, {pct(t['eq_limp_pct'])} %.")
-        out.append("Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; "
-                   "le check, quand il paie ton tapis avec des mains qui te dominent.")
+        out.append(f"Il complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Face à ton tapis, il se couche "
+                   f"{pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu gagnes alors 2 BB.")
+        out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+        out.append("Après un check, tu parles en premier au flop (il est au bouton) : ta main rapporte moins. D'où plus de tapis en heads-up."
+                   if sp['table'] == 'heads-up' else
+                   "Après un check, tu parles en dernier au flop : tes mains jouables rapportent plus. D'où plus de checks qu'en heads-up.")
     return out
+
+
+def num(x):
+    return str(x).replace('.', ',').rstrip('0').rstrip(',') if '.' in str(x) else str(x)
 
 
 R = 'AKQJT98765432'
 
 
+def _plan(ip, hero, table):
+    """trois consignes concrètes pour le flop, selon la position"""
+    if ip:
+        return ["Il checke : mise environ 1 BB (la moitié du pot) très souvent, il a souvent raté.",
+                "Il mise : un joueur passif mise surtout quand il a touché. Couche tes mains faibles.",
+                "Paire max ou mieux : mise pour la valeur à chaque tour, il paie trop."]
+    return ["Tu as touché (paire max ou mieux) : mise toi-même environ 1 BB, il paie avec trop de mains.",
+            "Tu as raté : checke. S'il mise peu, paie avec un tirage, couche le reste.",
+            "AA ou KK : mise dès le flop pour la valeur, n'attends pas."]
+
+
 def postflop_section(sp, f, hand):
-    """« Gérer le postflop » : ce qui avantage ta main, ce qui avantage la range adverse (quand la main peut voir un flop)"""
+    """« Gérer le postflop » : le tapis qui reste, ta position, un plan simple, ce qui aide ta main et ce qui aide la sienne"""
     from .quiz import postflop_profile, bb
     p = f.get('postflop')
     if not p or not hand: return None
     pf = postflop_profile(hand); pc = lambda x: f"{round(100 * x)} %"
-    S = sp['effective_stack_bb']; ip = p['position'] == 'IP'
-    line = "tu checkes son limp" if ip else "il checke derrière ton limp"
-    intro = (f"Si le coup va au flop ({line}), le pot fait 2 BB et il reste {bb(S - 1)} BB chacun : rapport tapis / pot (SPR) de "
-             f"{str(p['spr']).replace('.', ',')}. "
-             + ("Avec un SPR aussi bas, une paire max ou un bon tirage suffit pour mettre tapis : après avoir touché, ne te couche pas."
-                if p['spr'] <= 3 else "Le SPR laisse une mise et une relance : engage ton tapis avec une paire max bon kicker ou mieux, contrôle le pot avec une paire moyenne."))
-    position = ("Tu joues en position : tu parles en dernier à chaque tour, tu vois sa décision avant la tienne et tu réalises plus d'équité."
-                if ip else "Tu joues hors position : tu parles en premier à chaque tour. Garde des lignes simples : mise de 1/3 du pot avec tes bonnes mains et tes tirages, check avec le reste.")
+    S = sp['effective_stack_bb']; hero = sp['hero']; hu = sp['table'] == 'heads-up'
+    ip = (hero == 'SB') == hu                     # heads-up : le SB est au bouton ; à 3 (BvB) : le BB parle en dernier
+    line = "tu checkes son limp" if hero == 'BB' else "il checke derrière ton limp"
+    intro = (f"Si le coup va au flop ({line}) : pot de 2 BB, il reste {bb(S - 1)} BB chacun, soit {num(p['spr'])} fois le pot (SPR). "
+             + ("Une paire max ou un gros tirage suffit pour mettre tapis." if p['spr'] <= 3
+                else "Paire max bon kicker : tapis. Paire moyenne : petites mises."))
+    position = ("Tu parles en dernier : tu vois ce qu'il fait avant de jouer." if ip
+                else "Tu parles en premier : joue simple.")
     mine, his = [], []
-    pair, suited = len(hand) == 2, hand.endswith('s')
-    if pair:
-        mine.append(f"Paire servie : brelan ou mieux {pc(pf['set_plus'])} du temps, et la paire est déjà faite.")
-        if pf['overpair'] < 0.3: his.append(f"Ta paire est rarement plus haute que le board ({pc(pf['overpair'])} du temps) : les cartes hautes du flop touchent sa range.")
+    if len(hand) == 2:
+        mine.append(f"Paire servie : brelan ou mieux {pc(pf['set_plus'])} du temps.")
+        if pf['overpair'] < 0.3: his.append(f"Ta paire est rarement au-dessus du board ({pc(pf['overpair'])} du temps).")
     else:
         if pf['top_pair_plus'] >= 0.25: mine.append(f"Paire max ou mieux {pc(pf['top_pair_plus'])} du temps.")
-        if suited: mine.append(f"Assorties : tirage couleur ou couleur faite {pc(pf['flush_draw_plus'])} du temps.")
-        if pf['oesd_plus'] >= 0.1: mine.append(f"Connectées : tirage quinte par les deux bouts ou mieux {pc(pf['oesd_plus'])} du temps.")
-        if pf['miss'] >= 0.5: his.append(f"Tu rates le flop {pc(pf['miss'])} du temps (ni paire ni tirage) : sur ces flops, sa range garde l'avantage.")
+        if hand.endswith('s'): mine.append(f"Assorties : tirage couleur ou mieux {pc(pf['flush_draw_plus'])} du temps.")
+        if pf['oesd_plus'] >= 0.1: mine.append(f"Connectées : tirage quinte ou mieux {pc(pf['oesd_plus'])} du temps.")
+        if pf['miss'] >= 0.5: his.append(f"Tu rates le flop {pc(pf['miss'])} du temps (ni paire ni tirage).")
         if R.index(hand[0]) <= R.index('T') and R.index(hand[1]) >= R.index('7'):
-            his.append(f"Ton kicker {hand[1]} est faible : quand ton {hand[0]} touche, ses {hand[0]}x plus forts te dominent.")
-    if p['eq_hand_pct'] >= 50: mine.append(f"Contre sa range qui voit le flop, {hand} a {pct(p['eq_hand_pct'])} % d'équité : tu es devant en moyenne.")
-    else: his.append(f"Contre sa range qui voit le flop, {hand} n'a que {pct(p['eq_hand_pct'])} % d'équité : tu es derrière en moyenne.")
-    if p.get('eq_range_pct') is not None:
-        (mine if p['eq_range_pct'] >= 50 else his).append(
-            f"Avantage de range : ta range a {pct(p['eq_range_pct'])} % d'équité contre la sienne"
-            + (" : tu peux miser souvent, il ne peut pas tout défendre." if p['eq_range_pct'] >= 52 else " : les deux ranges sont proches." if p['eq_range_pct'] >= 48
-               else (" : sa range est un peu meilleure en moyenne, car tu checkes aussi tes mains faibles ; mise surtout avec ce qui a touché." if ip
-                     else " : sa range est un peu meilleure en moyenne, car tu complètes aussi des mains faibles ; mise surtout avec ce qui a touché.")))
+            his.append(f"Kicker faible : quand ton {hand[0]} touche, ses {hand[0]}x plus forts te battent.")
+    if p['eq_hand_pct'] >= 50: mine.append(f"Contre ses mains, {hand} a {pct(p['eq_hand_pct'])} % d'équité : tu es devant.")
+    else: his.append(f"Contre ses mains, {hand} n'a que {pct(p['eq_hand_pct'])} % d'équité : tu es derrière.")
     if p['strong_pct'] >= p['strong_gto_pct'] + 3:
-        his.append(f"Sa range contient {pct(p['strong_pct'])} % de mains fortes (théorie : {pct(p['strong_gto_pct'])} %) : il "
-                   + ("complète aussi ses grosses mains" if ip else "checke aussi ses grosses mains au lieu de relancer") + ", son passage n'est pas un aveu de faiblesse.")
+        his.append(f"Il a {pct(p['strong_pct'])} % de grosses mains (théorie : {pct(p['strong_gto_pct'])} %) : "
+                   + ("il complète aussi ses grosses mains." if hero == 'BB' else "il checke aussi ses grosses mains."))
     elif p['strong_pct'] <= p['strong_gto_pct'] - 3:
-        mine.append(f"Sa range est plafonnée : seulement {pct(p['strong_pct'])} % de mains fortes (théorie : {pct(p['strong_gto_pct'])} %), il a relancé ou poussé les autres.")
-    return dict(title_fr='Gérer le postflop', intro=intro, position=position, metrics=[], forces=mine[:4], weaknesses=his[:4],
-                plus_fr='Ce qui avantage ta main', minus_fr='Ce qui avantage la range adverse')
+        mine.append(f"Il a peu de grosses mains ({pct(p['strong_pct'])} %, théorie : {pct(p['strong_gto_pct'])} %) : il les a relancées.")
+    if ip: mine.append("La position : tu joues après lui à chaque tour.")
+    if not mine: mine.append("Il se couche souvent face à une mise : un flop raté se gagne aussi.")
+    return dict(title_fr='Gérer le postflop', intro=intro, position=position, plan=_plan(ip, hero, sp['table']), plan_fr='Ton plan',
+                metrics=[], forces=mine[:3], weaknesses=his[:3], plus_fr='Ce qui aide ta main', minus_fr='Ce qui aide la sienne')
 
 
 def correct(sp, action_id):
@@ -316,33 +319,30 @@ def correct(sp, action_id):
         regret = 0.0; verdict = 'correct' if action_id == best else 'erreur'
     lab = {a: _label(sp, a) for a in ids}; v = f['villains'][0]; n = f['observations']
     rule_fr = READ_RULE_FR if f['type'] in READ else f['rule_fr']
-    rule = f"À retenir ({f['rule']}) : {rule_fr}"
-    lines = []
+    rule = f"À retenir : {rule_fr}"
+    short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
+    lines = []; best_l, gto_l = short(best), (short(f['gto']) if f['gto'] else '')
     if f['type'] in ('profil', 'identification', 'échantillon'):
         lines.append(f['engine_explanation_fr'].split(' Règle R')[0])
     elif f['type'] == 'adaptation':
-        lines.append(f"Ce {v} {LEAK_FR.get(f['leak'], f['leak'])} ({n} occasions). Contre lui, {_low(lab[best])} rapporte {bbx(f['gain_mbb'])} de plus "
-                     f"que l'action théorique ({_low(lab[f['gto']])}).")
+        lines.append(f"Il {LEAK_FR.get(f['leak'], f['leak'])} ({n} coups observés). Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus "
+                     f"que la théorie ({gto_l}).")
     elif f['type'] == 'inconnu':
-        lines.append(f"Sans read, pars du profil le plus fréquent : le rec passif, qui paie et relance moins que la théorie. Contre lui, "
-                     f"{_low(lab[best])} rapporte {bbx(f['gain_mbb'])} de plus que l'action théorique ({_low(lab[f['gto']])}).")
+        lines.append(f"Sans info, joue contre un rec passif. Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus que la théorie ({gto_l}).")
     elif f['rule'] == 'R11':
-        lines.append(f"Ce vilain joue comme un reg : la théorie s'applique, {_low(lab[best])} reste la meilleure action "
-                     f"({bbx(f['margin_mbb'])} d'avance sur la suivante).")
+        lines.append(f"Ses stats collent à la théorie : {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance).")
     else:
-        who = 'un rec passif' if n == 0 else f"ce {v}, qui {LEAK_FR.get(f['leak'], f['leak'])}"
-        lines.append(f"Piège : même contre {who}, {_low(lab[best])} reste la meilleure action ({bbx(f['margin_mbb'])} d'avance sur la suivante) : "
-                     "l'écart de fréquence ne retourne pas la décision.")
+        who = 'un rec passif' if n == 0 else 'lui'
+        lines.append(f"Même contre {who}, {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance) : l'écart de stats ne change pas la décision.")
     if action_id != best:
-        lines.append(f"Ton choix ({_low(lab[action_id])}) " + (f"rapporte {bbx(regret)} de moins." if ev[best] is not None else "n'est pas la bonne lecture."))
+        lines.append(f"Ton choix ({short(action_id)}) " + (f"rapporte {bbx(regret)} de moins." if ev[best] is not None else "n'est pas la bonne lecture."))
+    if ev[best] is not None and f['type'] not in READ and f['margin_mbb'] < 100:
+        lines.append(f"Écart faible ({bbx(f['margin_mbb'])}) : les deux options sont proches.")
     lines.append(rule)
     why = theory_lines(sp, f, lab, hand)
     if ev[best] is not None:
-        why.append('EV par rapport au fold : ' + ' ; '.join(f"{VERB[a]} {bbx(ev[a], True)}" for a in ids if a != 'F') + '.')
         if f['gto'] and f['gto'] != best and (f['gto_freq_pct'] or 0) >= 5:
-            why.append(f"En théorie (HRC), cette main joue déjà {_low(lab[best])} {pct(f['gto_freq_pct'])} % du temps.")
-    if f['type'] not in READ:
-        why.append("À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.")
+            why.append(f"La théorie joue déjà {best_l} {pct(f['gto_freq_pct'])} % du temps avec cette main.")
     gto_label = lab[f['gto']] if f['gto'] else None
     return dict(verdict=verdict, points=grading.POINTS[verdict], regret_mbb=round(regret, 1), best_action=best, best_label=lab[best],
                 top_action=best, chosen_action=action_id, gto_action=f['gto'], gto_label=gto_label, good_actions=[], good_labels=[],

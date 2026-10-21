@@ -5,8 +5,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const fs = require('fs'), path = require('path');
 // versions à publier : la dernière ligne de docs/dataset/PUBLICATIONS.md pour chaque dataset (jamais codées en dur)
 const pubs = {};
-for (const m of fs.readFileSync(path.join(__dirname, '../../docs/dataset/PUBLICATIONS.md'), 'utf8').matchAll(/\| `(gto_preflop|exploit_calls)` \| `([\d.-]+)` \|/g)) pubs[m[1]] = `${m[1]}/${m[2]}`;
-const GTO = process.env.GTO_REF || pubs.gto_preflop, EXP = process.env.EXP_REF || pubs.exploit_calls;
+for (const m of fs.readFileSync(path.join(__dirname, '../../docs/dataset/PUBLICATIONS.md'), 'utf8').matchAll(/\| `(gto_preflop|exploit_field)` \| `([\d.-]+)` \|/g)) pubs[m[1]] = `${m[1]}/${m[2]}`;
+const GTO = process.env.GTO_REF || pubs.gto_preflop, EXP = process.env.EXP_REF || pubs.exploit_field;
 const OLD = 'gto_preflop/2026.10.12-1';            // version historique refusée au contrôle : vérifie l'affichage d'un rapport en échec
 (async () => {
   const out = process.argv[2]; const errors = []; const base = process.env.BASE_URL || 'http://localhost:8000/';

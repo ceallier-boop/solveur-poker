@@ -8,6 +8,7 @@ from numba import njit
 
 import os
 qs = json.load(open(os.environ.get('EXPRESSO_QUIZ', 'quiz_field_v4_2.json')))
+import quiz_generator as qg
 fails = []
 def check(cond, msg, q=None):
     if not cond: fails.append((msg, q['id'] if q else None))
@@ -17,7 +18,7 @@ for q in qs:
     check(q['bonne_reponse'] in q['options'], "bonne réponse absente des options", q)
     check(len(set(q['options'])) == len(q['options']), "options dupliquées", q)
     if q['type'] == 'profil':
-        check(q['bonne_reponse'] in q['options'] and q['observations'] in (40, 80, 150), "question profil mal formée", q)
+        check(q['bonne_reponse'] in q['options'] and q['observations'] in qg.PROFIL_N, "question profil mal formée", q)
         check('Rec passif' in q['options'] and 'Reg' in q['options'], "v4.2 : rec passif et reg sont deux réponses distinctes", q); continue
     if q['type'] in ('adaptation', 'piège', 'inconnu', 'échantillon'):
         check(q['gain_mBB'] >= 0, "gain négatif", q)
@@ -62,7 +63,6 @@ for q in qs:
     if q['observations'] in (20, 40, 80) or q['observations'] in (3, 5):
         check(f"{q['observations']} occasions" in q['enonce'] or f"Sur {q['observations']}" in q['enonce'], "nombre d'observations absent de l'énoncé", q)
 # v4.2 : corrections de l'audit des coachs de la v4.1
-import quiz_generator as qg
 for q in qs:
     if q['type'] in ('identification', 'profil'): continue
     if q['type'] in ('adaptation', 'inconnu'):

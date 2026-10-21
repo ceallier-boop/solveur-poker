@@ -1,4 +1,3 @@
-import re
 import pytest
 from fastapi.testclient import TestClient
 from spinsacademy import grading, quiz
@@ -71,47 +70,22 @@ def test_web_interface_is_served(client):
 
 
 def test_exploit_mode_series(client):
+    """mode exploitant : questions du field (spinsacademy.field), jamais l'ancien mode des profils fictifs"""
     r = client.post('/sessions', json={'mode': 'exploit', 'seed': 4}).json()
-    assert r['mode'] == 'exploit' and r['dataset_version'].startswith('exploit_calls/')
-    sid = r['session_id']; bases = set()
+    assert r['mode'] == 'exploit' and r['dataset_version'].startswith('exploit_field/')
     for i in range(r['size']):
-        q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
-        assert q['mode'] == 'exploit' and q['villain']['observed_pct'] != q['villain']['gto_pct']
-        ids = [o['id'] for o in q['options']]
-        assert ids in (['F', 'C'], ['F', 'A'])                         # payer un tapis, ou pousser contre un joueur qui paie trop
-        assert ('part à tapis avec' if ids == ['F', 'C'] else 'paie un tapis avec') in q['prompt_fr']
-        bases.add(re.sub(r'-[xs][\d.]+$', '', q['spot_id']))
-        a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': ids[1]}).json()
-        assert a['gto_label'] and 'hypothèse de simulation' in a['explanation_fr']
-    assert len(bases) == r['size']                                     # jamais deux fois la même situation de base
-
-
-def test_exploit_dataset_consistency():
-    """facteur 1 : l'EV de référence stockée = l'EV exacte du call contre la range d'équilibre push/fold ; une adaptation change bien l'action"""
-    import numpy as np
-    from spinsacademy import quiz, allin, pushfold
-    _, ex = quiz.load(quiz.DEFAULT_EXPLOIT); _, gto = quiz.load(quiz.DEFAULT_VERSION)
-    n = 0
-    for sp in [s for s in ex.values() if not s.get('push_fold')][:40]:
-        base = gto[sp['base_spot_id']]; push, _ = pushfold.shover_range(base, sp['villain']['position'])
-        st = dict(zip(sp['players'], sp['stacks_bb'])); L = min(st[sp['hero']], st[sp['villain']['position']])
-        ref = allin.call_ev(push, L, sp['pot_bb'] - sp['hero_committed_bb'] - L, sp['hero_committed_bb'])
-        assert sp['villain']['reference'] == 'nash_pushfold'
-        for h, v in sp['hands'].items():
-            if 'ev_gto' not in v: continue
-            assert abs(v['ev_gto'][1] - ref[quiz.NAMES.index(h)]) < 1e-4
-            if v['kind'] == 'adaptation':
-                assert (v['ev_exact'][1] > 0) != (v['ev_gto'][1] > 0) and min(abs(v['ev_exact'][1]), abs(v['ev_gto'][1])) * 1000 >= 20; n += 1
-        f = sp['villain']['factor']
-        assert (sp['villain']['observed_pct'] > sp['villain']['gto_pct']) == (f > 1)
-    assert n > 0
+        q = client.get('/quiz/next', params={'session_id': r['session_id']}).json()['question']
+        assert q['mode'] == 'exploit' and q['field'] and q['villain'] is None and q['profile'] is None
+        a = client.post('/attempts', json={'session_id': r['session_id'], 'question_index': i, 'action_id': q['options'][0]['id']}).json()
+        assert a['field']['rule'] and 'Profil fictif' not in a['explanation_fr']
+    assert client.get('/profiles').status_code == 404                     # route de l'ancien mode retirée
 
 
 def test_gains_are_shown_in_bb_with_floor():
     assert quiz.gain_bb(0.019) == '<0,02 BB' and quiz.gain_bb(0.02) == '<0,02 BB' and quiz.gain_bb(0.021) == '0,021 BB' and quiz.gain_bb(0.0202) == 'un peu plus de 0,02 BB' and quiz.gain_bb(1.234) == '1,23 BB'
     assert quiz.gain_bb(-0.01, signed=True) == '−<0,02 BB' and quiz.gain_bb(0.12, signed=True) == '+0,12 BB'
     seen_small = False
-    for ref in (quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT):
+    for ref in (quiz.DEFAULT_VERSION,):
         for sp in list(quiz.pool(ref))[:60]:
             h = next(x for x, v in sp['hands'].items() if v['quiz_eligible'])
             for a in sp['actions']:
@@ -222,14 +196,6 @@ def history_lines(sp):
     return ' '.join(quiz.history_text(sp)) + ' '
 
 
-def test_profile_catalog_texts():
-    from spinsacademy import profiles
-    c = profiles.catalog(); assert c['version'] == '1.5.0'
-    m = next(p for p in c['profiles'] if p['id'] == 'maniac')
-    assert 'mains faibles' not in m['description_fr'] and 'moins forte' in m['description_fr']
-    assert all('4 à 25 BB' not in (p['scope_fr'] or '') for p in c['profiles'])
-
-
 def test_second_review_fixes():
     _, spots = quiz.load()
     sp = spots['3w-8-8-4-BTN-allin_SB-fold-eee730']                                            # BB couvert : 4 BB effectifs
@@ -240,8 +206,6 @@ def test_second_review_fixes():
     for s in list(spots.values())[::20]:                                                        # la meilleure action affichée figure dans la stratégie affichée
         for h, x in s['hands'].items():
             if x['quiz_eligible']: assert quiz.reference_action(s, h) in dict(grading.displayed_mix(s, h))
-    _, ex = quiz.load(quiz.DEFAULT_EXPLOIT)
-    assert all(quiz.adapts(s) for s in quiz.candidates(ex)) and len(quiz.candidates(ex)) < len(ex)
 
 
 def test_several_good_decisions_when_ev_ties():

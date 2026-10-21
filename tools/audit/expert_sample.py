@@ -21,7 +21,7 @@ hors de l'équipe : voir docs/produit/PLAN_EVALUATION_MVP_2026-10-14.md, remarqu
 """
 import argparse, collections, csv, datetime, json, math, os, random, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from spinsacademy import grading, profiles, progress, quiz  # noqa: E402
+from spinsacademy import grading, progress, quiz  # noqa: E402
 from spinsacademy.cards import NAMES, W  # noqa: E402
 from spinsacademy.hrc import ROOT  # noqa: E402
 
@@ -55,7 +55,7 @@ def allocate(sizes, n):
 
 def sample(n, seed):
     rnd = random.Random(seed); items = collections.defaultdict(list); refs = {}
-    for ref in (quiz.DEFAULT_VERSION, quiz.DEFAULT_EXPLOIT):
+    for ref in (quiz.DEFAULT_VERSION,):                         # mode GTO (le mode exploitant a sa propre relecture : docs/relecture/limp_2026-10-21)
         for sp in quiz.pool(ref):
             hs = sorted(quiz.teachable(sp))
             if hs: items[stratum(sp)].append((ref, sp, hs)); refs[sp['spot_id']] = ref
@@ -92,7 +92,7 @@ def describe(i, x):
     tempting = errs[0] if errs else None
     r_best = quiz.correct(ref, sid, h, best)
     r_err = quiz.correct(ref, sid, h, tempting) if tempting else None
-    pr = profiles.for_villain(sp.get('villain'))
+    pr = None
     v = sp.get('villain')
     return dict(
         id=f'Q{i + 1:03d}', mode=x['stratum'][0], dataset=ref, spot_id=sid, main=h, type_de_cas=CASE_FR[x['case']],
@@ -139,8 +139,7 @@ relecteurs est mesuré ensuite.
 ## Ce que fait l'application (à juger, pas à refaire)
 
 - Référence : stratégie d'équilibre calculée par HoldemResources Calculator (HRC), ou EV exacte quand tout le monde est
-  à tapis. En mode exploitant : meilleure réponse contre un profil fictif dont la fréquence de tapis (ou de call, pour
-  la Station d'appel) est déformée par rapport à l'équilibre push/fold, en EV exacte.
+  à tapis.
 - EV en BB, en chip EV. Les EV HRC sont des estimations (Monte-Carlo) : un bruit d'environ 0,1 BB par main et par action
   a été mesuré. C'est pourquoi une action à moins de 0,1 BB de la meilleure est jugée « pertinente ».
 - Verdicts :
@@ -229,7 +228,7 @@ def main():
         ('Verdict de l\'erreur la plus tentante', lambda q: 'avec erreur' if q['erreur_la_plus_tentante'] else 'sans erreur')))
     commit = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     with open(os.path.join(a.out, 'CONSIGNES.md'), 'w') as f:
-        f.write(CONSIGNES.format(date=datetime.date.today().isoformat(), commit=commit, gto=quiz.DEFAULT_VERSION, exp=quiz.DEFAULT_EXPLOIT, n=len(qs), strata=strata))
+        f.write(CONSIGNES.format(date=datetime.date.today().isoformat(), commit=commit, gto=quiz.DEFAULT_VERSION, exp=quiz.DEFAULT_FIELD, n=len(qs), strata=strata))
     with open(os.path.join(a.out, 'questions_generales.md'), 'w') as f:
         f.write('# Questions générales : réponses de <expert>\n\n' + '\n\n'.join(f'## {i}. {t}\n\n' for i, t in enumerate(
             ['Seuils de verdict', 'Stratégies mixtes', 'Profils fictifs', 'Règles à retenir', 'Ce qui manque'], 1)))
