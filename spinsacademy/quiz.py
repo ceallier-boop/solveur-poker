@@ -17,7 +17,7 @@ from .hrc import ROOT
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
 DEFAULT_EXPLOIT = os.environ.get('SPINSACADEMY_EXPLOIT', 'exploit_calls/2026.10.14-1')
-DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.20-2')                 # mode « Field » (spinsacademy.field)
+DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.20-4')                 # mode « Field » (spinsacademy.field)
 MODES = ('gto', 'exploit', 'field')
 ADAPTATION_SHARE = 0.6            # mode exploitant : part des questions où la bonne réponse diffère du GTO
 SERIES_SIZE = 5
@@ -897,7 +897,7 @@ def correct(version, spot_id, hand, action_id):
     if near and not sp.get('villain'):
         names = ' ou '.join(_low(labels[x]) for x in near)
         lines.append(f"Nuance : {names} {'est aussi pertinente' if len(near) == 1 else 'sont aussi pertinentes'} "
-                     f"(moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart, dans la marge d'incertitude du calcul).")
+                     f"(moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart).")
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
     if action_id == best or (len(good) > 1 and action_id in good): pass       # le bandeau le dit déjà
     elif action_id == top:
@@ -910,7 +910,7 @@ def correct(version, spot_id, hand, action_id):
         if g['verdict'] == 'correct' and raw > grading.TOLERANCE_MBB:
             lines.append(f"La stratégie de référence joue cette action {shown.get(action_id, round(100 * g['chosen_frequency']))} % du temps : elle est acceptée.")
         elif g['verdict'] == 'correct':
-            lines.append(f"Écart d'au plus {tol} BB, " + ('négligeable' if g['ev_source'] == 'exact' else 'dans le bruit de calcul') + ' : réponse acceptée.')
+            lines.append(f"Écart d'au plus {tol} BB, négligeable : réponse acceptée.")
         elif g['verdict'] == 'imprécision' and g.get('pertinent') and raw > 3 * grading.TOLERANCE_MBB:
             lines.append(f"Écart sous {bb(grading.PERTINENT_MBB / 1000)} BB : ton choix reste pertinent, mais la référence est meilleure. Imprécision, pas erreur.")
         elif g['verdict'] == 'imprécision':

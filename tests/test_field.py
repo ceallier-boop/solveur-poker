@@ -86,7 +86,7 @@ def test_field_series_api(client):
     assert traps <= field.MAX_TRAPS and reads <= field.MAX_READ and len(set(hands)) == len(hands)
     s = client.get(f'/sessions/{sid}/summary').json(); assert s['complete'] and s['questions'] == 5
     st = client.get('/users/me/stats', headers=H).json()
-    assert any(x['label'] == 'Field' for x in st['by']['mode'])
+    assert any(x['label'] == 'Exploitant' for x in st['by']['mode'])
     assert client.get('/users/me/reviews', params={'mode': 'field'}, headers=H).status_code == 200
     f = client.post('/sessions', json={'mode': 'field', 'seed': 2, 'filters': {'family': 'read'}}, headers=H)
     assert f.status_code == 201                                          # série « lecture du vilain » : pas de plafond de lecture
@@ -112,9 +112,32 @@ def test_engine_v4_2_checks():
 def test_profiles_follow_field_shares():
     """v4.2 : chaque profil au plus à sa part dans le field ; le rec passif (profil par défaut) complète la banque"""
     sys.path.insert(0, os.path.join(ROOT, 'tools', 'field'))
-    import profils_field as pf
+    import profils_field as pf, quiz_generator as qg
     from collections import Counter
     F = [s['field'] for s in _spots().values()]; c = Counter(f['internal_profile'] for f in F); n = len(F)
     for p in pf.PROFILES:
-        if p != pf.DEFAULT: assert c[p] <= round(400 * pf.prevalence(p)) + 1, (p, c[p])
+        if p != pf.DEFAULT: assert c[p] <= round(qg.N_TARGET * pf.prevalence(p)) + 1, (p, c[p])
     assert c[pf.DEFAULT] / n >= 0.5                                        # le rec passif domine, comme dans le field
+
+
+def test_limp_situations_theory_and_postflop():
+    spots = list(_spots().values())
+    limp = [s for s in spots if s['field_family'] == 'vs_limp']
+    assert len(limp) >= 60 and {s['table'] for s in limp} == {'heads-up', '3-handed'}
+    assert all({o['id'] for o in s['field']['options']} == {'X', 'A'} for s in limp)             # check ou tapis sur le limp du SB
+    assert all(s['history'][-1]['action'] == 'limp' and s['hero'] == 'BB' for s in limp)
+    assert len(spots) >= 400
+    banned = ('coach', 'Lucho', 'Lucky', 'marge de précision', 'bruit', 'borne basse', 'incertitude')
+    for sp in spots[::3]:
+        h = next(iter(sp['hands']))
+        for o in sp['field']['options']:
+            r = quiz.correct(quiz.DEFAULT_FIELD, sp['spot_id'], h, o['id'])
+            text = r['explanation_fr'] + ' '.join(r['why_fr']) + json.dumps(r['next'] or {}, ensure_ascii=False)
+            assert not any(b in text for b in banned), (sp['spot_id'], [b for b in banned if b in text])
+            if sp['field']['type'] not in field.READ:
+                assert any("d'équité" in l for l in r['why_fr'])                                # éléments théoriques chiffrés
+            if any(x['id'] in ('L', 'X') for x in sp['field']['options']) and sp['field']['type'] not in field.READ:
+                n = r['next']; assert n and n['title_fr'] == 'Gérer le postflop' and n['plus_fr'] and n['minus_fr']
+                assert 'SPR' in n['intro'] and (n['forces'] or n['weaknesses'])
+            elif sp['field']['type'] not in field.READ:
+                assert r['next'] is None                                                        # tout à tapis : pas de postflop

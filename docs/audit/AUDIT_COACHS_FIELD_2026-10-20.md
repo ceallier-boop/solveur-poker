@@ -63,3 +63,14 @@ Le reg reste sous sa part : ses questions ne sont que des pièges « contre un r
 - L'estimation du limp en heads-up suppose que le SB, face à l'iso, se couche ou part à tapis, et corrige la valeur du check par l'équité contre la nouvelle range de check (pot de 2 BB) : c'est un modèle, pas un calcul HRC verrouillé. Les exports HRC « SB limp, BB iso, décision du SB » le remplaceraient.
 - Domaine : stacks égaux de 4 à 12 BB, tout ou rien et limp du SB ; min-raise et iso non all-in exclus.
 - Composition : les parts du field (55 / 15 / 15 / 10 / 5 %) sont elles aussi des hypothèses de coachs.
+
+## Fusion des modes exploitants, limps et théorie (21/10/2026, `exploit_field/2026.10.20-4`)
+
+Décision du porteur du projet : le mode des joueurs du field devient le mode **Exploitant** principal.
+
+- Accueil : GTO · Exploitant. L'exploitant joue par défaut contre les joueurs du field ; les profils fictifs en calcul exact restent une option (« Adversaires : profils fictifs »). Progression : « Exploitant » (field) et « Exploitant (profils fictifs) ».
+- Nouvelle situation **« BB face au limp du SB »**, en heads-up et en BvB (BTN couché), de 6 à 12 BB (le SB ne complète presque jamais à 4 BB) : check ou tapis. Le profil porte un facteur sur la fréquence de limp (rec passif et station × 2, dégène × 0,6, nit × 0,7, reg × 1) ; le SB répond au tapis par sa meilleure réponse à l'équité, déformée par son facteur de call ; EV du tapis exacte, EV du check = EV HRC corrigée de l'écart d'équité contre la nouvelle range de limp. Statistiques affichées : limps sur n occasions, puis calls de ton tapis sur ses limps. Règles R12 (isoler à tapis contre un SB qui complète trop et se couche) et R13 (checker les mains moyennes contre un SB qui complète et paie).
+- Banque : 440 questions (346 avant) ; aucune situation au-delà de 12 % de la banque ; parts des profils : rec passif 59 %, station 12 %, reg 12 %, dégène 11 %, nit 6 %. Vérification : 0 échec, recalcul 397 / 397. La grille des coachs ne couvre pas les 132 questions de limp (situation nouvelle) : 298 ✅, 10 ⚠️ sur le reste.
+- Textes : plus de mention des coachs ni de la marge de précision du moteur dans l'application ; à la place, des éléments théoriques chiffrés (cote du pot et équité contre la range de tapis, fold equity et équité quand il paie, coût du limp et fréquence d'iso, valeur du check sur un limp).
+- Section **« Gérer le postflop »** quand la main peut voir un flop (limp du SB, check du BB) : SPR et seuil d'engagement, position, « ce qui avantage ta main » (paire max, tirages, équité contre la range qui voit le flop, range adverse plafonnée) et « ce qui avantage la range adverse » (flops ratés, kicker faible, avantage de range, mains fortes cachées dans un check ou un limp).
+- Lexique 1.5.0 : SPR, range plafonnée, avantage de range, isoler, rec passif, read.

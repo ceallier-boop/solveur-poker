@@ -1,5 +1,5 @@
 {
- "version": "1.4.0",
+ "version": "1.5.0",
  "date": "2026-10-13",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
@@ -705,6 +705,59 @@
     "équilibre push/fold"
    ],
    "def": "Stratégie push/fold qu'aucun joueur ne peut améliorer seul : chaque tapis et chaque call sont la meilleure réponse à l'autre. Référence classique des tapis courts."
+  },
+  {
+   "term": "SPR (rapport tapis / pot)",
+   "cat": "calcul",
+   "match": [
+    "SPR",
+    "rapport tapis / pot"
+   ],
+   "case": true,
+   "def": "Tapis restant divisé par le pot au flop. Bas (3 ou moins), une paire max ou un bon tirage suffit pour mettre tapis ; plus haut, il faut une main plus forte pour s'engager."
+  },
+  {
+   "term": "Range plafonnée",
+   "cat": "calcul",
+   "match": [
+    "plafonnée",
+    "plafonné"
+   ],
+   "def": "Range qui ne contient presque plus de mains fortes, parce que le joueur les aurait relancées ou poussées plus tôt. Contre elle, on peut miser souvent."
+  },
+  {
+   "term": "Avantage de range",
+   "cat": "calcul",
+   "match": [
+    "avantage de range"
+   ],
+   "def": "Équité moyenne d'une range contre l'autre. Celui qui a l'avantage peut miser plus souvent ; l'autre joue surtout ce qui a touché."
+  },
+  {
+   "term": "Isoler (iso)",
+   "cat": "actions",
+   "match": [
+    "isole",
+    "isoler",
+    "iso"
+   ],
+   "def": "Relancer, ou partir à tapis, sur le limp d'un adversaire pour jouer le coup seul contre lui, ou prendre le pot tout de suite."
+  },
+  {
+   "term": "Rec passif",
+   "cat": "profils",
+   "match": [
+    "rec passif"
+   ],
+   "def": "Joueur récréatif qui paie et relance moins que la théorie : le profil le plus fréquent en Expresso, à supposer par défaut tant qu'on n'a pas de read."
+  },
+  {
+   "term": "Read",
+   "cat": "profils",
+   "match": [
+    "read"
+   ],
+   "def": "Information sur un adversaire tirée de ses actions observées. Elle ne vaut que par son nombre d'occasions : quelques mains ne font pas une tendance."
   }
  ]
 }

@@ -58,7 +58,7 @@ const DEMO = (() => {
   function save() { try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch (e) { /* stockage indisponible : la série reste en mémoire */ } }
   const now = () => new Date().toISOString().slice(0, 19) + '+00:00';
   const FAMILY_FR = { first_in: 'Premier à parler', vs_limp: 'Face à un limp', vs_raise: 'Face à une relance', vs_allin: 'Face à un tapis', read: 'Lecture du vilain' };
-  const TABLE_FR = { '3-handed': '3 joueurs', 'heads-up': 'Heads-up' }; const MODE_FR = { gto: 'GTO', exploit: 'Exploitant', field: 'Field' };
+  const TABLE_FR = { '3-handed': '3 joueurs', 'heads-up': 'Heads-up' }; const MODE_FR = { gto: 'GTO', field: 'Exploitant', exploit: 'Exploitant (profils fictifs)' };
   const DEPTHS = [['lt10', 'Moins de 10 BB', 0, 9.5], ['10_16', '10 à 16 BB', 9.5, 16.5], ['17_25', '17 à 25 BB', 16.5, 99]];
   const depthOf = (s) => (DEPTHS.find(([, , lo, hi]) => s >= lo && s < hi) || DEPTHS[2])[0];
   const MIN_SAMPLE = 10;

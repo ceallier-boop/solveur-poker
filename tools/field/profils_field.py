@@ -20,13 +20,16 @@ FIELD_ISO = 0.4          # iso HU d'un limp : 11-16 % au lieu de 25-30 % (Lucky)
 
 DEFAULT = 'Rec passif (défaut)'
 
+# v4.2 : limp_k = facteur sur les cotes de la fréquence de limp du SB (situation « BB face au limp du SB ») : le rec passif et
+# la station complètent beaucoup (y compris des mains qu'ils ne poussent pas), le dégène relance ou pousse au lieu de compléter,
+# le nit se couche plus souvent
 PROFILES = {
-    DEFAULT: dict(shove=None, call=None, iso=FIELD_ISO, passif=True, limp=True, pastille='serpillère / rec passif',
+    DEFAULT: dict(shove=None, call=None, iso=FIELD_ISO, limp_k=2.0, passif=True, limp=True, pastille='serpillère / rec passif',
                   prevalence=0.55),
-    'Calling station': dict(shove=0.8, call=1.8, iso=0.5, passif=True, limp=True, pastille='calling station', prevalence=0.15),
-    'Dégène': dict(shove=2.0, call=1.3, iso=2.0, passif=False, limp=False, pastille='dégène / agressif', prevalence=0.10),
-    'Nit': dict(shove=0.5, call=0.5, iso=0.5, passif=True, limp=False, pastille='nit (jackpot)', prevalence=0.05),
-    'Reg': dict(shove=1.0, call=1.0, iso=1.0, passif=False, limp=False, pastille='reg', prevalence=0.15),
+    'Calling station': dict(shove=0.8, call=1.8, iso=0.5, limp_k=2.0, passif=True, limp=True, pastille='calling station', prevalence=0.15),
+    'Dégène': dict(shove=2.0, call=1.3, iso=2.0, limp_k=0.6, passif=False, limp=False, pastille='dégène / agressif', prevalence=0.10),
+    'Nit': dict(shove=0.5, call=0.5, iso=0.5, limp_k=0.7, passif=True, limp=False, pastille='nit (jackpot)', prevalence=0.05),
+    'Reg': dict(shove=1.0, call=1.0, iso=1.0, limp_k=1.0, passif=False, limp=False, pastille='reg', prevalence=0.15),
 }
 
 # v4 : paires premium que les coachs divergent à limper entre 5 et 10 BB (R8) : exclues des questions notées
@@ -56,7 +59,7 @@ def factors(profile, S):
     p = PROFILES[profile]
     sh = p['shove'] if p['shove'] is not None else _interp_log(FIELD_REC, S, 0)
     ca = p['call'] if p['call'] is not None else _interp_log(FIELD_REC, S, 1)
-    return dict(shove=sh, call=ca, iso=p['iso'], limp=p['limp'])
+    return dict(shove=sh, call=ca, iso=p['iso'], limp_k=p['limp_k'], limp=p['limp'])
 
 
 def posterior(observed, S, n, n0=N0):
@@ -64,7 +67,8 @@ def posterior(observed, S, n, n0=N0):
     n = 0 → profil par défaut ; n → ∞ → facteurs observés."""
     prior = factors(DEFAULT, S)
     out = {'limp': bool(observed.get('limp', prior['limp'])) if n >= n0 else prior['limp']}
-    for k in ('shove', 'call', 'iso'):
+    for k in ('shove', 'call', 'iso', 'limp_k'):
+        if k not in observed: out[k] = prior[k]; continue
         lo, lp = math.log(observed[k]), math.log(prior[k])
         out[k] = math.exp((n * lo + n0 * lp) / (n + n0))
     return out

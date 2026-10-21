@@ -7,7 +7,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   const p = await ctx.newPage();
   p.on('pageerror', e => errors.push(String(e))); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await p.goto(process.env.BASE_URL || 'http://localhost:8000/'); await p.screenshot({ path: out + '/1_accueil.png' });
-  if (process.env.MODE && process.env.MODE !== 'gto') await p.click(`.mode-switch [data-value="${process.env.MODE}"]`);
+  if (process.env.MODE && process.env.MODE !== 'gto') await p.click('.mode-switch [data-value="field"]');          // Exploitant
+  if (process.env.MODE === 'exploit') { await p.click('#filters summary'); await p.click('.chips[data-name="opponents"] [data-value="fictifs"]'); await p.click('#filters summary'); }
   await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
   await p.screenshot({ path: out + '/2_question.png' });
   await p.click('#lex-btn'); await p.waitForSelector('#lex:not([hidden]) #lex-body dl');            // lexique de l'écran

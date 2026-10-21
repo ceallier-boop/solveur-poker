@@ -62,11 +62,17 @@ function confirmTwice(btn, question) {                              // 1er appui
 function progress(text) { $('progress').textContent = text || ''; }
 
 // ------------------------------------------------------------------ accueil
-function mode() { return document.querySelector('.mode-switch [aria-pressed="true"]').dataset.value; }
+// deux modes à l'accueil : GTO et Exploitant ; l'exploitant joue contre les joueurs du field (mode « field »), ou, en option,
+// contre les profils fictifs en calcul exact (mode « exploit »)
+function mode() {
+  const m = document.querySelector('.mode-switch [aria-pressed="true"]').dataset.value;
+  if (m === 'gto') return 'gto';
+  return document.querySelector('.chips[data-name="opponents"] [aria-pressed="true"]').dataset.value === 'fictifs' ? 'exploit' : 'field';
+}
 function filters() {
   const f = {};
   for (const group of document.querySelectorAll('.filters .chips')) {
-    if (group.closest('fieldset').hidden) continue;
+    if (group.closest('fieldset').hidden || group.dataset.name === 'opponents') continue;   // adversaires : choisit le mode, pas un filtre
     const v = group.querySelector('[aria-pressed="true"]').dataset.value;
     if (!v) continue;
     if (group.dataset.name === 'depth') { const [a, b] = v.split('-').map(Number); f.min_stack = a; f.max_stack = b + 0.5; }
@@ -279,7 +285,8 @@ function renderNext(n) {
   const list = (xs, cls, title) => (xs && xs.length ? `<h4 class="${cls}">${title}</h4><ul class="${cls}">${xs.map((x) => `<li>${x}</li>`).join('')}</ul>` : '');
   $('a-next').innerHTML = `<p>${n.intro}</p>` + (n.position ? `<p class="pos">${n.position}</p>` : '')
     + (rows ? `<div class="metrics"><p class="mhead">Au flop, comparé à la moyenne ${n.metrics[0].reference_fr} (repère vertical) :</p>${rows}</div>` : '')
-    + list(n.forces, 'plus', 'Forces') + list(n.weaknesses, 'minus', 'Faiblesses');
+    + list(n.forces, 'plus', n.plus_fr || 'Forces') + list(n.weaknesses, 'minus', n.minus_fr || 'Faiblesses');
+  $('a-next-title').textContent = n.title_fr || 'Potentiel de la main au flop';
 }
 
 // ------------------------------------------------------------------ grille 13 x 13 de la stratégie de référence
@@ -386,7 +393,7 @@ async function stats() {
 }
 
 async function adaptation() {
-  const modes = { gto: 'GTO', exploit: 'Exploitant' }; const parts = []; let first = null;   // le mode Field n'a pas de série adaptée
+  const modes = { gto: 'GTO', exploit: 'Exploitant (profils fictifs)' }; const parts = []; let first = null;   // le mode Field n'a pas de série adaptée
   for (const m of Object.keys(modes)) {
     let a; try { a = await api(`/users/me/adaptation?mode=${m}`); } catch (e) { continue; }       // mode sans dataset publié : ignoré
     first = first || a;
@@ -494,13 +501,14 @@ async function reviews() {
   }
 }
 const MODE_NOTE = { gto: 'Stratégie de référence, contre des adversaires qui jouent juste.',
-  field: "Contre les joueurs du field Expresso, de 4 à 12 BB : le vilain inconnu est un rec passif ; ses statistiques observées (k sur n) disent s'il pousse ou paie trop. Profils tirés de l'expérience de coachs, pas des mesures.",
-  exploit: "Contre des profils fictifs : payer ou non un tapis de joueurs qui poussent moins ou plus souvent qu'un joueur équilibré en push/fold (Serré, Prudent, Agressif, Maniaque), ou pousser contre un joueur qui paie trop (Station d'appel). Hypothèses de simulation, pas de vrais joueurs." };
+  field: "Contre les joueurs réels d'Expresso, de 4 à 12 BB : sans information, le vilain est un rec passif (il paie et relance moins que la théorie) ; ses statistiques observées (k sur n) disent s'il pousse, complète ou paie trop.",
+  exploit: "Profils fictifs, en calcul exact : payer ou non un tapis de joueurs qui poussent moins ou plus souvent qu'un joueur équilibré en push/fold (Serré, Prudent, Agressif, Maniaque), ou pousser contre un joueur qui paie trop (Station d'appel). Hypothèses de simulation, pas de vrais joueurs." };
 const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'vs_allin', 'first_in'],    // calls de tapis et tapis du SB
-  field: ['', 'first_in', 'vs_allin', 'read'] };                    // field : tapis, calls de tapis, lecture du vilain
+  field: ['', 'first_in', 'vs_limp', 'vs_allin', 'read'] };        // field : tapis, limps, calls de tapis, lecture du vilain
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'], field: ['', '0-9', '10-16'] };   // field : 4 à 12 BB
-document.querySelector('.mode-switch').addEventListener('click', () => {
+function onMode() {
   reviews();
+  $('opp-filter').hidden = mode() === 'gto';
   $('mode-note').textContent = MODE_NOTE[mode()]; $('profile-filter').hidden = mode() !== 'exploit';
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -510,7 +518,9 @@ document.querySelector('.mode-switch').addEventListener('click', () => {
       if (off && b.getAttribute('aria-pressed') === 'true') { b.setAttribute('aria-pressed', 'false'); grp.querySelector('[data-value=""]').setAttribute('aria-pressed', 'true'); }
     }
   }
-});
+}
+document.querySelector('.mode-switch').addEventListener('click', onMode);
+document.querySelector('.chips[data-name="opponents"]').addEventListener('click', onMode);
 $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });

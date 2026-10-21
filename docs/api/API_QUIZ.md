@@ -41,11 +41,13 @@ La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md
 - la stratégie de référence : actions jouées au moins 10 % du temps, arrondies à 5 % ;
 - la source de l'EV.
 
-## Mode Field (`spinsacademy/field.py`, dataset `exploit_field`)
+## Mode Exploitant : joueurs du field (`mode: "field"`, `spinsacademy/field.py`, dataset `exploit_field`)
 
-`POST /sessions` avec `mode: "field"` : questions fixes du moteur exploitant v4.2 (`tools/field`), contre les joueurs du field Expresso (4 à 12 BB). Filtres : `table`, `hero`, `family` (`first_in`, `vs_allin`, `read` pour la lecture du vilain), profondeur. Pas de série adaptée ; révision espacée, progression et signalements comme dans les autres modes.
+C'est le mode exploitant principal de l'interface ; `mode: "exploit"` (profils fictifs en calcul exact) reste disponible en option.
+
+`POST /sessions` avec `mode: "field"` : questions fixes du moteur exploitant v4.2 (`tools/field`), contre les joueurs du field Expresso (4 à 12 BB). Filtres : `table`, `hero`, `family` (`first_in`, `vs_limp` pour le BB face au limp du SB, `vs_allin`, `read` pour la lecture du vilain), profondeur. Pas de série adaptée ; révision espacée, progression et signalements comme dans les autres modes.
 - `GET /quiz/next` : `question.field` = type (`adaptation`, `inconnu`, `piège`, `échantillon`, `identification`, `profil`), statistiques observées du vilain (`k` sur `n`, observé et théorie), question posée (`ask_fr`) pour la lecture du vilain ; jamais le profil interne.
-- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R11) et son texte, action théorique HRC, gain par rapport à la théorie, EV de chaque option ; montants en BB.
+- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R13) et son texte, action théorique HRC, gain par rapport à la théorie, EV de chaque option ; `why_fr` = éléments théoriques (cote du pot, équité contre la range, fold equity) ; `next` = « Gérer le postflop » quand la main peut voir un flop (SPR, position, ce qui avantage ta main et la range adverse) ; montants en BB.
 - Détail des corrections et de l'audit : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`.
 
 ## Révision espacée des erreurs (`spinsacademy/review.py`, évaluation du MVP, remarque 21)

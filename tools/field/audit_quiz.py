@@ -12,7 +12,9 @@ for q in qs:
     S, kind, t, ans, gto, pr, h = q['stack'], q['kind'], q['type'], q['bonne_reponse'], q.get('action_GTO', ''), q['profil'], hero(q)
     sp = 'call' if 'face à' in q['situation'] else 'shove'
     L = P = K = ('✅', ''); corr = ''
-    if t == 'profil':
+    if 'limp du SB' in q['situation'] and t not in ('identification', 'profil'):    # v4.2 : situation nouvelle, hors de la grille des coachs
+        L = P = K = ('·', 'situation nouvelle (BB face au limp) : non couverte par la grille')
+    elif t == 'profil':
         L = ('✅', 'pastille selon le comportement (§4) ; rec passif et reg séparés (v4.2)')
         P = ('✅', '« 3 occurrences ne font pas une tendance » : l\'énoncé donne n [fNlp-ULrS30]')
         K = ('✅', 'pastille + nombre d\'observations, ~5 % d\'erreur acceptés [qhmDZMrzgH8]')
@@ -59,7 +61,7 @@ for q in qs:
         if sp == 'shove' and kind == 'hu' and S >= 10 and ans.startswith('Pousser') and pr == 'Calling station':
             P = ('⚠️', '9-10 BB vs passif : limper les As-x plutôt que shove [XIxCrh3PBKc]'); K = ('⚠️', 'vs station : limper beaucoup [pJDcCB-G0r0]'); corr = 'Push n\'est pas une erreur, le limp est au moins aussi bon.'
     cons = [L[0], P[0], K[0]]; c = collections.Counter(cons)
-    consensus = '❌' if c['❌'] >= 2 else ('⚠️' if c['❌'] + c['⚠️'] >= 2 else '✅')
+    consensus = '·' if c['·'] == 3 else '❌' if c['❌'] >= 2 else ('⚠️' if c['❌'] + c['⚠️'] >= 2 else '✅')
     rows.append(dict(id=q['id'], type=t, kind=kind, stack=S, situation=q['situation'], main=q.get('hero_hand', ''), profil=pr, observations=q['observations'],
                      action_GTO=gto, reponse_quiz=ans, gain_mBB=q.get('gain_mBB', ''), regle=q['regle'],
                      lucho=L[0], lucho_motif=L[1], pa=P[0], pa_motif=P[1], lucky=K[0], lucky_motif=K[1], consensus=consensus, correction=corr))

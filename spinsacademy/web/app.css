@@ -113,7 +113,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .weak { background: var(--warn-bg); color: var(--text); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .weak b { color: var(--warn); }
 
-.mode-switch { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr; }
 .mode-switch button { min-height: 48px; font-weight: 650; }
 .villain { background: var(--warn-bg); border-radius: var(--radius); padding: 10px 12px; font-size: .92rem; }
 .villain b { color: var(--warn); }

@@ -23,7 +23,10 @@ for q in qs:
         check(q['gain_mBB'] >= 0, "gain négatif", q)
         ev, evl = q['ev_jeu_vs_fold_mBB'], q.get('ev_limp_vs_fold_mBB')
         best = {'Fold': 0.0, 'Limp': evl}
-        if q['bonne_reponse'] == 'Fold':
+        if 'limp du SB' in q['situation']:              # v4.2 : le BB face au limp, check ou tapis
+            evc = q['ev_check_vs_fold_mBB']
+            check(evc is not None and (ev >= evc if q['bonne_reponse'] == 'Pousser all-in' else evc >= ev), "limp du SB : la réponse n'est pas la meilleure action", q)
+        elif q['bonne_reponse'] == 'Fold':
             check(ev < 0 and (evl is None or evl < 0), "réponse Fold mais une autre action a une EV >= 0", q)
         elif q['bonne_reponse'] == 'Limp':
             check(evl is not None and evl >= max(ev, 0), "réponse Limp mais le limp n'est pas la meilleure action", q)
@@ -80,13 +83,13 @@ n_rec = 0; bad = 0
 cache = {}
 for q in qs:
     if q['type'] in ('identification', 'profil'): continue
-    key = (q['kind'], q['situation'], q['stack'], q['facteurs']['shove'], q['facteurs']['call'], q['facteurs'].get('iso', 1.0), q['facteurs'].get('limp', True))
+    key = (q['kind'], q['situation'], q['stack'], q['facteurs']['shove'], q['facteurs']['call'], q['facteurs'].get('iso', 1.0), q['facteurs'].get('limp_k', 1.0), q['facteurs'].get('limp', True))
     if key not in cache:
-        ee.PROFILES.clear(); ee.PROFILES['x'] = dict(shove=q['facteurs']['shove'], call=q['facteurs']['call'], iso=q['facteurs'].get('iso', 1.0), limp=q['facteurs'].get('limp', True)); ee.INTENSITE = 1.0
+        ee.PROFILES.clear(); ee.PROFILES['x'] = dict(shove=q['facteurs']['shove'], call=q['facteurs']['call'], iso=q['facteurs'].get('iso', 1.0), limp_k=q['facteurs'].get('limp_k', 1.0), limp=q['facteurs'].get('limp', True)); ee.INTENSITE = 1.0
         cache[key] = ee.run_spot(q['kind'], q['stack'], q['situation'], ee.SPOTS[(q['kind'], q['situation'])])['x']
     r = cache[key]; i = NAMES.index(q['hero_hand'])
     play = 'Payer' if ee.SPOTS[(q['kind'], q['situation'])]['type'] == 'call' else 'Pousser all-in'
-    expl = {'paie': play, 'pousse': play, 'limpe': 'Limp'}.get(r['expl'][i], 'Fold')
+    expl = {'paie': play, 'pousse': play, 'limpe': 'Limp', 'checke': 'Check'}.get(r['expl'][i], 'Fold')
     n_rec += 1
     if expl != q['bonne_reponse'] or abs(1000 * float(r['ev_raw'][i]) - q['ev_jeu_vs_fold_mBB']) > 1.0 or not r['valid'][i]:
         bad += 1; fails.append(("recalcul différent", q['id']))

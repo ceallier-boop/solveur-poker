@@ -18,7 +18,7 @@ DEPTHS = (('lt10', 'Moins de 10 BB', 0, 9.5), ('10_16', '10 à 16 BB', 9.5, 16.5
 FAMILY_FR = {'first_in': 'Premier à parler', 'vs_limp': 'Face à un limp', 'vs_raise': 'Face à une relance', 'vs_allin': 'Face à un tapis',
              'read': 'Lecture du vilain'}
 TABLE_FR = {'3-handed': '3 joueurs', 'heads-up': 'Heads-up'}
-MODE_FR = {'gto': 'GTO', 'exploit': 'Exploitant', 'field': 'Field'}
+MODE_FR = {'gto': 'GTO', 'field': 'Exploitant', 'exploit': 'Exploitant (profils fictifs)'}
 
 
 def depth_of(stack):

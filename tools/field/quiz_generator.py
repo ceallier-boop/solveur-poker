@@ -27,7 +27,8 @@ import profils_field as pf
 from hrcdata import NAMES
 
 OUT_DIR = os.environ.get('EXPRESSO_OUT', ee.DATA_DIR)
-N_TARGET = int(os.environ.get('EXPRESSO_N_QUIZ', 400))
+N_TARGET = int(os.environ.get('EXPRESSO_N_QUIZ', 550))
+SITU_MAX = 0.12          # v4.2 : aucune situation au-delà de 12 % de la banque (les limps du SB l'auraient envahie)
 N_OBS = (20, 40, 80)          # occasions observées pour les adaptations
 N_THIN = (3, 5)               # read trop mince (type « échantillon »)
 
@@ -39,12 +40,15 @@ SIT = {
  ('3w', "BTN pousse face au SB et au BB"):       "3 joueurs, {S} BB chacun. Tu es au BTN, le SB et le BB sont derrière.",
  ('hu', "BB face à l'all-in du SB"):             "Heads-up, {S} BB chacun. Le SB pousse all-in. Tu es au BB.",
  ('hu', "SB pousse face au BB"):                 "Heads-up, {S} BB chacun. Tu es au SB (bouton), le BB est derrière.",
+ ('hu', "BB face au limp du SB"):                "Heads-up, {S} BB chacun. Le SB complète. Tu es au BB.",
+ ('3w', "BB face au limp du SB (BTN fold)"):     "3 joueurs, {S} BB chacun. Le BTN fold et le SB complète. Tu es au BB.",
 }
-LEAKS = {('call', +1): "pousse trop souvent", ('call', -1): "ne pousse pas assez",
+LEAKS = {('iso', +1): "complète trop souvent", ('iso', -1): "ne complète pas assez",
+         ('call', +1): "pousse trop souvent", ('call', -1): "ne pousse pas assez",
          ('shove', +1): "paie trop souvent", ('shove', -1): "ne paie pas assez"}
 LEAK_OPTIONS = ["Il pousse trop souvent", "Il ne pousse pas assez", "Il paie trop souvent", "Il ne paie pas assez"]
 LEAK_ANS = {('call', +1): 0, ('call', -1): 1, ('shove', +1): 2, ('shove', -1): 3}
-LABEL = {'paie': 'Payer', 'pousse': 'Pousser all-in', 'limpe': 'Limp', 'fold': 'Fold'}
+LABEL = {'paie': 'Payer', 'pousse': 'Pousser all-in', 'limpe': 'Limp', 'fold': 'Fold', 'checke': 'Check'}
 
 RULES = {
  'R0': "Vilain inconnu = rec passif, pas GTO : il paie et relance moins que la théorie. Vole plus (limp en heads-up, tapis en BvB et au BTN), paie plus serré (sauf à 4 BB ou moins).",
@@ -58,6 +62,8 @@ RULES = {
  'R9': "Un écart de fréquence qui ne retourne pas la décision ne change rien.",
  'R10': "Quelques occasions ne font pas une tendance : reste sur le profil par défaut.",
  'R11': "Contre un reg identifié, joue la théorie : n'invente pas d'exploit.",
+ 'R12': "Contre un SB qui complète trop et se couche face au tapis, isole à tapis plus large : son limp est une range faible qui ne défend pas.",
+ 'R13': "Contre un SB qui complète puis paie ton tapis, garde le tapis pour la valeur et checke tes mains moyennes : tu vois le flop gratuitement, en position.",
 }
 # poids de réalisme du défaut à cette profondeur (stratégie §1, point 4)
 def realism(leak, S):
@@ -76,6 +82,10 @@ def hand_txt(h):
 def stat_line(spec, r, n):
     """statistique observée affichée en « k sur n » ; le pourcentage est celui de l'échantillon (k / n)"""
     k = round(n * r['vill_freq'] / 100); pct = 100 * k / n
+    if spec['type'] == 'iso':
+        k2 = round(k * r['call_after_pct'] / 100)               # les calls se comptent sur ses limps, pas sur les occasions
+        return (f"Sur {n} occasions, ce vilain a complété {k} fois ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %) "
+                f"et, face à un tapis après son limp, il a payé {k2} fois sur {k}" + (f" ({100 * k2 / k:.0f} % ; GTO : {r['call_after_pct_gto']:.0f} %)." if k else "."))
     if spec['type'] == 'call':
         return f"Sur {n} occasions dans cette situation, ce vilain a poussé {k} fois ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %)."
     if r.get('vill_freq2') is not None:
@@ -90,6 +100,11 @@ def stats_struct(spec, r, n):
     """statistiques observées sous forme structurée (export application) : k sur n, % observé, % GTO"""
     if n == 0: return []
     k = round(n * r['vill_freq'] / 100)
+    if spec['type'] == 'iso':                                     # v4.2 : limp du SB, puis call de ton tapis après son limp
+        k2 = round(k * r['call_after_pct'] / 100)
+        out = [dict(stat='limp_pct', n=n, k=k, observed_pct=round(100 * k / n, 1), gto_pct=round(r['vill_freq_gto'], 1))]
+        if k: out.append(dict(stat='call_after_limp_pct', n=k, k=k2, observed_pct=round(100 * k2 / k, 1), gto_pct=round(r['call_after_pct_gto'], 1)))
+        return out
     out = [dict(stat='shove_pct' if spec['type'] == 'call' else 'call_pct', n=n, k=k, observed_pct=round(100 * k / n, 1), gto_pct=round(r['vill_freq_gto'], 1))]
     if r.get('vill_freq2') is not None:
         k2 = round(n * r['vill_freq2'] / 100)
@@ -97,11 +112,13 @@ def stats_struct(spec, r, n):
     return out
 
 
-INF = {"pousse trop souvent": "pousser trop souvent", "ne pousse pas assez": "ne pas pousser assez",
+INF = {"complète trop souvent": "compléter trop souvent", "ne complète pas assez": "ne pas compléter assez",
+       "pousse trop souvent": "pousser trop souvent", "ne pousse pas assez": "ne pas pousser assez",
        "paie trop souvent": "payer trop souvent", "ne paie pas assez": "ne pas payer assez"}
 
 
 def rule_for(spec, gto, ex, pname, hero_btn):
+    if spec['type'] == 'iso': return 'R12' if ex == 'pousse' else 'R13'
     if ex == 'limpe': return 'R4'
     if spec['type'] == 'call':
         return 'R1' if ex == 'paie' else 'R2'
@@ -111,6 +128,7 @@ def rule_for(spec, gto, ex, pname, hero_btn):
 
 
 def options_for(spec, r):
+    if spec['type'] == 'iso': return ['Pousser all-in', 'Check']
     if spec['type'] == 'call':
         return ['Payer', 'Fold']
     return ['Pousser all-in', 'Limp', 'Fold'] if r['ev_limp'] is not None else ['Pousser all-in', 'Fold']
@@ -120,12 +138,14 @@ def ev_of(r, i, action):
     if action == 'fold': return 0.0
     if action == 'paie': return float(r['ev_raw'][i])
     if action == 'limpe': return float(r['ev_limp'][i])
+    if action == 'checke': return float(r['ev_check'][i])
     return float(r['ev_raw'][i])
 
 
 def margin(spec, r, i):
     """écart d'EV entre l'action choisie et la meilleure autre action disponible (pièges : la décision est nette)"""
-    acts = ['paie', 'fold'] if spec['type'] == 'call' else (['pousse', 'limpe', 'fold'] if r['ev_limp'] is not None else ['pousse', 'fold'])
+    acts = (['pousse', 'checke'] if spec['type'] == 'iso' else ['paie', 'fold'] if spec['type'] == 'call'
+            else (['pousse', 'limpe', 'fold'] if r['ev_limp'] is not None else ['pousse', 'fold']))
     ch = r['expl'][i]
     return ev_of(r, i, ch) - max(ev_of(r, i, a) for a in acts if a != ch)
 
@@ -138,6 +158,8 @@ def explain(kind_q, leak, ans, gto_ans, gain, noise, r, i, rule, n, spec, pname=
     elif r['ev_limp'] is not None:
         evs += (f", limp {1000 * float(r['ev_limp'][i]):+.0f} mBB (estimation : contre lui, le BB relance ton limp environ {r['iso_pct']:.0f} % du temps, "
                 f"{r['iso_pct_gto']:.0f} % en théorie)")
+    if spec['type'] == 'iso':
+        evs += f", check {1000 * float(r['ev_check'][i]):+.0f} mBB"
     lesson = RULES[rule]
     if kind_q == 'adaptation':
         return (f"Le vilain {leak} ({n} occasions). Contre lui, {ans.lower()} bat l'action GTO ({gto_ans.lower()}) de {gain:.0f} mBB, "
@@ -164,7 +186,7 @@ INCONNU_MAX = 30          # v4.2 : « inconnu » par (stack, réponse) (22 en v4
 MIX_MAX = 0.30            # v4.2 : HRC joue déjà la réponse 30 % du temps ou plus → pas une vraie déviation
 TRAP_MIN_GAP = 5.0        # v4.2 : un piège montre un vilain écarté d'au moins 5 points du GTO
 TRAP_MAX_MARGIN = 10.0    # v4.2 : au-delà de 10 x le bruit, la décision est triviale
-HRC_LABEL = {'paie': 'C', 'pousse': 'A', 'limpe': 'C', 'fold': 'F'}
+HRC_LABEL = {'paie': 'C', 'pousse': 'A', 'limpe': 'C', 'fold': 'F', 'checke': 'X'}
 
 
 def gto_freq(kind, S, spec, i, action):
@@ -183,7 +205,8 @@ def shown_gap(spec, r, robs, n):
 
 def acceptables(spec, r, i, noise):
     """actions dont l'EV est à moins de 1 x bruit de la meilleure (affichées comme acceptées)"""
-    acts = ['paie', 'fold'] if spec['type'] == 'call' else (['pousse', 'limpe', 'fold'] if r['ev_limp'] is not None else ['pousse', 'fold'])
+    acts = (['pousse', 'checke'] if spec['type'] == 'iso' else ['paie', 'fold'] if spec['type'] == 'call'
+            else (['pousse', 'limpe', 'fold'] if r['ev_limp'] is not None else ['pousse', 'fold']))
     best = max(ev_of(r, i, a) for a in acts)
     return [LABEL[a] for a in acts if a != r['expl'][i] and best - ev_of(r, i, a) < noise]
 
@@ -255,10 +278,11 @@ def make(seed=11, per_cell=30):
                 noise = ee.NOISE_BB[S]
                 full = ee.run_spot(kind, S, name, spec, profiles={p: pf.factors(p, S) for p in pf.PROFILES})
                 if full is None: continue
+                if spec['type'] == 'iso' and full['Reg']['vill_freq_gto'] < 5: continue     # le SB ne complète presque jamais à cette profondeur
                 reg = full['Reg']
                 incoherent = reg['valid'] & (reg['gto'] != reg['expl'])        # la décision change même contre le GTO : base HRC incohérente
                 # R8 : limp-trap des paires premium = désaccord des coachs, exclu des questions notées
-                prem = np.array([NAMES[i] in pf.PREMIUM_PAIRS for i in range(169)]) & (spec['formula'] == 'hu_sb') & (S >= 6)
+                prem = np.array([NAMES[i] in pf.PREMIUM_PAIRS for i in range(169)]) & (spec.get('formula') == 'hu_sb') & (S >= 6)
                 # --- R11 : vilain identifié reg → théorie ; on ne garde que les décisions nettes
                 if lam == 1.0:
                     for n in (40, 80):
@@ -294,8 +318,13 @@ def make(seed=11, per_cell=30):
                             kq = 'inconnu' if n == 0 else 'adaptation'
                             if n:   # v4 : le read affiché doit montrer un écart net (>= 5 points) et aller dans le sens de la réponse
                                 dfreq = 100 * round(n * robs['vill_freq'] / 100) / n - robs['vill_freq_gto']      # écart tel qu'AFFICHÉ (k / n)
+                                kl = round(n * robs['vill_freq'] / 100)
+                                dcall = ((100 * round(kl * robs['call_after_pct'] / 100) / kl if kl else robs['call_after_pct_gto']) - robs['call_after_pct_gto']) if spec['type'] == 'iso' else 0.0
                                 def sens_ok(i):
                                     e, g0 = r['expl'][i], r['gto'][i]
+                                    if spec['type'] == 'iso':             # tapis : il complète plus ou paie moins ; check : il paie plus ou complète moins
+                                        if max(abs(dfreq), abs(dcall)) < 5: return False
+                                        return (dfreq > 0 or dcall < 0) if e == 'pousse' else (dcall > 0 or dfreq < 0)
                                     if abs(dfreq) < 5: return False
                                     if spec['type'] == 'call': return (e == 'paie') == (dfreq > 0)
                                     if e == 'pousse': return dfreq < 0
@@ -312,7 +341,7 @@ def make(seed=11, per_cell=30):
                                         else rule_for(spec, r['gto'][i], r['expl'][i], pname, hero_btn))
                                 q = build_q(kindq, pname, n, lam, kind, name, spec, S, noise, r, robs, i, rule, leak, gain[i])
                                 cands.append(q)
-                                if kindq == 'adaptation' and abs(robs['vill_freq'] - robs['vill_freq_gto']) >= 3 and rnd.random() < 0.4:
+                                if kindq == 'adaptation' and spec['type'] != 'iso' and abs(robs['vill_freq'] - robs['vill_freq_gto']) >= 3 and rnd.random() < 0.4:
                                     base = SIT[(kind, name)].format(S=S)
                                     cands.append(dict(id=q['id'] + '-leak', type='identification', kind=kind, stack=S, situation=name, hero_hand=q['hero_hand'],
                                                       enonce=f"{base} {stat_line(spec, robs, n)} Quel est le défaut de ce vilain ?",
@@ -342,12 +371,13 @@ def make(seed=11, per_cell=30):
     quota = {p: round(N_TARGET * v / tot) for p, v in prev.items()}
     keyed = sorted(pool, key=lambda q: -math.log(rnd.random() + 1e-12) / max(q['poids'], 1e-6))
     out, n_trap, used, taken = [], 0, {p: 0 for p in pf.PROFILES}, set()
-    inc = collections.Counter()
+    inc = collections.Counter(); n_situ = collections.Counter()
     for strict in (True, False):
         for q in keyed:
             if len(out) >= N_TARGET: break
             cap = quota[q['profil']] if strict else round(QUOTA_RELAX * quota[q['profil']]) + (N_TARGET if q['profil'] == pf.DEFAULT else 0)   # v4.2 : profils à leur part ; le rec passif complète
             if q['id'] in taken or used[q['profil']] >= cap: continue
+            if q['type'] != 'profil' and n_situ[(q['kind'], q['situation'])] >= SITU_MAX * N_TARGET: continue
             if q['type'] == 'inconnu':      # v4.1 : pas plus de 22 « inconnu » par (stack, réponse) : évite 57 « Pousser » à 8 BB
                 kk = (q['stack'], q['bonne_reponse'])
                 if inc[kk] >= INCONNU_MAX: continue
@@ -355,7 +385,7 @@ def make(seed=11, per_cell=30):
             if q['type'] in ('piège', 'échantillon'):
                 if n_trap >= 0.35 * N_TARGET: continue
                 n_trap += 1
-            out.append(q); taken.add(q['id']); used[q['profil']] += 1
+            out.append(q); taken.add(q['id']); used[q['profil']] += 1; n_situ[(q['kind'], q['situation'])] += 1
     # v4.1 : part des pièges + échantillons ramenée à 35 % de la banque finale (la banque finale peut être plus petite que N_TARGET)
     non = [q for q in out if q['type'] not in ('piège', 'échantillon')]
     allow = int(0.35 / 0.65 * len(non)); kept = 0; o2 = []
@@ -374,6 +404,57 @@ def make(seed=11, per_cell=30):
         pos = min(range(m), key=lambda p: (cnt[(m, p)], rr.random())); cnt[(m, pos)] += 1
         q['options'] = others[:pos] + [q['bonne_reponse']] + others[pos:]
     return out
+
+
+TOP_SHARE = 0.15          # « mains fortes » : les 15 % de mains les plus fortes contre une main au hasard
+
+
+def _eq(i, rng):
+    q = ee.P * rng; s = q.sum()
+    return float(ee.E[i] @ q / s) if s > 0 else None
+
+
+def theory(spec, kind, S, r, i):
+    """éléments théoriques d'une question (exacts, préflop) : cote du pot, équité contre la range du vilain et contre la range
+    théorique, fréquence de fold face à ton tapis"""
+    pct = lambda x: None if x is None else round(100 * x, 1)
+    if spec['type'] == 'call':
+        call, final = {'hu_bb': (S - 1, 2 * S), 'btn_bb': (S - 1, 2 * S + 0.5), 'btn_sb': (S - 0.5, 2 * S + 1)}[spec['formula']]
+        return dict(kind='call', call_bb=call, pot_bb=final, need_pct=round(100 * call / final, 1), range_pct=round(r['vill_freq'], 1),
+                    range_gto_pct=round(r['vill_freq_gto'], 1), eq_pct=pct(_eq(i, r['vec'])), eq_gto_pct=pct(_eq(i, r['vec_gto'])))
+    if spec['type'] == 'iso':
+        return dict(kind='iso', limp_pct=round(r['vill_freq'], 1), limp_gto_pct=round(r['vill_freq_gto'], 1), fold_pct=round(r['fold_pct'], 1),
+                    fold_gto_pct=round(r['fold_pct_gto'], 1), eq_called_pct=pct(_eq(i, r['vec'] * r['call_vec'])),
+                    eq_called_gto_pct=pct(_eq(i, r['vec_gto'] * r['call_vec_gto'])), eq_limp_pct=pct(_eq(i, r['vec'])), win_bb=2.0)
+    fold = float(ee.P @ (1 - r['vec'])); fold0 = float(ee.P @ (1 - r['vec_gto']))
+    if r.get('vec2') is not None:
+        fold *= float(ee.P @ (1 - r['vec2'])); fold0 *= float(ee.P @ (1 - r['vec2_gto']))
+    out = dict(kind='shove', fold_pct=round(100 * fold, 1), fold_gto_pct=round(100 * fold0, 1), win_bb=1.5 if spec.get('formula') == 'btn' else 1.0,
+               eq_called_pct=pct(_eq(i, r['vec'])), eq_called_gto_pct=pct(_eq(i, r['vec_gto'])), call_pct=round(r['vill_freq'], 1), call_gto_pct=round(r['vill_freq_gto'], 1))
+    if r.get('iso_pct') is not None: out.update(iso_pct=round(r['iso_pct'], 1), iso_gto_pct=round(r['iso_pct_gto'], 1))
+    return out
+
+
+def postflop(spec, kind, S, r, i):
+    """ce qui se joue après le flop quand la main voit un flop (limp du SB checké, ou check du BB sur un limp) :
+    équité de la main et de la range contre la range adverse qui voit le flop, mains fortes dans cette range, position, SPR"""
+    if spec['type'] == 'iso':
+        hero = r['hero_range_gto']; vill, vill0 = r['vec'], r['vec_gto']; pos = 'IP'
+    elif r.get('ev_limp') is not None:
+        n = ee.node(kind, S, spec['limp_node']); labs, F, _ = n
+        iso = sum(F[:, j] for j, l in enumerate(labs) if l.startswith('R') or l == 'A')
+        vill0 = 1 - iso; vill = 1 - ee.scale_freq(iso, ee.W * np.ones(169), r['facteurs']['iso'])
+        hn = ee.node(kind, S, spec['hero']); hero = hn[1][:, hn[0].index('C')]; pos = 'OOP'
+    else:
+        return None
+    top = ee.VSR >= np.quantile(ee.VSR, 1 - TOP_SHARE)
+    share = lambda v: float((ee.P * v * top).sum() / (ee.P * v).sum())
+    qh = ee.P * hero; qv = ee.P * vill
+    range_eq = float(qh @ ee.E @ qv / (qh.sum() * qv.sum())) if qh.sum() > 0 and qv.sum() > 0 else None
+    return dict(position=pos, spr=round((S - 1) / 2, 1), pot_bb=2.0, eq_hand_pct=round(100 * _eq(i, vill), 1), eq_hand_gto_pct=round(100 * _eq(i, vill0), 1),
+                eq_range_pct=(round(100 * range_eq, 1) if range_eq is not None else None),
+                villain_range_pct=round(100 * float((ee.P * vill).sum()), 1), villain_range_gto_pct=round(100 * float((ee.P * vill0).sum()), 1),
+                strong_pct=round(100 * share(vill), 1), strong_gto_pct=round(100 * share(vill0), 1))
 
 
 def build_q(kindq, pname, n, lam, kind, name, spec, S, noise, r, rshow_src, i, rule, leak, gain_i):
@@ -395,7 +476,9 @@ def build_q(kindq, pname, n, lam, kind, name, spec, S, noise, r, rshow_src, i, r
              ev_limp_vs_fold_mBB=(round(1000 * float(r['ev_limp'][i])) if r['ev_limp'] is not None else None),
              marge_mBB=round(1000 * margin(spec, r, i)),
              acceptables=acceptables(spec, r, i, noise), freq_gto_reponse_pct=round(100 * gto_freq(kind, S, spec, i, r['expl'][i]), 1),
-             iso_pct=(round(r['iso_pct']) if r.get('iso_pct') is not None else None), iso_pct_gto=(round(r['iso_pct_gto']) if r.get('iso_pct_gto') is not None else None))
+             iso_pct=(round(r['iso_pct']) if r.get('iso_pct') is not None else None), iso_pct_gto=(round(r['iso_pct_gto']) if r.get('iso_pct_gto') is not None else None),
+             ev_check_vs_fold_mBB=(round(1000 * float(r['ev_check'][i])) if r.get('ev_check') is not None else None),
+             theorie=theory(spec, kind, S, r, i), postflop=postflop(spec, kind, S, r, i))
     q['stats'] = stats_struct(spec, rshow, n)
     q['explication'] = explain(kindq, leak, ans, gto_ans, g, q['seuil_bruit_mBB'], r, i, rule, n, spec, pname)
     q['difficulte'] = 'piège' if kindq in ('piège', 'échantillon') else ('facile' if gain_i >= 4 * noise else 'moyen')
