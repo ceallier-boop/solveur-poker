@@ -115,7 +115,7 @@ def _rebuild(ref, manifest, spots):
                 return None, f"générateur {manifest.get('builder')} ≠ version actuelle {field.BUILDER_VERSION} : reconstruction non comparable"
             if not os.path.isdir(os.path.join(quiz.ROOT, 'data', 'hrc', 'raw', 'min_raise_hu')):
                 return None, 'exports HRC absents de ce poste : reconstruction non exécutée'
-            rebuilt = {sp['spot_id']: sp for sp in field.build(manifest.get('seed', field.SEED))}
+            rebuilt = {sp['spot_id']: sp for sp in field.build(manifest.get('seed', field.SEED), manifest.get('n_target'))}
         else:
             return None, f'dataset {ds} inconnu'
     except Exception as e:                                  # source illisible : on le dit, on ne bloque pas en silence

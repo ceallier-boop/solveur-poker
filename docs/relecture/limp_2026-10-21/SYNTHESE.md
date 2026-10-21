@@ -30,20 +30,18 @@ Les décisions préflop tiennent. Les trois experts relèvent les mêmes défaut
 | Iso-relance non all-in absente (utile dès 10 BB, la norme à 12 BB) | limite | Pas encore proposée : le moteur ne sait pas l'ajuster au vilain. Les mains que HRC isole à 3 BB au moins 30 % du temps sont retirées, pour ne pas imposer « check ou tapis » quand la vraie réponse est l'iso. À ajouter dans une prochaine version. |
 | L35 (K4s à 6 BB, check du moteur ; Lucho et Lucky : tapis) | à revérifier | La question disparaît : sa stat de call reposait sur moins de 10 limps. |
 
-## Banque × 10 : ce qui a été atteint
+## Banque × 10
 
-Objectif : multiplier par 10 la banque (440 questions) en gardant les proportions. La banque 2026.10.21-1 compte **2173 questions (× 4,9)**. Deux limites empêchent d'aller plus loin sans casser les proportions :
-- **Rec passif.** Le profil par défaut ne s'écarte pas de lui-même : un échantillon plus grand ne change ni la décision ni l'EV. Une fois les doublons d'EV retirés, il reste environ 1750 questions de rec passif. Pour qu'il garde au moins 50 % de la banque (58,6 % dans la référence), la banque plafonne vers 2200.
-- **Vilain inconnu.** Il n'y a qu'une question par main, situation et profondeur : 228 à 291 questions au plus.
+**Version 2026.10.21-1** : 2173 questions (× 4,9), proportions de la banque de référence gardées au plus près.
 
-Avec 3900 questions, le rec passif tomberait à 37 % et les pièges monteraient à 43 %.
+**Version 2026.10.21-2 (servie)** : 4400 questions (× 10). Le porteur du projet a tranché : le volume prime sur les proportions. Les parts de référence sont visées d'abord, puis la banque est complétée sans plafond. Le rec passif et le vilain inconnu manquent de candidats : il n'y a qu'une question par main et par décision une fois les doublons d'EV retirés. Leur part baisse donc dans la banque. En série, le tirage reste pondéré par la part de chaque profil dans le field, donc le rec passif reste majoritaire dans ce que voit le joueur.
 
-Proportions obtenues :
-
-| | Référence (440) | 2026.10.21-1 (2173) |
+| | Référence (440) | 2026.10.21-2 (4400) |
 |---|---|---|
-| Rec passif | 58,6 % | 50,8 % |
-| Adaptation | 36,4 % | 38,9 % |
-| Piège | 32,0 % | 40,4 % |
-| Vilain inconnu | 18,9 % | 10,5 % |
-| BB face au limp du SB (deux situations) | 30 % | 36 % |
+| Rec passif | 58,6 % | 33,4 % |
+| Nit | 6,4 % | 20,3 % |
+| Calling station | 12,0 % | 19,0 % |
+| Adaptation | 36,4 % | 42,5 % |
+| Piège | 32,0 % | 41,0 % |
+| Vilain inconnu | 18,9 % | 6,0 % |
+| BB face au limp du SB (deux situations) | 30 % | 32 % |

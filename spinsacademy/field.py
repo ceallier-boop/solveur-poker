@@ -18,7 +18,7 @@ import argparse, datetime, hashlib, json, os, random, sys
 from . import grading
 from .hrc import ROOT
 
-BUILDER_VERSION = '4.3.0'
+BUILDER_VERSION = '4.3.1'
 OUT = os.path.join(ROOT, 'data', 'datasets', 'exploit_field')
 TOOLS = os.path.join(ROOT, 'tools', 'field')
 SEED = 11
@@ -172,8 +172,9 @@ def to_spot(q, qg):
     return sp
 
 
-def build(seed=SEED):
+def build(seed=SEED, n_target=None):
     qg = _engine()
+    if n_target: qg.N_TARGET = n_target                       # taille visée enregistrée dans le manifeste (reconstruction)
     return [to_spot(q, qg) for q in sorted(qg.make(seed=seed), key=lambda q: q['id'])]
 
 
@@ -187,7 +188,7 @@ def publish(version, out=OUT, seed=SEED):
     digest = hashlib.sha256(open(os.path.join(target, 'spots.jsonl'), 'rb').read()).hexdigest()
     from collections import Counter
     m = dict(dataset='exploit_field', version=version, created_at=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
-             builder=BUILDER_VERSION, scale=qg.SCALE, seed=seed, spots=len(items), questions_eligible=len(items), spots_sha256=digest,
+             builder=BUILDER_VERSION, scale=qg.SCALE, n_target=qg.N_TARGET, seed=seed, spots=len(items), questions_eligible=len(items), spots_sha256=digest,
              by_type=dict(Counter(i['field']['type'] for i in items)), by_rule=dict(Counter(i['field']['rule'] for i in items)),
              noise_mbb={str(k): round(1000 * v) for k, v in qg.ee.NOISE_BB.items()}, rules=qg.RULES,
              reference_fr="Exports HRC (chip EV, blinds 0,5 / 1, sans ante), stacks de 4 à 12 BB ; profils du field (hypothèses, non mesurées)",
@@ -195,7 +196,8 @@ def publish(version, out=OUT, seed=SEED):
                          "Limp du SB : EV estimée en heads-up (décomposition de l'EV HRC), borne basse en BvB à 3 joueurs. Check du BB sur un limp : EV HRC corrigée de l'écart d'équité.",
                          "Domaine : tout ou rien, limp du SB, check ou tapis du BB sur un limp ; stacks égaux de 4 à 12 BB ; min-raise et iso non all-in exclus "
                          "(les mains que HRC isole à 3 BB au moins 30 % du temps sont retirées).",
-                         "Banque x 10 visée, environ x 5 atteinte : doublons d'EV et quasi-égalités retirés, rec passif gardé à au moins 50 %."],
+                         "Banque x 10 : le volume prime sur les proportions. Les parts de référence sont visées d'abord, puis la banque est complétée "
+                         "sans plafond (le rec passif et le vilain inconnu manquent de candidats) ; le tirage des séries reste pondéré par la part de chaque profil dans le field."],
              audit='docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md', status='staging')
     json.dump(m, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return m

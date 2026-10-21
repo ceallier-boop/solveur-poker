@@ -79,5 +79,5 @@ Décision du porteur du projet : le mode des joueurs du field devient le mode **
 
 - Relecture des 60 questions « BB face au limp du SB » par trois experts IA : décisions validées, position fausse en heads-up (bloquant), règles R12 / R13 mal justifiées, textes trop longs. Constats et corrections : `docs/relecture/limp_2026-10-21/SYNTHESE.md`.
 - Moteur v4.3 : position selon la table, règles R12 à R15 tirées des stats affichées, stat de call lue à partir de 10 limps, plus de quasi-égalités (moins de 0,05 BB) ni de doublons d'EV, mains isolées à 3 BB par HRC retirées.
-- Banque : 2173 questions (× 4,9 au lieu de × 10 visé) ; au-delà, le rec passif passerait sous 50 %.
+- Banque : 2173 questions dans la 2026.10.21-1, puis 4400 (× 10) dans la 2026.10.21-2, où le volume prime sur les proportions ; le tirage des séries reste pondéré par la part des profils dans le field.
 - Ancien mode exploitant (profils fictifs, `exploit_calls`, `/profiles`) retiré du code, des données et de l'interface.

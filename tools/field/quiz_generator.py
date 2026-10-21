@@ -27,9 +27,9 @@ import profils_field as pf
 from hrcdata import NAMES
 
 OUT_DIR = os.environ.get('EXPRESSO_OUT', ee.DATA_DIR)
-# v4.3 : 2500 visées à l'échelle 10 (~2200 atteintes). Au-delà, les candidats du rec passif manquent (une question par main et
-# par décision une fois les doublons d'EV retirés) et sa part tombe sous 50 % : les proportions ne tiennent plus.
-N_TARGET = int(os.environ.get('EXPRESSO_N_QUIZ', 550 if int(os.environ.get('EXPRESSO_SCALE', 10)) == 1 else 250 * int(os.environ.get('EXPRESSO_SCALE', 10))))
+# v4.3 : x 10 (4400). Le volume prime sur les proportions (porteur du projet, 21/10) : les parts de référence sont visées
+# d'abord, puis une dernière passe complète sans plafond (le rec passif et le vilain inconnu manquent de candidats).
+N_TARGET = int(os.environ.get('EXPRESSO_N_QUIZ', 550 if int(os.environ.get('EXPRESSO_SCALE', 10)) == 1 else 440 * int(os.environ.get('EXPRESSO_SCALE', 10))))
 SITU_MAX = 0.12          # v4.2 : aucune situation au-delà de 12 % de la banque (les limps du SB l'auraient envahie)
 SCALE = int(os.environ.get('EXPRESSO_SCALE', 10))      # v4.3 : banque x 10 (variantes d'échantillon, d'intensité et de plafonds)
 N_OBS = (20, 40, 80) if SCALE == 1 else (20, 25, 30, 40, 50, 60, 80, 100, 120, 150)    # occasions observées pour les adaptations
@@ -334,9 +334,12 @@ def select_targets(pool, rnd):
     tgt.update({d: shared_targets(d, avail[d], N) for d in ('type', 'profil')})
     used = collections.Counter(); out = []; taken = set()
     for slack in ({'type': 1.0, 'profil': 1.0, 'situation': 1.0}, {'type': 1.0, 'profil': 1.03, 'situation': 1.05},
-                  {'type': 1.0, 'profil': 1.06, 'situation': 1.10}):
+                  {'type': 1.0, 'profil': 1.06, 'situation': 1.10}, None):   # v4.3 : le volume prime, la dernière passe complète sans plafond
         for q in keyed:
+            if len(out) >= N: break
             if q['id'] in taken: continue
+            if slack is None:
+                out.append(q); taken.add(q['id']); continue
             lim = dict(slack, situation=min(slack['situation'], 1.05)) if 'limp du SB' in q['situation'] else slack
             if any(used[(d, k)] >= lim[d] * tgt[d].get(k, 0) for d, k in dims(q)): continue
             out.append(q); taken.add(q['id'])

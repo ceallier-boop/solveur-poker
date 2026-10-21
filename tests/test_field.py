@@ -110,14 +110,17 @@ def test_engine_v4_2_checks():
 
 
 def test_profiles_follow_field_shares():
-    """v4.3 : chaque profil proche de sa part dans la banque de référence (440 questions) ; le rec passif reste majoritaire"""
+    """v4.3 : le volume prime (banque x 10) ; le rec passif reste le profil le plus représenté, et le tirage des séries
+    pondère chaque question par la part de son profil dans le field"""
     sys.path.insert(0, os.path.join(ROOT, 'tools', 'field'))
     import profils_field as pf, quiz_generator as qg
     from collections import Counter
-    F = [s['field'] for s in _spots().values()]; c = Counter(f['internal_profile'] for f in F); n = len(F)
-    for p, k in qg.REF_SHARES['profil'].items():
-        if p != pf.DEFAULT: assert abs(c[p] / n - k / qg.REF_N) <= 0.06, (p, c[p] / n)
-    assert c[pf.DEFAULT] / n >= 0.5                                        # le rec passif domine, comme dans le field
+    spots = list(_spots().values()); F = [s['field'] for s in spots]; c = Counter(f['internal_profile'] for f in F)
+    assert len(F) >= 0.95 * qg.N_TARGET and c.most_common(1)[0][0] == pf.DEFAULT
+    drawn = Counter(); by_id = {s['spot_id']: s for s in spots}
+    for seed in range(60):
+        for sid, _ in field.draw(spots, 5, seed): drawn[by_id[sid]['field']['internal_profile']] += 1
+    assert drawn[pf.DEFAULT] / sum(drawn.values()) >= 0.45                 # en série, le rec passif domine, comme dans le field
 
 
 def test_limp_situations_theory_and_postflop():
