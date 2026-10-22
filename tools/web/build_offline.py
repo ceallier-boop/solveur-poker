@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 12] [--exploi
 """
 import argparse, base64, gzip, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, quiz, review
+from spinsacademy import adaptive, field, quiz, review
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -22,15 +22,21 @@ def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
         if field_max and len(fs) > field_max: fs = sorted(random.Random(seed).sample(fs, field_max), key=lambda s: s['spot_id'])   # démo : un échantillon (taille de la page)
         for sp in fs:
             h = next(iter(sp['hands'])); q = quiz.question(field_ref, sp['spot_id'], h)
+            f = sp['field']
             out.append(dict(m='exploit', q=q, eff=sp['effective_stack_bb'], base=None,
+                            g=('read' if f['type'] in field.READ else sp['field_family']), a=f['correct'], w=max(f['weight'], 1e-3),
+                            rd=f['type'] in field.READ, tr=f['type'] in ('piège', 'échantillon'),
                             c={o['id']: quiz.correct(field_ref, sp['spot_id'], h, o['id']) for o in q['options']}))
+    weights = quiz.situation_weights(gto_ref)
     for ref, k in ((gto_ref, k_gto),):
         for sp in quiz.pool(ref):
+            key = (sp['table'], quiz.stack_band(sp), quiz.situation_key(sp))
             hands = list(quiz.teachable(sp))                       # mêmes mains que l'application (bruit HRC, EV impossibles exclus)
             picked = sorted(set(rnd.choices(hands, [W[NAMES.index(h)] * sp['hands'][h]['reach'] ** 0.5 for h in hands], k=k)))
             for h in picked:
                 q = quiz.question(ref, sp['spot_id'], h)
                 out.append(dict(m=quiz.mode_of(ref), q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
+                                b=key[1], g=json.dumps(key[2]), w=weights.get(key, quiz.RARE_FLOOR),
                                 c={o['id']: quiz.correct(ref, sp['spot_id'], h, o['id']) for o in q['options']}))
     return out
 
@@ -66,44 +72,43 @@ const DEMO = (() => {
   const MIN_SAMPLE = 10;
   const rnd = (a) => a[Math.floor(Math.random() * a.length)];
 
-  // même règle que quiz.draw_series : format (heads-up HU_SHARE du temps), puis position, puis famille ; une main ne
-  // revient pas dans la série ; une question facile seulement EASY_SHARE du temps quand la situation offre mieux
-  const HU_SHARE = __HU_SHARE__, EASY_SHARE = __EASY_SHARE__;
+  // mêmes règles que l'application : GTO = quiz.draw_series (format HU_SHARE, tranche de tapis à parts égales, situation selon
+  // sa fréquence réelle) ; exploitant = field.draw (famille selon FAMILY_SHARE, tapis puis bonne réponse à parts égales, profil
+  // pondéré par sa part dans le field). Une main ne revient pas dans la série.
+  const HU_SHARE = __HU_SHARE__, EASY_SHARE = __EASY_SHARE__, FAMILY_SHARE = __FAMILY_SHARE__, MAX_TRAPS = __MAX_TRAPS__, MAX_READ = __MAX_READ__;
+  const wpick = (xs, w) => { let t = xs.reduce((a, x) => a + w(x), 0) * Math.random(); for (const x of xs) { t -= w(x); if (t <= 0) return x; } return xs[xs.length - 1]; };
+  const uniq = (xs) => [...new Set(xs)];
   function draw(mode, f, size) {
     const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === mode
-      && (!f.table || it.q.table === f.table) && (!f.hero || it.q.hero === f.hero) && (!f.family || it.q.family === f.family)
-      && (f.min_stack == null || it.eff >= f.min_stack) && (f.max_stack == null || it.eff <= f.max_stack)
-);
-    const spots = {}; for (const [it, i] of pool) (spots[it.q.spot_id] = spots[it.q.spot_id] || []).push(i);
-    if (Object.keys(spots).length < size) return null;
-    const tree = {};
-    for (const sid of Object.keys(spots)) {
-      const q = ITEMS[spots[sid][0]].q; const t = (tree[q.table] = tree[q.table] || {}); const p = (t[q.hero] = t[q.hero] || {});
-      (p[q.family] = p[q.family] || []).push(sid);
-    }
-    const used = new Set(), usedBase = new Set(), seen = new Set(), out = [], posOrder = {}, famOrder = {};
-    const shuffle = (a) => a.sort(() => Math.random() - 0.5);
-    while (out.length < size && Object.keys(tree).length) {
-      const tables = Object.keys(tree);
-      const table = tables.length === 2 ? (Math.random() < HU_SHARE ? 'heads-up' : '3-handed') : tables[0];
-      const byPos = tree[table];
-      if (!(posOrder[table] || []).length) posOrder[table] = shuffle(Object.keys(byPos));
-      const pos = posOrder[table].pop(); const fams = byPos[pos]; if (!fams) continue;
-      const key = table + '|' + pos;
-      if (!(famOrder[key] || []).length) famOrder[key] = shuffle(Object.keys(fams));
-      const fam = famOrder[key].pop();
-      const choices = (fams[fam] || []).filter((s) => !used.has(s) && !usedBase.has(ITEMS[spots[s][0]].base || s));
-      if (!choices.length) {
-        delete fams[fam]; if (!Object.keys(fams).length) delete byPos[pos]; if (!Object.keys(byPos).length) delete tree[table];
-        continue;
+      && (!f.table || it.q.table === f.table) && (!f.hero || it.q.hero === f.hero) && (!f.family || (it.g === 'read' ? 'read' : it.q.family) === f.family)
+      && (f.min_stack == null || it.eff >= f.min_stack) && (f.max_stack == null || it.eff <= f.max_stack)).map(([, i]) => i);
+    if (uniq(pool.map((i) => ITEMS[i].q.spot_id)).length < size) return null;
+    const used = new Set(), seen = new Set(), out = []; let traps = 0, reads = 0;
+    const maxRead = pool.some((i) => !ITEMS[i].rd) ? MAX_READ : size, maxTraps = pool.some((i) => !ITEMS[i].tr) ? MAX_TRAPS : size;
+    while (out.length < size) {
+      const tables = uniq(pool.map((i) => ITEMS[i].q.table));
+      const want = tables.length === 2 ? (Math.random() < HU_SHARE ? 'heads-up' : '3-handed') : tables[0];
+      let cand = [];
+      for (const t of [want, ...tables.filter((x) => x !== want)]) {
+        cand = pool.filter((i) => { const it = ITEMS[i]; return it.q.table === t && !used.has(it.q.spot_id) && !(it.q.hand && seen.has(it.q.hand))
+          && !(mode === 'exploit' && ((it.tr && traps >= maxTraps) || (it.rd && reads >= maxRead))); });
+        if (cand.length) break;
       }
-      const hasRest = (x) => spots[x].some((i) => ITEMS[i].q.difficulty !== 'facile');
-      const better = choices.filter(hasRest);                    // une situation qui n'offre que des faciles : seulement EASY_SHARE du temps
-      const sid = rnd(better.length && Math.random() >= EASY_SHARE ? better : choices); used.add(sid); usedBase.add(ITEMS[spots[sid][0]].base || sid);
-      let cand = spots[sid].filter((i) => !seen.has(ITEMS[i].q.hand)); if (!cand.length) cand = spots[sid];
-      const easy = cand.filter((i) => ITEMS[i].q.difficulty === 'facile'), rest = cand.filter((i) => ITEMS[i].q.difficulty !== 'facile');
-      const i = rnd(easy.length && (!rest.length || Math.random() < EASY_SHARE) ? easy : rest);
-      seen.add(ITEMS[i].q.hand); out.push(i);
+      if (!cand.length) break;
+      let i;
+      if (mode === 'exploit') {
+        const fam = wpick(uniq(cand.map((x) => ITEMS[x].g)).sort(), (g) => FAMILY_SHARE[g] || 0.1); cand = cand.filter((x) => ITEMS[x].g === fam);
+        const st = rnd(uniq(cand.map((x) => ITEMS[x].eff))); cand = cand.filter((x) => ITEMS[x].eff === st);
+        const a = rnd(uniq(cand.map((x) => ITEMS[x].a))); cand = cand.filter((x) => ITEMS[x].a === a);
+        i = wpick(cand, (x) => ITEMS[x].w); traps += ITEMS[i].tr ? 1 : 0; reads += ITEMS[i].rd ? 1 : 0;
+      } else {
+        const band = rnd(uniq(cand.map((x) => ITEMS[x].b))); cand = cand.filter((x) => ITEMS[x].b === band);
+        const g = wpick(uniq(cand.map((x) => ITEMS[x].g)).sort(), (k) => ITEMS[cand.find((x) => ITEMS[x].g === k)].w); cand = cand.filter((x) => ITEMS[x].g === g);
+        const sid = rnd(uniq(cand.map((x) => ITEMS[x].q.spot_id))); cand = cand.filter((x) => ITEMS[x].q.spot_id === sid);
+        const easy = cand.filter((x) => ITEMS[x].q.difficulty === 'facile'), rest = cand.filter((x) => ITEMS[x].q.difficulty !== 'facile');
+        i = rnd(easy.length && (!rest.length || Math.random() < EASY_SHARE) ? easy : rest);
+      }
+      used.add(ITEMS[i].q.spot_id); if (ITEMS[i].q.hand) seen.add(ITEMS[i].q.hand); out.push(i);
     }
     return out.length === size ? out : null;
   }
@@ -310,7 +315,7 @@ def build(out, k_gto, exploit_max=4500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

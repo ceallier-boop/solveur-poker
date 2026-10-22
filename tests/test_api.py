@@ -52,14 +52,16 @@ def test_filters_and_reproducibility(client):
 
 
 def test_series_coverage_across_seeds():
-    """répartition réellement servie sur 300 séries : toutes les familles et les deux tables apparaissent"""
+    """répartition réellement servie sur 300 séries : toutes les familles et les deux tables apparaissent, premières décisions en tête"""
     import collections
     fam = collections.Counter(); table = collections.Counter()
     _, spots = quiz.load()
     for seed in range(300):
         for sid, h in quiz.draw_series(seed=seed):
             fam[quiz.family(spots[sid])] += 1; table[spots[sid]['table']] += 1
-    assert set(fam) == {'first_in', 'vs_limp', 'vs_raise', 'vs_allin'} and min(fam.values()) > 0.15 * sum(fam.values())
+    n = sum(fam.values())                       # v4.4 : tirage selon la fréquence réelle des situations
+    assert set(fam) == {'first_in', 'vs_limp', 'vs_raise', 'vs_allin'} and min(fam.values()) > 0.08 * n
+    assert fam['first_in'] / n >= 0.40 and fam['vs_allin'] > fam['vs_raise']
     assert set(table) == {'3-handed', 'heads-up'}
 
 

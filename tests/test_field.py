@@ -120,7 +120,15 @@ def test_profiles_follow_field_shares():
     drawn = Counter(); by_id = {s['spot_id']: s for s in spots}
     for seed in range(60):
         for sid, _ in field.draw(spots, 5, seed): drawn[by_id[sid]['field']['internal_profile']] += 1
-    assert drawn[pf.DEFAULT] / sum(drawn.values()) >= 0.45                 # en série, le rec passif domine, comme dans le field
+    assert drawn.most_common(1)[0][0] == pf.DEFAULT and drawn[pf.DEFAULT] / sum(drawn.values()) >= 0.30   # v4.4 : tapis et réponses à parts égales
+    fam = Counter(); ans = Counter()
+    for seed in range(200):
+        for sid, _ in field.draw(spots, 5, seed):
+            sp = by_id[sid]; fam[sp['field_family']] += 1
+            if sp['field_family'] == 'vs_limp': ans[sp['field']['correct']] += 1
+    n = sum(fam.values())
+    assert fam['vs_limp'] / n <= 0.32 and fam['vs_allin'] / n >= 0.30          # v4.4 (audit) : le limp ne prend plus la moitié des séries
+    assert max(ans.values()) / sum(ans.values()) <= 0.65                        # on ne répond pas « tapis » sans réfléchir
 
 
 def test_limp_situations_theory_and_postflop():
@@ -146,3 +154,20 @@ def test_limp_situations_theory_and_postflop():
                 assert ('premier' in n['position']) == (hu_bb or (sp['table'] == '3-handed' and sp['hero'] == 'SB'))   # heads-up : le SB est au bouton
             elif sp['field']['type'] not in field.READ:
                 assert r['next'] is None                                                        # tout à tapis : pas de postflop
+
+
+def test_audit_corrections_v4_4():
+    """audit complet des coachs (22/10) : stats affichées justes, reads significatifs, type caché avant la réponse"""
+    spots = list(_spots().values())
+    for sp in spots:
+        f = sp['field']; st = {s['stat']: s for s in f['stats']}
+        if 'call_pct_bb_sb_fold' in st:                                   # le BB se compte sur les folds du SB
+            assert st['call_pct_bb_sb_fold']['n'] == f['observations'] - st['call_pct']['k'] and st['call_pct_bb_sb_fold']['k'] <= st['call_pct_bb_sb_fold']['n']
+        if 'call_after_limp_pct' in st: assert st['call_after_limp_pct']['n'] >= 10      # pas de stat de call sous 10 limps
+    for sp in spots[::7]:
+        q = quiz.question(quiz.DEFAULT_FIELD, sp['spot_id'], next(iter(sp['hands'])))
+        assert q['field']['type'] in ('inconnu', 'observé', 'identification', 'profil')    # piège / adaptation : seulement à la correction
+    tight = [s for s in spots if s['field']['type'] == 'adaptation' and s['field']['gto'] in ('A', 'C') and s['field']['correct'] in ('F', 'L', 'X')]
+    assert len(tight) >= 100                                              # des adaptations « plus serré », pas seulement « plus large »
+    lab = lambda f: next(o['label_fr'] for o in f['options'] if o['id'] == f['correct'])
+    assert any(lab(s['field']) == 'Nit' for s in spots if s['field']['type'] == 'profil')          # le limp sépare le nit du rec passif

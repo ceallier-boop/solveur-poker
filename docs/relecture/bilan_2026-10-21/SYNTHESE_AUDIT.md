@@ -104,3 +104,35 @@ Deux remarques des coachs visaient mes fichiers d'export, pas l'application. Les
 10. **Premier module postflop** : pots limpés en heads-up et BvB.
 
 **Limite commune aux trois audits** : aucun coach n'avait de base de mains réelles du field. Les fréquences « réelles » viennent de HRC (joueurs théoriques), et les jugements sur les profils sont des avis de coach. Les priorités 3 et 6 gagneraient à être calées sur un historique de mains Expresso.
+
+## 6. Corrections appliquées (22/10/2026)
+
+Banque exploitante `exploit_field/2026.10.22-1` (moteur v4.4, 4400 questions) ; tirage GTO et exploitant revus ; nettoyage des spots GTO. Bilan après corrections : `apres_corrections/`.
+
+| Priorité | Fait |
+|---|---|
+| 1. Stat du BB au BTN | Ses calls se comptent sur les folds du SB. La stat impossible a disparu (test). |
+| 2. Reads | La stat de call après limp n'est plus affichée sous 10 limps. Les adaptations, R12, R13 et l'identification exigent un écart d'au moins 1,5 écart-type. La correction cite le bon échantillon (« 16 limps observés »). R12 n'est plus citée quand il paie aussi plus que la théorie. R4 ne s'applique qu'à un joueur qui paie trop. |
+| 3. Équilibre des séries | GTO : tranches de tapis à parts égales, puis chaque situation selon sa fréquence réelle ; les situations rares se partagent 10 %. Exploitant : 33 % premier à parler, 38 % face au tapis, 24 % face au limp, 5 % lecture ; tapis puis bonne réponse tirés à parts égales. |
+| 5. Adaptations « plus serré » | 110 adaptations : payer → fold (80), tapis théorique → fold (22), tapis → check (8), contre 0 avant. S'y ajoutent 341 « tapis théorique → limp », désormais réservées au joueur qui paie trop. Nouvelle règle R16 : « Il paie trop ton tapis : garde-le pour les mains qui battent ses calls. » |
+| 6. Type caché | Avant la réponse, la question affiche seulement « Vilain inconnu » ou « Vilain observé ». Piège, adaptation et échantillon se découvrent à la correction. |
+| 7. Doublons | Une adaptation qui a l'EV du vilain inconnu est retirée, ainsi que les énoncés identiques. |
+| 8. Textes | SB face au tapis du BTN : « le BB parle encore derrière » au lieu d'un faux « assez pour payer ». « Tu prends le pot de 2 BB ». Postflop : « paie avec une paire ou un tirage ». « À retenir » GTO : « avec 8 BB de tapis » au lieu de « à 8 BB », et « face à deux joueurs à tapis ». La 2e ligne de pourcentage est supprimée. Profils : phrase cassée corrigée. |
+| Pastilles | Le limp au SB est affiché en plus du tapis et du call : il sépare le rec passif du nit (« Nit » devient une bonne réponse possible, sur 2 questions seulement : à renforcer). |
+| 4 (en partie). GTO | Les spots que HRC a mal résolus sont écartés : 581 spots dont plus de la moitié des mains ont un regret supérieur à 0,1 BB. Sont aussi retirées les mains dont la référence change d'un arbre à l'autre pour un même spot à l'écran, les nœuds à EV toutes nulles et AA ou KK limpés au BTN. Il reste 1946 spots et 134 577 questions. |
+
+Effet mesuré (3000 séries simulées) :
+
+| | Avant | Après | Jeu réel |
+|---|---|---|---|
+| GTO : situations rares (moins de 1 % de la tranche) | 42 % | 9 % | — |
+| GTO : BTN premier à parler | 7 % | 22 % | 22 % |
+| GTO : SB premier à parler en heads-up | 6 % | 15 % | 17 % |
+| GTO : BB face au tapis du SB, BTN fold | 0,5 % | 4,4 % | 4,8 % |
+| Exploitant : BB face au limp du SB | 51 % | 23 % | — |
+
+**Reste à faire, hors de portée sans nouvelles données :**
+- Refaire les arbres HRC : open à 2 BB, un seul arbre par tapis, tapis jusqu'à 20 BB. Il faut de nouveaux calculs HRC.
+- Recaler le rec passif face au limp (la réponse « tapis » reste majoritaire dans la banque ; le tirage l'équilibre). Il faut un historique de mains du field.
+- Trancher le fold à 10-12 BB contre un inconnu (désaccord Lucho / Lucky).
+- Étendre l'exploitant (13-25 BB, open à 2 BB, iso non all-in, tapis inégaux, limp du BTN) et le postflop : il faut des développements du moteur et des calculs HRC.

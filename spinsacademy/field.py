@@ -1,4 +1,4 @@
-"""Mode exploitant : questions contre les joueurs du field Expresso (moteur exploitant v4.3, tools/field).
+"""Mode exploitant : questions contre les joueurs du field Expresso (moteur exploitant v4.4, tools/field).
 
 Le moteur (tools/field, porté du moteur exploitant v4.1 et corrigé après l'audit Lucho / PA / Lucky du 2026-10-20)
 part des exports HRC (stacks de 4 à 12 BB), déforme la stratégie du vilain selon un profil du field (rec passif par
@@ -18,7 +18,7 @@ import argparse, datetime, hashlib, json, os, random, sys
 from . import grading
 from .hrc import ROOT
 
-BUILDER_VERSION = '4.3.1'
+BUILDER_VERSION = '4.4.0'
 OUT = os.path.join(ROOT, 'data', 'datasets', 'exploit_field')
 TOOLS = os.path.join(ROOT, 'tools', 'field')
 SEED = 11
@@ -76,7 +76,7 @@ def _stats(q, hero, vill):
     out = []
     for j, s in enumerate(q.get('stats') or []):
         if q['type'] == 'profil':
-            label = 'Tapis quand il est au SB' if s['stat'] == 'shove_pct' else 'Calls d\'un tapis quand il est au BB'
+            label = {'shove_pct': 'Tapis quand il est au SB', 'limp_pct': 'Limps quand il est au SB'}.get(s['stat'], 'Calls d\'un tapis quand il est au BB')
         elif s['stat'] == 'shove_pct':
             label = f'Tapis du {vill[0]}'
         elif s['stat'] == 'call_pct_bb_sb_fold':
@@ -167,7 +167,7 @@ def to_spot(q, qg):
                          theory=q.get('theorie') if q['type'] not in READ else None, postflop=q.get('postflop') if q['type'] not in READ else None,
                          engine_explanation_fr=q['explication'], data_level=q['niveau_donnees'], weight=q.get('poids', 1.0),
                          internal_profile=q['profil']),
-              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.3)', engine_id=q['id'],
+              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.4)', engine_id=q['id'],
                               intensity=q.get('intensite', 1.0), factors=q.get('facteurs')))
     return sp
 
@@ -213,7 +213,17 @@ def question(sp):
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
-                field=dict(type=f['type'], type_fr=f['type_fr'], observations=f['observations'], villains=f['villains'], stats=f['stats'], ask_fr=f['ask_fr']))
+                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=f['stats'], ask_fr=f['ask_fr']))
+
+
+SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
+
+
+def shown_type(f):
+    """v4.4 (audit Lucho) : avant la réponse, seul ce que le joueur sait est affiché (vilain inconnu ou observé) ; le type de la
+    question (adaptation, piège, petit échantillon) se découvre à la correction"""
+    if f['type'] in READ: return f['type']
+    return 'inconnu' if not f['observations'] else 'observé'
 
 
 def _label(sp, aid):
@@ -229,8 +239,11 @@ def theory_lines(sp, f, lab, hand):
     out = []
     if t['kind'] == 'call':
         out.append(f"Tu paies {num(t['call_bb'])} BB pour un pot de {num(t['pot_bb'])} BB : il te faut {pct(t['need_pct'])} % d'équité.")
+        behind = sp['hero'] == 'SB' and sp['table'] == '3-handed'          # v4.4 (audit) : le BB peut encore payer ou surenchérir
+        verdict = (("au-dessus de la cote, mais le BB parle encore derrière : il faut une marge." if t['eq_pct'] >= t['need_pct'] else "pas assez, même sans le BB derrière.")
+                   if behind else ("assez pour payer." if t['eq_pct'] >= t['need_pct'] else "pas assez pour payer."))
         out.append(f"Il pousse environ {pct(t['range_pct'])} % de ses mains (théorie : {pct(t['range_gto_pct'])} %). Contre ces mains, {hand} a "
-                   f"{pct(t['eq_pct'])} % d'équité : " + ("assez pour payer." if t['eq_pct'] >= t['need_pct'] else "pas assez pour payer."))
+                   f"{pct(t['eq_pct'])} % d'équité : " + verdict)
     elif t['kind'] == 'shove':
         who = 'tout le monde se couche' if t['win_bb'] == 1.5 else 'il se couche'
         out.append(f"Face à ton tapis, {who} environ {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : "
@@ -241,7 +254,7 @@ def theory_lines(sp, f, lab, hand):
                        "moins il relance, plus le limp est rentable.")
     elif t['kind'] == 'iso':
         out.append(f"Il complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Face à ton tapis, il se couche "
-                   f"{pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu gagnes alors 2 BB.")
+                   f"{pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends le pot de 2 BB.")
         out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         out.append("Après un check, tu parles en premier au flop (il est au bouton) : ta main rapporte moins. D'où plus de tapis en heads-up."
                    if sp['table'] == 'heads-up' else
@@ -263,7 +276,7 @@ def _plan(ip, hero, table):
                 "Il mise : un joueur passif mise surtout quand il a touché. Couche tes mains faibles.",
                 "Paire max ou mieux : mise pour la valeur à chaque tour, il paie trop."]
     return ["Tu as touché (paire max ou mieux) : mise toi-même environ 1 BB, il paie avec trop de mains.",
-            "Tu as raté : checke. S'il mise peu, paie avec un tirage, couche le reste.",
+            "Tu as raté : checke. S'il mise peu, paie avec une paire ou un tirage, couche le reste.",
             "AA ou KK : mise dès le flop pour la valeur, n'attends pas."]
 
 
@@ -327,7 +340,9 @@ def correct(sp, action_id):
     if f['type'] in ('profil', 'identification', 'échantillon'):
         lines.append(f['engine_explanation_fr'].split(' Règle R')[0])
     elif f['type'] == 'adaptation':
-        lines.append(f"Il {LEAK_FR.get(f['leak'], f['leak'])} ({n} coups observés). Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus "
+        sample = next((f"{st['n']} {'limps' if st['stat'] == 'call_after_limp_pct' else 'folds du SB'} observés" for st in f['stats']
+                       if 'après son limp' in LEAK_FR.get(f['leak'], '') and st['stat'] == 'call_after_limp_pct'), f"{n} coups observés")   # v4.4 : le bon échantillon
+        lines.append(f"Il {LEAK_FR.get(f['leak'], f['leak'])} ({sample}). Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus "
                      f"que la théorie ({gto_l}).")
     elif f['type'] == 'inconnu':
         lines.append(f"Sans info, joue contre un rec passif. Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus que la théorie ({gto_l}).")
@@ -356,25 +371,35 @@ def correct(sp, action_id):
                 why_fr=why, next=postflop_section(sp, f, hand), range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines))
 
 
+FAMILY_SHARE = {'first_in': 0.33, 'vs_allin': 0.38, 'vs_limp': 0.24, 'read': 0.05}   # v4.4 (audit) : parts visées par famille
+
+
 def draw(spots, size, seed=None, filters=None):
-    """série : rotation heads-up / 3 joueurs (HU_SHARE), au plus MAX_TRAPS pièges et MAX_READ question de lecture (sans
-    limite si les filtres ne laissent que de la lecture), jamais deux fois la même main ni la même question ; tirage pondéré
-    par la fréquence du profil dans le field"""
-    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0
+    """série : rotation heads-up / 3 joueurs (HU_SHARE), puis famille de décision selon FAMILY_SHARE, tapis tiré à parts égales,
+    bonne réponse tirée à parts égales (on ne peut pas répondre « tapis » sans réfléchir), enfin question pondérée par la
+    fréquence du profil dans le field. Au plus MAX_TRAPS pièges et MAX_READ question de lecture (sans limite si les filtres ne
+    laissent que de la lecture), jamais deux fois la même main ni la même question"""
+    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0; used = set()
     max_read = MAX_READ if any(s['field']['type'] not in READ for s in spots) else size
     max_traps = MAX_TRAPS if any(s['field']['type'] not in ('piège', 'échantillon') for s in spots) else size
     by_table = {t: [s for s in spots if s['table'] == t] for t in ('heads-up', '3-handed')}
+    fam = lambda s: 'read' if s['field']['type'] in READ else s['field_family']
+    pick = lambda xs, key: rnd.choice(sorted({key(x) for x in xs}, key=str))
     for k in range(size):
         want = 'heads-up' if rnd.random() < HU_SHARE else '3-handed'
         for table in (want, '3-handed' if want == 'heads-up' else 'heads-up'):
-            cand = [s for s in by_table[table] if s['spot_id'] not in {x['spot_id'] for x in out}
+            cand = [s for s in by_table[table] if s['spot_id'] not in used
                     and (s['field']['type'] in READ or next(iter(s['hands'])) not in seen)
                     and not (s['field']['type'] in ('piège', 'échantillon') and traps >= max_traps)
                     and not (s['field']['type'] in READ and reads >= max_read)]
             if cand: break
         if not cand: break
+        fams = sorted({fam(s) for s in cand}); f0 = rnd.choices(fams, [FAMILY_SHARE.get(x, 0.1) for x in fams])[0]
+        cand = [s for s in cand if fam(s) == f0]
+        st = pick(cand, lambda s: s['effective_stack_bb']); cand = [s for s in cand if s['effective_stack_bb'] == st]
+        ans = pick(cand, lambda s: s['field']['correct']); cand = [s for s in cand if s['field']['correct'] == ans]
         sp = rnd.choices(cand, [max(s['field']['weight'], 1e-3) for s in cand])[0]
-        h = next(iter(sp['hands'])); out.append(sp)
+        h = next(iter(sp['hands'])); out.append(sp); used.add(sp['spot_id'])
         if h and sp['field']['type'] not in READ: seen.add(h)
         traps += sp['field']['type'] in ('piège', 'échantillon'); reads += sp['field']['type'] in READ
     return [(s['spot_id'], next(iter(s['hands']))) for s in out]

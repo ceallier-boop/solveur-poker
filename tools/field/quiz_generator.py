@@ -55,6 +55,26 @@ MIN_LIMPS = 10            # v4.3 (PA, Lucho) : sa stat de call après limp ne se
 MIN_MARGIN = 0.05         # v4.3 : en dessous de 0,05 BB d'écart, les deux options se valent : pas de question notée
 
 
+Z_MIN = 1.5               # v4.4 (audit Lucky, Lucho, PA) : un read ne compte que si l'écart affiché dépasse 1,5 écart-type
+
+
+def zscore(k, n, p0_pct):
+    """écart de k / n à la fréquence théorique, en écarts-types (loi binomiale)"""
+    if not n: return 0.0
+    p0 = min(max(p0_pct / 100, 0.01), 0.99)
+    return abs(k / n - p0) / math.sqrt(p0 * (1 - p0) / n)
+
+
+def shown_z(spec, robs, n):
+    """significativité des stats affichées : (z de la fréquence principale, z du call après limp ou du call du BB)"""
+    k = round(n * robs['vill_freq'] / 100); z1 = zscore(k, n, robs['vill_freq_gto']); z2 = 0.0
+    if spec['type'] == 'iso' and k >= MIN_LIMPS:
+        z2 = zscore(round(k * robs['call_after_pct'] / 100), k, robs['call_after_pct_gto'])
+    elif robs.get('vill_freq2') is not None:
+        n2 = n - k; z2 = zscore(round(n2 * robs['vill_freq2'] / 100), n2, robs['vill_freq2_gto'])
+    return z1, z2
+
+
 def shown(spec, robs, n):
     """écarts au GTO tels qu'AFFICHÉS (k / n), en points : (fréquence principale, call après limp, limps observés)"""
     k = round(n * robs['vill_freq'] / 100); dfreq = 100 * k / n - robs['vill_freq_gto']
@@ -63,11 +83,12 @@ def shown(spec, robs, n):
     return dfreq, dcall, k
 
 
-def iso_read(e, dfreq, dcall):
-    """face au limp : la règle et le défaut qui justifient la réponse, d'après les stats affichées (None si aucune)"""
-    c = ([('R12', dfreq, LEAKS[('iso', +1)]), ('R13', -dcall, LEAKS[('iso_call', -1)])] if e == 'pousse'
-         else [('R15', -dfreq, LEAKS[('iso', -1)]), ('R14', dcall, LEAKS[('iso_call', +1)])])
-    c = [x for x in c if x[1] >= 5]
+def iso_read(e, dfreq, dcall, z=(Z_MIN, Z_MIN)):
+    """face au limp : la règle et le défaut qui justifient la réponse, d'après les stats affichées (None si aucune).
+    v4.4 : la stat citée doit être significative ; R12 n'est pas citée quand il paie aussi plus que la théorie (calling station)"""
+    c = ([('R12', dfreq, LEAKS[('iso', +1)], z[0]), ('R13', -dcall, LEAKS[('iso_call', -1)], z[1])] if e == 'pousse'
+         else [('R15', -dfreq, LEAKS[('iso', -1)], z[0]), ('R14', dcall, LEAKS[('iso_call', +1)], z[1])])
+    c = [x[:3] for x in c if x[1] >= 5 and x[3] >= Z_MIN and not (x[0] == 'R12' and dcall >= 5)]
     return max(c, key=lambda x: x[1])[::2] if c else None
 
 
@@ -84,7 +105,7 @@ RULES = {
  'R1': "Il pousse trop : paie plus large.",
  'R2': "Il pousse peu : son tapis est fort, paie plus serré.",
  'R3': "Il paie peu : pousse plus large, même avec des mains faibles.",
- 'R4': "Au SB contre un joueur passif, limpe les mains trop faibles pour pousser.",
+ 'R4': "Au SB, contre un joueur qui paie trop ton tapis, complète les mains qui ne le battent pas.",
  'R5': "Ne folde une main à pousser que si le read est solide et le gain net.",
  'R6': "Contre un joueur qui relance ou paie tout, folde le bas de ta range.",
  'R7': "Au BTN à 3 joueurs, jamais de limp : fold ou tapis.",
@@ -95,6 +116,7 @@ RULES = {
  'R13': "Il se couche souvent face au tapis : pousse plus large.",
  'R14': "Il paie souvent ton tapis : garde le tapis pour tes bonnes mains, checke les autres.",
  'R15': "Il complète peu : son limp est fort, checke tes mains moyennes.",
+ 'R16': "Il paie trop ton tapis : garde-le pour les mains qui battent ses calls, folde les autres.",
 }
 # poids de réalisme du défaut à cette profondeur (stratégie §1, point 4)
 def realism(leak, S):
@@ -115,12 +137,13 @@ def stat_line(spec, r, n):
     k = round(n * r['vill_freq'] / 100); pct = 100 * k / n
     if spec['type'] == 'iso':
         k2 = round(k * r['call_after_pct'] / 100)               # les calls se comptent sur ses limps, pas sur les occasions
-        return (f"Sur {n} occasions, ce vilain a complété {k} fois ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %) "
-                f"et, face à un tapis après son limp, il a payé {k2} fois sur {k}" + (f" ({100 * k2 / k:.0f} % ; GTO : {r['call_after_pct_gto']:.0f} %)." if k else "."))
+        head = f"Sur {n} occasions, ce vilain a complété {k} fois ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %)"
+        if k < MIN_LIMPS: return head + "."
+        return head + f" et, face à un tapis après son limp, il a payé {k2} fois sur {k} ({100 * k2 / k:.0f} % ; GTO : {r['call_after_pct_gto']:.0f} %)."
     if spec['type'] == 'call':
         return f"Sur {n} occasions dans cette situation, ce vilain a poussé {k} fois ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %)."
     if r.get('vill_freq2') is not None:
-        pct2 = 100 * round(n * r['vill_freq2'] / 100) / n      # v4.1 : le 2e pourcentage vient aussi de k / n (cohérent avec l'export)
+        n2 = n - k; pct2 = 100 * round(n2 * r['vill_freq2'] / 100) / n2 if n2 else 0.0   # v4.4 : sur les folds du SB
         return (f"Sur {n} occasions, ce vilain a payé {pct:.0f} % des all-in au SB (GTO : {r['vill_freq_gto']:.0f} %) "
                 f"et {pct2:.0f} % au BB quand le SB fold (GTO : {r['vill_freq2_gto']:.0f} %).")
     return f"Sur {n} occasions, ce vilain a payé {k} all-in ({pct:.0f} % ; GTO : {r['vill_freq_gto']:.0f} %)."
@@ -134,12 +157,12 @@ def stats_struct(spec, r, n):
     if spec['type'] == 'iso':                                     # v4.2 : limp du SB, puis call de ton tapis après son limp
         k2 = round(k * r['call_after_pct'] / 100)
         out = [dict(stat='limp_pct', n=n, k=k, observed_pct=round(100 * k / n, 1), gto_pct=round(r['vill_freq_gto'], 1))]
-        if k: out.append(dict(stat='call_after_limp_pct', n=k, k=k2, observed_pct=round(100 * k2 / k, 1), gto_pct=round(r['call_after_pct_gto'], 1)))
+        if k >= MIN_LIMPS: out.append(dict(stat='call_after_limp_pct', n=k, k=k2, observed_pct=round(100 * k2 / k, 1), gto_pct=round(r['call_after_pct_gto'], 1)))   # v4.4 : rien sous 10 limps
         return out
     out = [dict(stat='shove_pct' if spec['type'] == 'call' else 'call_pct', n=n, k=k, observed_pct=round(100 * k / n, 1), gto_pct=round(r['vill_freq_gto'], 1))]
-    if r.get('vill_freq2') is not None:
-        k2 = round(n * r['vill_freq2'] / 100)
-        out.append(dict(stat='call_pct_bb_sb_fold', n=n, k=k2, observed_pct=round(100 * k2 / n, 1), gto_pct=round(r['vill_freq2_gto'], 1)))
+    if r.get('vill_freq2') is not None:      # v4.4 (audit, bloquant) : les calls du BB se comptent sur les folds du SB
+        n2 = n - k; k2 = round(n2 * r['vill_freq2'] / 100)
+        if n2: out.append(dict(stat='call_pct_bb_sb_fold', n=n2, k=k2, observed_pct=round(100 * k2 / n2, 1), gto_pct=round(r['vill_freq2_gto'], 1)))
     return out
 
 
@@ -245,9 +268,9 @@ def acceptables(spec, r, i, noise):
 def _freqs(S, fac):
     """fréquences du vilain (all-in en premier au SB ; call d'un all-in au BB) en heads-up pour des facteurs donnés"""
     out = []
-    for (kind, name) in (('hu', "BB face à l'all-in du SB"), ('hu', 'SB pousse face au BB')):
+    for (kind, name) in (('hu', "BB face à l'all-in du SB"), ('hu', 'SB pousse face au BB'), ('hu', 'BB face au limp du SB')):
         r = ee.run_spot(kind, S, name, ee.SPOTS[(kind, name)], profiles={'x': fac})
-        out.append((r['x']['vill_freq'], r['x']['vill_freq_gto']))
+        out.append((r['x']['vill_freq'], r['x']['vill_freq_gto']) if r else None)
     return out
 
 
@@ -264,14 +287,15 @@ def profile_questions(rnd):
         for lab in PROFIL_OPTIONS:
             for member in GROUP[lab]:
                 for n in PROFIL_N:
-                    k = [round(n * exp[member][j][0] / 100) for j in (0, 1)]
-                    obs = [100 * kk / n for kk in k]
+                    J = (0, 1, 2) if exp[member][2] and gto[2][0] >= 5 else (0, 1)     # v4.4 (PA, Lucho) : le limp sépare le rec passif du nit
+                    k = {j: round(n * exp[member][j][0] / 100) for j in J}
+                    obs = {j: 100 * kk / n for j, kk in k.items()}
                     chi = {}
                     for l2 in PROFIL_OPTIONS:
                         best = 1e9
                         for m2 in GROUP[l2]:
                             c = 0.0
-                            for j in (0, 1):
+                            for j in J:
                                 p = min(max(exp[m2][j][0] / 100, 0.01), 0.99)
                                 c += (obs[j] / 100 - p) ** 2 / (p * (1 - p) / n)
                             best = min(best, c)
@@ -283,15 +307,18 @@ def profile_questions(rnd):
                         continue                                  # 150 occasions : seulement si 40 et 80 ne suffisent pas
                     q = dict(id=f"pf-{S}-" + hashlib.md5(f'profil|{member}|{S}|{n}'.encode()).hexdigest()[:6], type='profil', kind='hu', stack=S,
                              situation='Heads-up : lecture du vilain', hero_hand='',
-                             enonce=(f"Heads-up, {S} BB chacun. Sur {n} occasions, ce vilain a poussé all-in {k[0]} fois quand il était au SB ({obs[0]:.0f} % ; GTO : {gto[0][0]:.0f} %) "
-                                     f"et a payé {k[1]} all-in sur {n} ({obs[1]:.0f} % ; GTO : {gto[1][0]:.0f} %). Quelle pastille lui donnes-tu ?"),
-                             stats=[dict(stat='shove_pct', n=n, k=k[0], observed_pct=round(obs[0], 1), gto_pct=round(gto[0][0], 1)), dict(stat='call_pct', n=n, k=k[1], observed_pct=round(obs[1], 1), gto_pct=round(gto[1][0], 1))],
+                             enonce=(f"Heads-up, {S} BB chacun. Sur {n} occasions, ce vilain a poussé all-in {k[0]} fois quand il était au SB ({obs[0]:.0f} % ; GTO : {gto[0][0]:.0f} %)"
+                                     + (f", a complété {k[2]} fois au SB ({obs[2]:.0f} % ; GTO : {gto[2][0]:.0f} %)" if 2 in k else '')
+                                     + f" et a payé {k[1]} all-in sur {n} ({obs[1]:.0f} % ; GTO : {gto[1][0]:.0f} %). Quelle pastille lui donnes-tu ?"),
+                             stats=[dict(stat='shove_pct', n=n, k=k[0], observed_pct=round(obs[0], 1), gto_pct=round(gto[0][0], 1)), dict(stat='call_pct', n=n, k=k[1], observed_pct=round(obs[1], 1), gto_pct=round(gto[1][0], 1))]
+                                   + ([dict(stat='limp_pct', n=n, k=k[2], observed_pct=round(obs[2], 1), gto_pct=round(gto[2][0], 1))] if 2 in k else []),
                              options=PROFIL_OPTIONS, bonne_reponse=lab, action_GTO='', gain_mBB=0, seuil_bruit_mBB=0, leak='', intensite=1.0,
                              observations=n, profil=member, regle='R10',
-                             explication=(f"Il pousse {'plus' if obs[0] > gto[0][0] + 2 else 'moins' if obs[0] < gto[0][0] - 2 else 'comme le GTO'} que le GTO et paie "
-                                          f"{'plus' if obs[1] > gto[1][0] + 2 else 'moins' if obs[1] < gto[1][0] - 2 else 'comme le GTO'} : à {S} BB, ces deux fréquences sont plus proches du profil « {lab.lower()} » "
+                             explication=(f"Il pousse {'plus que la théorie' if obs[0] > gto[0][0] + 2 else 'moins que la théorie' if obs[0] < gto[0][0] - 2 else 'comme la théorie'} et paie "
+                                          f"{'plus' if obs[1] > gto[1][0] + 2 else 'moins' if obs[1] < gto[1][0] - 2 else 'comme elle'} : à {S} BB, ces deux fréquences sont plus proches du profil « {lab.lower()} » "
                                           f"que de toute autre pastille, et {n} occasions suffisent pour trancher. "
-                                          + ("Le reg colle à la théorie ; le rec passif pousse et paie moins : c'est la distinction qui rapporte le plus. " if lab in ('Rec passif', 'Reg') else '')
+                                          + ("Le reg colle à la théorie ; le rec passif pousse et paie moins, mais complète beaucoup : c'est la distinction qui rapporte le plus. " if lab in ('Rec passif', 'Reg')
+                                             else "Le nit pousse, paie et complète peu : il se couche beaucoup. " if lab == 'Nit' else '')
                                           + f"Règle R10 : {RULES['R10']}"),
                              difficulte='moyen', niveau_donnees='profil du moteur (hypothèse de coachs, non mesuré)', poids=pf.prevalence(member))
                     out.append(q)
@@ -414,6 +441,7 @@ def make(seed=11, per_cell=30 * SCALE):
                     sgn = 1 if robs['vill_freq'] > robs['vill_freq_gto'] else -1
                     for n, r in res.items():
                         dfreq, dcall, kl = shown(spec, robs, n) if n else (0.0, 0.0, 0)
+                        z1, z2 = shown_z(spec, robs, n) if n else (0.0, 0.0)
                         if n and spec['type'] == 'iso' and kl == 0: continue        # v4.3 (Lucho) : « complété 0 fois » alors qu'il complète dans ce coup
                         leak = shown_leak(spec, dfreq, dcall) if n else LEAKS[(spec['type'], sgn)]   # v4.3 : le défaut cité est celui des stats affichées
                         valid = r['valid'] & ~incoherent & r['robuste'] & ~prem
@@ -435,12 +463,19 @@ def make(seed=11, per_cell=30 * SCALE):
                             if n:   # v4 : le read affiché doit montrer un écart net (>= 5 points) et aller dans le sens de la réponse
                                 def sens_ok(i):
                                     e, g0 = r['expl'][i], r['gto'][i]
-                                    if spec['type'] == 'iso': return iso_read(e, dfreq, dcall) is not None   # v4.3 : la règle colle aux stats affichées
-                                    if abs(dfreq) < 5: return False
+                                    if spec['type'] == 'iso': return iso_read(e, dfreq, dcall, (z1, z2)) is not None   # v4.3 : la règle colle aux stats affichées
+                                    if abs(dfreq) < 5 or max(z1, z2) < Z_MIN: return False          # v4.4 : écart net ET significatif
+                                    if e == 'limpe': return dfreq > 0                                 # v4.4 (Lucky) : R4 = il paie trop, on limpe au lieu de pousser
                                     if spec['type'] == 'call': return (e == 'paie') == (dfreq > 0)
                                     if e == 'pousse': return dfreq < 0
                                     if e == 'fold' and g0 == 'pousse': return dfreq > 0
                                     return True
+                                pool = [i for i in pool if sens_ok(i)]
+                                # v4.4 (les trois coachs) : contre un joueur qui paie trop, la leçon « tapis plus serré » (tapis théorique -> fold)
+                                tight = [i for i in np.where(flip)[0] if r['gto'][i] == 'pousse' and r['expl'][i] == 'fold' and S > 4
+                                         and gain[i] >= 2.0 * noise and margin(spec, r, i) >= MIN_MARGIN and sens_ok(i)
+                                         and not (S == 6 and n < 40) and gto_freq(kind, S, spec, i, 'fold') < MIX_MAX]
+                                pool = sorted(set(pool) | set(tight))
                                 pool = [i for i in pool if sens_ok(i)]
                         gap = shown_gap(spec, r, robs, n)
                         traps = ([i for i in np.where(valid & ~flip)[0] if 3 * noise <= margin(spec, r, i) <= TRAP_MAX_MARGIN * noise
@@ -452,10 +487,12 @@ def make(seed=11, per_cell=30 * SCALE):
                                 rule = ('R0' if kindq == 'inconnu' else 'R10' if kindq == 'échantillon' else 'R9' if kindq == 'piège'
                                         else rule_for(spec, r['gto'][i], r['expl'][i], pname, hero_btn))
                                 lk = leak
-                                if kindq == 'adaptation' and spec['type'] == 'iso': rule, lk = iso_read(r['expl'][i], dfreq, dcall)
+                                if (kindq == 'adaptation' and spec['type'] == 'shove' and r['gto'][i] == 'pousse' and r['expl'][i] == 'fold'
+                                        and dfreq > 0): rule = 'R16'                       # v4.4 : tapis plus serré contre un joueur qui paie trop
+                                if kindq == 'adaptation' and spec['type'] == 'iso': rule, lk = iso_read(r['expl'][i], dfreq, dcall, (z1, z2))
                                 q = build_q(kindq, pname, n, lam, kind, name, spec, S, noise, r, robs, i, rule, lk, gain[i])
                                 cands.append(q)
-                                if kindq == 'adaptation' and spec['type'] != 'iso' and abs(dfreq) >= 5 and rnd.random() < 0.4:   # v4.3 : écart affiché net
+                                if kindq == 'adaptation' and spec['type'] != 'iso' and abs(dfreq) >= 5 and z1 >= Z_MIN and rnd.random() < 0.4:   # v4.4 : écart net et significatif
                                     sgs = 1 if dfreq > 0 else -1
                                     base = SIT[(kind, name)].format(S=S)
                                     cands.append(dict(id=q['id'] + '-leak', type='identification', kind=kind, stack=S, situation=name, hero_hand=q['hero_hand'],
@@ -483,6 +520,17 @@ def make(seed=11, per_cell=30 * SCALE):
              round(q['ev_jeu_vs_fold_mBB'], -1), round(q['ev_limp_vs_fold_mBB'] or 0, -1), round(q['ev_check_vs_fold_mBB'] or 0, -1))
         sig.setdefault(k, q)
     pool = list(sig.values())
+    # v4.4 (Lucho, PA) : une adaptation dont l'EV est celle du vilain inconnu n'apprend rien du read ; un énoncé identique ne sert qu'une fois
+    base = {(q['kind'], q['situation'], q['stack'], q['hero_hand'], q['bonne_reponse'], round(q['ev_jeu_vs_fold_mBB'], -1),
+             round(q['ev_limp_vs_fold_mBB'] or 0, -1), round(q['ev_check_vs_fold_mBB'] or 0, -1)) for q in pool if q['type'] == 'inconnu'}
+    seen_txt = set(); p3 = []
+    for q in sorted(pool, key=lambda q: ({'inconnu': 0, 'adaptation': 1}.get(q['type'], 2), -q['intensite'], q['id'])):
+        if q['type'] == 'adaptation' and (q['kind'], q['situation'], q['stack'], q['hero_hand'], q['bonne_reponse'], round(q['ev_jeu_vs_fold_mBB'], -1),
+                                          round(q['ev_limp_vs_fold_mBB'] or 0, -1), round(q['ev_check_vs_fold_mBB'] or 0, -1)) in base: continue
+        t = (q['enonce'], q['type'] in ('identification', 'profil'))
+        if t in seen_txt: continue
+        seen_txt.add(t); p3.append(q)
+    pool = p3
     # v4.1 : (1) pas de questions « défaut du vilain » à énoncé identique (la main n'apparaît pas dans l'énoncé)
     seen_e = set(); p2 = []
     for q in sorted(pool, key=lambda q: q['id']):

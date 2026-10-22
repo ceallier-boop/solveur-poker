@@ -16,7 +16,7 @@ from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
-DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.21-2')                 # mode exploitant (spinsacademy.field)
+DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.22-1')                 # mode exploitant (spinsacademy.field)
 MODES = ('gto', 'exploit')
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
@@ -42,7 +42,31 @@ def load(version=DEFAULT_VERSION):
     d = ref_path(version)
     spots = [json.loads(l) for l in open(os.path.join(d, 'spots.jsonl'))]
     by_id = {s['spot_id']: s for s in spots}; _index_nodes(by_id)
+    if not any(s.get('field') for s in spots): _flag_quality(by_id)
     return json.load(open(os.path.join(d, 'manifest.json'))), by_id
+
+
+POOR_REGRET_MBB = 100     # v4.4 (audit Lucho) : regret HRC au-delà duquel une main est jugée mal résolue
+POOR_SHARE = 0.5          # spot écarté quand plus de la moitié des mains atteintes sont mal résolues
+
+
+def _flag_quality(spots):
+    """v4.4 (audit des coachs) : marque les spots que HRC a mal résolus, et les mains dont la référence change d'un arbre à
+    l'autre pour un même spot à l'écran (tailles de relance différentes ailleurs dans l'arbre) : elles ne sont plus proposées"""
+    groups = {}
+    for sp in spots.values():
+        live = [(W[NAMES.index(h)], x.get('hrc_self_regret_mbb', 0)) for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05]
+        tot = sum(w for w, _ in live)
+        sp['_poor'] = bool(tot) and sp['ev_reference'] != 'exact' and sum(w for w, r in live if r > POOR_REGRET_MBB) / tot > POOR_SHARE
+        key = (sp['table'], tuple(sp['stacks_bb']), sp['hero'], tuple(history_text(sp)))
+        groups.setdefault(key, []).append(sp)
+    for g in groups.values():
+        if len(g) < 2: continue
+        act = lambda sp, h: next((a['type'], a.get('to_bb')) for a in sp['actions'] if a['id'] == reference_action(sp, h))
+        for h in NAMES:
+            refs = {act(sp, h) for sp in g if sp['hands'][h].get('quiz_eligible')}
+            if len(refs) > 1:
+                for sp in g: sp.setdefault('_unreliable', set()).add(h)
 
 
 def family(sp):
@@ -242,9 +266,13 @@ def teachable(sp):
     k = id(sp)
     if k not in _TEACH:
         floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
-        out = []
-        for h in NAMES:
-            if not sp['hands'][h].get('quiz_eligible') or impossible_ev(sp, h): continue
+        out = []; bad = sp.get('_unreliable', ())
+        for h in NAMES if not sp.get('_poor') else ():
+            x = sp['hands'][h]
+            if not x.get('quiz_eligible') or impossible_ev(sp, h) or h in bad: continue
+            if sp['ev_reference'] != 'exact' and max(abs(v) for v in x.get('ev_hrc') or [0]) < 0.01: continue     # nœud non résolu (EV toutes nulles)
+            if sp['hero'] == 'BTN' and h in ('AA', 'KK') and next(a['type'] for a in sp['actions'] if a['id'] == reference_action(sp, h)) == 'limp':
+                continue                                           # v4.4 (Lucky) : limp d'AA / KK au BTN, artefact d'indifférence de HRC
             g = error_gap(sp, h)                       # la moins chère des vraies erreurs (les actions « pertinentes » ont une nuance)
             if g is not None and g >= floor: out.append(h)
         _TEACH[k] = (sp, out)                                      # garder sp : l'identifiant reste valable
@@ -276,37 +304,91 @@ def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=No
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
     Mode Field : tirage propre aux questions fixes (spinsacademy.field.draw).
     excluded : spots désactivés par l'administration.
-    Tirage : format (heads-up HU_SHARE du temps quand les filtres le permettent), puis rotation sur la position du joueur
-    et sur la famille de décision (sans elle, le BB domine) ; une main ne revient pas deux fois dans la série."""
+    Tirage : format (heads-up HU_SHARE du temps quand les filtres le permettent), tranche de tapis à parts égales, puis
+    situation selon sa fréquence réelle (situation_weights) ; une main ne revient pas deux fois dans la série."""
     rnd = random.Random(seed); items = pool(version, filters, excluded)
     if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
     if is_field(version):
         out = field.draw(items, size, seed)
         if len(out) < size: raise ValueError(f'{len(out)} questions du field disponibles pour ces filtres, {size} demandées')
         return out
-    tree = {}
-    for sp in items: tree.setdefault(sp['table'], {}).setdefault(sp['hero'], {}).setdefault(family(sp), []).append(sp)
-    pos_order = {}; fam_order = {}; used = set(); seen = set(); out = []
-    while len(out) < size and tree:
-        tables = sorted(tree)
-        table = (('heads-up' if rnd.random() < HU_SHARE else '3-handed') if set(tables) == {'heads-up', '3-handed'} else tables[0])
-        by_pos = tree[table]
-        if not pos_order.get(table): pos_order[table] = sorted(by_pos); rnd.shuffle(pos_order[table])
-        pos = pos_order[table].pop(); fams = by_pos.get(pos)
-        if not fams: continue
-        key = (table, pos)
-        if not fam_order.get(key): fam_order[key] = sorted(fams); rnd.shuffle(fam_order[key])
-        fam = fam_order[key].pop()
-        choices = [sp for sp in fams.get(fam, []) if sp['spot_id'] not in used]
+    weights = situation_weights(version)
+    by = {}
+    for sp in items: by.setdefault(sp['table'], {}).setdefault(stack_band(sp), {}).setdefault(situation_key(sp), []).append(sp)
+    used = set(); seen = set(); out = []
+    while len(out) < size and by:
+        tables = sorted(by)
+        table = ('heads-up' if rnd.random() < HU_SHARE else '3-handed') if set(tables) == {'heads-up', '3-handed'} else rnd.choice(tables)
+        band = rnd.choice(sorted(by[table]))                         # tranches de tapis à parts égales
+        groups = by[table][band]; keys = sorted(groups)
+        g = rnd.choices(keys, [weights.get((table, band, k), RARE_FLOOR) for k in keys])[0]
+        choices = [sp for sp in groups[g] if sp['spot_id'] not in used]
         if not choices:
-            fams.pop(fam, None)
-            if not fams: by_pos.pop(pos, None)
-            if not by_pos: tree.pop(table)
+            groups.pop(g)
+            if not groups: by[table].pop(band)
+            if not by[table]: by.pop(table)
             continue
         sp = rnd.choice(choices); _use(sp, items, used)
         h = _pick_hand(sp, rnd, seen); seen.add(h)
         out.append((sp['spot_id'], h))
     return out
+
+
+BANDS = ((0, 6.0), (6.01, 10.0), (10.01, 15.0), (15.01, 30.0))
+RARE_SHARE = 0.10        # v4.4 (audit des coachs) : les situations rares (moins de 1 % des décisions de leur tranche) se partagent 10 % des tirages
+RARE_FLOOR = 1e-4
+
+
+def stack_band(sp):
+    e = sp['effective_stack_bb']
+    return next(k for k, (a, b) in enumerate(BANDS) if a <= e <= b)
+
+
+def situation_key(sp):
+    """situation vue par le joueur, tailles de relance confondues : position, puis actions précédentes"""
+    return (sp['hero'],) + tuple(('limp' if h['action'] == 'call' and h.get('to_bb') == 1.0 else h['action'], h['position']) for h in sp['history'])
+
+
+def _agg_freq(sp, aid):
+    j = [a['id'] for a in sp['actions']].index(aid); num = den = 0.0
+    for h, x in sp['hands'].items():
+        w = W[NAMES.index(h)] * x.get('reach', 0)
+        if x.get('freq'): num += w * x['freq'][j]; den += w
+    return num / den if den else 0.0
+
+
+@lru_cache(maxsize=4)
+def situation_weights(version):
+    """v4.4 : poids de tirage de chaque situation, par table et tranche de tapis. Fréquence réelle d'une situation = probabilité de
+    son historique sur une main jouée, d'après les stratégies HRC (spots à tapis égaux). Les situations fréquentes gardent leur part
+    (90 % des tirages, au prorata), les rares se partagent RARE_SHARE à parts égales."""
+    _, spots = load(version)
+    idx = {(sp['table'], tuple(sp['stacks_bb']), tuple((h['position'], h['action'], h.get('to_bb')) for h in sp['history'])): sp
+           for sp in spots.values() if len(set(sp['stacks_bb'])) == 1}
+    real = {}
+    for sp in spots.values():
+        if len(set(sp['stacks_bb'])) != 1: continue
+        hk = [(h['position'], h['action'], h.get('to_bb')) for h in sp['history']]; p = 1.0
+        for k, (pos, act, to) in enumerate(hk):
+            node = idx.get((sp['table'], tuple(sp['stacks_bb']), tuple(hk[:k])))
+            aid = node and node['hero'] == pos and next((a['id'] for a in node['actions'] if a['type'] == act
+                                                         and (act in ('fold', 'check') or abs((a.get('to_bb') or 0) - (to or 0)) < 1e-6)), None)
+            if not aid: p = None; break
+            p *= _agg_freq(node, aid)
+        if p is not None: real.setdefault((sp['table'], stack_band(sp), situation_key(sp)), []).append(p)
+    mean = {k: sum(v) / len(v) for k, v in real.items()}
+    tot = {}
+    for (t, b, _), v in mean.items(): tot[(t, b)] = tot.get((t, b), 0) + v
+    share = {k: v / tot[k[:2]] for k, v in mean.items() if tot[k[:2]]}
+    keys = {(sp['table'], stack_band(sp), situation_key(sp)) for sp in spots.values()}
+    out = {}
+    for t, b in {k[:2] for k in keys}:
+        ks = [k for k in keys if k[:2] == (t, b)]
+        common = [k for k in ks if share.get(k, 0) >= 0.01]; rare = [k for k in ks if k not in common]
+        cs = sum(share[k] for k in common) or 1
+        for k in common: out[k] = (1 - RARE_SHARE) * share[k] / cs
+        for k in rare: out[k] = RARE_SHARE / len(rare)
+    return {(t, b, k): v for (t, b, k), v in out.items()}
 
 
 def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
@@ -495,7 +577,6 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
                                                  ('se couchent : ' + ', '.join(h for v, h in folders[:3])) if folders else '') if x) + '.')
         mass = lambda f: sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq if f(h)) / max(sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq), 1e-12)
         share = mass(lambda h: eq[h] >= need)
-        out.append(f"On paie avec {_pct(share)} {BASE_FR}.")
         return out
     j = ids.index(best); verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
     f = grading.reference_freq(sp, hand); shown = grading.displayed_mix(sp, hand); pj = dict(shown).get(best, 0)
@@ -752,7 +833,9 @@ def rule_to_remember(sp, best, labels):
     share = round(100 * sum(weight[h] for h in live if plays[h]) / (sum(weight.values()) or 1))
     verb = {'fold': 'on se couche', 'check': 'on checke', 'limp': 'on complète' if sp['hero'] == 'SB' else 'on limpe', 'call': 'on paie',
             'call_allin': 'on paie', 'raise': 'on relance', 'allin': 'on part à tapis'}[t]
-    where = f"au {sp['hero']} {SITUATION_FR[family(sp)]} à {bb(hero_effective(sp))} BB" + (' (heads-up)' if sp['table'] == 'heads-up' else '')
+    sit = SITUATION_FR[family(sp)]
+    if family(sp) == 'vs_allin' and sum(h['action'] in ('allin', 'call_allin') for h in sp['history']) > 1: sit = 'face à deux joueurs à tapis'
+    where = f"au {sp['hero']} {sit}, avec {bb(hero_effective(sp))} BB de tapis" + (' (heads-up)' if sp['table'] == 'heads-up' else '')   # v4.4 : le montant est ton tapis, pas la relance
     target = {h: not v for h, v in plays.items()} if t == 'fold' else plays
     txt, fit = threshold_rule(target, weight)
     if txt and fit >= RULE_MIN_FIT and 0 < share < 100 and txt.count(',') < RULE_MAX_GROUPS:

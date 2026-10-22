@@ -36,7 +36,7 @@ for q in qs:
         check(f"Règle {q['regle']}" in q['explication'], "explication sans règle", q)
     if q['type'] in ('adaptation', 'inconnu'):
         check(q['bonne_reponse'] != q['action_GTO'], "adaptation sans changement de décision", q)
-        mult = 3 if (q['action_GTO'] == 'Pousser all-in' and q['bonne_reponse'] == 'Fold') else 2
+        mult = 3 if (q['action_GTO'] == 'Pousser all-in' and q['bonne_reponse'] == 'Fold' and q['regle'] != 'R16') else 2   # v4.4 : R16 = read significatif
         if q['type'] == 'adaptation':
             check(q['gain_mBB'] >= mult * q['seuil_bruit_mBB'] - 1, f"gain sous {mult} x bruit", q)
     if q['type'] in ('piège', 'échantillon'):
