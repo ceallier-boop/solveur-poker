@@ -118,7 +118,9 @@ def main(out):
             for j, a in enumerate(sp['actions']):
                 inside = {h: grading.reference_freq(sp, h)[j] >= 0.5 for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq')}
                 hs = [h for h, v in inside.items() if v]
-                if hs: strat.append(f"{labels[a['id']]} : {quiz.range_text(hs)}")
+                if hs:   # range trop large pour un résumé à seuils : on liste les mains hors de l'action
+                    txt = quiz.range_text(hs) or ('toutes sauf ' + (quiz.range_text([h for h, v in inside.items() if not v]) or '?'))
+                    strat.append(f"{labels[a['id']]} ({round(100 * len(hs) / max(len(inside), 1))} % des classes) : {txt}")
             w.writerow([sid, sp['table'], sp['hero'], '/'.join(f'{x:g}' for x in sp['stacks_bb']), sp['effective_stack_bb'], hist_txt(sp), sp['pot_bb'],
                         sp['to_call_bb'], ' | '.join(labels.values()), len(quiz.teachable(sp)), ' || '.join(strat),
                         '' if rf[sid] is None else f"{100 * rf[sid]:.3f}".replace('.', ',')])

@@ -1,0 +1,224 @@
+﻿num;banque;spot_id;situation;tapis;main;type_constat;gravite;constat;correction_proposee
+1;exploitant;3w-8-00f865, 3w-8-0190be, 3w-8-023ef7, 3w-8-062abe, 3w-8-067ce2;BB face au limp du SB (HU et 3 joueurs);6-8;toutes;erreur_decision;majeur;R13 « il se couche souvent face au tapis » tirée d'une stat de call après limp sur 10 à 25 limps, écart non significatif (moins d'un écart-type) : 135 questions sur 253 R13 (ex. 2 fois sur 10, 20 % contre 31 %). La correction annonce « 60 coups observés » alors que la stat de call porte sur 10 à 15 coups.;"Exiger au moins 30 limps observés et un écart d'au moins 1,5 écart-type pour R13 ; sinon classer en « échantillon » ou citer R12 si le limp est l'écart réel. Dans la correction, citer le nombre de limps (n de la stat), pas le nombre d'occasions."
+2;exploitant;3w-6-0286c5, 3w-6-0400df, 3w-6-0b9753, 3w-6-0c5631, 3w-6-0dda01;BB face au limp du SB (HU et 3 joueurs);6-8;toutes;incoherence;majeur;R12 « il complète beaucoup : son limp est faible, pousse plus large » affichée alors que le vilain paie aussi le tapis après son limp 10 points ou plus au-dessus de la théorie : 170 questions (343 avec un call au-dessus). La fiche ignore la stat qui va contre le tapis (limp-call large = calling station). Les décisions restent tapis selon l'EV, mais avec des mains faibles (Q4s, J9o) le gain est petit et la leçon est fausse.;Quand les deux stats tirent en sens contraire, le dire : « il complète large mais il paie souvent : tapis avec tes mains correctes, check tes poubelles ». Retirer de R12 les questions où la stat de call dépasse la théorie de 10 points, ou les passer en R14.
+3;exploitant;3w-6-01462c, 3w-6-018f42, 3w-6-01ca97, 3w-6-0286c5, 3w-6-0613a7;BB face au limp du SB;6-8;toutes;erreur_decision;mineur;R12 sur des écarts de limp faibles en nombre de coups : 259 questions avec un écart sous 1,5 écart-type (ex. 4 limps sur 25, 16 % contre 8 % de théorie). « Il complète trop souvent (25 coups observés) » n'est pas une info solide.;Monter le seuil à 50 occasions ou 1,5 écart-type, sinon type « échantillon ».
+4;exploitant;3w-6-01462c, 3w-6-018f42, 3w-6-01ca97, 3w-6-0286c5, 3w-6-0613a7;BB face au limp du SB;6-8;toutes;erreur_texte;mineur;La stat « face à un tapis après son limp, il a payé k fois sur n » est encore affichée avec n < 10 dans 379 questions adaptation ou piège (ex. 1 fois sur 4). Le correctif annoncé (« ne compte qu'à partir de 10 limps ») n'est appliqué qu'au choix de la règle, pas à l'affichage : le joueur lit une stat de 4 coups.;Masquer cette stat sous 10 limps (ou écrire « trop peu de coups »).
+5;exploitant;3w-12-00d8c6-leak, 3w-12-12c568-leak, 3w-12-132349-leak, 3w-12-3b0f5e-leak, 3w-12-532675-leak;Défaut du vilain (identification);4-12;—;erreur_decision;majeur;65 questions « quel est son défaut ? » sur 226 donnent un défaut alors que l'écart est sous 1,5 écart-type (22 sous 1). Ex. hu-8-48daf0 : 8 tapis payés sur 20 (40 % contre 45 %). La correction dit « plusieurs dizaines de coups prouvent » : c'est faux sur 20 coups et 5 points d'écart. Contradictoire avec le type « échantillon ».;Ne garder que des écarts d'au moins 2 écarts-types, ou ajouter la réponse « rien de prouvé, joue-le comme un rec passif ».
+6;exploitant;tous les *-leak;Défaut du vilain (identification);4-12;—;erreur_texte;mineur;Les 4 options mélangent « pousse » et « paie » alors qu'une seule stat est affichée : deux options s'éliminent sans réfléchir.;Proposer : trop / pas assez / dans la norme pour la stat affichée, ou afficher les deux stats.
+7;exploitant;3w-6-41dacb, 3w-6-618725, 3w-8-1b8d2c, 3w-8-63a681, 3w-8-7d0eae;SB premier à parler (HU et 3 joueurs);6-8;toutes;erreur_texte;majeur;R4 « contre un joueur passif, limpe les mains trop faibles pour pousser » : 223 questions. Dans 208 cas la stat affichée est « il paie trop » (calling station, pas « passif ») et la théorie pousse déjà la main (86s, J6s, 54s à 6-8 BB) : la main n'est pas « trop faible pour pousser ». Le limp est rentable surtout grâce à une fréquence d'iso du BB (« il relance environ 33 % ») qui n'est jamais montrée dans l'énoncé.;Texte : « Il paie trop ton tapis : limpe tes mains moyennes au lieu de pousser, garde le tapis pour les bonnes mains. » Afficher la stat d'iso du BB face au limp si elle fonde la décision.
+8;exploitant;hu-8-004ee7;HU · SB · premier;8.0;32s;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (38 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Fold +0.00 | Compléter (0,5 BB de plus) +0.17 | Tapis (8 BB) +0.09.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+9;exploitant;hu-8-051b8e;HU · SB · premier;8.0;T4o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Compléter (0,5 BB de plus) +0.16 | Fold +0.00 | Tapis (8 BB) +0.05.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+10;exploitant;hu-8-076c2e;HU · SB · premier;8.0;53o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Fold +0.00 | Compléter (0,5 BB de plus) +0.17 | Tapis (8 BB) +0.04.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+11;exploitant;hu-8-0a6b29;HU · SB · premier;8.0;Q7o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (40 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Fold +0.00 | Tapis (8 BB) +0.21 | Compléter (0,5 BB de plus) +0.37.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+12;exploitant;hu-8-14e0e4;HU · SB · premier;8.0;74o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (38 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Tapis (8 BB) +0.06 | Compléter (0,5 BB de plus) +0.16 | Fold +0.00.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+13;exploitant;hu-8-18e81d;HU · SB · premier;8.0;84o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (37 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Compléter (0,5 BB de plus) +0.17 | Tapis (8 BB) +0.04 | Fold +0.00.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+14;exploitant;hu-8-1a0141;HU · SB · premier;8.0;T3o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Tapis (8 BB) +0.02 | Compléter (0,5 BB de plus) +0.16 | Fold +0.00.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+15;exploitant;hu-8-1ad14d;HU · SB · premier;8.0;74o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Compléter (0,5 BB de plus) +0.18 | Fold +0.00 | Tapis (8 BB) +0.10.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+16;exploitant;hu-8-1bfc7b;HU · SB · premier;8.0;64o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (37 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Tapis (8 BB) +0.10 | Fold +0.00 | Compléter (0,5 BB de plus) +0.18.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+17;exploitant;hu-8-1fa84f;HU · SB · premier;8.0;Q7o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Compléter (0,5 BB de plus) +0.42 | Fold +0.00 | Tapis (8 BB) +0.26.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+18;exploitant;hu-8-20db43;HU · SB · premier;8.0;64o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (38 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Compléter (0,5 BB de plus) +0.16 | Tapis (8 BB) +0.05 | Fold +0.00.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+19;exploitant;hu-8-286dfa;HU · SB · premier;8.0;62s;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (37 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Tapis (8 BB) +0.10 | Fold +0.00 | Compléter (0,5 BB de plus) +0.19.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+20;exploitant;hu-8-2a7d5c;HU · SB · premier;8.0;42s;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (40 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Fold +0.00 | Compléter (0,5 BB de plus) +0.17 | Tapis (8 BB) +0.08.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+21;exploitant;hu-8-2e3ded;HU · SB · premier;8.0;94o;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (36 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Tapis (8 BB) +0.02 | Compléter (0,5 BB de plus) +0.16 | Fold +0.00.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+22;exploitant;hu-8-3a1726;HU · SB · premier;8.0;62s;incoherence;majeur;"R4 : la stat dit « il ne paie pas assez » (38 % contre 45 %) mais la réponse est le limp. Un vilain qui paie peu rend le tapis meilleur ; le limp ne gagne que par une fréquence d'iso cachée. EV : Fold +0.00 | Tapis (8 BB) +0.05 | Compléter (0,5 BB de plus) +0.17.";"Retirer la question ou afficher la stat d'iso du BB ; sinon la bonne leçon est « pousse plus large »."
+23;exploitant;3w-4-4dcff2;3w · SB · BTN allin;4.0;K4o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-4dcff2
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          K4o
+need                                                           39
+eq                                                             39
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Payer le tapis (3,5 BB de plus)': -0.2, 'Fol...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 547, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+24;exploitant;3w-4-5d01cd;3w · SB · BTN allin;4.0;K5o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-5d01cd
+type                                                        piège
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          K5o
+need                                                           39
+eq                                                             40
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Payer le tapis (3,5 BB de plus)': -0.19, 'Fo...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 551, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+25;exploitant;3w-4-8447b6;3w · SB · BTN allin;4.0;K5o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-8447b6
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          K5o
+need                                                           39
+eq                                                             40
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Fold': 0.0, 'Payer le tapis (3,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 568, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+26;exploitant;3w-4-ad8b89;3w · SB · BTN allin;4.0;K3o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-ad8b89
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          K3o
+need                                                           39
+eq                                                             39
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Fold': 0.0, 'Payer le tapis (3,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 595, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+27;exploitant;3w-4-d62934;3w · SB · BTN allin;4.0;Q8o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-d62934
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          Q8o
+need                                                           39
+eq                                                             39
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Fold': 0.0, 'Payer le tapis (3,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 611, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+28;exploitant;3w-4-fa7075;3w · SB · BTN allin;4.0;K5o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-4-fa7075
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             4.0
+main                                                          K5o
+need                                                           39
+eq                                                             41
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Fold': 0.0, 'Payer le tapis (3,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 634, dtype: object> % d'équité pour 39 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+29;exploitant;3w-6-0d1a33;3w · BB · BTN allin > SB fold;6.0;Q6s;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-6-0d1a33
+type                                                        piège
+situ                                3w | BB | BTN allin > SB fold
+t                                                             6.0
+main                                                          Q6s
+need                                                           40
+eq                                                             40
+v                                                       pas assez
+best                                                         call
+theo                                                         call
+evd             {'Fold': 0.0, 'Payer le tapis (5 BB de plus)':...
+consist_text                                                False
+consist_dec                                                 False
+Name: 645, dtype: object> % d'équité pour 40 % requis : « pas assez pour payer », mais la bonne réponse est call. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+30;exploitant;3w-6-33d902;3w · SB · BTN allin;6.0;K8s;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-6-33d902
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             6.0
+main                                                          K8s
+need                                                           42
+eq                                                             42
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Fold': 0.0, 'Payer le tapis (5,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 676, dtype: object> % d'équité pour 42 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+31;exploitant;3w-6-52a1b3;3w · SB · BTN allin;6.0;A2o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-6-52a1b3
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             6.0
+main                                                          A2o
+need                                                           42
+eq                                                             43
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Fold': 0.0, 'Payer le tapis (5,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 697, dtype: object> % d'équité pour 42 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+32;exploitant;3w-8-00ebd9;3w · SB · BTN allin;8.0;A2s;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-8-00ebd9
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             8.0
+main                                                          A2s
+need                                                           44
+eq                                                             44
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Payer le tapis (7,5 BB de plus)': -0.22, 'Fo...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 783, dtype: object> % d'équité pour 44 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+33;exploitant;3w-8-4be606;3w · SB · BTN allin;8.0;A6o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-8-4be606
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             8.0
+main                                                          A6o
+need                                                           44
+eq                                                             44
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Fold': 0.0, 'Payer le tapis (7,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 868, dtype: object> % d'équité pour 44 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+34;exploitant;3w-8-56c533;3w · SB · BTN allin;8.0;A4o;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-8-56c533
+type                                                  échantillon
+situ                                          3w | SB | BTN allin
+t                                                             8.0
+main                                                          A4o
+need                                                           44
+eq                                                             44
+v                                                           assez
+best                                                         fold
+theo                                                         fold
+evd             {'Payer le tapis (7,5 BB de plus)': -0.12, 'Fo...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 877, dtype: object> % d'équité pour 44 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+35;exploitant;3w-8-69ca14;3w · SB · BTN allin;8.0;A2s;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-8-69ca14
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             8.0
+main                                                          A2s
+need                                                           44
+eq                                                             44
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Payer le tapis (7,5 BB de plus)': -0.18, 'Fo...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 901, dtype: object> % d'équité pour 44 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+36;exploitant;3w-8-9edd74;3w · SB · BTN allin;8.0;A2s;erreur_texte;majeur;"Le « pourquoi » dit <bound method Series.eq of id                                                    3w-8-9edd74
+type                                                   adaptation
+situ                                          3w | SB | BTN allin
+t                                                             8.0
+main                                                          A2s
+need                                                           44
+eq                                                             45
+v                                                           assez
+best                                                         fold
+theo                                                         call
+evd             {'Fold': 0.0, 'Payer le tapis (7,5 BB de plus)...
+consist_text                                                 True
+consist_dec                                                 False
+Name: 943, dtype: object> % d'équité pour 44 % requis : « assez pour payer », mais la bonne réponse est fold. Le texte ignore le BB qui reste à parler (sur-call ou tapis) ou l'arrondi.";Calculer le seuil avec le joueur restant derrière, ou écrire « tout juste, et le BB parle encore : fold ».
+37;exploitant;3w-10-3c93b6, 3w-10-9cc3ab, 3w-4-2d040b, 3w-4-8c9a68, 3w-6-01ca97, 3w-6-0a2659;plusieurs;4-12;plusieurs;incoherence;mineur;103 questions ont un énoncé identique à une autre (même main, mêmes stats), dont 51 paires avec des EV différentes (vilain caché différent). Le doublon déjà signalé à la relecture du limp n'est pas totalement corrigé.;Dédoublonner sur l'énoncé affiché, pas sur l'EV.
+38;exploitant;3w-10-5bfd1a, 3w-10-8bc886, 3w-10-e807c6, 3w-4-0a65b8, 3w-4-37b890;toutes;4-8;toutes;incoherence;mineur;Type « échantillon » : la leçon dit « joue le profil par défaut » (rec passif) mais le « pourquoi » calcule contre un vilain proche de la théorie (ex. « il pousse environ 35 %, théorie 33 % »), pas contre le rec passif des questions « inconnu » (27 % à 6 BB). Les décisions coïncident presque toujours, le texte non. 52 de ces questions ont un écart d'EV sous 0,1 BB.;Calculer l'échantillon contre le rec passif (prior), ou dire « joue la théorie ».
+39;exploitant;hu-6-025f9e, hu-6-044d55, hu-6-06af1f, hu-6-12f13f, hu-6-151e89;SB HU premier à parler, vilain inconnu;6;toutes;erreur_texte;mineur;R0 dit « il paie et relance peu » mais en heads-up à 6 BB le « pourquoi » donne au rec passif 45 % de fold face au tapis, égal à la théorie. La réponse (limp de 86s, 97s, J6o, Q3o) vient seulement de son iso faible (26 %), pas d'un call faible.;Adapter la phrase : « Inconnu = rec passif : il isole peu ton limp. » à 6 BB HU.
+40;exploitant;—;SB/BTN premier à parler, BB face au limp;4-12;—;manque;majeur;Aucune adaptation « il paie trop : pousse plus serré » (tapis de la théorie → fold). Sur 1869 adaptations, 1589 élargissent (pousser ou payer plus) et 280 resserrent, dont 178 sont des limps R4, 97 des « paie plus serré » (R2), 4 des « check » (R14) et aucune un tapis théorique qui devient fold. Le joueur apprend qu'exploiter = pousser plus. Lucky : contre une calling station, open seulement les bonnes mains, zéro bluff.;Ajouter 150 à 200 questions R5 « il paie trop » (BTN et SB premier à parler, BB face au limp), où le tapis théorique devient fold ou limp.
+41;exploitant;—;toutes;10-12;—;equilibre;majeur;"À 10 et 12 BB, 812 questions dont 55 adaptations seulement (piège surtout) ; BB face au limp : 4 questions. Les tapis où le field se trompe le plus (10-12 BB, opens min-raise, iso) ne sont presque pas travaillés.";Ajouter l'iso non all-in et le min-raise au moteur, puis des adaptations 10-15 BB.
