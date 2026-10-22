@@ -151,7 +151,7 @@ def main(out):
             wrong = next((a['id'] for a in sp['actions'] if grading.grade(sp, h, a['id'])['verdict'] == 'erreur'), sp['actions'][0]['id'])
             r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, wrong); n = r['next']
             w.writerow([sp['spot_id'], sp['table'], sp['effective_stack_bb'], h, quiz.prompt(sp, h).replace('\n', ' '), r['chosen_label'], r['verdict'],
-                        r['explanation_fr'].replace('\n', ' / '), '', '' if not n else ' / '.join(x for x in [n['intro'], n.get('position') or ''] + n['forces'] + n['weaknesses'] if x)])
+                        r['core_fr'].replace('\n', ' / '), ' / '.join(r['why_fr']), '' if not n else ' / '.join(x for x in [n['intro'], n.get('position') or ''] + n['forces'] + n['weaknesses'] if x)])
     fam = collections.Counter(); fam_real = collections.defaultdict(float); fam_sv = collections.Counter()
     for k, r in rows.items():
         fam[(k[0], k[2])] += r['questions']; fam_sv[(k[0], k[2])] += r['served']

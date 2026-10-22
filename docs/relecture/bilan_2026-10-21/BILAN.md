@@ -63,6 +63,6 @@ Outil : `tools/audit/bilan_quiz.py`. Les fichiers chiffrés sont dans ce dossier
 4. **Le mode exploitant sur-sert le limp à 6-8 BB.** Les deux situations « BB face au limp du SB » font 51 % des questions servies, dont 20 % pour la seule case 3 joueurs à 8 BB. Le tirage pondère par la part du profil dans le field ; or les questions de rec passif se concentrent sur ces cases.
 5. **Le postflop n'est jamais une question.** C'est seulement une aide dans la correction, alors que les pots limpés (heads-up, BvB) et min-relancés sont fréquents dès 10 BB.
 
-## 3. Audit des coachs
+## 3. Audit des coachs (terminé)
 
 Voir `audit_lucho.md`, `audit_pa.md`, `audit_lucky.md` et leurs grilles `audit_*.csv`. La consolidation est dans `SYNTHESE_AUDIT.md`.
