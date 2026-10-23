@@ -548,7 +548,7 @@ def principle(sp, hand, best, labels):
         return ("Compléter ne coûte que 0,5 BB : la main mérite un flop pas cher." if sp['hero'] == 'SB' else
                 "Limper ne coûte que 1 BB : la main mérite un flop pas cher.")
     if t == 'check':
-        return "Tu vois le flop gratuitement. Relancer ferait coucher les mains que tu bats et payer celles qui te battent."
+        return "Le check te donne le flop gratuitement : attaquer ferait coucher les mains que tu bats et payer celles qui te battent."
     if t == 'call':
         call, final = call_terms(sp)
         return f"Tu paies {bb(call)} BB pour un pot de {bb(final)} BB : bon prix, et la main joue bien après le flop."
@@ -942,8 +942,11 @@ def correct(version, spot_id, hand, action_id):
                          f"meilleur coup ({_low(labels[top]).split(' (')[0]}).")
             line = verdict_line(g['verdict'], raw, grading.PERTINENT_MBB if sp['ev_reference'] == 'hrc' else 3 * grading.TOLERANCE_MBB)
             if line: lines.append(line)
-    core = list(lines) + [principle(sp, hand, best, labels)]
-    if g['verdict'] != 'correct': core.append(rule_to_remember(sp, best, labels))          # après une erreur ou une imprécision : une règle simple
+    ce = call_equity(sp, hand)
+    essential = (f"Il te faut {_pct1(ce[0])} d'équité pour payer, et {hand} en a {_pct_eq(ce[1], ce[0])} : "
+                 + ('payer rapporte.' if ce[1] >= ce[0] else 'couche-toi.')) if ce else principle(sp, hand, best, labels)
+    remember = rule_to_remember(sp, best, labels) if g['verdict'] != 'correct' else None    # après une erreur ou une imprécision : une règle simple
+    core = list(lines) + [essential] + ([remember] if remember else [])
     lines = core + because                                         # la stratégie arrondie est affichée à part
     loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
@@ -952,7 +955,17 @@ def correct(version, spot_id, hand, action_id):
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
                 loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else gain_bb(loss)),
                 ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
-                core_fr='\n'.join(core))
+                core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Action de référence : {labels[best]}.'] + because)   # le bandeau dit déjà le bon coup et le coût
+
+
+def call_equity(sp, hand):
+    """(équité requise, équité de la main) pour payer un tapis à EV exacte, ou None"""
+    ids = [a['id'] for a in sp['actions']]; types = {a['id']: a['type'] for a in sp['actions']}
+    if not (sp['ev_reference'] == 'exact' and ids == ['F', 'C'] and types['C'] == 'call_allin' and sp['to_call_bb'] > 0): return None
+    e = (sp['hands'][hand].get('ev_exact') or [None, None])[1]
+    if e is None: return None
+    call, final = call_terms(sp)
+    return call / final, (e + call) / final
 
 
 def summary(version, answers):

@@ -222,13 +222,14 @@ function renderAnswer(r) {
   const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
-  const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${r.best_label}.` : `Ta lecture : ${r.chosen_label}\nLa bonne : ${r.best_label}`)
-    : many ? `Plusieurs bonnes décisions : ${r.good_labels.join(' ou ')}. Ton choix en fait partie.`
-    : r.chosen_label === r.best_label ? `Tu as joué le meilleur coup : ${r.best_label}.`
-    : r.verdict === 'correct' && !r.field ? (((r.strategy.find((x) => x.chosen) || {}).pct || 0) > 0     // A5 : stratégie mixte
-      ? `La théorie joue aussi ${r.chosen_label} ${r.strategy.find((x) => x.chosen).pct} % du temps.\nSon coup le plus fréquent : ${r.best_label}.`
-      : `Presque aussi bon que le meilleur coup (${r.best_label}) : moins de 0,02 BB d'écart.`)
-    : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nMeilleur coup : ${r.best_label}`;
+  const mixPct = ((r.strategy.find((x) => x.chosen) || {}).pct || 0);
+  const short = (l) => l.replace(/ \(.*\)$/, '');                     // « Tapis », pas « Tapis (12 BB) » dans la phrase courte
+  const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${r.best_label}.` : `La bonne lecture : ${r.best_label}.`)
+    : many ? 'Ton choix fait partie des bons coups.'
+    : r.chosen_label === r.best_label ? `Le bon coup : ${r.best_label}.`
+    : r.verdict === 'correct' && !r.field && mixPct > 0 ? `La théorie joue aussi ce coup (${mixPct} % du temps).`   // A5 : stratégie mixte
+    : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
+    : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
   v.innerHTML = title + `<small>${sub}</small>`;
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -241,17 +242,20 @@ function renderAnswer(r) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${fd.read ? 'Bonne lecture' : 'Contre ce vilain'}${fd.gain_fr ? `<span class="conf net">${fd.gain_fr} de plus que la théorie</span>` : ''}</dt><dd>${escT(r.best_label)}</dd></div>`
       + (fd.gto_label ? `<div><dt>En théorie</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')
       + (fd.evs.length ? `<div><dt>Gain par rapport au fold <small>(ajusté à ce vilain)</small></dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
-      + `<p class="note">${fd.type_fr} · règle ${fd.rule}</p>`;
+      + `<p class="note">${fd.type_fr}</p>`;
   }
-  $('a-explanation').hidden = false; $('a-explanation').innerHTML = (r.core_fr || r.explanation_fr).split('\n').map((l) => `<span class="eline">${escT(l)}</span>`).join('');   // une ligne par phrase : la définition s'insère dessous
+  // d'abord l'essentiel (une phrase, puis la règle à retenir), ensuite les précisions, repliées
+  $('a-essential').textContent = r.essential_fr || '';
+  const rem = (r.remember_fr || '').replace(/^À retenir : /, '');
+  $('a-remember').hidden = !rem; $('a-remember').innerHTML = rem ? `<b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span>` : '';
+  const det = r.details_fr || []; $('a-more').open = false;
+  $('a-details').innerHTML = det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
-  const why = r.why_fr || []; $('a-why-box').hidden = !why.length; $('a-why-box').open = false;
-  $('a-why').innerHTML = why.map((l) => `<p>${l}</p>`).join('');
   renderNext(r.next);
   $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, false);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
-  for (const id of ['a-explanation', 'a-why', 'a-next']) glossify($(id));    // A7 : définition au toucher des mots du lexique
+  for (const id of ['a-essential', 'a-remember', 'a-details', 'a-next']) glossify($(id));    // A7 : définition au toucher des mots du lexique
   show('answer'); v.focus({ preventScroll: true });
 }
 

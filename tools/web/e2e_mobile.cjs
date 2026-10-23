@@ -24,7 +24,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await p.waitForSelector('#screen-answer:not([hidden])');
     if (i === 0) {
       await p.screenshot({ path: out + '/3_correction.png', fullPage: true });
-      if (await p.locator('#a-why-box').isVisible()) await p.click('#a-why-box summary');
+      if (await p.locator('#a-more').isVisible()) await p.click('#a-more summary');
       if (await p.locator('#a-next-box').isVisible()) await p.click('#a-next-box summary');
       if (await p.locator('#a-grid-box').isVisible()) await p.click('#a-grid-box summary');
       await p.screenshot({ path: out + '/3c_pourquoi_grille.png', fullPage: true });

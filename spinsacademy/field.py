@@ -289,7 +289,7 @@ def theory_lines(sp, f, lab, hand):
         behind = sp['hero'] == 'SB' and sp['table'] == '3-handed'          # v4.4 (audit) : le BB peut encore payer ou surenchérir
         verdict = (("au-dessus de la cote, mais le BB parle encore derrière : il faut une marge." if t['eq_pct'] >= t['need_pct'] else "pas assez, même sans le BB derrière.")
                    if behind else ("assez pour payer." if t['eq_pct'] >= t['need_pct'] else "pas assez pour payer."))
-        out.append(f"Il pousse environ {pct(t['range_pct'])} % de ses mains (théorie : {pct(t['range_gto_pct'])} %). Contre ces mains, {hand} a "
+        out.append(f"{est(f)}il pousse environ {pct(t['range_pct'])} % de ses mains (théorie : {pct(t['range_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_pct'])} % d'équité : " + verdict)
     elif t['kind'] in ('shove', 'open'):
         if t['kind'] == 'shove':
@@ -300,7 +300,7 @@ def theory_lines(sp, f, lab, hand):
                        "ton tapis se joue à l'abattage.")
             out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         else:
-            out.append(f"Il défend environ {pct(t['defend_pct'])} % de ses mains face à une relance (théorie : {pct(t['defend_gto_pct'])} %). "
+            out.append(f"{est(f)}il défend environ {pct(t['defend_pct'])} % de ses mains face à une relance (théorie : {pct(t['defend_gto_pct'])} %). "
                        f"Quand il défend, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         if t.get('raise_bb'):
             out.append(f"Face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche environ {pct(t['raise_fold_pct'])} % du temps "
@@ -310,7 +310,7 @@ def theory_lines(sp, f, lab, hand):
                        "moins il relance, plus le limp est rentable.")
     elif t['kind'] == 'iso':
         who = t.get('limper', 'SB')
-        out.append(f"Le {who} complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
+        out.append(f"{est(f)}le {who} complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_limp_pct'])} % d'équité.")
         if t.get('has_jam', True):
             out.append(fold_line(t, f"tu prends le pot de {num(t.get('win_bb', 2.0))} BB") + f" Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
@@ -323,10 +323,15 @@ def theory_lines(sp, f, lab, hand):
                     "Après un check, tu parles en premier au flop : ta main rapporte moins, mais attaquer coûterait encore plus.") if oop else
                    "Après un check, tu parles en dernier au flop : tes mains jouables rapportent plus.")
     elif t['kind'] == 'vsopen':
-        out.append(f"Le BTN ouvre environ {pct(t['open_pct'])} % de ses mains (théorie : {pct(t['open_gto_pct'])} %). Contre ces mains, {hand} a "
+        out.append(f"{est(f)}le BTN ouvre environ {pct(t['open_pct'])} % de ses mains (théorie : {pct(t['open_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_open_pct'])} % d'équité.")
         out.append(fold_line(t, f"tu prends {num(t['win_bb'])} BB") + f" Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
     return out
+
+
+def est(f):
+    """A' : le chiffre retenu mêle ses coups et le profil ; dit comme tel pour ne pas le confondre avec la stat observée"""
+    return 'Estimation retenue (ses coups et le profil) : ' if f['observations'] else 'Estimation (profil par défaut) : '
 
 
 def fold_line(t, prize):
@@ -515,6 +520,11 @@ def correct(sp, action_id):
     basis = basis_line(f)
     if basis: why.append(basis)
     gto_label = lab[f['gto']] if f['gto'] else None
+    body = [l for l in lines[:-1] if not l.startswith('Tu perds ')]  # sans « À retenir » ni le coût, déjà dans le bandeau
+    if f['type'] == 'profil':                                      # « Il pousse moins … et paie plus : calling station. » puis le détail
+        essential, remember, details = f"{body[0].split(' : ')[0]} : c'est le profil « {lab[best]} ».", rule, body + why
+    elif f['type'] in READ: essential, remember, details = body[0], rule, body[1:] + why
+    else: essential, remember, details = rule_fr, None, body + why  # la leçon est le message essentiel
     return dict(verdict=verdict, points=grading.POINTS[verdict], regret_mbb=round(regret, 1), best_action=best, best_label=lab[best],
                 top_action=best, chosen_action=action_id, gto_action=f['gto'], gto_label=gto_label, good_actions=[], good_labels=[],
                 chosen_label=lab[action_id], strategy=[dict(id=a, label_fr=lab[a], pct=100 if a == best else 0, chosen=a == action_id,
@@ -522,7 +532,8 @@ def correct(sp, action_id):
                 loss_fr=(bbx(regret) if action_id != best and ev[best] is not None else None), ev_source='field', exploit=None,
                 field=dict(type=f['type'], type_fr=f['type_fr'], rule=f['rule'], rule_fr=rule_fr, gto_label=gto_label, read=f['type'] in READ,
                            gain_fr=(bbx(f['gain_mbb']) if f['type'] in ('adaptation', 'inconnu') else None), evs=[dict(label_fr=lab[a], ev_fr=bbx(ev[a], True)) for a in ids if ev[a] is not None and a != 'F']),
-                why_fr=why, next=postflop_section(sp, f, hand) if best_t in FLOP_MOVES else None, range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines))
+                why_fr=why, next=postflop_section(sp, f, hand) if best_t in FLOP_MOVES else None, range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines),
+                essential_fr=essential, remember_fr=remember, details_fr=details)
 
 
 FAMILY_SHARE = {'first_in': 0.31, 'vs_allin': 0.33, 'vs_limp': 0.21, 'vs_raise': 0.10, 'read': 0.05}   # v4.4 (audit), v4.5 : face à l'open

@@ -83,3 +83,14 @@ Décision du porteur du projet : contre un vilain inconnu, le coup théorique es
 
 Restent internes (non servis au joueur) : noms de fichiers et de champs du code (`ev_hrc`, `data/hrc`), documentation, pages d'administration, champs internes des datasets publiés (immuables ; une prochaine version du moteur pourra les renommer).
 Non traités dans ce lot : points 9, 10, 16 et 18, et les trois vérifications des coachs.
+
+## 7. Correction allégée (retour du porteur du projet, 23/10/2026)
+
+« Les réponses sont encore trop chargées » : l'écran de correction montre d'abord l'essentiel, puis les précisions, repliées.
+
+1. **Bandeau** : le verdict et une seule ligne, « Le bon coup : Check. Ton choix coûte 0,17 BB. »
+2. **Message essentiel** : une phrase en gras. En GTO, le principe du coup ; pour payer un tapis, « Il te faut 45 % d'équité pour payer, et Q5o en a 40,5 % : couche-toi. » En exploitant, la leçon contre ce vilain (« Il pousse trop : paie plus large. »).
+3. **À retenir** (GTO, après une erreur ou une imprécision ; questions de lecture) : la règle, dans un encadré.
+4. **Précisions** (replié) : gain par rapport au fold, barème, nuance, chiffres du pourquoi, sur quoi ça repose, stratégie de référence ou tableau du vilain.
+
+L'API ajoute `essential_fr`, `remember_fr` et `details_fr` ; `explanation_fr` reste complet (administration, signalements). Les chiffres estimés du vilain sont dits comme tels (« Estimation retenue (ses coups et le profil) »), pour ne pas les confondre avec sa stat observée. Le numéro de règle (R12…) n'est plus affiché.

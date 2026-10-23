@@ -26,7 +26,7 @@ def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
             out.append(dict(m='exploit', q=q, eff=sp['effective_stack_bb'], base=None,
                             g=('read' if f['type'] in field.READ else sp['field_family']), a=f['correct'], w=max(f['weight'], 1e-3),
                             rd=f['type'] in field.READ, tr=f['type'] in ('piège', 'échantillon'),
-                            c={o['id']: quiz.correct(field_ref, sp['spot_id'], h, o['id']) for o in q['options']}))
+                            c={o['id']: slim(quiz.correct(field_ref, sp['spot_id'], h, o['id'])) for o in q['options']}))
     weights = quiz.situation_weights(gto_ref)
     for ref, k in ((gto_ref, k_gto),):
         for sp in quiz.pool(ref):
@@ -37,8 +37,14 @@ def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
                 q = quiz.question(ref, sp['spot_id'], h)
                 out.append(dict(m=quiz.mode_of(ref), q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
                                 b=key[1], g=json.dumps(key[2]), w=weights.get(key, quiz.RARE_FLOOR),
-                                c={o['id']: quiz.correct(ref, sp['spot_id'], h, o['id']) for o in q['options']}))
+                                c={o['id']: slim(quiz.correct(ref, sp['spot_id'], h, o['id'])) for o in q['options']}))
     return out
+
+
+SLIM = ('explanation_fr', 'core_fr', 'why_fr')       # la page affiche essential_fr, remember_fr et details_fr : le reste alourdirait la démo
+
+
+def slim(c): return {k: v for k, v in c.items() if k not in SLIM}
 
 
 def theme_css(css):

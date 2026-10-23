@@ -288,3 +288,9 @@ html.touch .hint, html.touch .actions button .key { display: none; }   /* A' : t
 /* A7 : mots du lexique dans la correction */
 button.term { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: help; border-bottom: 1px dotted currentColor; }
 .term-def { display: block; margin: 4px 0 6px; padding: 6px 8px; border-radius: 8px; background: var(--line); color: var(--text, inherit); font-size: .88rem; }
+
+/* correction : l'essentiel d'abord (lot A'', retour du porteur du projet) */
+.essential { font-size: 1.08rem; font-weight: 600; line-height: 1.4; margin: 4px 0 0; }
+.remember { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: var(--radius); padding: 10px 12px; margin: 0; font-size: .95rem; }
+.remember b { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ok); margin-bottom: 2px; }
+.details p { margin: 0 0 8px; font-size: .92rem; } .details { margin-bottom: 8px; }

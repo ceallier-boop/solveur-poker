@@ -77,3 +77,15 @@ def test_amount_format_near_limits():
     assert field.bbx(62) == 'un peu plus de 0,06 BB' and field.bbx(140) == '0,14 BB' and field.bbx(3) == 'moins de 0,01 BB'
     assert quiz.verdict_line('erreur', 80) == "Plus de 0,06 BB d'écart : c'est une erreur."
     assert quiz.verdict_line('imprécision', 80, grading.PERTINENT_MBB) == 'Petit écart (moins de 0,1 BB) : imprécision, pas erreur.'
+
+
+def test_correction_leads_with_one_clear_message():
+    """retour du porteur du projet : l'essentiel d'abord (une phrase), une règle à retenir au plus, puis les précisions"""
+    for ref in (quiz.DEFAULT_FIELD, quiz.DEFAULT_VERSION):
+        for sp, h, q, rs in _sample(ref, 300, seed=9):
+            for r in rs.values():
+                e = r['essential_fr']
+                assert e and len(e) <= 170 and '\n' not in e, e
+                assert r['remember_fr'] is None or r['remember_fr'].startswith('À retenir : ')
+                assert e not in r['details_fr'] and r['remember_fr'] not in r['details_fr']
+                assert not any(l.startswith('Tu perds ') for l in r['details_fr'])          # le coût est dans le bandeau
