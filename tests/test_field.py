@@ -149,14 +149,15 @@ def test_limp_situations_theory_and_postflop():
             assert not any(b in text for b in banned), (sp['spot_id'], [b for b in banned if b in text])
             if sp['field']['type'] not in field.READ:
                 assert any("d'équité" in l for l in r['why_fr'])                                # éléments théoriques chiffrés
-            if (any(x['id'] in ('L', 'X') for x in sp['field']['options']) or sp['field_family'] == 'vs_raise') and sp['field']['type'] not in field.READ:
+            best_t = next(x['type'] for x in sp['field']['options'] if x['id'] == sp['field']['correct'])
+            if best_t in field.FLOP_MOVES and sp['field']['type'] not in field.READ:                 # A' : seulement si le meilleur coup mène au flop
                 n = r['next']; assert n and n['title_fr'] == 'Gérer le postflop' and n['plus_fr'] and n['minus_fr']
                 assert 'SPR' in n['intro'] and n['forces'] and len(n['plan']) == 3
                 hu_bb = sp['table'] == 'heads-up' and sp['hero'] == 'BB'
                 vs_btn = any(h['position'] == 'BTN' and h['action'] in ('limp', 'raise') for h in sp['history'])   # le BTN parle après le BB
                 assert ('premier' in n['position']) == (hu_bb or (sp['table'] == '3-handed' and (sp['hero'] == 'SB' or vs_btn)))   # heads-up : le SB est au bouton
             elif sp['field']['type'] not in field.READ:
-                assert r['next'] is None                                                        # tout à tapis : pas de postflop
+                assert r['next'] is None                                                        # tapis ou relance : pas de plan pour un check
 
 
 def test_audit_corrections_v4_4():

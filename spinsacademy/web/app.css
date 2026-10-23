@@ -73,6 +73,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .actions button.only { grid-column: 1 / -1; }
 .hint { font-size: .8rem; color: var(--muted); margin: 0; text-align: center; }
 @media (hover: none) { .hint { display: none; } .actions button .key { display: none; } }
+html.touch .hint, html.touch .actions button .key { display: none; }   /* A' : téléphone, même si le navigateur annonce un survol */
 
 /* Correction */
 .verdict { border-radius: var(--radius); padding: 14px; font-weight: 700; font-size: 1.15rem; }
@@ -108,7 +109,9 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .theme-group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .theme-group + .theme-group { margin-top: 8px; }
 .trow { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: .9rem; }
-.trow .sbar { grid-column: 1 / -1; } .trow.low .sbar i { background: var(--bad); } .trow.unreliable { color: var(--muted); }
+.trow .sbar { grid-column: 1 / -1; } .trow.low .sbar i { background: var(--bad); } .trow.mid .sbar i { background: var(--warn); }
+.vtag { font-style: normal; font-size: .78rem; font-weight: 600; padding: 1px 6px; border-radius: 6px; margin-right: 4px; }
+.vtag.bad { color: var(--bad); background: var(--bad-bg); } .vtag.warn { color: var(--warn); background: var(--warn-bg); } .trow.unreliable { color: var(--muted); }
 .trow.unreliable .sbar i { background: var(--line); }
 .weak { background: var(--warn-bg); color: var(--text); border-radius: var(--radius); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .weak b { color: var(--warn); }
@@ -146,6 +149,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 
 .seat-line { margin: 0; font-size: 1.15rem; text-align: center; }
 .seat-line b { color: var(--accent); font-size: 1.3rem; }
+.explanation .eline { display: block; }
 .prompt, .recap, .explanation, .exploit dd, .errors li, .villain { white-space: pre-line; }
 .prompt { font-size: 1.05rem; font-weight: 600; }
 

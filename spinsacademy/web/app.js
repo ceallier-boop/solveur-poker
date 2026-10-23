@@ -6,6 +6,9 @@ const SUIT_NAME = { s: 'pique', h: 'cœur', d: 'carreau', c: 'trèfle' };
 const BLINDS = { 3: [0, 0.5, 1], 2: [0.5, 1] };
 const VERDICT = { 'correct': ['correct', 'Bonne réponse'], 'imprécision': ['imprecision', 'Imprécision'], 'erreur': ['erreur', 'Erreur'] };
 const state = { sid: null, q: null, index: 0, size: 5, busy: false };
+// A' : écran tactile sans souris : pas de raccourcis clavier affichés (certains téléphones annoncent un survol)
+if ((navigator.maxTouchPoints || 0) > 0 && !matchMedia('(pointer: fine)').matches) document.documentElement.classList.add('touch');
+addEventListener('touchstart', () => document.documentElement.classList.add('touch'), { once: true, passive: true });
 
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -48,8 +51,11 @@ function notify(msg, retry) {
   $('notice-retry').onclick = () => { n.hidden = true; retry(); };
   clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; }, 6000);
 }
-const netMsg = (e, what) => (e && e.status ? e.message : `Connexion perdue : ${what}. Vérifie ta connexion, puis réessaie.`);
-const retryable = (e) => !e || !e.status || e.status === 429;                 // coupure réseau ou trop de requêtes : « Réessayer »
+const netMsg = (e, what) => (e && e.status >= 500 ? `Le serveur ne répond pas : ${what}. Ce n'est pas ta connexion ; réessaie dans un instant.`   // A' : panne serveur ≠ coupure réseau
+  : e && e.status ? e.message
+  : navigator.onLine === false ? `Pas de réseau : ${what}. Vérifie ta connexion, puis réessaie.`
+  : `Le serveur est injoignable : ${what}. Vérifie ta connexion ou réessaie dans un instant.`);
+const retryable = (e) => !e || !e.status || e.status === 429 || e.status >= 500;                 // coupure réseau ou trop de requêtes : « Réessayer »
 function confirmTwice(btn, question) {                              // 1er appui : demande ; 2e appui dans les 5 s : confirme
   if (btn.dataset.armed) { clearTimeout(btn._t); delete btn.dataset.armed; btn.textContent = btn.dataset.label; return true; }
   btn.dataset.label = btn.dataset.label || btn.textContent; btn.dataset.armed = '1'; btn.textContent = question;
@@ -79,6 +85,7 @@ for (const group of document.querySelectorAll('.chips')) {
 }
 
 async function start(f, review = false) {
+  if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
@@ -90,7 +97,7 @@ async function start(f, review = false) {
     loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.' : e.message;
     $('filters').open = true; $('home-error').hidden = false;
     $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
-  }
+  } finally { state.starting = false; }
 }
 
 // ------------------------------------------------------------------ question
@@ -232,11 +239,11 @@ function renderAnswer(r) {
   for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!fd;         // exploitant : correction courte
   if (fd) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${fd.read ? 'Bonne lecture' : 'Contre ce vilain'}${fd.gain_fr ? `<span class="conf net">${fd.gain_fr} de plus que la théorie</span>` : ''}</dt><dd>${escT(r.best_label)}</dd></div>`
-      + (fd.gto_label ? `<div><dt>En théorie (HRC)</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')
-      + (fd.evs.length ? `<div><dt>Gain par rapport au fold <small>(HRC, ajusté à ce vilain)</small></dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
+      + (fd.gto_label ? `<div><dt>En théorie</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')
+      + (fd.evs.length ? `<div><dt>Gain par rapport au fold <small>(ajusté à ce vilain)</small></dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
       + `<p class="note">${fd.type_fr} · règle ${fd.rule}</p>`;
   }
-  $('a-explanation').hidden = false; $('a-explanation').textContent = r.core_fr || r.explanation_fr;
+  $('a-explanation').hidden = false; $('a-explanation').innerHTML = (r.core_fr || r.explanation_fr).split('\n').map((l) => `<span class="eline">${escT(l)}</span>`).join('');   // une ligne par phrase : la définition s'insère dessous
   $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
   const why = r.why_fr || []; $('a-why-box').hidden = !why.length; $('a-why-box').open = false;
   $('a-why').innerHTML = why.map((l) => `<p>${l}</p>`).join('');
@@ -328,8 +335,8 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li>${e.prompt_fr}<br>Joué : ${e.chosen} · Référence : <b>${e.best}</b> (${e.loss_fr || gainBB(e.regret_mbb)} de moins)</li>`).join('')
-    : '<li>Aucune erreur sur cette série.</li>';
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>Joué : ${e.chosen} · Référence : <b>${e.best}</b> (${e.loss_fr || gainBB(e.regret_mbb)} de moins)</li>`).join('')
+    : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   show('summary');
 }
@@ -337,7 +344,7 @@ async function summary() {
 // ------------------------------------------------------------------ progression
 const DIM_FR = { mode: 'Mode', family: 'Situation', hero: 'Position', table: 'Format', depth: 'Profondeur' };
 function themeRow(x, min) {
-  const low = x.reliable && x.score_pct < 60, cls = !x.reliable ? ' unreliable' : (low ? ' low' : '');
+  const cls = !x.reliable ? ' unreliable' : x.score_pct < 40 ? ' low' : x.score_pct < 60 ? ' mid' : '';   // A' : rouge sous 40 %, orange de 40 à 60 %
   if (!x.reliable) {                                                // A8 : pas de barre vide, qui se lit comme un zéro
     const need = Math.max(min - x.questions, 1);
     return `<div class="trow unreliable"><span>${x.label}</span><span>encore ${need} question${need > 1 ? 's' : ''} pour un score</span></div>`;
@@ -424,7 +431,7 @@ async function renderLex() {
     return `<details><summary>${label} (${ts.length})</summary><dl>${ts.map(termHtml).join('')}</dl></details>`;
   }).join('');
   body.innerHTML = (here.length ? `<h3>Sur cet écran</h3><dl>${here.map(termHtml).join('')}</dl>` : '<p class="note">Aucun terme technique repéré sur cet écran.</p>')
-    + `<h3>Tout le lexique</h3>${groups}<p class="note">Lexique ${L.version} : ${L.note_fr}</p>`;
+    + `<h3>Tout le lexique</h3>${groups}<p class="note">${L.note_fr}</p>`;
 }
 let lexReturn = null;
 // A7 : dans la correction, les mots techniques s'expliquent au toucher (première occurrence de chaque terme)
@@ -451,9 +458,10 @@ async function glossify(root) {
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('button.term'); if (!b) return;
-  const d = b.nextElementSibling;
-  if (d && d.classList.contains('term-def')) { d.remove(); b.setAttribute('aria-expanded', 'false'); return; }
-  const box = document.createElement('span'); box.className = 'term-def'; box.textContent = b.dataset.def; b.after(box); b.setAttribute('aria-expanded', 'true');
+  if (b._def) { b._def.remove(); b._def = null; b.setAttribute('aria-expanded', 'false'); return; }
+  const box = document.createElement('div'); box.className = 'term-def'; box.textContent = `${b.textContent} : ${b.dataset.def}`;
+  const block = b.closest('.eline, li, p, dd') || b.parentNode;               // A' : sous la phrase, jamais au milieu
+  (block.matches('.eline, li, p, dd') ? block : b).after(box); b._def = box; b.setAttribute('aria-expanded', 'true');
 });
 
 async function openLex() {
@@ -501,11 +509,11 @@ async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
   let r; try { r = await api(`/users/me/reviews?mode=${mode()}`); } catch (e) { return; }
   if (r.due > 0) {
-    $('review-btn').textContent = `Revoir mes erreurs (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
+    $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
   } else if (r.pending > 0 && r.next_due_at) {
     const d = new Date(r.next_due_at);
-    $('review-note').textContent = `Prochaine révision de tes erreurs : ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} (${r.pending} main${r.pending > 1 ? 's' : ''}).`;
+    $('review-note').textContent = `Prochaine révision de tes mains à revoir : ${d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} (${r.pending} main${r.pending > 1 ? 's' : ''}).`;
     $('review-note').hidden = false;
   }
 }

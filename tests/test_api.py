@@ -84,7 +84,7 @@ def test_exploit_mode_series(client):
 
 
 def test_gains_are_shown_in_bb_with_floor():
-    assert quiz.gain_bb(0.019) == '<0,02 BB' and quiz.gain_bb(0.02) == '<0,02 BB' and quiz.gain_bb(0.021) == '0,021 BB' and quiz.gain_bb(0.0202) == 'un peu plus de 0,02 BB' and quiz.gain_bb(1.234) == '1,23 BB'
+    assert quiz.gain_bb(0.019) == '<0,02 BB' and quiz.gain_bb(0.02) == '<0,02 BB' and quiz.gain_bb(0.021) == 'un peu plus de 0,02 BB' and quiz.gain_bb(0.0202) == 'un peu plus de 0,02 BB' and quiz.gain_bb(1.234) == '1,23 BB'
     assert quiz.gain_bb(-0.01, signed=True) == '−<0,02 BB' and quiz.gain_bb(0.12, signed=True) == '+0,12 BB'
     seen_small = False
     for ref in (quiz.DEFAULT_VERSION,):
@@ -204,7 +204,7 @@ def test_second_review_fixes():
     assert quiz.call_terms(sp) == (3.0, 8.5) and quiz.action_label(sp, sp['actions'][1]) == 'Payer le tapis (3 BB de plus)'
     aa = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], 'AA', 'C')['why_fr'][1]
     assert '85,' in aa                                                                             # (4,29 + 3) / 8,5
-    assert quiz.gain_bb(0.062) == '0,062 BB' and quiz.gain_bb(0.058) == '0,058 BB' and quiz.gain_bb(0.07) == '0,07 BB'
+    assert quiz.gain_bb(0.062) == 'un peu plus de 0,06 BB' and quiz.gain_bb(0.058) == 'un peu moins de 0,06 BB' and quiz.gain_bb(0.07) == '0,07 BB'
     for s in list(spots.values())[::20]:                                                        # la meilleure action affichée figure dans la stratégie affichée
         for h, x in s['hands'].items():
             if x['quiz_eligible']: assert quiz.reference_action(s, h) in dict(grading.displayed_mix(s, h))

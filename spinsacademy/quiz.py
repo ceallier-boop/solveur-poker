@@ -104,7 +104,16 @@ GAIN_MIN_BB = grading.TOLERANCE_MBB / 1000   # en dessous : « <0,02 BB », la l
 
 IMPRECISION_BB = 3 * grading.TOLERANCE_MBB / 1000   # limite entre imprécision et erreur
 PERTINENT_BB = grading.PERTINENT_MBB / 1000   # EV HRC : en dessous, l'autre action reste « pertinente » (nuance)
-NEAR_BB = 0.005                   # autour de la limite d'imprécision : 3 décimales, pour que montant et verdict concordent
+NEAR_BB = 0.005                   # autour d'une limite du barème : « un peu plus / moins de », pour que montant et verdict concordent
+
+
+def near_limit(a):
+    """A' (second test joueurs) : jamais 3 décimales. Un montant qui s'arrondit sur une limite du barème (0,02, 0,06 ou
+    0,1 BB) est dit « un peu plus / un peu moins de » cette limite ; sinon None"""
+    for t in (GAIN_MIN_BB, IMPRECISION_BB, PERTINENT_BB):
+        if abs(a - t) < NEAR_BB and round(a, 2) == round(t, 2) and abs(a - t) > 1e-12:
+            return f"un peu {'plus' if a > t else 'moins'} de {bb(t)} BB"
+    return None
 
 
 def gain_bb(x, signed=False):
@@ -112,10 +121,7 @@ def gain_bb(x, signed=False):
     compris « <0,02 BB » (accepté) ; tout près de 0,06 BB, on dit de quel côté on est (imprécision jusqu'à 0,06 inclus)."""
     a = abs(x)
     if a <= GAIN_MIN_BB + 1e-12: s = f'<{bb(GAIN_MIN_BB)} BB'
-    elif a - GAIN_MIN_BB < 0.0005: s = f'un peu plus de {bb(GAIN_MIN_BB)} BB'
-    elif abs(a - IMPRECISION_BB) < 0.0005: s = f"un peu {'plus' if a > IMPRECISION_BB + 1e-12 else 'moins'} de {bb(IMPRECISION_BB)} BB"
-    elif abs(a - IMPRECISION_BB) < NEAR_BB or a - GAIN_MIN_BB < NEAR_BB or abs(a - PERTINENT_BB) < NEAR_BB: s = f'{a:.3f} BB'.replace('.', ',')
-    else: s = f'{bb(a)} BB'
+    else: s = near_limit(a) or f'{bb(a)} BB'
     return (('+' if x >= 0 else '−') + s) if signed else s
 
 
@@ -531,10 +537,12 @@ def principle(sp, hand, best, labels):
         if t == 'allin':
             if to_act_after(sp) and fam == 'vs_allin':
                 return "Ton tapis fait coucher le joueur derrière : tu joues seul contre le premier tapis, avec ses blindes en plus."
+            if fe is not None and round(100 * fe) < 1:                 # A' : jamais « 0 % du temps : tu prends le pot »
+                return "Face à ton tapis, personne ne se couche ou presque : tu joues pour ton équité, et elle suffit."
             return (f"Face à ton tapis, {who} environ {round(100 * fe)} % du temps : tu prends le pot. Sinon, il te reste ton équité."
                     if fe is not None else f"À {bb(eff)} BB, ton tapis met le maximum de pression : il doit tout risquer pour voir le flop.")
         return (f"Relancer grossit le pot avec une bonne main : {who} environ {round(100 * fe)} % du temps, sinon tu gardes l'initiative."
-                if fe is not None else "Relancer grossit le pot avec une bonne main et garde l'initiative après le flop.")
+                if fe is not None and round(100 * fe) >= 1 else "Relancer grossit le pot avec une bonne main et garde l'initiative après le flop.")
     if t == 'limp':
         if strong: return "Avec une très grosse main, compléter tend un piège : il relancera avec des mains moins fortes."
         return ("Compléter ne coûte que 0,5 BB : la main mérite un flop pas cher." if sp['hero'] == 'SB' else
@@ -550,8 +558,14 @@ def principle(sp, hand, best, labels):
         return "Contre sa range, ta main ne gagne pas assez souvent pour le prix à payer : payer perd des jetons."
     if fam == 'vs_raise':
         return "Face à une relance, la main est trop souvent battue : couche-toi."
-    return ("Des joueurs parlent encore derrière : payée, la main gagne trop rarement."
-            if to_act_after(sp) else "La main ne rapporte pas assez : rien ne fait mieux que le fold.")
+    behind = to_act_after(sp)
+    if not behind: return "La main ne rapporte pas assez : rien ne fait mieux que le fold."
+    who = f"le {behind[0]}" if len(behind) == 1 else 'deux joueurs'          # A' : jamais « des joueurs » en heads-up
+    if fam == 'first_in':
+        return f"Avec {who} encore à parler, cette main gagne trop rarement : jouer coûte plus que se coucher."
+    if fam == 'vs_limp':
+        return f"Avec {who} encore à parler, compléter cette main coûte plus qu'elle ne rapporte."
+    return f"Avec {who} encore à parler, payer avec cette main gagne trop rarement."
 
 
 def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
@@ -845,7 +859,7 @@ def rule_to_remember(sp, best, labels):
     t = {a['id']: a['type'] for a in sp['actions']}[best]
     plays = {h: grading.reference_freq(sp, h)[j] >= 0.5 for h in live}
     weight = {h: W[NAMES.index(h)] * live[h]['reach'] for h in live}
-    share = round(100 * sum(weight[h] for h in live if plays[h]) / (sum(weight.values()) or 1))
+    share = range_grid(sp)['share_pct'][j]                          # A' : le même chiffre que « On … avec X % » du pourquoi
     verb = {'fold': 'on se couche', 'check': 'on checke', 'limp': 'on complète' if sp['hero'] == 'SB' else 'on limpe', 'call': 'on paie',
             'call_allin': 'on paie', 'raise': 'on relance', 'allin': 'on part à tapis'}[t]
     sit = SITUATION_FR[family(sp)]
@@ -867,15 +881,16 @@ def _option(sp, labels, aid):
     return 'Le fold' if t == 'fold' else 'Le check' if t == 'check' else f"L'option {_named(labels[aid])}"
 
 
-def verdict_line(verdict, regret_mbb, pertinent=False):
+def verdict_line(verdict, regret_mbb, limit_mbb=3 * grading.TOLERANCE_MBB):
     """A3 : le barème en mots simples, le même dans les deux modes : bonne réponse jusqu'à 0,02 BB d'écart, imprécision jusqu'à
-    0,06 BB, ou jusqu'à 0,1 BB pour un coup jouable (la théorie le joue aussi, ou il est accepté contre ce vilain), erreur au-delà"""
+    limit_mbb (0,06 BB, ou 0,1 BB quand le coup reste jouable), erreur au-delà. A' (second test joueurs) : une seule limite
+    par correction, celle qui s'applique à ce coup"""
     if verdict == 'correct':
         return f"Moins de {bb(GAIN_MIN_BB)} BB d'écart : c'est comme le meilleur coup." if regret_mbb > 0 else None
     if verdict == 'imprécision':
-        if pertinent and regret_mbb > 3 * grading.TOLERANCE_MBB:
-            return f"Coup jouable (moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart) : imprécision, pas erreur."
-        return f"Petit écart (moins de {bb(IMPRECISION_BB)} BB) : imprécision, pas erreur."
+        return f"Petit écart (moins de {bb(limit_mbb / 1000)} BB) : imprécision, pas erreur."
+    if verdict == 'erreur':
+        return f"Plus de {bb(limit_mbb / 1000)} BB d'écart : c'est une erreur."
     return None
 
 
@@ -899,7 +914,8 @@ def correct(version, spot_id, hand, action_id):
     good.sort(key=lambda a: (a != best, ids.index(a)))
     if len(good) > 1:
         names = [_low(labels[a]) for a in good]
-        lines = [f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)."]
+        lines = [(f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)." if action_id in good else
+                  f"Les bons coups ici : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). Ton choix n'en fait pas partie.")]
     elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Action de référence : {labels[best]}{played}.']
     elif evb <= GAIN_MIN_BB: lines = [f"Action de référence : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
     else: lines = [f"Action de référence : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
@@ -910,8 +926,8 @@ def correct(version, spot_id, hand, action_id):
             and grading.grade(sp, hand, x)['verdict'] != 'correct']                 # une action acceptée (jeu mixte) est déjà dite ailleurs
     if near:
         names = ' ou '.join(_low(labels[x]) for x in near)
-        lines.append(f"Nuance : {names} {'est aussi pertinente' if len(near) == 1 else 'sont aussi pertinentes'} "
-                     f"(moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart).")
+        lines.append(f"Nuance : {names} {'coûte' if len(near) == 1 else 'coûtent'} moins de {bb(grading.PERTINENT_MBB / 1000)} BB : "
+                     f"{'coup jouable' if len(near) == 1 else 'coups jouables'}, même si la théorie ne {'le' if len(near) == 1 else 'les'} choisit pas.")
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
     if action_id == best or (len(good) > 1 and action_id in good): pass       # le bandeau le dit déjà
     elif action_id == top:
@@ -924,7 +940,7 @@ def correct(version, spot_id, hand, action_id):
         else:
             lines.append(f"Tu perds {gain_bb(raw / 1000) if raw > grading.TOLERANCE_MBB + 1e-9 else f'moins de {bb(GAIN_MIN_BB)} BB'} par rapport au "
                          f"meilleur coup ({_low(labels[top]).split(' (')[0]}).")
-            line = verdict_line(g['verdict'], raw, g.get('pertinent'))
+            line = verdict_line(g['verdict'], raw, grading.PERTINENT_MBB if sp['ev_reference'] == 'hrc' else 3 * grading.TOLERANCE_MBB)
             if line: lines.append(line)
     core = list(lines) + [principle(sp, hand, best, labels)]
     if g['verdict'] != 'correct': core.append(rule_to_remember(sp, best, labels))          # après une erreur ou une imprécision : une règle simple
@@ -935,7 +951,7 @@ def correct(version, spot_id, hand, action_id):
                 good_actions=(good if len(good) > 1 else []), good_labels=([labels[a] for a in good] if len(good) > 1 else []),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
                 loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else gain_bb(loss)),
-                ev_source=g['ev_source'], exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
+                ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core))
 
 
@@ -946,7 +962,7 @@ def summary(version, answers):
     by = {}
     for sid, h, r in answers:
         k = (family(spots[sid]), spots[sid]['hero']); b = by.setdefault(k, [0, 0.0]); b[0] += 1; b[1] += r['points']
-    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'],
+    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'], verdict=r['verdict'],
                           loss_fr=r.get('loss_fr'))
                      for sid, h, r in answers if r['verdict'] != 'correct'], key=lambda e: -e['regret_mbb'])
     return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0,

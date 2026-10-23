@@ -58,3 +58,28 @@ Le serveur a été tué par manque de mémoire (13 Go) quand plusieurs joueurs o
 
 ## 5. Proposition
 Un lot A' (avant la MVP) pour les points 1 à 7, 11 à 15 et 17 : surtout des textes et de petites corrections d'interface. Les points 8 à 10 touchent le barème exploitant et demandent une décision : plafonner à Imprécision quand le coup joué est le coup HRC contre un vilain inconnu.
+
+## 6. Lot A' (fait le 23/10/2026)
+
+Décision du porteur du projet : contre un vilain inconnu, le coup théorique est au pire une Imprécision. Demande ajoutée : aucune mention de HRC ni des coachs dans ce que voit le joueur.
+
+| Point | Correction |
+|---|---|
+| 1 | La leçon suit le meilleur coup (R13 + relance : « une petite relance suffit ») ; « D'où plus d'agressivité » seulement si le meilleur coup attaque. |
+| 2 | Nuance : « coûte moins de 0,1 BB : coup jouable, même si la théorie ne le choisit pas ». Une seule limite du barème par correction (0,06 ou 0,1 BB selon le coup), y compris pour l'Erreur (« Plus de X BB d'écart : c'est une erreur »). |
+| 3 | Fold : « Avec le BB / deux joueurs encore à parler… », selon la situation (premier à parler, face à un limp, face à une mise). |
+| 4 | « Gérer le postflop » seulement quand le meilleur coup mène au flop (check, limp, call) ; textes propres à l'ouverture du BTN ; plan sans « AA ou KK » avec une autre main. |
+| 5 | « À retenir » reprend le même pourcentage que le pourquoi ; jamais 3 décimales (« un peu plus de 0,06 BB » près d'une limite). |
+| 6 | Petit échantillon décrit à partir de la stat affichée (sens et chiffres) ; « il ne se couche presque jamais » au lieu de « 0 % : tu prends le pot » (exploitant et GTO). |
+| 7 | Piège avec relance : « trop petit pour checker ou pousser à la place ». |
+| 8 | Plafond Imprécision pour le coup théorique contre un inconnu, avec la phrase « l'écart vient du profil supposé ». |
+| 11 | Raccourcis clavier masqués sur écran tactile. |
+| 12 | Pied du lexique sans note interne ; lexique 1.8.0. |
+| 13 | La définition s'affiche sous la phrase, chaque phrase de l'explication sur sa ligne. |
+| 14 | Un double appui sur « Nouvelle série » ne crée qu'une série. |
+| 15 | « Revoir mes mains » ; le bilan marque chaque main « Erreur » ou « Imprécision » ; « Les bons coups ici : … Ton choix n'en fait pas partie » quand le choix est mauvais ; barre rouge sous 40 %, orange de 40 à 60 %. |
+| 17 | Panne serveur (5xx) : « Le serveur ne répond pas… Ce n'est pas ta connexion », avec « Réessayer » ; hors ligne : « Pas de réseau ». |
+| HRC, coachs | « En théorie », « Gain par rapport au fold (ajusté à ce vilain) », lexique « Solveur » sans marque, « profil de départ » au lieu de « établi avec des joueurs professionnels », `ev_source` servi : `solveur`. Contrôle : `tests/test_lot_a_prime.py` et la démo autonome (0 occurrence). |
+
+Restent internes (non servis au joueur) : noms de fichiers et de champs du code (`ev_hrc`, `data/hrc`), documentation, pages d'administration, champs internes des datasets publiés (immuables ; une prochaine version du moteur pourra les renommer).
+Non traités dans ce lot : points 9, 10, 16 et 18, et les trois vérifications des coachs.

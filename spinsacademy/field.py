@@ -65,11 +65,14 @@ def _engine():
 
 
 def bbx(mbb, signed=False):
-    """montant en BB, à partir de mBB : 2 décimales (3 sous 0,1 BB), virgule décimale"""
+    """montant en BB, à partir de mBB : 2 décimales, virgule décimale ; près d'une limite du barème, « un peu plus / moins de »"""
+    from .quiz import near_limit, bb
     x = mbb / 1000; a = abs(x)
-    s = (f'{a:.3f}' if a < 0.1 else f'{a:.2f}').rstrip('0').rstrip(',').rstrip('.').replace('.', ',')
-    if s in ('0', ''): s = '0'
-    return (('+' if x >= 0 else '−') + s if signed else s) + ' BB'
+    s = (near_limit(a) if not signed else None) or f'{bb(a)} BB'
+    if s == '0 BB' and a > 0:
+        if signed: return '≈ 0 BB'
+        s = 'moins de 0,01 BB'
+    return ('+' if x >= 0 else '−') + s if signed else s
 
 
 def pct(x):
@@ -292,7 +295,9 @@ def theory_lines(sp, f, lab, hand):
         if t['kind'] == 'shove':
             who = 'tout le monde se couche' if t['win_bb'] == 1.5 else 'il se couche'
             out.append(f"Face à ton tapis, {who} environ {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : "
-                       f"tu gagnes {'1,5 BB' if t['win_bb'] == 1.5 else '1 BB'} sans abattage.")
+                       f"tu gagnes {'1,5 BB' if t['win_bb'] == 1.5 else '1 BB'} sans abattage." if t['fold_pct'] >= 1 else
+                       f"Face à ton tapis, {'personne ne se couche' if t['win_bb'] == 1.5 else 'il ne se couche'} presque jamais (théorie : {pct(t['fold_gto_pct'])} %) : "
+                       "ton tapis se joue à l'abattage.")
             out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         else:
             out.append(f"Il défend environ {pct(t['defend_pct'])} % de ses mains face à une relance (théorie : {pct(t['defend_gto_pct'])} %). "
@@ -308,20 +313,27 @@ def theory_lines(sp, f, lab, hand):
         out.append(f"Le {who} complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_limp_pct'])} % d'équité.")
         if t.get('has_jam', True):
-            out.append(f"Face à ton tapis, il se couche {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends le pot de "
-                       f"{num(t.get('win_bb', 2.0))} BB. Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+            out.append(fold_line(t, f"tu prends le pot de {num(t.get('win_bb', 2.0))} BB") + f" Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         if t.get('raise_bb'):
             out.append(f"Face à une iso à {num(t['raise_bb'])} BB, il se couche environ {pct(t['raise_fold_pct'])} % du temps (théorie : "
                        f"{pct(t['raise_fold_gto_pct'])} %).")
-        out.append("Après un check, tu parles en premier au flop : ta main rapporte moins. D'où plus d'agressivité."
-                   if (f.get('postflop') or {}).get('position') == 'OOP' or (sp['table'] == 'heads-up' and not f.get('postflop')) else
+        oop = (f.get('postflop') or {}).get('position') == 'OOP' or (sp['table'] == 'heads-up' and not f.get('postflop'))
+        attack = next((o['type'] for o in f['options'] if o['id'] == f['correct']), '') in ('allin', 'raise')
+        out.append(("Après un check, tu parles en premier au flop : ta main rapporte moins. D'où plus d'agressivité." if attack else
+                    "Après un check, tu parles en premier au flop : ta main rapporte moins, mais attaquer coûterait encore plus.") if oop else
                    "Après un check, tu parles en dernier au flop : tes mains jouables rapportent plus.")
     elif t['kind'] == 'vsopen':
         out.append(f"Le BTN ouvre environ {pct(t['open_pct'])} % de ses mains (théorie : {pct(t['open_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_open_pct'])} % d'équité.")
-        out.append(f"Face à ton tapis, il se couche {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends {num(t['win_bb'])} BB. "
-                   f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+        out.append(fold_line(t, f"tu prends {num(t['win_bb'])} BB") + f" Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
     return out
+
+
+def fold_line(t, prize):
+    """« face à ton tapis, il se couche X % » ; A' : jamais « 0 % : tu prends le pot »"""
+    if t['fold_pct'] < 1:
+        return f"Face à ton tapis, il ne se couche presque jamais (théorie : {pct(t['fold_gto_pct'])} %) : ton tapis se joue à l'abattage."
+    return f"Face à ton tapis, il se couche {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : {prize}."
 
 
 def num(x):
@@ -331,15 +343,18 @@ def num(x):
 R = 'AKQJT98765432'
 
 
-def _plan(ip, hero, table):
-    """trois consignes concrètes pour le flop, selon la position"""
+def _plan(ip, hero, table, hand=''):
+    """trois consignes concrètes pour le flop, selon la position et la main (A' : pas de consigne AA / KK avec une autre main)"""
+    big = hand in ('AA', 'KK', 'QQ')
     if ip:
         return ["Il checke : mise environ 1 BB (la moitié du pot) très souvent, il a souvent raté.",
-                "Il mise : un joueur passif mise surtout quand il a touché. Couche tes mains faibles.",
+                (f"Il mise : avec {hand}, paie ou relance pour la valeur, sauf board très dangereux." if big else
+                 "Il mise : un joueur passif mise surtout quand il a touché. Sans paire ni tirage, couche-toi."),
                 "Paire max ou mieux : mise pour la valeur à chaque tour, il paie trop."]
     return ["Tu as touché (paire max ou mieux) : mise toi-même environ 1 BB, il paie avec trop de mains.",
             "Tu as raté : checke. S'il mise peu, paie avec une paire ou un tirage, couche le reste.",
-            "AA ou KK : mise dès le flop pour la valeur, n'attends pas."]
+            (f"Avec {hand} : mise dès le flop pour la valeur, n'attends pas." if big else
+             "Il relance ta mise : un joueur passif le fait avec une grosse main. Sans paire max, couche-toi.")]
 
 
 def postflop_section(sp, f, hand):
@@ -372,12 +387,14 @@ def postflop_section(sp, f, hand):
     else: his.append(f"Contre ses mains, {hand} n'a que {pct(p['eq_hand_pct'])} % d'équité : tu es derrière.")
     if p['strong_pct'] >= p['strong_gto_pct'] + 3:
         his.append(f"Il a {pct(p['strong_pct'])} % de grosses mains (théorie : {pct(p['strong_gto_pct'])} %) : "
-                   + ("il complète aussi ses grosses mains." if hero == 'BB' else "il checke aussi ses grosses mains."))
+                   + ("son ouverture contient beaucoup de grosses mains." if p.get('line') == 'vsopen' else
+                      "il complète aussi ses grosses mains." if hero == 'BB' else "il checke aussi ses grosses mains."))
     elif p['strong_pct'] <= p['strong_gto_pct'] - 3:
-        mine.append(f"Il a peu de grosses mains ({pct(p['strong_pct'])} %, théorie : {pct(p['strong_gto_pct'])} %) : il les a relancées.")
+        mine.append(f"Il a peu de grosses mains ({pct(p['strong_pct'])} %, théorie : {pct(p['strong_gto_pct'])} %) : "
+                    + ("il ouvre large, avec beaucoup de mains moyennes." if p.get('line') == 'vsopen' else "il les a relancées."))
     if ip: mine.append("La position : tu joues après lui à chaque tour.")
     if not mine: mine.append("Il se couche souvent face à une mise : un flop raté se gagne aussi.")
-    return dict(title_fr='Gérer le postflop', intro=intro, position=position, plan=_plan(ip, hero, sp['table']), plan_fr='Ton plan',
+    return dict(title_fr='Gérer le postflop', intro=intro, position=position, plan=_plan(ip, hero, sp['table'], hand), plan_fr='Ton plan',
                 metrics=[], forces=mine[:3], weaknesses=his[:3], plus_fr='Ce qui aide ta main', minus_fr='Ce qui aide la sienne')
 
 
@@ -394,7 +411,7 @@ TRAP_LESSONS = {                         # A6 : la leçon d'un piège, selon le 
              "Le limp garde sa valeur : il faudrait un écart bien plus net pour changer de coup."),
     'check': ("Checker reste le meilleur coup : ses stats ne justifient pas d'attaquer cette main.",
               "Vois le flop gratuitement : son écart de stats ne rend pas le tapis rentable."),
-    'raise': ("La petite relance reste le meilleur coup : son écart de stats est trop petit pour changer de taille.",
+    'raise': ("La petite relance reste le meilleur coup : son écart de stats est trop petit pour checker ou pousser à la place.",
               "Relance comme d'habitude : il faudrait un écart plus net pour pousser ou abandonner."),
 }
 
@@ -410,13 +427,31 @@ def basis_line(f):
     n = f['observations']
     if f['type'] == 'inconnu':
         return ("Sur quoi ça repose : sans info, on suppose un rec passif, le joueur le plus fréquent en Expresso (il paie et relance moins "
-                "que la théorie). C'est un profil établi avec des joueurs professionnels, pas encore mesuré sur des mains réelles.")
+                "que la théorie). C'est un profil de départ, pas encore mesuré sur des mains réelles.")
     if f['rule'] == 'R11' and n:
         return f"Sur quoi ça repose : ses {n} coups observés, qui collent à la théorie : on joue comme contre un joueur théorique."
     if f['type'] in ('adaptation', 'échantillon', 'piège') and n:
-        return (f"Sur quoi ça repose : ses {n} coups observés, combinés au profil par défaut (rec passif, établi avec des joueurs professionnels). "
+        return (f"Sur quoi ça repose : ses {n} coups observés, combinés au profil par défaut (rec passif, pas encore mesuré sur des mains réelles). "
                 "Plus il y a de coups, plus ses stats comptent : à 20 coups, elles pèsent autant que le profil.")
     return None
+
+
+RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ici, une petite relance suffit, pas besoin du tapis."}
+FLOP_MOVES = ('limp', 'check', 'call')        # A' : « Gérer le postflop » seulement quand le meilleur coup mène au flop prévu par le moteur
+STAT_VERB = {'shove_pct': ('part à tapis', 'partir à tapis'), 'call_pct': ('paie ton tapis', 'payer ton tapis'), 'limp_pct': ('complète', 'compléter'),
+             'call_pct_bb_sb_fold': ('paie ton tapis', 'payer ton tapis'), 'call_after_limp_pct': ('paie ton tapis après son limp', 'payer ton tapis après son limp'),
+             'jam_over_limp_pct': ('part à tapis sur ton limp', 'partir à tapis sur ton limp'), 'open_pct': ('ouvre', 'ouvrir'),
+             'defend_pct': ('défend face à ta relance', 'défendre face à ta relance')}
+
+
+def sample_sentence(f):
+    """A' : petit échantillon, dit à partir de la stat affichée (jamais « il semble ouvre… » ni un sens contraire au chiffre)"""
+    st = max(f['stats'], key=lambda x: abs(x['observed_pct'] - x['gto_pct']), default=None)
+    if not st: return "Trop peu de coups pour conclure : joue le profil par défaut."
+    more = st['observed_pct'] > st['gto_pct']; v = STAT_VERB.get(st['stat'], ('joue', 'jouer'))
+    trend = f"{'plus' if more else 'moins'} que la théorie"
+    return (f"Il semble {v[1]} {trend} ({pct(st['observed_pct'])} % contre {pct(st['gto_pct'])} %), mais sur {st['n']} coups seulement : "
+            "c'est trop peu pour changer la décision.")
 
 
 def correct(sp, action_id):
@@ -433,12 +468,18 @@ def correct(sp, action_id):
         else: verdict = 'erreur'
     else:
         regret = 0.0; verdict = 'correct' if action_id == best else 'erreur'
+    capped = verdict == 'erreur' and f['type'] == 'inconnu' and action_id == f['gto']     # A' : le coup théorique contre un inconnu
+    if capped: verdict = 'imprécision'
     lab = {a: _label(sp, a) for a in ids}; v = f['villains'][0]; n = f['observations']
-    rule_fr = READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9' else f['rule_fr']
+    best_t = next(o['type'] for o in f['options'] if o['id'] == best)
+    rule_fr = (READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9'
+               else RULE_BY_MOVE.get((f['rule'], best_t), f['rule_fr']))           # A' : la leçon suit le meilleur coup
     rule = f"À retenir : {rule_fr}"
     short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
     lines = []; best_l, gto_l = short(best), (short(f['gto']) if f['gto'] else '')
-    if f['type'] in ('profil', 'identification', 'échantillon'):
+    if f['type'] == 'échantillon':
+        lines.append(sample_sentence(f))
+    elif f['type'] in ('profil', 'identification'):
         lines.append(f['engine_explanation_fr'].split(' Règle R')[0])
     elif f['type'] == 'adaptation':
         sample = next((f"{st['n']} {'limps' if st['stat'] == 'call_after_limp_pct' else 'folds du SB'} observés" for st in f['stats']
@@ -457,8 +498,12 @@ def correct(sp, action_id):
         if ev[best] is None: lines.append(f"Ton choix ({short(action_id)}) n'est pas la bonne lecture.")
         else:
             lines.append(f"Tu perds {bbx(regret)} par rapport au meilleur coup ({best_l}).")          # A4 : un seul chiffre, le coût de ton choix
-            vl = verdict_line(verdict, regret, action_id in f['acceptable'])
-            if vl: lines.append(vl)
+            if capped:
+                lines.append("Tu as joué le coup théorique : contre un vilain inconnu, l'écart vient du profil supposé. "
+                             "C'est une imprécision, pas une erreur.")
+            else:
+                vl = verdict_line(verdict, regret, grading.PERTINENT_MBB if action_id in f['acceptable'] else 3 * grading.TOLERANCE_MBB)
+                if vl: lines.append(vl)
     elif ev[best] is not None and f['type'] not in READ and f['margin_mbb'] < 100:
         second = max((a for a in ids if a != best and ev[a] is not None), key=lambda a: ev[a])
         lines.append(f"Décision serrée : {short(second)} n'est qu'à {bbx(f['margin_mbb'])} derrière.")
@@ -477,7 +522,7 @@ def correct(sp, action_id):
                 loss_fr=(bbx(regret) if action_id != best and ev[best] is not None else None), ev_source='field', exploit=None,
                 field=dict(type=f['type'], type_fr=f['type_fr'], rule=f['rule'], rule_fr=rule_fr, gto_label=gto_label, read=f['type'] in READ,
                            gain_fr=(bbx(f['gain_mbb']) if f['type'] in ('adaptation', 'inconnu') else None), evs=[dict(label_fr=lab[a], ev_fr=bbx(ev[a], True)) for a in ids if ev[a] is not None and a != 'F']),
-                why_fr=why, next=postflop_section(sp, f, hand), range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines))
+                why_fr=why, next=postflop_section(sp, f, hand) if best_t in FLOP_MOVES else None, range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines))
 
 
 FAMILY_SHARE = {'first_in': 0.31, 'vs_allin': 0.33, 'vs_limp': 0.21, 'vs_raise': 0.10, 'read': 0.05}   # v4.4 (audit), v4.5 : face à l'open

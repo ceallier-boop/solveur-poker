@@ -1,7 +1,7 @@
 {
- "version": "1.7.0",
+ "version": "1.8.0",
  "date": "2026-10-23",
- "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
+ "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
   "jeu": "Table et format",
   "actions": "Actions",
@@ -261,11 +261,9 @@
    "term": "Solveur",
    "cat": "calcul",
    "match": [
-    "solveur",
-    "HRC",
-    "Holdem Resources"
+    "solveur"
    ],
-   "def": "Logiciel qui calcule la stratégie d'équilibre d'une situation. Les références de SpinsAcademy viennent du solveur HRC (Holdem Resources Calculator)."
+   "def": "Logiciel qui calcule la stratégie d'équilibre d'une situation. Les références de SpinsAcademy viennent d'un solveur préflop."
   },
   {
    "term": "EV (espérance de gain)",

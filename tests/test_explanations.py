@@ -21,7 +21,7 @@ def test_pertinent_nuance_under_a_tenth_of_bb():
                 assert g['verdict'] in ('correct', 'imprécision') and r['verdict'] != 'erreur'
                 best = max(range(len(ev)), key=lambda k: ev[k])
                 rb = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, sp['actions'][best]['id'])
-                assert 'Nuance' in rb['explanation_fr'] and 'pertinente' in rb['explanation_fr']
+                assert 'Nuance' in rb['explanation_fr'] and 'jouable' in rb['explanation_fr']
                 seen += 1
                 if seen >= 20: return
     assert seen > 0
