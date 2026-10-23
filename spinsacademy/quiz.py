@@ -10,6 +10,7 @@ La question envoyée au joueur ne contient jamais la solution.
 """
 import json, os, random
 from functools import lru_cache
+import threading
 from . import field, grading
 from .cards import NAMES, W
 from .hrc import ROOT
@@ -37,8 +38,22 @@ def mode_of(ref):
     return 'exploit' if is_field(ref) else 'retired' if ref.startswith('exploit_') else 'gto'
 
 
-@lru_cache(maxsize=8)
+_LOAD_LOCKS = {}; _LOCKS_GUARD = threading.Lock()
+
+
 def load(version=DEFAULT_VERSION):
+    """dataset (manifeste, spots par identifiant), lu une seule fois par version. Un verrou par version : au démarrage, des
+    requêtes simultanées attendent le même chargement au lieu de lancer chacune le leur (test à cinq joueurs du 23/10 : le serveur
+    froid dépassait 13 Go et était arrêté par le système)"""
+    with _LOCKS_GUARD: lock = _LOAD_LOCKS.setdefault(version, threading.Lock())
+    with lock: return _load(version)
+
+
+load.cache_clear = lambda: _load.cache_clear()
+
+
+@lru_cache(maxsize=8)
+def _load(version):
     d = ref_path(version)
     spots = [json.loads(l) for l in open(os.path.join(d, 'spots.jsonl'))]
     by_id = {s['spot_id']: s for s in spots}; _index_nodes(by_id)

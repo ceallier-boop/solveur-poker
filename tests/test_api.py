@@ -226,3 +226,19 @@ def test_several_good_decisions_when_ev_ties():
             seen += 1
             if seen >= 20: return
     assert seen
+
+
+def test_dataset_loaded_once_under_concurrency():
+    """démarrage à froid (test à cinq joueurs du 23/10) : des requêtes simultanées partagent un seul chargement du dataset"""
+    import threading
+    quiz.load.cache_clear(); calls = []
+    real = quiz._load.__wrapped__
+    def counting(v): calls.append(v); return real(v)
+    quiz._load = quiz.lru_cache(maxsize=8)(counting)
+    try:
+        out = []
+        th = [threading.Thread(target=lambda: out.append(id(quiz.load(quiz.DEFAULT_FIELD)))) for _ in range(6)]
+        [t.start() for t in th]; [t.join() for t in th]
+        assert len(calls) == 1 and len(set(out)) == 1
+    finally:
+        quiz._load = quiz.lru_cache(maxsize=8)(real); quiz.load.cache_clear()

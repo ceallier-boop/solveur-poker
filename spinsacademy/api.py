@@ -15,7 +15,7 @@ Mode invité au MVP : pas d'authentification (cahier des charges §19, question 
 identifiant anonyme envoyé dans l'en-tête X-Player-Id ; il relie les séries d'un même joueur pour les statistiques.
 Base : SPINSACADEMY_DB (par défaut data/app/spinsacademy.sqlite) ; dataset : SPINSACADEMY_DATASET.
 """
-import datetime, hmac, json, os, re, sqlite3, uuid
+import threading, datetime, hmac, json, os, re, sqlite3, uuid
 from contextlib import closing
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -115,6 +115,25 @@ class Attempt(BaseModel):
 
 
 app = FastAPI(title='SpinsAcademy', version='0.1.0')
+
+
+@app.on_event('startup')
+def _warm():
+    """préchargement des datasets servis, en arrière-plan : les premières requêtes attendent ce chargement (verrou de
+    quiz.load) au lieu d'en lancer chacune un"""
+    def run():
+        try:
+            with closing(connect()) as con:
+                versions = {serving_version(con, m) for m in DATASET_OF}
+        except Exception:
+            return                                            # rien de publié : chargé à la demande
+        for v in versions:
+            try:
+                quiz.load(v)
+                if quiz.mode_of(v) == 'gto': quiz.situation_weights(v)
+            except Exception:
+                pass
+    threading.Thread(target=run, daemon=True).start()
 WEB = os.path.join(os.path.dirname(__file__), 'web')
 app.mount('/static', StaticFiles(directory=WEB), name='static')
 
