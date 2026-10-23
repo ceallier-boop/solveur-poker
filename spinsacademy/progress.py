@@ -7,7 +7,8 @@ Règles :
   - le point faible proposé est le thème fiable au score le plus bas ; sans thème fiable, aucun n'est proposé ;
   - un seul diagnostic « À travailler maintenant » (focus), avec la règle des séries adaptées (spinsacademy.adaptive) :
     thème situation · position · profondeur au taux d'erreur lissé le plus haut parmi ceux qui ont au moins 3 réponses
-    et 2 erreurs ; à défaut, la dimension fiable au score le plus bas ; à défaut, le nombre de questions qui manquent ;
+    et 2 erreurs ; à défaut, le thème de jeu fiable (situation, position, format, profondeur ; jamais le mode seul) au score le
+    plus bas ; à défaut, le nombre de questions qui manquent ;
   - les statistiques ne modifient jamais les solutions ni la correction.
 """
 from collections import defaultdict
@@ -64,7 +65,7 @@ def compute(rows):
         hero=[_close(dims['hero'][k], k, dict(hero=k)) for k in ('BTN', 'SB', 'BB') if k in dims['hero']],
         table=[_close(dims['table'][k], TABLE_FR[k], dict(table=k)) for k in TABLE_FR if k in dims['table']],
         depth=[_close(dims['depth'][k], depth_label[k], depth_filter[k]) for k, *_ in DEPTHS if k in dims['depth']])
-    reliable = [x for v in by.values() for x in v if x['reliable']]
+    reliable = [x for k, v in by.items() if k != 'mode' for x in v if x['reliable']]      # A8 : un thème de jeu, jamais « GTO » seul
     weakest = min(reliable, key=lambda x: x['score_pct']) if reliable else None
     recurring = sorted(([dict(label=f"{MODE_FR[m]} · {FAMILY_FR[f]} · {h} · {depth_label[d]}", errors=t['errors'], questions=t['questions'],
                               regret_mbb=round(t['regret']), examples=t['examples'],
@@ -89,7 +90,7 @@ def focus(themes, weakest, n, depth_label, depth_filter):
         d, (m, f, h, dp), t = max(cand, key=lambda x: (x[0], x[2]['errors']))
         weak = d >= adaptive.WEAK_RATE
         return dict(kind='weak' if weak else 'watch', label=f"{MODE_FR[m]} · {FAMILY_FR[f]} · {h} · {depth_label[dp]}",
-                    reason_fr=(f"{t['errors']} erreurs sur {t['questions']} questions (taux lissé {round(100 * d)} %) : "
+                    reason_fr=(f"{t['errors']} erreurs sur {t['questions']} questions : "
                                + ("c'est ton thème le plus fragile, les séries adaptées y reviennent." if weak else "à surveiller, sans être encore un point faible.")),
                     filters=dict(mode=m, hero=h, **depth_filter[dp], family=f), examples=t['examples'][:1])
     if weakest:

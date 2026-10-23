@@ -23,7 +23,7 @@ OUT = os.path.join(ROOT, 'data', 'datasets', 'exploit_field')
 TOOLS = os.path.join(ROOT, 'tools', 'field')
 SEED = 11
 HU_SHARE = 0.35
-MAX_TRAPS, MAX_READ = 2, 1             # par série de 5 : au plus 2 pièges ou échantillons, 1 question de lecture (sauf série « lecture du vilain »)
+MAX_TRAPS, MAX_READ = 1, 1             # par série de 5 : au plus 1 piège ou échantillon (A6, test joueurs du 23/10), 1 question de lecture (sauf série « lecture du vilain »)
 READ = ('identification', 'profil')
 READ_RULE_FR = "Regarde ses stats ET le nombre de coups : quelques coups ne prouvent rien, plusieurs dizaines oui. Sans info solide, joue contre un rec passif."
 
@@ -249,7 +249,9 @@ def question(sp):
     """ce que voit le joueur : état du jeu, statistiques observées, options ; ni solution ni profil interne"""
     from .quiz import hand_display, history_text, action_label
     f = sp['field']; hand = next(iter(sp['hands']))
-    opts = [dict(id=o['id'], label_fr=o.get('label_fr') or action_label(sp, o)) for o in f['options']]
+    rank = {'fold': 0, 'check': 1, 'limp': 1, 'call': 2, 'call_allin': 2, 'raise': 3, 'allin': 4}      # A2 : ordre fixe, Fold toujours en premier
+    ordered = sorted(f['options'], key=lambda o: rank.get(o.get('type'), 9)) if all(o.get('type') in rank for o in f['options']) else f['options']
+    opts = [dict(id=o['id'], label_fr=o.get('label_fr') or action_label(sp, o)) for o in ordered]
     return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=sp['prompt_fr'], table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
@@ -379,6 +381,44 @@ def postflop_section(sp, f, hand):
                 metrics=[], forces=mine[:3], weaknesses=his[:3], plus_fr='Ce qui aide ta main', minus_fr='Ce qui aide la sienne')
 
 
+TRAP_LESSONS = {                         # A6 : la leçon d'un piège, selon le meilleur coup (deux formulations chacune)
+    'call_allin': ("Ses stats bougent un peu, mais ta main reste assez forte pour payer.",
+                   "Tant que ton équité dépasse ce que demande la cote, tu paies, même contre lui."),
+    'call': ("Ses stats bougent un peu, mais défendre en payant reste le meilleur coup.",
+             "Un petit écart de stats ne suffit pas à abandonner une main qui se défend."),
+    'fold': ("Même s'il joue un peu différemment, cette main reste trop faible : couche-toi.",
+             "Un petit écart de stats ne rend pas une mauvaise main rentable."),
+    'allin': ("Ce tapis gagne contre presque tous les profils : pas besoin de read pour le jouer.",
+              "Main assez forte pour pousser, même s'il s'écarte un peu de la théorie."),
+    'limp': ("Compléter reste le meilleur coup : son écart de stats est trop petit pour pousser ou folder.",
+             "Le limp garde sa valeur : il faudrait un écart bien plus net pour changer de coup."),
+    'check': ("Checker reste le meilleur coup : ses stats ne justifient pas d'attaquer cette main.",
+              "Vois le flop gratuitement : son écart de stats ne rend pas le tapis rentable."),
+    'raise': ("La petite relance reste le meilleur coup : son écart de stats est trop petit pour changer de taille.",
+              "Relance comme d'habitude : il faudrait un écart plus net pour pousser ou abandonner."),
+}
+
+
+def trap_lesson(sp, best):
+    t = next((o['type'] for o in sp['field']['options'] if o['id'] == best), 'fold')
+    opts = TRAP_LESSONS.get(t, TRAP_LESSONS['fold'])
+    return opts[int(hashlib.md5(sp['spot_id'].encode()).hexdigest()[:4], 16) % len(opts)]
+
+
+def basis_line(f):
+    """A9 (test joueurs du 23/10) : sur quoi repose la décision contre ce vilain"""
+    n = f['observations']
+    if f['type'] == 'inconnu':
+        return ("Sur quoi ça repose : sans info, on suppose un rec passif, le joueur le plus fréquent en Expresso (il paie et relance moins "
+                "que la théorie). C'est un profil établi avec des joueurs professionnels, pas encore mesuré sur des mains réelles.")
+    if f['rule'] == 'R11' and n:
+        return f"Sur quoi ça repose : ses {n} coups observés, qui collent à la théorie : on joue comme contre un joueur théorique."
+    if f['type'] in ('adaptation', 'échantillon', 'piège') and n:
+        return (f"Sur quoi ça repose : ses {n} coups observés, combinés au profil par défaut (rec passif, établi avec des joueurs professionnels). "
+                "Plus il y a de coups, plus ses stats comptent : à 20 coups, elles pèsent autant que le profil.")
+    return None
+
+
 def correct(sp, action_id):
     """correction : verdict sur l'EV (mêmes seuils que l'application), explication et théorie en BB, règle à retenir,
     « Gérer le postflop » quand la main peut voir un flop"""
@@ -389,12 +429,12 @@ def correct(sp, action_id):
     if ev[best] is not None:
         regret = max(0.0, ev[best] - ev[action_id])
         if action_id == best or regret <= grading.TOLERANCE_MBB: verdict = 'correct'
-        elif regret <= 3 * grading.TOLERANCE_MBB or action_id in f['acceptable']: verdict = 'imprécision'
+        elif regret <= 3 * grading.TOLERANCE_MBB or (action_id in f['acceptable'] and regret <= grading.PERTINENT_MBB): verdict = 'imprécision'   # A3 : même barème qu'en GTO
         else: verdict = 'erreur'
     else:
         regret = 0.0; verdict = 'correct' if action_id == best else 'erreur'
     lab = {a: _label(sp, a) for a in ids}; v = f['villains'][0]; n = f['observations']
-    rule_fr = READ_RULE_FR if f['type'] in READ else f['rule_fr']
+    rule_fr = READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9' else f['rule_fr']
     rule = f"À retenir : {rule_fr}"
     short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
     lines = []; best_l, gto_l = short(best), (short(f['gto']) if f['gto'] else '')
@@ -408,19 +448,27 @@ def correct(sp, action_id):
     elif f['type'] == 'inconnu':
         lines.append(f"Sans info, joue contre un rec passif. Contre lui, {best_l} rapporte {bbx(f['gain_mbb'])} de plus que la théorie ({gto_l}).")
     elif f['rule'] == 'R11':
-        lines.append(f"Ses stats collent à la théorie : {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance).")
+        lines.append(f"Contre lui, {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance).")
     else:
         who = 'un rec passif' if n == 0 else 'lui'
-        lines.append(f"Même contre {who}, {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance) : l'écart de stats ne change pas la décision.")
+        lines.append(f"Même contre {who}, {best_l} reste le meilleur coup ({bbx(f['margin_mbb'])} d'avance).")
+    from .quiz import verdict_line
     if action_id != best:
-        lines.append(f"Ton choix ({short(action_id)}) " + (f"rapporte {bbx(regret)} de moins." if ev[best] is not None else "n'est pas la bonne lecture."))
-    if ev[best] is not None and f['type'] not in READ and f['margin_mbb'] < 100:
-        lines.append(f"Écart faible ({bbx(f['margin_mbb'])}) : les deux options sont proches.")
+        if ev[best] is None: lines.append(f"Ton choix ({short(action_id)}) n'est pas la bonne lecture.")
+        else:
+            lines.append(f"Tu perds {bbx(regret)} par rapport au meilleur coup ({best_l}).")          # A4 : un seul chiffre, le coût de ton choix
+            vl = verdict_line(verdict, regret, action_id in f['acceptable'])
+            if vl: lines.append(vl)
+    elif ev[best] is not None and f['type'] not in READ and f['margin_mbb'] < 100:
+        second = max((a for a in ids if a != best and ev[a] is not None), key=lambda a: ev[a])
+        lines.append(f"Décision serrée : {short(second)} n'est qu'à {bbx(f['margin_mbb'])} derrière.")
     lines.append(rule)
     why = theory_lines(sp, f, lab, hand)
     if ev[best] is not None:
         if f['gto'] and f['gto'] != best and (f['gto_freq_pct'] or 0) >= 5:
             why.append(f"La théorie joue déjà {best_l} {pct(f['gto_freq_pct'])} % du temps avec cette main.")
+    basis = basis_line(f)
+    if basis: why.append(basis)
     gto_label = lab[f['gto']] if f['gto'] else None
     return dict(verdict=verdict, points=grading.POINTS[verdict], regret_mbb=round(regret, 1), best_action=best, best_label=lab[best],
                 top_action=best, chosen_action=action_id, gto_action=f['gto'], gto_label=gto_label, good_actions=[], good_labels=[],

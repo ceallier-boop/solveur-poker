@@ -280,3 +280,7 @@ fieldset { border: 0; padding: 0; margin: 12px 0 0; } legend { font-size: .85rem
 .fstats .fnone { margin: 0; color: var(--text); }
 .fstats .fn { margin: 0; font-size: .82rem; color: var(--muted); }
 .fstats .vbar { grid-template-columns: 112px 1fr 52px; }
+
+/* A7 : mots du lexique dans la correction */
+button.term { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: help; border-bottom: 1px dotted currentColor; }
+.term-def { display: block; margin: 4px 0 6px; padding: 6px 8px; border-radius: 8px; background: var(--line); color: var(--text, inherit); font-size: .88rem; }

@@ -83,6 +83,8 @@ async function start(f, review = false) {
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
+    state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
+    store.set('filters', JSON.stringify(state.filters));
     await next();
   } catch (e) {
     loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.' : e.message;
@@ -215,8 +217,11 @@ function renderAnswer(r) {
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
   const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${r.best_label}.` : `Ta lecture : ${r.chosen_label}\nLa bonne : ${r.best_label}`)
     : many ? `Plusieurs bonnes décisions : ${r.good_labels.join(' ou ')}. Ton choix en fait partie.`
-    : r.chosen_label === r.best_label ? `Tu as joué l'action de référence : ${r.best_label}.`
-    : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nRéférence : ${r.best_label}`;
+    : r.chosen_label === r.best_label ? `Tu as joué le meilleur coup : ${r.best_label}.`
+    : r.verdict === 'correct' && !r.field ? (((r.strategy.find((x) => x.chosen) || {}).pct || 0) > 0     // A5 : stratégie mixte
+      ? `La théorie joue aussi ${r.chosen_label} ${r.strategy.find((x) => x.chosen).pct} % du temps.\nSon coup le plus fréquent : ${r.best_label}.`
+      : `Presque aussi bon que le meilleur coup (${r.best_label}) : moins de 0,02 BB d'écart.`)
+    : `Tu as joué : ${r.chosen_label}${r.loss_fr ? ` (${r.loss_fr} de moins)` : ''}\nMeilleur coup : ${r.best_label}`;
   v.innerHTML = title + `<small>${sub}</small>`;
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -239,6 +244,7 @@ function renderAnswer(r) {
   $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, false);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
+  for (const id of ['a-explanation', 'a-why', 'a-next']) glossify($(id));    // A7 : définition au toucher des mots du lexique
   show('answer'); v.focus({ preventScroll: true });
 }
 
@@ -332,8 +338,11 @@ async function summary() {
 const DIM_FR = { mode: 'Mode', family: 'Situation', hero: 'Position', table: 'Format', depth: 'Profondeur' };
 function themeRow(x, min) {
   const low = x.reliable && x.score_pct < 60, cls = !x.reliable ? ' unreliable' : (low ? ' low' : '');
-  const right = x.reliable ? pc(x.score_pct) : `${x.questions} / ${min} questions`;
-  return `<div class="trow${cls}"><span>${x.label}</span><span>${right}</span><div class="sbar"><i style="width:${x.reliable ? x.score_pct : 0}%"></i></div></div>`;
+  if (!x.reliable) {                                                // A8 : pas de barre vide, qui se lit comme un zéro
+    const need = Math.max(min - x.questions, 1);
+    return `<div class="trow unreliable"><span>${x.label}</span><span>encore ${need} question${need > 1 ? 's' : ''} pour un score</span></div>`;
+  }
+  return `<div class="trow${cls}"><span>${x.label}</span><span>${pc(x.score_pct)}</span><div class="sbar"><i style="width:${x.score_pct}%"></i></div></div>`;
 }
 async function stats() {
   loading(true);
@@ -368,7 +377,7 @@ async function adaptation() {
   for (const m of Object.keys(modes)) {
     let a; try { a = await api(`/users/me/adaptation?mode=${m}`); } catch (e) { continue; }       // mode sans dataset publié : ignoré
     first = first || a;
-    const list = (xs, kind) => xs.map((x) => `<li>${x.label_fr} <small>${x.errors} erreur${x.errors > 1 ? 's' : ''} sur ${x.answers} · difficulté ${x.difficulty_pct} %</small></li>`).join('');
+    const list = (xs, kind) => xs.map((x) => `<li>${x.label_fr} <small>${x.errors} erreur${x.errors > 1 ? 's' : ''} sur ${x.answers}</small></li>`).join('');
     if (a.review.length) parts.push(`<div class="adapt-mode"><b>${modes[m]}</b><p>En révision :</p><ul>${list(a.review)}</ul></div>`);   // à retravailler : bloc « À travailler maintenant »
   }
   if (!first) { $('st-adapt').hidden = true; return; }
@@ -418,6 +427,35 @@ async function renderLex() {
     + `<h3>Tout le lexique</h3>${groups}<p class="note">Lexique ${L.version} : ${L.note_fr}</p>`;
 }
 let lexReturn = null;
+// A7 : dans la correction, les mots techniques s'expliquent au toucher (première occurrence de chaque terme)
+const GLOSS = { 'Range': ['range'], 'Équité': ['équité'], 'Cote du pot': ['cote du pot', 'la cote'], 'SPR (rapport tapis / pot)': ['SPR'],
+  'Fold equity': ['fold equity'], 'Limp (compléter)': ['limp', 'limps'], 'Isoler (iso)': ['iso'], 'Rec passif': ['rec passif'],
+  'Tapis effectif': ['tapis effectif'], 'Stratégie mixte': ['stratégie mixte'], 'Paire max (top pair)': ['paire max'], 'Kicker': ['kicker'], 'Read': ['read'] };
+async function glossify(root) {
+  let L; try { L = await lexique(); } catch (e) { return; }                 // lexique indisponible : texte brut
+  const terms = L.terms.filter((t) => GLOSS[t.term]).map((t) => ({ ...t, re: new RegExp(`(?<![\\p{L}\\d])(?:${GLOSS[t.term].join('|')})(?![\\p{L}\\d])`, 'iu') }));
+  const done = new Set();
+  const wrap = (tn) => {
+    for (const t of terms) {
+      if (done.has(t.term)) continue;
+      const m = t.re.exec(tn.data); if (!m) continue;
+      done.add(t.term);
+      const after = tn.splitText(m.index); after.data = after.data.slice(m[0].length);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'term'; b.textContent = m[0];
+      b.dataset.def = t.def; b.setAttribute('aria-expanded', 'false');
+      tn.parentNode.insertBefore(b, after); wrap(after); return;
+    }
+  };
+  const walk = (node) => { for (const c of [...node.childNodes]) { if (c.nodeType === 3) wrap(c); else if (c.nodeType === 1 && !c.matches('button, .term-def')) walk(c); } };
+  walk(root);
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button.term'); if (!b) return;
+  const d = b.nextElementSibling;
+  if (d && d.classList.contains('term-def')) { d.remove(); b.setAttribute('aria-expanded', 'false'); return; }
+  const box = document.createElement('span'); box.className = 'term-def'; box.textContent = b.dataset.def; b.after(box); b.setAttribute('aria-expanded', 'true');
+});
+
 async function openLex() {
   lexReturn = document.activeElement; $('lex-search').value = '';
   await renderLex(); $('lex').hidden = false; $('lex-body').scrollTop = 0; $('lex-close').focus();
@@ -492,7 +530,10 @@ $('custom-start').addEventListener('click', () => start(filters()));
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });
 $('next-btn').addEventListener('click', goNext);
-$('again-btn').addEventListener('click', () => start({ mode: state.mode || mode() }));
+$('again-btn').addEventListener('click', () => {                 // A1 : même mode, mêmes filtres
+  let f = state.filters; if (!f) { try { f = JSON.parse(store.get('filters') || '{}'); } catch (e) { f = {}; } }
+  start({ ...f, mode: state.mode || mode() });
+});
 $('back-home').addEventListener('click', home);
 $('home-btn').addEventListener('click', home);
 $('resume').addEventListener('click', () => { state.sid = store.get('sid'); next().catch(home); });

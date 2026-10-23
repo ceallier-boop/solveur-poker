@@ -23,9 +23,9 @@ MASTERED_RATE = 0.25
 WEAK_SHARE = 0.6
 REVIEW_SHARE = 0.2
 DEPTH_FR = {k: l for k, l, *_ in progress.DEPTHS}
-RULE_FR = (f"Un thème (situation · position · profondeur) est à retravailler après au moins {MIN_ANSWERS} réponses dont {MIN_ERRORS} erreurs, "
-           f"quand son taux d'erreur lissé atteint {round(100 * WEAK_RATE)} %. Une série adaptée contient {round(100 * WEAK_SHARE)} % de questions "
-           f"sur ces thèmes, {round(100 * REVIEW_SHARE)} % de révision de thèmes acquis et le reste en découverte. La correction ne change pas.")
+RULE_FR = (f"Un thème (situation, position, profondeur) revient plus souvent quand tu y fais au moins {MIN_ANSWERS} réponses dont {MIN_ERRORS} erreurs. "
+           f"Une série adaptée contient environ {round(100 * WEAK_SHARE)} % de questions sur tes thèmes fragiles, {round(100 * REVIEW_SHARE)} % de révision "
+           f"et le reste en découverte. La correction ne change pas.")   # A8 : sans « taux lissé »
 PURPOSE_FR = {'weak': 'Thème à retravailler', 'review': 'Révision', 'discovery': 'Découverte'}
 
 

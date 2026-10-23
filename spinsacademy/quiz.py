@@ -530,9 +530,9 @@ def principle(sp, hand, best, labels):
         call, final = call_terms(sp)
         return f"Tu paies {bb(call)} BB pour un pot de {bb(final)} BB : bon prix, et la main joue bien après le flop."
     if t == 'call_allin':
-        return "Ton équité contre sa range dépasse le seuil de la cote : payer rapporte."
+        return "Contre sa range, ta main gagne assez souvent pour le prix à payer : payer rapporte."
     if fam == 'vs_allin':
-        return "Ton équité contre sa range est sous le seuil de la cote : payer perd des jetons."
+        return "Contre sa range, ta main ne gagne pas assez souvent pour le prix à payer : payer perd des jetons."
     if fam == 'vs_raise':
         return "Face à une relance, la main est trop souvent battue : couche-toi."
     return ("Des joueurs parlent encore derrière : payée, la main gagne trop rarement."
@@ -852,6 +852,18 @@ def _option(sp, labels, aid):
     return 'Le fold' if t == 'fold' else 'Le check' if t == 'check' else f"L'option {_named(labels[aid])}"
 
 
+def verdict_line(verdict, regret_mbb, pertinent=False):
+    """A3 : le barème en mots simples, le même dans les deux modes : bonne réponse jusqu'à 0,02 BB d'écart, imprécision jusqu'à
+    0,06 BB, ou jusqu'à 0,1 BB pour un coup jouable (la théorie le joue aussi, ou il est accepté contre ce vilain), erreur au-delà"""
+    if verdict == 'correct':
+        return f"Moins de {bb(GAIN_MIN_BB)} BB d'écart : c'est comme le meilleur coup." if regret_mbb > 0 else None
+    if verdict == 'imprécision':
+        if pertinent and regret_mbb > 3 * grading.TOLERANCE_MBB:
+            return f"Coup jouable (moins de {bb(grading.PERTINENT_MBB / 1000)} BB d'écart) : imprécision, pas erreur."
+        return f"Petit écart (moins de {bb(IMPRECISION_BB)} BB) : imprécision, pas erreur."
+    return None
+
+
 def correct(version, spot_id, hand, action_id):
     """correction et explication structurée (données du dataset uniquement)"""
     _, spots = load(version); sp = spots[spot_id]
@@ -890,20 +902,15 @@ def correct(version, spot_id, hand, action_id):
     elif action_id == top:
         lines.append(f"Ton choix {_named(labels[action_id])} est le plus rentable en EV : réponse acceptée.")
     else:
-        than = '' if best == top or len(good) > 1 else f" que {_low(labels[top])}, la plus rentable"
-        lines.append(f"Ton choix {_named(labels[action_id])} " + (f"coûte moins de {bb(GAIN_MIN_BB)} BB{than}." if raw <= grading.TOLERANCE_MBB + 1e-9
-                                                                  else f"rapporte {gain_bb(raw / 1000)} de moins{than}."))
-        tol, imp = bb(GAIN_MIN_BB), bb(IMPRECISION_BB)
-        if g['verdict'] == 'correct' and raw > grading.TOLERANCE_MBB:
-            lines.append(f"La stratégie joue aussi ce coup {shown.get(action_id, round(100 * g['chosen_frequency']))} % du temps : accepté.")
-        elif g['verdict'] == 'correct':
-            lines.append(f"Écart d'au plus {tol} BB, négligeable : réponse acceptée.")
-        elif g['verdict'] == 'imprécision' and g.get('pertinent') and raw > 3 * grading.TOLERANCE_MBB:
-            lines.append(f"Écart sous {bb(grading.PERTINENT_MBB / 1000)} BB : imprécision, pas erreur.")
-        elif g['verdict'] == 'imprécision':
-            lines.append(f'Écart entre {tol} et {imp} BB : imprécision, pas erreur.')
+        mixed = g['verdict'] == 'correct' and raw > grading.TOLERANCE_MBB          # A5 : coup joué aussi par la théorie
+        if mixed:
+            lines.append(f"La théorie joue aussi ce coup {shown.get(action_id, round(100 * g['chosen_frequency']))} % du temps : bonne réponse, "
+                         f"même si son coup le plus fréquent est {_low(labels[best])}.")
         else:
-            lines.append(f'Écart au-delà de {imp} BB : erreur.')
+            lines.append(f"Tu perds {gain_bb(raw / 1000) if raw > grading.TOLERANCE_MBB + 1e-9 else f'moins de {bb(GAIN_MIN_BB)} BB'} par rapport au "
+                         f"meilleur coup ({_low(labels[top]).split(' (')[0]}).")
+            line = verdict_line(g['verdict'], raw, g.get('pertinent'))
+            if line: lines.append(line)
     core = list(lines) + [principle(sp, hand, best, labels)]
     if g['verdict'] != 'correct': core.append(rule_to_remember(sp, best, labels))          # après une erreur ou une imprécision : une règle simple
     lines = core + because                                         # la stratégie arrondie est affichée à part

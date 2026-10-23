@@ -1,6 +1,6 @@
 {
- "version": "1.6.0",
- "date": "2026-10-21",
+ "version": "1.7.0",
+ "date": "2026-10-23",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, préflop, chip EV). À faire relire par un expert poker.",
  "categories": {
   "jeu": "Table et format",
@@ -441,7 +441,7 @@
     "imprécision",
     "erreur"
    ],
-   "def": "Bonne réponse : écart de 0,02 BB au plus avec l'action la plus rentable, ou action jouée au moins 10 % du temps par la stratégie de référence. Imprécision : écart de 0,06 BB au plus. Erreur : au-delà. Points : 1, ½, 0."
+   "def": "Bonne réponse : moins de 0,02 BB d'écart avec le meilleur coup, ou un coup que la théorie joue au moins 10 % du temps. Imprécision : moins de 0,06 BB d'écart, ou moins de 0,1 BB pour un coup jouable (la théorie le joue aussi, ou il est accepté contre ce vilain). Erreur : au-delà. La correction dit toujours combien tu perds par rapport au meilleur coup. Points : 1, ½, 0."
   },
   {
    "term": "Stratégie de référence",
