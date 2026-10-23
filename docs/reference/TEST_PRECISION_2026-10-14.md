@@ -1,6 +1,6 @@
-# Test de précision HRC (14 octobre 2026)
+# Test de précision de référence (14 octobre 2026)
 
-Exports reçus : `Test_HRC_v1.zip`, rangés dans `data/hrc/tests/precision_v1/` (hors de `data/hrc/raw` : jamais importés dans un dataset). Mesures : `python tools/hrc/precision_test.py data/hrc/tests/precision_v1`.
+Exports reçus : l'archive du test de précision (v1), rangés dans `data/hrc/tests/precision_v1/` (hors de `data/hrc/raw` : jamais importés dans un dataset). Mesures : `python tools/hrc/precision_test.py data/hrc/tests/precision_v1`.
 
 ## Ce qui a été reçu
 
@@ -22,7 +22,7 @@ Exports reçus : `Test_HRC_v1.zip`, rangés dans `data/hrc/tests/precision_v1/` 
 | Moyenne de 4 exports | **médiane 42, 90e centile 122** | **médiane 66, 90e centile 154** |
 | Dispersion des EV entre les 4 exports | médiane 97 mBB | médiane 143 mBB |
 | Dispersion des fréquences entre les 4 exports | médiane 1,7 point (90e centile 25) | médiane 1,0 point (90e centile 25) |
-| Biais moyen HRC − exact (nœud de call de tapis) | +3,5 mBB | −21 mBB |
+| Biais moyen de référence − exact (nœud de call de tapis) | +3,5 mBB | −21 mBB |
 
 ## Ce qu'on en conclut
 
@@ -32,7 +32,7 @@ Exports reçus : `Test_HRC_v1.zip`, rangés dans `data/hrc/tests/precision_v1/` 
 
 ## Suite proposée
 
-- **Demander à HRC** s'il existe un réglage distinct pour la précision des EV par main (échantillonnage de l'évaluation), et confirmer ce qui différait entre les quatre exports.
+- **Demander à la référence** s'il existe un réglage distinct pour la précision des EV par main (échantillonnage de l'évaluation), et confirmer ce qui différait entre les quatre exports.
 - **À défaut, répéter les calculs** : 4 exports identiques par configuration, et l'importeur fait la moyenne des EV (et des fréquences). Écart attendu en heads-up : environ 40 mBB au lieu de 100, ce qui permettrait de baisser le filtre de bruit de 150 à environ 75 mBB et de rendre les décisions serrées.
 - **Refaire le test sur l'arbre de référence** (`ALLOWED_FLATS_PER_RAISE` = `[1, 1, 1, 1, 0]`), pour que les exports soient utilisables tels quels.
 

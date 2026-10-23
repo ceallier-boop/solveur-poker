@@ -65,6 +65,6 @@ Date de cette version : [à la mise en ligne]. Toute modification importante ser
 Points ouverts pour le juriste :
 1. Durées de conservation (proposées : 24 mois sans activité pour l'historique, 12 mois pour les signalements traités).
 2. Mentions légales (éditeur, hébergeur) et conditions d'utilisation, à rédiger à part.
-3. Données dérivées de HoldemResources Calculator (droits sur les EV affichées) : sujet distinct, bloquant avant la vente
+3. Données dérivées du solveur de référence (droits sur les EV affichées) : sujet distinct, bloquant avant la vente
    (évaluation du MVP, remarque 27).
 4. Journal d'usage de la bêta (remarque 11) : information et, si nécessaire, consentement avant activation.

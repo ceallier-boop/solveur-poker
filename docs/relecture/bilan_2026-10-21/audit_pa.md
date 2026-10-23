@@ -6,7 +6,7 @@ Regard de coach : la théorie d'abord, puis l'exploitation du field. Le détail 
 
 - **Exploitant, 4400 questions** passées au script : bonne réponse contre l'EV, gain affiché, cote et équité du « pourquoi », sens de l'écart des stats contre la règle (R0 à R15), taille des échantillons, doublons, profils.
 - **Relecture fiche par fiche** : 184 fiches lues en entier, une ou deux par strate (situation × tapis × type), en commençant par les plus douteuses (petit écart d'EV, gros gain contre la théorie). Plus une vingtaine de fiches ouvertes pour vérifier un point.
-- **GTO, 2528 spots** relus depuis la stratégie complète (`spots.jsonl`), car la colonne range du CSV est vide pour 1223 spots. J'ai comparé les fréquences par profondeur, la cohérence entre profondeurs voisines, les spots jumeaux et l'EV HRC contre l'EV exacte des nœuds de call (28 730 couples main-action).
+- **GTO, 2528 spots** relus depuis la stratégie complète (`spots.jsonl`), car la colonne range du CSV est vide pour 1223 spots. J'ai comparé les fréquences par profondeur, la cohérence entre profondeurs voisines, les spots jumeaux et l'EV de référence contre l'EV exacte des nœuds de call (28 730 couples main-action).
 - **566 corrections GTO** : lecture de 30 en entier, contrôle de longueur et de structure sur toutes.
 - **Bilans** : part servie comparée à la fréquence réelle, tranche par tranche.
 
@@ -17,7 +17,7 @@ Ce que je n'ai pas pu vérifier : la vraie fréquence de fold du field après un
 ### Exploitant
 
 1. **Stat du BB fausse dans les 445 questions BTN (bloquant).** « Le BB a payé ton tapis quand le SB s'était couché 34 fois (42 %) » est calculé sur toutes les occasions (34/80) au lieu des fois où le SB s'est couché (34/62 = 55 %). On compare ensuite à la théorie conditionnelle (60 %). Le sens de l'écart est faux dans 60 questions. 71 questions R11 disent « ses stats collent à la théorie » alors que c'est faux.
-2. **Face au limp du SB, 94 % des réponses sont « tapis » (majeur).** 1328 questions sur 1420. Sans info, c'est 100 %. Le rec passif par défaut limpe 27 % puis se couche 78 % face au tapis : c'est un profil limp-fold, pas le récréatif passif du field. On enseigne le tapis avec 32o, 72o, 83o à 8 BB, là où HRC checke. Pour PA, contre un récréatif qui ne folde pas, l'iso pour voler sans info est un mauvais concept, et le passif limpe aussi ses As. Je ne suis pas sûr de la vraie fréquence de fold du field : à mesurer avant de trancher.
+2. **Face au limp du SB, 94 % des réponses sont « tapis » (majeur).** 1328 questions sur 1420. Sans info, c'est 100 %. Le rec passif par défaut limpe 27 % puis se couche 78 % face au tapis : c'est un profil limp-fold, pas le récréatif passif du field. On enseigne le tapis avec 32o, 72o, 83o à 8 BB, là où la référence checke. Pour PA, contre un récréatif qui ne folde pas, l'iso pour voler sans info est un mauvais concept, et le passif limpe aussi ses As. Je ne suis pas sûr de la vraie fréquence de fold du field : à mesurer avant de trancher.
 3. **Adaptation sur trop peu de coups (majeur).** R12 conclut « il complète trop » sur 3 à 5 limps (148 questions). 290 questions affichent une stat de call lue sur moins de 10 limps, alors que la relecture précédente avait fixé 10 limps minimum. Les stats comptent à 10 % sous 10 occasions et à 90 % dès 11 : c'est une marche, pas un lissage. PA : 3 occurrences ne font pas une tendance.
 4. **R13 cite le mauvais échantillon (majeur, 253 questions).** « 60 coups observés » désigne les occasions de limp, mais la règle repose sur 10 à 57 tapis subis (médiane 16).
 5. **EV qui dépend d'un profil caché (majeur).** 51 paires d'énoncés identiques ont des EV différentes, jusqu'à 0,11 BB d'écart. R4 (223 questions) s'appuie sur une fréquence d'iso du BB qui n'est pas dans l'énoncé.
@@ -28,8 +28,8 @@ Ce que je n'ai pas pu vérifier : la vraie fréquence de fold du field après un
 
 ### GTO
 
-1. **Tailles d'open (majeur).** En HU, le SB ouvre en 3,5 BB dans 28 spots et en 2 BB dans 12 seulement (pas de 2 BB au-delà de 16 BB). HRC relance lui-même plus en 2 BB. À 3, le BTN ouvre surtout en 2,3 BB (43 spots contre 6 en 2 BB). PA min-raise sous 20 BB.
-2. **Convergence HRC à 14-18 BB (mineur).** Aux nœuds de call, la stratégie HRC s'écarte de l'EV exacte de 0,2 à 0,3 BB en moyenne. La référence suit l'EV exacte, donc les réponses tiennent. Mais des spots jumeaux donnent des références opposées pour 10 à 11 mains limites à 12 et 16 BB.
+1. **Tailles d'open (majeur).** En HU, le SB ouvre en 3,5 BB dans 28 spots et en 2 BB dans 12 seulement (pas de 2 BB au-delà de 16 BB). La référence relance lui-même plus en 2 BB. À 3, le BTN ouvre surtout en 2,3 BB (43 spots contre 6 en 2 BB). PA min-raise sous 20 BB.
+2. **Convergence de référence à 14-18 BB (mineur).** Aux nœuds de call, la stratégie de référence s'écarte de l'EV exacte de 0,2 à 0,3 BB en moyenne. La référence suit l'EV exacte, donc les réponses tiennent. Mais des spots jumeaux donnent des références opposées pour 10 à 11 mains limites à 12 et 16 BB.
 3. **Textes des corrections (mineur).** 450 à 860 caractères, 8 phrases. Mains « à la limite » parfois absurdes (JJ en call, AKo en tapis). « Face à un tapis à 25 BB » quand le tapis subi est de 15 BB. « 91 % des mains » pour 91 % de la range qui arrive là.
 4. **Iso à 3 BB à 8 BB (mineur).** Elle engage le tapis. PA pousse à 10 BB ou moins.
 

@@ -37,7 +37,7 @@ Le serveur a été tué par manque de mémoire (13 Go) quand plusieurs joueurs o
 7. **« Écart de stats trop petit pour changer de taille »** alors qu'une seule taille est proposée (Jean-Pierre).
 
 ### Confiance dans le mode exploitant
-8. Des écarts de 0,26 à 0,34 BB, venant seulement du profil par défaut non mesuré, sont notés Erreur alors que le joueur a joué le coup théorique (Jean-Pierre). Piste : contre un vilain inconnu, plafonner à Imprécision quand le coup joué est le coup HRC.
+8. Des écarts de 0,26 à 0,34 BB, venant seulement du profil par défaut non mesuré, sont notés Erreur alors que le joueur a joué le coup théorique (Jean-Pierre). Piste : contre un vilain inconnu, plafonner à Imprécision quand le coup joué est le coup de référence.
 9. « Sur quoi ça repose » cite le total d'occasions (150) au lieu de l'échantillon décisif (« 7 sur 40 »), et ne dit pas quand une stat vient seulement du profil (fold face à l'iso) (Jean-Pierre). Le bloc revient sur presque toutes les mains (Léa).
 10. Un même spot change d'arbre : l'option « Relancer à 2 BB » est présente ou absente (Kevin).
 
@@ -53,15 +53,15 @@ Le serveur a été tué par manque de mémoire (13 Go) quand plusieurs joueurs o
 
 ### À faire vérifier par les coachs
 - K8o au BTN à 15 BB à 3 joueurs (SB 50, BB 10) donné Fold 100 % (Mamadou).
-- 66 à 6 BB en HU, BB face au limp : HRC check à 89 % (Jean-Pierre).
+- 66 à 6 BB en HU, BB face au limp : la référence check à 89 % (Jean-Pierre).
 - La question d'identification du vilain n'est jamais sortie en 20 mains (Léa) : c'est attendu avec MAX_READ = 1 et 5 % de part, mais à revoir.
 
 ## 5. Proposition
-Un lot A' (avant la MVP) pour les points 1 à 7, 11 à 15 et 17 : surtout des textes et de petites corrections d'interface. Les points 8 à 10 touchent le barème exploitant et demandent une décision : plafonner à Imprécision quand le coup joué est le coup HRC contre un vilain inconnu.
+Un lot A' (avant la MVP) pour les points 1 à 7, 11 à 15 et 17 : surtout des textes et de petites corrections d'interface. Les points 8 à 10 touchent le barème exploitant et demandent une décision : plafonner à Imprécision quand le coup joué est le coup de référence contre un vilain inconnu.
 
 ## 6. Lot A' (fait le 23/10/2026)
 
-Décision du porteur du projet : contre un vilain inconnu, le coup théorique est au pire une Imprécision. Demande ajoutée : aucune mention de HRC ni des coachs dans ce que voit le joueur.
+Décision du porteur du projet : contre un vilain inconnu, le coup théorique est au pire une Imprécision. Demande ajoutée : aucune mention de la référence ni des coachs dans ce que voit le joueur.
 
 | Point | Correction |
 |---|---|
@@ -79,7 +79,7 @@ Décision du porteur du projet : contre un vilain inconnu, le coup théorique es
 | 14 | Un double appui sur « Nouvelle série » ne crée qu'une série. |
 | 15 | « Revoir mes mains » ; le bilan marque chaque main « Erreur » ou « Imprécision » ; « Les bons coups ici : … Ton choix n'en fait pas partie » quand le choix est mauvais ; barre rouge sous 40 %, orange de 40 à 60 %. |
 | 17 | Panne serveur (5xx) : « Le serveur ne répond pas… Ce n'est pas ta connexion », avec « Réessayer » ; hors ligne : « Pas de réseau ». |
-| HRC, coachs | « En théorie », « Gain par rapport au fold (ajusté à ce vilain) », lexique « Solveur » sans marque, « profil de départ » au lieu de « établi avec des joueurs professionnels », `ev_source` servi : `solveur`. Contrôle : `tests/test_lot_a_prime.py` et la démo autonome (0 occurrence). |
+| La référence, coachs | « En théorie », « Gain par rapport au fold (ajusté à ce vilain) », lexique « Solveur » sans marque, « profil de départ » au lieu de « établi avec des joueurs professionnels », `ev_source` servi : `solveur`. Contrôle : `tests/test_lot_a_prime.py` et la démo autonome (0 occurrence). |
 
 Restent internes (non servis au joueur) : noms de fichiers et de champs du code (`ev_hrc`, `data/hrc`), documentation, pages d'administration, champs internes des datasets publiés (immuables ; une prochaine version du moteur pourra les renommer).
 Non traités dans ce lot : points 9, 10, 16 et 18, et les trois vérifications des coachs.

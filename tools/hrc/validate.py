@@ -1,11 +1,11 @@
-"""Validation des exports HRC : structure, arbre préflop, et contrôle des EV HRC sur les calls d'all-in.
+"""Validation des exports de référence : structure, arbre préflop, et contrôle des EV de référence sur les calls d'all-in.
 
 Les calls d'all-in à deux joueurs (sans jeu postflop) ont une EV exacte connue à partir de la range de shove :
   EV(call) - EV(fold) = eq * (2 L + mort) - L + blind_payée,   L = stack effectif,
 avec eq l'équité de la main contre la range de shove, effet de bloqueurs compris (combos disjoints).
-L'écart entre cette valeur et l'EV exportée par HRC mesure le bruit Monte-Carlo de HRC sur ce nœud.
+L'écart entre cette valeur et l'EV exportée par la référence mesure le bruit Monte-Carlo de la référence sur ce nœud.
 
-Usage : python tools/hrc/validate.py [--out docs/hrc/VALIDATION_HRC.md]
+Usage : python tools/hrc/validate.py [--out docs/reference/VALIDATION_REFERENCE.md]
 """
 import argparse, json, os
 import numpy as np
@@ -53,14 +53,14 @@ def validate(d):
 
 
 def report(results):
-    L = ['# Validation des exports HRC', '', 'Généré par `python tools/hrc/validate.py`. Ne pas modifier à la main.', '',
+    L = ['# Validation des exports de référence', '', 'Généré par `python tools/hrc/validate.py`. Ne pas modifier à la main.', '',
          '## Structure', '', '| Export | Stacks (BB) | Arbre préflop | Postflop | Nœuds | Profondeur | Raises sans nœud fils | Anomalies |', '|---|---|---|---|---|---|---|---|']
     for r in results:
         L.append(f"| `{r['path']}` | {' / '.join(f'{x:g}' for x in r['stacks'])} | `{r['preflop']}` | {r['postflop']} | {r['nodes']} | {r['depth']} | {r['open_raises']} | {len(r['issues']) or '—'} |")
     L += ['', '« Profondeur » : nombre maximal d\'actions avant un nœud exporté. « Raises sans nœud fils » : relances non all-in dont la suite n\'est pas exportée.', '',
-          '## EV HRC contre EV exacte sur les calls d\'all-in', '',
-          'Écart entre l\'EV du call exportée par HRC et l\'EV exacte (chip EV, bloqueurs compris) calculée à partir de la range de shove exportée. '
-          'Une « décision fausse » est une main où HRC joue majoritairement l\'action dont l\'EV exacte est inférieure de plus de 20 mBB.', '',
+          '## EV de référence contre EV exacte sur les calls d\'all-in', '',
+          'Écart entre l\'EV du call exportée par la référence et l\'EV exacte (chip EV, bloqueurs compris) calculée à partir de la range de shove exportée. '
+          'Une « décision fausse » est une main où la référence joue majoritairement l\'action dont l\'EV exacte est inférieure de plus de 20 mBB.', '',
           'Heads-up : le calcul est exact. À 3 joueurs, il ignore les cartes du joueur qui a foldé : le biais négatif de quelques dizaines de mBB '
           'vient en partie de cette approximation, et les « décisions fausses » proches du seuil sont à confirmer.', '',
           '| Export | Stacks | Nœud | Shove adverse | Écart moyen | Écart max | Biais | Décisions fausses |', '|---|---|---|---|---|---|---|---|']
@@ -74,7 +74,7 @@ def report(results):
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(); ap.add_argument('--out', default=os.path.join(ROOT, 'docs', 'hrc', 'VALIDATION_HRC.md'))
+    ap = argparse.ArgumentParser(); ap.add_argument('--out', default=os.path.join(ROOT, 'docs', 'reference', 'VALIDATION_REFERENCE.md'))
     res = [validate(d) for d in exports()]
     open(ap.parse_args().out, 'w').write(report(res))
     print(len(res), 'exports validés ;', sum(len(r['issues']) for r in res), 'anomalie(s)')

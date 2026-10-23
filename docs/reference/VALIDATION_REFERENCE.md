@@ -1,4 +1,4 @@
-# Validation des exports HRC
+# Validation des exports de référence
 
 Généré par `python tools/hrc/validate.py`. Ne pas modifier à la main.
 
@@ -63,9 +63,9 @@ Généré par `python tools/hrc/validate.py`. Ne pas modifier à la main.
 
 « Profondeur » : nombre maximal d'actions avant un nœud exporté. « Raises sans nœud fils » : relances non all-in dont la suite n'est pas exportée.
 
-## EV HRC contre EV exacte sur les calls d'all-in
+## EV de référence contre EV exacte sur les calls d'all-in
 
-Écart entre l'EV du call exportée par HRC et l'EV exacte (chip EV, bloqueurs compris) calculée à partir de la range de shove exportée. Une « décision fausse » est une main où HRC joue majoritairement l'action dont l'EV exacte est inférieure de plus de 20 mBB.
+Écart entre l'EV du call exportée par la référence et l'EV exacte (chip EV, bloqueurs compris) calculée à partir de la range de shove exportée. Une « décision fausse » est une main où la référence joue majoritairement l'action dont l'EV exacte est inférieure de plus de 20 mBB.
 
 Heads-up : le calcul est exact. À 3 joueurs, il ignore les cartes du joueur qui a foldé : le biais négatif de quelques dizaines de mBB vient en partie de cette approximation, et les « décisions fausses » proches du seuil sont à confirmer.
 

@@ -4,7 +4,7 @@ Consignes : `CONSIGNES.md`.
 
 ## Q251 · GTO · 3-handed · SB face à un tapis · 8 BB · KQo
 
-Type : stratégie mixte · EV : HRC · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
+Type : stratégie mixte · EV : la référence · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 4 / 8 / 8 BB (BTN / SB / BB).
 Le BTN part à tapis (4 BB).
@@ -86,7 +86,7 @@ Tu es au BB avec A♠7♠. Que fais-tu ?
 
 ## Q253 · GTO · heads-up · BB face à une relance · 10 BB · 83o
 
-Type : décision nette · EV : HRC · tapis SB 10 / BB 10 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis SB 10 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 10 / 10 BB (SB / BB).
 Le SB relance à 3,5 BB.
@@ -122,7 +122,7 @@ Tu es au BB avec 8♠3♥. Que fais-tu ?
 
 ## Q254 · GTO · 3-handed · SB face à une relance · 16 BB · 76o
 
-Type : décision nette · EV : HRC · tapis BTN 16 / SB 16 / BB 16 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 16 / SB 16 / BB 16 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 16 / 16 / 16 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -158,7 +158,7 @@ Tu es au SB avec 7♠6♥. Que fais-tu ?
 
 ## Q255 · GTO · heads-up · SB face à un tapis · 16 BB · A9s
 
-Type : décision nette · EV : HRC · tapis SB 16 / BB 16 · arbre 100650d1
+Type : décision nette · EV : la référence · tapis SB 16 / BB 16 · arbre 100650d1
 
 **Énoncé** : Heads-up, tapis 16 / 16 BB (SB / BB).
 Tu complètes.
@@ -196,7 +196,7 @@ Tu es au SB avec A♠9♠. Que fais-tu ?
 
 ## Q256 · GTO · 3-handed · BTN face à une relance · 12 BB · KJs
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 12 / SB 12 / BB 12 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 12 / SB 12 / BB 12 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 12 / 12 / 12 BB (BTN / SB / BB).
 Tu limpes.
@@ -234,7 +234,7 @@ Tu es au BTN avec K♠J♠. Que fais-tu ?
 
 ## Q257 · GTO · 3-handed · BB face à un tapis · 12 BB · KTo
 
-Type : décision nette · EV : HRC · tapis BTN 12 / SB 12 / BB 12 · arbre 4d2f96f7
+Type : décision nette · EV : la référence · tapis BTN 12 / SB 12 / BB 12 · arbre 4d2f96f7
 
 **Énoncé** : 3 joueurs, tapis 12 / 12 / 12 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -273,7 +273,7 @@ Tu es au BB avec K♠T♥. Que fais-tu ?
 
 ## Q258 · GTO · 3-handed · SB face à une relance · 20 BB · K6o
 
-Type : décision nette · EV : HRC · tapis BTN 20 / SB 20 / BB 20 · arbre 4d2f96f7
+Type : décision nette · EV : la référence · tapis BTN 20 / SB 20 / BB 20 · arbre 4d2f96f7
 
 **Énoncé** : 3 joueurs, tapis 20 / 20 / 20 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -312,7 +312,7 @@ Tu es au SB avec K♠6♥. Que fais-tu ?
 
 ## Q259 · GTO · heads-up · SB face à une relance · 15 BB · QTo
 
-Type : décision nette · EV : HRC · tapis SB 35 / BB 15 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis SB 35 / BB 15 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 35 / 15 BB (SB / BB).
 Tu complètes.
@@ -388,7 +388,7 @@ Tu es au BB avec 5♠2♥. Que fais-tu ?
 
 ## Q261 · GTO · 3-handed · SB face à un limp · 4 BB · T7o
 
-Type : décision nette · EV : HRC · tapis BTN 4 / SB 4 / BB 4 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 4 / SB 4 / BB 4 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 4 / 4 / 4 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -424,7 +424,7 @@ Tu es au SB avec T♠7♥. Que fais-tu ?
 
 ## Q262 · GTO · 3-handed · BB face à un limp · 4 BB · T6s
 
-Type : décision nette · EV : HRC · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 4 / 8 / 8 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -459,7 +459,7 @@ Tu es au BB avec T♠6♠. Que fais-tu ?
 
 ## Q263 · GTO · 3-handed · BB face à un tapis · 15 BB · 74o
 
-Type : décision nette · EV : HRC · tapis BTN 40 / SB 20 / BB 15 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 40 / SB 20 / BB 15 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 40 / 20 / 15 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -496,7 +496,7 @@ Tu es au BB avec 7♠4♥. Que fais-tu ?
 
 ## Q264 · GTO · 3-handed · BTN premier à parler · 8 BB · 63o
 
-Type : décision nette · EV : HRC · tapis BTN 8 / SB 8 / BB 4 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 8 / SB 8 / BB 4 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 8 / 8 / 4 BB (BTN / SB / BB).
 Personne n'a encore parlé.
@@ -533,7 +533,7 @@ Tu es au BTN avec 6♠3♥. Que fais-tu ?
 
 ## Q265 · GTO · 3-handed · BB face à une relance · 10 BB · 73o
 
-Type : décision nette · EV : HRC · tapis BTN 20 / SB 45 / BB 10 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 20 / SB 45 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 20 / 45 / 10 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -568,7 +568,7 @@ Tu es au BB avec 7♠3♥. Que fais-tu ?
 
 ## Q266 · GTO · heads-up · SB face à une relance · 10 BB · T3s
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis SB 10 / BB 10 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis SB 10 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 10 / 10 BB (SB / BB).
 Tu complètes.
@@ -606,7 +606,7 @@ Tu es au SB avec T♠3♠. Que fais-tu ?
 
 ## Q267 · GTO · 3-handed · SB face à une relance · 20 BB · K6o
 
-Type : décision nette · EV : HRC · tapis BTN 20 / SB 20 / BB 20 · arbre 821ee345
+Type : décision nette · EV : la référence · tapis BTN 20 / SB 20 / BB 20 · arbre 821ee345
 
 **Énoncé** : 3 joueurs, tapis 20 / 20 / 20 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -645,7 +645,7 @@ Tu es au SB avec K♠6♥. Que fais-tu ?
 
 ## Q268 · GTO · 3-handed · BB face à un tapis · 20 BB · AQo
 
-Type : décision nette · EV : HRC · tapis BTN 30 / SB 25 / BB 20 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 30 / SB 25 / BB 20 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 30 / 25 / 20 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -770,7 +770,7 @@ Tu es au BB avec Q♠J♥. Que fais-tu ?
 
 ## Q271 · GTO · 3-handed · SB face à un tapis · 15 BB · 66
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 15 / SB 50 / BB 10 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 15 / SB 50 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 15 / 50 / 10 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -811,7 +811,7 @@ Tu es au SB avec 6♠6♥. Que fais-tu ?
 
 ## Q272 · GTO · 3-handed · BB face à un tapis · 16 BB · A3o
 
-Type : décision nette · EV : HRC · tapis BTN 16 / SB 16 / BB 16 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 16 / SB 16 / BB 16 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 16 / 16 / 16 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -850,7 +850,7 @@ Tu es au BB avec A♠3♥. Que fais-tu ?
 
 ## Q273 · GTO · 3-handed · SB face à une relance · 15 BB · J9s
 
-Type : décision nette · EV : HRC · tapis BTN 35 / SB 15 / BB 25 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 35 / SB 15 / BB 25 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 35 / 15 / 25 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -888,7 +888,7 @@ Tu es au SB avec J♠9♠. Que fais-tu ?
 
 ## Q274 · GTO · 3-handed · BTN face à un tapis · 12 BB · JTo
 
-Type : décision nette · EV : HRC · tapis BTN 12 / SB 12 / BB 12 · arbre 821ee345
+Type : décision nette · EV : la référence · tapis BTN 12 / SB 12 / BB 12 · arbre 821ee345
 
 **Énoncé** : 3 joueurs, tapis 12 / 12 / 12 BB (BTN / SB / BB).
 Tu limpes.
@@ -926,7 +926,7 @@ Tu es au BTN avec J♠T♥. Que fais-tu ?
 
 ## Q275 · GTO · heads-up · SB premier à parler · 8 BB · K6s
 
-Type : stratégie mixte · EV : HRC · tapis SB 8 / BB 8 · arbre 100650d1
+Type : stratégie mixte · EV : la référence · tapis SB 8 / BB 8 · arbre 100650d1
 
 **Énoncé** : Heads-up, tapis 8 / 8 BB (SB / BB).
 Personne n'a encore parlé.
@@ -965,7 +965,7 @@ Tu es au SB avec K♠6♠. Que fais-tu ?
 
 ## Q276 · GTO · heads-up · SB premier à parler · 10 BB · JJ
 
-Type : décision nette · EV : HRC · tapis SB 40 / BB 10 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis SB 40 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 40 / 10 BB (SB / BB).
 Personne n'a encore parlé.
@@ -1002,7 +1002,7 @@ Tu es au SB avec J♠J♥. Que fais-tu ?
 
 ## Q277 · GTO · heads-up · SB premier à parler · 20 BB · AQo
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis SB 30 / BB 20 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis SB 30 / BB 20 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 30 / 20 BB (SB / BB).
 Personne n'a encore parlé.
@@ -1038,7 +1038,7 @@ Tu es au SB avec A♠Q♥. Que fais-tu ?
 
 ## Q278 · GTO · 3-handed · BB face à un tapis · 15 BB · 77
 
-Type : décision nette · EV : HRC · tapis BTN 25 / SB 35 / BB 15 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 25 / SB 35 / BB 15 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 25 / 35 / 15 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -1076,7 +1076,7 @@ Tu es au BB avec 7♠7♥. Que fais-tu ?
 
 ## Q279 · GTO · heads-up · SB premier à parler · 8 BB · ATs
 
-Type : stratégie mixte · EV : HRC · tapis SB 8 / BB 8 · arbre daa9aaa0
+Type : stratégie mixte · EV : la référence · tapis SB 8 / BB 8 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 8 / 8 BB (SB / BB).
 Personne n'a encore parlé.
@@ -1112,7 +1112,7 @@ Tu es au SB avec A♠T♠. Que fais-tu ?
 
 ## Q280 · GTO · 3-handed · SB face à une relance · 25 BB · J7o
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 15 / SB 25 / BB 35 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 15 / SB 25 / BB 35 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 15 / 25 / 35 BB (BTN / SB / BB).
 Le BTN se couche.
@@ -1193,7 +1193,7 @@ Tu es au SB avec K♠6♠. Que fais-tu ?
 
 ## Q282 · GTO · 3-handed · SB face à un tapis · 8 BB · A7o
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 4 / SB 8 / BB 8 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 4 / 8 / 8 BB (BTN / SB / BB).
 Le BTN part à tapis (4 BB).
@@ -1229,7 +1229,7 @@ Tu es au SB avec A♠7♥. Que fais-tu ?
 
 ## Q283 · GTO · heads-up · BB face à une relance · 6 BB · 42o
 
-Type : décision nette · EV : HRC · tapis SB 6 / BB 6 · arbre 100650d1
+Type : décision nette · EV : la référence · tapis SB 6 / BB 6 · arbre 100650d1
 
 **Énoncé** : Heads-up, tapis 6 / 6 BB (SB / BB).
 Le SB relance à 2 BB.
@@ -1265,7 +1265,7 @@ Tu es au BB avec 4♠2♥. Que fais-tu ?
 
 ## Q284 · GTO · heads-up · SB face à une relance · 10 BB · 54o
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis SB 40 / BB 10 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis SB 40 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 40 / 10 BB (SB / BB).
 Tu complètes.
@@ -1341,7 +1341,7 @@ Tu es au SB avec 9♠4♥. Que fais-tu ?
 
 ## Q286 · GTO · heads-up · BB face à un tapis · 10 BB · T2o
 
-Type : décision nette · EV : HRC · tapis SB 40 / BB 10 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis SB 40 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 40 / 10 BB (SB / BB).
 Le SB complète.
@@ -1379,7 +1379,7 @@ Tu es au BB avec T♠2♥. Que fais-tu ?
 
 ## Q287 · GTO · 3-handed · SB face à un tapis · 14 BB · KJo
 
-Type : décision nette · EV : HRC · tapis BTN 14 / SB 14 / BB 14 · arbre 821ee345
+Type : décision nette · EV : la référence · tapis BTN 14 / SB 14 / BB 14 · arbre 821ee345
 
 **Énoncé** : 3 joueurs, tapis 14 / 14 / 14 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -1417,7 +1417,7 @@ Tu es au SB avec K♠J♥. Que fais-tu ?
 
 ## Q288 · GTO · 3-handed · SB premier à parler · 12 BB · KK
 
-Type : décision nette · EV : HRC · tapis BTN 12 / SB 12 / BB 18 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 12 / SB 12 / BB 18 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 12 / 12 / 18 BB (BTN / SB / BB).
 Le BTN se couche.
@@ -1498,7 +1498,7 @@ Tu es au BB avec 7♠4♥. Que fais-tu ?
 
 ## Q290 · GTO · 3-handed · BB face à une relance · 6 BB · 64o
 
-Type : décision nette · EV : HRC · tapis BTN 6 / SB 6 / BB 6 · arbre 821ee345
+Type : décision nette · EV : la référence · tapis BTN 6 / SB 6 / BB 6 · arbre 821ee345
 
 **Énoncé** : 3 joueurs, tapis 6 / 6 / 6 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -1535,7 +1535,7 @@ Tu es au BB avec 6♠4♥. Que fais-tu ?
 
 ## Q291 · GTO · 3-handed · BTN premier à parler · 20 BB · TT
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 20 / SB 20 / BB 20 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 20 / SB 20 / BB 20 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 20 / 20 / 20 BB (BTN / SB / BB).
 Personne n'a encore parlé.
@@ -1571,7 +1571,7 @@ Tu es au BTN avec T♠T♥. Que fais-tu ?
 
 ## Q292 · GTO · 3-handed · BB face à une relance · 15 BB · J5s
 
-Type : décision nette · EV : HRC · tapis BTN 40 / SB 20 / BB 15 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 40 / SB 20 / BB 15 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 40 / 20 / 15 BB (BTN / SB / BB).
 Le BTN limpe.
@@ -1608,7 +1608,7 @@ Tu es au BB avec J♠5♠. Que fais-tu ?
 
 ## Q293 · GTO · heads-up · BB face à un tapis · 8 BB · 99
 
-Type : décision nette · EV : HRC · tapis SB 8 / BB 8 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis SB 8 / BB 8 · arbre daa9aaa0
 
 **Énoncé** : Heads-up, tapis 8 / 8 BB (SB / BB).
 Le SB complète.
@@ -1645,7 +1645,7 @@ Tu es au BB avec 9♠9♥. Que fais-tu ?
 
 ## Q294 · GTO · 3-handed · BB face à une relance · 12 BB · JJ
 
-Type : décision nette · EV : HRC · tapis BTN 12 / SB 12 / BB 12 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 12 / SB 12 / BB 12 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 12 / 12 / 12 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -1721,7 +1721,7 @@ Tu es au BB avec 8♠4♠. Que fais-tu ?
 
 ## Q296 · GTO · heads-up · SB face à une relance · 6 BB · T9o
 
-Type : décision nette · EV : HRC · tapis SB 6 / BB 6 · arbre 100650d1
+Type : décision nette · EV : la référence · tapis SB 6 / BB 6 · arbre 100650d1
 
 **Énoncé** : Heads-up, tapis 6 / 6 BB (SB / BB).
 Tu complètes.
@@ -1757,7 +1757,7 @@ Tu es au SB avec T♠9♥. Que fais-tu ?
 
 ## Q297 · GTO · 3-handed · SB face à un tapis · 4 BB · 97o
 
-Type : décision nette · EV : HRC · tapis BTN 4 / SB 4 / BB 4 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 4 / SB 4 / BB 4 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 4 / 4 / 4 BB (BTN / SB / BB).
 Le BTN part à tapis (4 BB).
@@ -1793,7 +1793,7 @@ Tu es au SB avec 9♠7♥. Que fais-tu ?
 
 ## Q298 · GTO · 3-handed · SB face à une relance · 6 BB · 42o
 
-Type : décision nette · EV : HRC · tapis BTN 6 / SB 6 / BB 6 · arbre daa9aaa0
+Type : décision nette · EV : la référence · tapis BTN 6 / SB 6 / BB 6 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 6 / 6 / 6 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.
@@ -1829,7 +1829,7 @@ Tu es au SB avec 4♠2♥. Que fais-tu ?
 
 ## Q299 · GTO · 3-handed · SB face à un tapis · 15 BB · 66
 
-Type : décision serrée (autre action à moins de 0,1 BB) · EV : HRC · tapis BTN 15 / SB 50 / BB 10 · arbre daa9aaa0
+Type : décision serrée (autre action à moins de 0,1 BB) · EV : la référence · tapis BTN 15 / SB 50 / BB 10 · arbre daa9aaa0
 
 **Énoncé** : 3 joueurs, tapis 15 / 50 / 10 BB (BTN / SB / BB).
 Le BTN relance à 2,3 BB.

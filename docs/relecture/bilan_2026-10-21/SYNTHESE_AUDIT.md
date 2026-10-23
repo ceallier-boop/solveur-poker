@@ -24,7 +24,7 @@ Détail : `audit_lucho.md`, `audit_pa.md`, `audit_lucky.md` et les grilles `audi
 - En GTO, les ranges collent à l'équilibre push/fold. En heads-up, le BB paie 73 % des mains à 4 BB (Nash : 74 %) et 37 % à 10 BB (Nash : 37 %).
 - Les calls rétrécissent bien quand le tapis grandit. Aucune range absurde n'a été trouvée.
 
-Les problèmes viennent de ce qui est **affiché**, de la **construction des questions**, des **arbres HRC** et de l'**équilibre des séries**.
+Les problèmes viennent de ce qui est **affiché**, de la **construction des questions**, des **arbres de référence** et de l'**équilibre des séries**.
 
 « ✔ » : constat vérifié sur les données pendant cette synthèse.
 
@@ -53,7 +53,7 @@ Les problèmes viennent de ce qui est **affiché**, de la **construction des que
 |---|---|---|---|---|
 | 1 | **Tailles d'ouverture irréalistes.** En heads-up, le SB ouvre à 3,5 BB de 10 à 25 BB (seule taille de 18 à 25 BB). À 3 joueurs, le BTN ouvre à 2,3 BB, le SB à 3,5 BB et l'iso fait 4,5 BB. Le field et les trois coachs ouvrent à 2 BB. Conséquence en heads-up : limp à 70-82 %, AA-JJ limpés jusqu'à 16 BB. | 92 spots HU, 7585 questions | les trois (bloquant pour Lucky) | bloquant |
 | 2 | **Plusieurs arbres pour un même spot.** À 12, 16 et 20 BB, cinq arbres de tailles différentes coexistent. Le même spot à l'écran a deux réponses de référence selon l'arbre tiré. Exemple : AA au BTN à 18 BB, limp à 90 % dans un arbre, relance à 65 % dans l'autre. | 544 couples main × spot | Lucho, Lucky, PA | majeur |
-| 3 | **Convergence HRC faible** sur les arbres rares (limp, iso, call, squeeze) : plus de la moitié des mains ont un regret au-dessus de 0,1 BB. Nœuds non résolus : AKs à 50/50 avec des EV nulles, fold noté correct (`…-5a95ea`, `…-b8b66b`). | 664 spots, 9303 questions | Lucho, Lucky | majeur |
+| 3 | **Convergence de référence faible** sur les arbres rares (limp, iso, call, squeeze) : plus de la moitié des mains ont un regret au-dessus de 0,1 BB. Nœuds non résolus : AKs à 50/50 avec des EV nulles, fold noté correct (`…-5a95ea`, `…-b8b66b`). | 664 spots, 9303 questions | Lucho, Lucky | majeur |
 | 4 | **Le tapis disparaît à 16 BB.** Pour le SB (19 % à 15 BB, 0 % à 16 BB) et pour le BB face au limp (10,5 % puis 0 %), en heads-up comme à 3. | arbres 16-25 BB | Lucho, Lucky | majeur |
 | 5 | **AA et KK limpés au BTN de 8 à 20 BB** : artefact d'indifférence, présenté comme seule bonne réponse. | 52 mains | Lucky | majeur |
 | 6 | **Textes des corrections.** « Face à une relance à 8 BB » désigne en fait le tapis (environ 400 corrections). Deux pourcentages différents dans une même fiche (291). Après deux tapis, le texte ne parle que d'un seul (142). Mains « à la limite » absurdes (JJ en call, AKo en tapis). Montants 9,89 ou 7,59 BB. Jargon « règle simplifiée à 99 % » (93). Fiches de 450 à 860 caractères. | ~800 | les trois | mineur à majeur |
@@ -91,7 +91,7 @@ Deux remarques des coachs visaient mes fichiers d'export, pas l'application. Les
    - faire citer à R13 le nombre de limps ;
    - exiger un écart significatif (au moins 1,5 écart-type) pour les adaptations, R12, R13 et l'identification ; sinon, la question devient « échantillon ».
 3. **Rééquilibrer les séries GTO et exploitant** selon la fréquence réelle, avec planchers et plafonds.
-4. **Refaire les arbres HRC** : open à 2 BB (BTN, SB, heads-up), un seul arbre par tapis, option tapis jusqu'à 20 BB. Retirer ou recalculer les 664 spots mal convergés et les nœuds à EV nulle.
+4. **Refaire les arbres de référence** : open à 2 BB (BTN, SB, heads-up), un seul arbre par tapis, option tapis jusqu'à 20 BB. Retirer ou recalculer les 664 spots mal convergés et les nœuds à EV nulle.
 5. **Questions exploitantes « plus serré »** : calling station (tapis pour la valeur), et des « inconnu » où la théorie tient, pour que le type ne se devine plus.
 6. **Recaler le rec passif face au limp** sur des mains réelles du field (fin du « tapis 94 % »). Trancher le désaccord sur les folds à 10-12 BB.
 7. **Rendre l'EV conforme à l'énoncé** : calculer à partir des seules stats affichées, ou afficher la stat d'iso. Réécrire R4 et R12 selon les deux stats, et dédoublonner tous types confondus.
@@ -103,7 +103,7 @@ Deux remarques des coachs visaient mes fichiers d'export, pas l'application. Les
 9. **Étendre l'exploitant** : open à 2 BB et iso non all-in, 13-25 BB, tapis inégaux, limp du BTN et pots limpés à 3, SB face à l'iso après son limp.
 10. **Premier module postflop** : pots limpés en heads-up et BvB.
 
-**Limite commune aux trois audits** : aucun coach n'avait de base de mains réelles du field. Les fréquences « réelles » viennent de HRC (joueurs théoriques), et les jugements sur les profils sont des avis de coach. Les priorités 3 et 6 gagneraient à être calées sur un historique de mains Expresso.
+**Limite commune aux trois audits** : aucun coach n'avait de base de mains réelles du field. Les fréquences « réelles » viennent de la référence (joueurs théoriques), et les jugements sur les profils sont des avis de coach. Les priorités 3 et 6 gagneraient à être calées sur un historique de mains Expresso.
 
 ## 6. Corrections appliquées (22/10/2026)
 
@@ -119,7 +119,7 @@ Banque exploitante `exploit_field/2026.10.22-1` (moteur v4.4, 4400 questions) ; 
 | 7. Doublons | Une adaptation qui a l'EV du vilain inconnu est retirée, ainsi que les énoncés identiques. |
 | 8. Textes | SB face au tapis du BTN : « le BB parle encore derrière » au lieu d'un faux « assez pour payer ». « Tu prends le pot de 2 BB ». Postflop : « paie avec une paire ou un tirage ». « À retenir » GTO : « avec 8 BB de tapis » au lieu de « à 8 BB », et « face à deux joueurs à tapis ». La 2e ligne de pourcentage est supprimée. Profils : phrase cassée corrigée. |
 | Pastilles | Le limp au SB est affiché en plus du tapis et du call : il sépare le rec passif du nit (« Nit » devient une bonne réponse possible, sur 2 questions seulement : à renforcer). |
-| 4 (en partie). GTO | Les spots que HRC a mal résolus sont écartés : 581 spots dont plus de la moitié des mains ont un regret supérieur à 0,1 BB. Sont aussi retirées les mains dont la référence change d'un arbre à l'autre pour un même spot à l'écran, les nœuds à EV toutes nulles et AA ou KK limpés au BTN. Il reste 1946 spots et 134 577 questions. |
+| 4 (en partie). GTO | Les spots que la référence a mal résolus sont écartés : 581 spots dont plus de la moitié des mains ont un regret supérieur à 0,1 BB. Sont aussi retirées les mains dont la référence change d'un arbre à l'autre pour un même spot à l'écran, les nœuds à EV toutes nulles et AA ou KK limpés au BTN. Il reste 1946 spots et 134 577 questions. |
 
 Effet mesuré (3000 séries simulées) :
 
@@ -132,10 +132,10 @@ Effet mesuré (3000 séries simulées) :
 | Exploitant : BB face au limp du SB | 51 % | 23 % | — |
 
 **Reste à faire, hors de portée sans nouvelles données :**
-- Refaire les arbres HRC : open à 2 BB, un seul arbre par tapis, tapis jusqu'à 20 BB. Il faut de nouveaux calculs HRC.
+- Refaire les arbres de référence : open à 2 BB, un seul arbre par tapis, tapis jusqu'à 20 BB. Il faut de nouveaux calculs de référence.
 - Recaler le rec passif face au limp (la réponse « tapis » reste majoritaire dans la banque ; le tirage l'équilibre). Il faut un historique de mains du field.
 - Trancher le fold à 10-12 BB contre un inconnu (désaccord Lucho / Lucky).
-- Étendre l'exploitant (13-25 BB, open à 2 BB, iso non all-in, tapis inégaux, limp du BTN) et le postflop : il faut des développements du moteur et des calculs HRC.
+- Étendre l'exploitant (13-25 BB, open à 2 BB, iso non all-in, tapis inégaux, limp du BTN) et le postflop : il faut des développements du moteur et des calculs de référence.
 
 ## 7. Extension du mode exploitant (23/10/2026, `exploit_field/2026.10.23-1`, moteur v4.5)
 
@@ -155,20 +155,20 @@ Résultat en heads-up à 12 BB, en BB par rapport au fold :
 
 | Ajout | Détail |
 |---|---|
-| Profondeurs 15, 18, 20 et 25 BB | Partout où les exports HRC ont le nœud et ses EV. Au-delà de 16 BB, les arbres HRC n'ont pas de tapis au SB ni face au limp : les questions y portent sur fold, limp, check ou relance. |
-| Relance non all-in | Open du premier à parler (BTN 2,3 BB, SB 3,5 BB, heads-up 3,5 BB) et iso à 3 BB face au limp du SB. L'EV HRC est décomposée en fold equity et en valeur quand on est payé, puis recalculée contre le vilain. Avec un vilain théorique, on retrouve exactement l'EV HRC. Le limpeur répond à l'iso d'après l'arbre heads-up. 3345 questions proposent la relance. |
-| Nouvelles situations | BB face à l'open du BTN, SB couché (724 questions) ; SB face au tapis du BB après son limp (456) ; BB face au limp du BTN, SB couché (30 seulement : HRC n'a ses EV qu'à 6, 15 et 20 BB, souvent incohérentes). |
+| Profondeurs 15, 18, 20 et 25 BB | Partout où les exports de référence ont le nœud et ses EV. Au-delà de 16 BB, les arbres de référence n'ont pas de tapis au SB ni face au limp : les questions y portent sur fold, limp, check ou relance. |
+| Relance non all-in | Open du premier à parler (BTN 2,3 BB, SB 3,5 BB, heads-up 3,5 BB) et iso à 3 BB face au limp du SB. L'EV de référence est décomposée en fold equity et en valeur quand on est payé, puis recalculée contre le vilain. Avec un vilain théorique, on retrouve exactement l'EV de référence. Le limpeur répond à l'iso d'après l'arbre heads-up. 3345 questions proposent la relance. |
+| Nouvelles situations | BB face à l'open du BTN, SB couché (724 questions) ; SB face au tapis du BB après son limp (456) ; BB face au limp du BTN, SB couché (30 seulement : la référence n'a ses EV qu'à 6, 15 et 20 BB, souvent incohérentes). |
 | Tapis inégaux | Affichés en heads-up sur environ 40 % des questions (1233). En chip EV, seul le tapis effectif compte : la réponse ne change pas. Les tapis inégaux à 3 joueurs restent hors domaine. |
 | Nouvelles règles | R17 et R18 (face à un open), R19 et R20 (fold equity d'une relance). R4 est élargie au joueur qui paie trop. |
-| Seuil de bruit remesuré | max(ancien plancher, 90e centile du regret propre de HRC à la même profondeur) : 0,10 BB à 10-12 BB au lieu de 0,24-0,33 BB ; 0,13 à 0,25 BB de 15 à 25 BB. |
+| Seuil de bruit remesuré | max(ancien plancher, 90e centile du regret propre de la référence à la même profondeur) : 0,10 BB à 10-12 BB au lieu de 0,24-0,33 BB ; 0,13 à 0,25 BB de 15 à 25 BB. |
 | Volume | 8000 questions : 3278 de 4 à 8 BB, 2488 de 10 à 12 BB, 2234 de 15 à 25 BB. Dont 789 adaptations « plus serré ». |
 | Séries | Nouvelle famille « face à une relance » (10 % des tirages exploitants) ; filtres de profondeur jusqu'à 25 BB. |
 
 **Toujours hors domaine :**
-- les tailles d'open 2 BB (les arbres HRC ouvrent à 2,3 et 3,5 BB) ;
+- les tailles d'open 2 BB (les arbres de référence ouvrent à 2,3 et 3,5 BB) ;
 - le 3-bet non all-in ;
 - le SB face au limp du BTN et les pots limpés à 3 ;
 - les tapis inégaux à 3 joueurs ;
 - les questions de postflop.
 
-Ces points demandent de nouveaux calculs HRC ou un nouveau modèle.
+Ces points demandent de nouveaux calculs de référence ou un nouveau modèle.

@@ -36,7 +36,7 @@ L'ancien mode exploitant (profils fictifs, dataset `exploit_calls`, route `/prof
 La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md`). L'explication est construite uniquement à partir des données du spot :
 - la meilleure action et son gain par rapport au fold, ou au check quand rien n'est à payer ;
 - l'écart de l'action choisie ;
-- la raison du verdict, avec son seuil (bruit de calcul sous 0,02 BB, imprécision jusqu'à 0,06 BB, erreur au-delà, action mixte jouée au moins 10 % du temps) ; pour une EV HRC, une action à moins de 0,1 BB de la meilleure reste « pertinente » : au pire une imprécision, et la correction de la référence ajoute « Nuance : … est aussi pertinente » (décision du porteur du projet, 2026-10-14) ;
+- la raison du verdict, avec son seuil (bruit de calcul sous 0,02 BB, imprécision jusqu'à 0,06 BB, erreur au-delà, action mixte jouée au moins 10 % du temps) ; pour une EV de référence, une action à moins de 0,1 BB de la meilleure reste « pertinente » : au pire une imprécision, et la correction de la référence ajoute « Nuance : … est aussi pertinente » (décision du porteur du projet, 2026-10-14) ;
 - après une erreur ou une imprécision (mode GTO), une ligne « À retenir » : la range de la référence en règle à seuils (« 22+, A2+, K7s+ »), affichée seulement si elle classe bien au moins 93 % des mains pondérées, sinon la part des mains ;
 - la stratégie de référence : actions jouées au moins 10 % du temps, arrondies à 5 % ;
 - la source de l'EV.
@@ -45,7 +45,7 @@ La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md
 
 `POST /sessions` avec `mode: "exploit"` : questions fixes du moteur exploitant v4.5 (`tools/field`), contre les joueurs du field Expresso (4 à 25 BB). Filtres : `table`, `hero`, `family` (`first_in`, `vs_limp` pour le BB face au limp du SB ou du BTN, `vs_raise` pour le BB face à l'open du BTN, `vs_allin`, `read` pour la lecture du vilain), profondeur. Pas de série adaptée ; révision espacée, progression et signalements comme dans les autres modes.
 - `GET /quiz/next` : `question.field` = type (`adaptation`, `inconnu`, `piège`, `échantillon`, `identification`, `profil`), statistiques observées du vilain (`k` sur `n`, observé et théorie), question posée (`ask_fr`) pour la lecture du vilain ; jamais le profil interne.
-- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R20) et son texte, action théorique HRC, gain par rapport à la théorie, EV de chaque option ; `why_fr` = éléments théoriques (cote du pot, équité contre la range, fold equity) ; `next` = « Gérer le postflop » quand la main peut voir un flop (SPR, position, plan en trois consignes `plan`, ce qui aide ta main et la sienne) ; montants en BB.
+- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R20) et son texte, action théorique de référence, gain par rapport à la théorie, EV de chaque option ; `why_fr` = éléments théoriques (cote du pot, équité contre la range, fold equity) ; `next` = « Gérer le postflop » quand la main peut voir un flop (SPR, position, plan en trois consignes `plan`, ce qui aide ta main et la sienne) ; montants en BB.
 - Détail des corrections et de l'audit : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`.
 
 ## Révision espacée des erreurs (`spinsacademy/review.py`, évaluation du MVP, remarque 21)
@@ -106,12 +106,12 @@ Cycle de vie (`spinsacademy/catalog.py`), statut enregistré dans la base de l'a
 
 Contrôles (rapport lisible dans `/admin`, onglet Datasets) :
 - bloquants : manifeste cohérent avec le dossier ; empreinte SHA-256 du fichier des spots identique au manifeste ; nombre de spots et de questions conformes ; aucun doublon ; chaque spot complet et légal (héros présent et non couché, actions distinctes, pas de check face à une mise ni de fold gratuit, pas de mise au-delà des tapis, 169 mains, fréquences normalisées, EV de référence complète pour chaque main proposable, règles d'éligibilité du manifeste respectées) ; pour l'exploitant, chaque spot renvoie à un spot du dataset GTO source ;
-- test de référence : chaque spot est reconstruit depuis ses sources (exports HRC pour le GTO, dataset GTO source pour l'exploitant) et doit être identique. Si la reconstruction n'est pas comparable (version d'importeur différente, exports absents de ce poste), c'est un avertissement affiché, pas un échec ;
+- test de référence : chaque spot est reconstruit depuis ses sources (exports de référence pour le GTO, dataset GTO source pour l'exploitant) et doit être identique. Si la reconstruction n'est pas comparable (version d'importeur différente, exports absents de ce poste), c'est un avertissement affiché, pas un échec ;
 - avertissement : dataset GTO source non publié (exploitant).
 
 Règles : publier exige un contrôle réussi sur des fichiers inchangés depuis le contrôle ; un dataset exploitant ne peut être publié que si son dataset GTO source l'est ; retirer un dataset GTO retire aussi les datasets exploitants publiés qui en dérivent. Publier, retirer et contrôler sont inscrits au journal (acteur, date, motif). Le contrôle est aussi disponible hors application : `python -m spinsacademy.catalog gto_preflop/2026.10.12-2`.
 
-L'import reste hors ligne : `python -m spinsacademy.importer --version X` (GTO, depuis les exports HRC du dépôt) et `python -m spinsacademy.exploit --version X --gto Y` produisent un dossier immuable en `staging`, livré au serveur avec le code. Les exports HRC bruts ne sont jamais servis par l'application.
+L'import reste hors ligne : `python -m spinsacademy.importer --version X` (GTO, depuis les exports de référence du dépôt) et `python -m spinsacademy.exploit --version X --gto Y` produisent un dossier immuable en `staging`, livré au serveur avec le code. Les exports de référence bruts ne sont jamais servis par l'application.
 
 | Route (en-tête `X-Admin-Token`) | Rôle |
 |---|---|

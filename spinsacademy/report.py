@@ -1,4 +1,4 @@
-"""Rapports d'un dataset publié : import, validation, couverture, comparaison avec HRC, notation.
+"""Rapports d'un dataset publié : import, validation, couverture, comparaison avec la référence, notation.
 
 Usage : python -m spinsacademy.report --version 2026.10.12-2 [--out docs/dataset]
 Le rapport relit uniquement les fichiers publiés (manifest.json, spots.jsonl) : il contrôle ce qui sera servi, pas ce que l'importeur croit avoir écrit.
@@ -63,7 +63,7 @@ def build(version):
           '| Export écarté | Raison |', '|---|---|'] + [f"| `{s['export']}` | {s['reason']} |" for s in m['skipped']] + ['']
     per = collections.defaultdict(list)
     for sp in spots: per[sp['provenance']['export']].append(sp)
-    L += ['| Export retenu | Table | Stacks (BB) | Postflop HRC | Spots | Questions |', '|---|---|---|---|---|---|']
+    L += ['| Export retenu | Table | Stacks (BB) | Postflop de référence | Spots | Questions |', '|---|---|---|---|---|---|']
     for e in m['sources']:
         ss = per[e]; s0 = ss[0]
         L.append(f"| `{e}` | {s0['table']} | {' / '.join(f'{x:g}' for x in s0['stacks_bb'])} | {s0['provenance']['postflop_mode']} | {len(ss)} | {fmt(sum(s['eligible_hands'] for s in ss))} |")
@@ -85,7 +85,7 @@ def build(version):
         rows[k][0] += 1; rows[k][1] += cand; rows[k][2] += sp['eligible_hands']
         fam[(sp['table'], situation(sp))] += sp['eligible_hands']; pos[(sp['table'], sp['hero'])] += sp['eligible_hands']
         for h, v in sp['hands'].items(): elig_cls[h] += v['quiz_eligible']
-    L += ['## 3. Couverture', '', f"Une main est proposable si elle atteint le nœud (poids ≥ {m['min_reach_for_questions']}) et si la stratégie HRC est cohérente avec l'EV de référence "
+    L += ['## 3. Couverture', '', f"Une main est proposable si elle atteint le nœud (poids ≥ {m['min_reach_for_questions']}) et si la stratégie de référence est cohérente avec l'EV de référence "
           f"(écart ≤ {fmt(m['max_self_regret_mbb'])} mBB). « Atteintes » compte les mains au-dessus du seuil de poids ; « proposables » retire les incohérentes.", '',
           '| Table | Stacks (BB) | Spots | Mains atteintes | Proposables | Retirées pour incohérence |', '|---|---|---|---|---|---|']
     for (t, st), (n, c, e) in sorted(rows.items(), key=lambda kv: (kv[0][0], [float(x) for x in kv[0][1].split(' / ')])):
@@ -99,7 +99,7 @@ def build(version):
     L += ['', f"Les 169 classes sont proposables dans au moins {min(elig_cls.values())} spots. Les moins représentées : " + ', '.join(f'{h} ({n})' for h, n in low) + '.', '',
           "La couverture du catalogue de quiz (répartition réellement servie à l'utilisateur) dépendra du générateur de séries : à mesurer sur ses tirages.", '']
 
-    # 4. comparaison HRC
+    # 4. comparaison de référence
     ex = [sp for sp in spots if sp['ev_reference'] == 'exact']
     dev = []; flips = 0; tot = 0
     for sp in ex:
@@ -112,12 +112,12 @@ def build(version):
     sr = [(W[NAMES.index(h)] * v['reach'], v['hrc_self_regret_mbb']) for sp in spots for h, v in sp['hands'].items() if v['reach'] >= m['min_reach_for_questions']]
     wts = np.array([a for a, _ in sr]); vals = np.array([b for _, b in sr]); order = np.argsort(vals); cum = np.cumsum(wts[order]) / wts.sum()
     q = lambda p: vals[order][np.searchsorted(cum, p)]
-    L += ['## 4. Comparaison avec HRC', '',
-          f"**Spots à EV exacte ({len(ex)})** : décisions tout ou rien. Écart moyen entre l'EV HRC et l'EV exacte : **{fmt(1000 * sum(w * d for w, d, _ in dev) / sum(w for w, _, _ in dev))} mBB**. "
-          f"Dans {flips} cas sur {fmt(tot)} ({fmt(100 * flips / max(tot, 1), 1)} %), l'action majoritaire de HRC perd plus de 20 mBB selon l'EV exacte. La correction suit l'EV exacte.", '',
-          "**Cohérence interne de HRC** (EV de la meilleure action moins EV de la stratégie HRC, sur l'EV de référence, mains atteintes, pondérées par combos) : "
+    L += ['## 4. Comparaison avec la référence', '',
+          f"**Spots à EV exacte ({len(ex)})** : décisions tout ou rien. Écart moyen entre l'EV de référence et l'EV exacte : **{fmt(1000 * sum(w * d for w, d, _ in dev) / sum(w for w, _, _ in dev))} mBB**. "
+          f"Dans {flips} cas sur {fmt(tot)} ({fmt(100 * flips / max(tot, 1), 1)} %), l'action majoritaire de la référence perd plus de 20 mBB selon l'EV exacte. La correction suit l'EV exacte.", '',
+          "**Cohérence interne de la référence** (EV de la meilleure action moins EV de la stratégie de référence, sur l'EV de référence, mains atteintes, pondérées par combos) : "
           f"médiane {fmt(q(0.5), 1)} mBB, 90ᵉ centile {fmt(q(0.9), 1)} mBB, 99ᵉ centile {fmt(q(0.99), 1)} mBB. Au-delà de {fmt(m['max_self_regret_mbb'])} mBB, la main n'est pas proposée.", '',
-          'Détail par export et par nœud : `docs/hrc/VALIDATION_HRC.md`.', '',
+          'Détail par export et par nœud : `docs/reference/VALIDATION_REFERENCE.md`.', '',
           "Limite : à 3 joueurs, l'EV exacte ne retire pas les cartes du joueur qui a foldé (`ev_exact_approximate`). Contrôle indépendant de la matrice d'équité : `spinsacademy/data/equity_169.json`.", '']
 
     # 5. notation
@@ -131,13 +131,13 @@ def build(version):
                 if g['verdict'] == 'correct' and g['regret_mbb'] > grading.TOLERANCE_MBB: promoted += 1
                 ex_by[g['verdict']].append((sp, h, a['id'], g))
     n = sum(dist.values())
-    L += ['## 5. Notation', '', f"Barème : correct ≤ {fmt(grading.TOLERANCE_MBB)} mBB de regret, ou ≤ {fmt(3 * grading.TOLERANCE_MBB)} mBB pour une action jouée au moins {fmt(100 * grading.MIXED_MIN)} % du temps par HRC "
-          f"(spots à EV HRC) ; imprécision ≤ {fmt(3 * grading.TOLERANCE_MBB)} mBB ; erreur au-delà. Regret = EV de la meilleure action − EV de l'action choisie, toutes deux relatives au fold, en mBB, sur l'EV de référence du spot.", '',
+    L += ['## 5. Notation', '', f"Barème : correct ≤ {fmt(grading.TOLERANCE_MBB)} mBB de regret, ou ≤ {fmt(3 * grading.TOLERANCE_MBB)} mBB pour une action jouée au moins {fmt(100 * grading.MIXED_MIN)} % du temps par la référence "
+          f"(spots à EV de référence) ; imprécision ≤ {fmt(3 * grading.TOLERANCE_MBB)} mBB ; erreur au-delà. Regret = EV de la meilleure action − EV de l'action choisie, toutes deux relatives au fold, en mBB, sur l'EV de référence du spot.", '',
           '| Verdict | Points | Réponses possibles (spot × main × action) | Part |', '|---|---|---|---|']
     for v in ('correct', 'imprécision', 'erreur'):
         L.append(f'| {v} | {fmt(grading.POINTS[v], 1)} | {fmt(dist[v])} | {fmt(100 * dist[v] / n, 1)} % |')
     L += ['', f"Dont {fmt(promoted)} réponses correctes grâce à la tolérance de stratégie mixte (regret entre {fmt(grading.TOLERANCE_MBB)} et {fmt(3 * grading.TOLERANCE_MBB)} mBB).", '',
-          '### Exemples', '', '| Verdict | Spot | Main | Action | Regret | Fréquence HRC | Meilleure action | Source EV |', '|---|---|---|---|---|---|---|---|']
+          '### Exemples', '', '| Verdict | Spot | Main | Action | Regret | Fréquence de référence | Meilleure action | Source EV |', '|---|---|---|---|---|---|---|---|']
     for v in ('correct', 'imprécision', 'erreur'):
         pool = ex_by[v]
         picks = rnd.sample(pool, min(4, len(pool)))

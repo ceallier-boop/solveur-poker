@@ -22,7 +22,7 @@ Outil : `tools/audit/bilan_quiz.py`. Les fichiers chiffrés sont dans ce dossier
 | Heads-up | face à une relance | 4157 | 33 % | 9 % |
 | Heads-up | face à un limp (BB) | 846 | 17 % | 21 % |
 
-« Part servie » : part des questions tirées sur 3000 séries simulées, pour chaque table. « Part réelle » : part des décisions prises dans cette famille sur une main jouée, d'après les stratégies HRC, en moyenne sur les quatre tranches de tapis.
+« Part servie » : part des questions tirées sur 3000 séries simulées, pour chaque table. « Part réelle » : part des décisions prises dans cette famille sur une main jouée, d'après les stratégies de référence, en moyenne sur les quatre tranches de tapis.
 
 **Mode exploitant, par situation :**
 
@@ -58,8 +58,8 @@ Outil : `tools/audit/bilan_quiz.py`. Les fichiers chiffrés sont dans ce dossier
    - Aucune question sur le BTN qui limpe ou min-raise, ni sur le SB face au limp du BTN.
    - Rien sur le BB face au min-raise, ni sur les pots limpés à 3.
    - Pas d'iso non all-in, pas de tapis inégaux.
-   - Le BB face au limp du SB n'a presque aucune question à 10 et 12 BB : HRC y isole à 3 BB, option que le moteur ne propose pas.
-   - Même trou pour « premier à parler » à 10-12 BB : 29 questions en heads-up, 28 pour le SB et 77 pour le BTN à 3 joueurs. HRC y min-raise, ce que le moteur ne sait pas exploiter.
+   - Le BB face au limp du SB n'a presque aucune question à 10 et 12 BB : la référence y isole à 3 BB, option que le moteur ne propose pas.
+   - Même trou pour « premier à parler » à 10-12 BB : 29 questions en heads-up, 28 pour le SB et 77 pour le BTN à 3 joueurs. La référence y min-raise, ce que le moteur ne sait pas exploiter.
 4. **Le mode exploitant sur-sert le limp à 6-8 BB.** Les deux situations « BB face au limp du SB » font 51 % des questions servies, dont 20 % pour la seule case 3 joueurs à 8 BB. Le tirage pondère par la part du profil dans le field ; or les questions de rec passif se concentrent sur ces cases.
 5. **Le postflop n'est jamais une question.** C'est seulement une aide dans la correction, alors que les pots limpés (heads-up, BvB) et min-relancés sont fréquents dès 10 BB.
 

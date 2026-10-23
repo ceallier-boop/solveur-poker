@@ -27,16 +27,16 @@ En bref : **les décisions tiennent presque toutes**. Ce qui coince :
 - **150 fiches lues en entier.** Chaque strate (situation × tapis × type) est couverte, puis j'ai pris les plus douteuses : écart faible, R13, inconnu, petit échantillon, gros gain.
 
 **GTO (2528 spots)**
-- Lecture du dataset complet par le chargeur de l'appli : 427 000 couples main × spot, avec fréquences, EV et regret HRC. Le CSV ne montre pas tout : « None » y veut dire « range trop longue ».
+- Lecture du dataset complet par le chargeur de l'appli : 427 000 couples main × spot, avec fréquences, EV et regret de référence. Le CSV ne montre pas tout : « None » y veut dire « range trop longue ».
 - Fréquences par action et par profondeur sur les nœuds clés (HU et 3-handed), et monotonie entre profondeurs voisines.
 - Doublons visibles (même spot, deux réponses).
-- Convergence HRC (regret).
+- Convergence de référence (regret).
 - Contre-calcul indépendant de quelques overcalls à 3, avec la table d'équité à 3 joueurs.
 - **566 corrections** : toutes contrôlées par script (chiffres, formulations). La liste compacte des 566 a été relue, et environ 40 corrections en entier.
 
 **Manques et équilibre** : les deux fichiers de bilan, comparés à ma connaissance du field Expresso.
 
-**Limite** : je n'ai pas de base de mains réelles du field. Les fréquences « réelles » viennent de HRC (des joueurs GTO), pas des recs. Quand je juge un facteur de profil (rec passif, etc.), c'est un avis de coach, pas une mesure.
+**Limite** : je n'ai pas de base de mains réelles du field. Les fréquences « réelles » viennent de la référence (des joueurs GTO), pas des recs. Quand je juge un facteur de profil (rec passif, etc.), c'est un avis de coach, pas une mesure.
 
 ---
 
@@ -84,12 +84,12 @@ En bref : **les décisions tiennent presque toutes**. Ce qui coince :
 
 ### GTO
 
-1. **Convergence HRC faible.**
+1. **Convergence de référence faible.**
    - 664 spots (26 %, 9303 questions) ont plus de la moitié des mains atteintes avec un regret au-dessus de 0,1 BB, jusqu'à 22 BB.
    - Ce sont surtout les arbres rares (limp, iso, call, squeeze).
    - Les mains proposées sont filtrées, mais leurs EV dépendent de stratégies mal résolues autour.
 2. **Même spot visible, deux réponses de référence (544 couples main × spot).**
-   - Cela vient d'arbres différents ou du bruit HRC.
+   - Cela vient d'arbres différents ou du bruit de référence.
    - Sur un overcall à 12 BB, l'EV de K9s va de -0,93 à +1,08 BB selon l'arbre.
 3. **Actions manquantes.**
    - Pas de tapis au SB à partir de 16 BB (HU et BvB).
@@ -109,7 +109,7 @@ En bref : **les décisions tiennent presque toutes**. Ce qui coince :
 Ce qui est bon :
 - Les ranges de push/fold et de call aux profondeurs clés sont dans les clous. Exemples : en HU, le BB paie 74 / 55 / 44 / 37 / 31 / 25 % des mains à 4 / 6 / 8 / 10 / 12 / 15 BB ; le SB limp de plus en plus avec la profondeur.
 - Les calls BB face au tapis sont monotones.
-- Mon contre-calcul des overcalls à 6-10 BB colle à HRC à 0,1-0,3 BB près.
+- Mon contre-calcul des overcalls à 6-10 BB colle à la référence à 0,1-0,3 BB près.
 
 ---
 
@@ -130,7 +130,7 @@ Ce qui est bon :
 
 ## 4. Manques, classés par fréquence en jeu
 
-Les fréquences viennent du bilan HRC et de mon estimation du field. Je ne suis pas sûr de l'ordre exact entre les points 3 et 5.
+Les fréquences viennent du bilan de référence et de mon estimation du field. Je ne suis pas sûr de l'ordre exact entre les points 3 et 5.
 
 1. **SB premier à parler en HU, 10-25 BB** : limp 100 % vs rec, clic, jam. C'est la décision la plus fréquente d'un HU. Exploitant : 29 questions à 10-12 BB, rien au-delà. GTO : servi 13-15 % de la tranche pour 44-50 % réels.
 2. **BTN premier à parler 3-handed, 11-25 BB, avec clic.** L'exploitant ne propose que fold ou tapis jusqu'à 12 BB ; le GTO ouvre à 2,3 BB. Il manque l'open loose au clic vs recs (K3, Q4, 82…).
@@ -172,5 +172,5 @@ Les fréquences viennent du bilan HRC et de mon estimation du field. Je ne suis 
 6. **Rééquilibrer les séries** : face au tapis et premier à parler en hausse ; arbres rares plafonnés à 2 % (GTO) ; limp ramené à 25 % (exploitant).
 7. **Nettoyer le GTO** : retirer ou recalculer les 664 spots mal convergés et fusionner les doublons visibles (544 conflits).
 8. **Réécrire les « À retenir » GTO** : « tapis 8 BB » au lieu de « relance à 8 BB », un seul pourcentage, des formulations multiway, pas de jargon.
-9. **Ajouter le clic et l'iso non all-in** (BTN, SB, BB face au limp à 10-15 BB), et le tapis au SB et au BB jusqu'à 20 BB dans les arbres HRC.
+9. **Ajouter le clic et l'iso non all-in** (BTN, SB, BB face au limp à 10-15 BB), et le tapis au SB et au BB jusqu'à 20 BB dans les arbres de référence.
 10. **Étendre l'exploitant** aux tapis inégaux, au limp BTN et pots limpés à 3, puis à 15-20 BB ; ensuite, un premier module postflop simple.

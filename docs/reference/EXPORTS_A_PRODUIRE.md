@@ -1,11 +1,11 @@
-# Exports HRC à produire
+# Exports de référence à produire
 
-Ces calculs se lancent sur le poste où HRC est installé (`C:\Users\eline\AppData\Local\Programs\HoldemResources\HRC\hrc.exe`).
-La session Claude dans le cloud ne peut pas piloter HRC : elle prépare les entrées, puis importe et valide les exports reçus.
+Ces calculs se lancent sur le poste où le solveur de référence est installé.
+La session Claude dans le cloud ne peut pas piloter de référence : elle prépare les entrées, puis importe et valide les exports reçus.
 
 ## 0. Réglages communs (arbre de référence)
 
-**Tous** les calculs utilisent les réglages des exports `complement` et `complement2`. C'est l'empreinte d'arbre `00a1dd91` dans `data/hrc/README.md`. Le plus simple : ouvrir l'une de ces mains dans HRC (par exemple 12 / 12 / 12 = `complement2/hand_7`) et ne changer que les stacks.
+**Tous** les calculs utilisent les réglages des exports `complement` et `complement2`. C'est l'empreinte d'arbre `00a1dd91` dans `data/hrc/README.md`. Le plus simple : ouvrir l'une de ces mains dans la référence (par exemple 12 / 12 / 12 = `complement2/hand_7`) et ne changer que les stacks.
 
 | Réglage | Valeur |
 |---|---|
@@ -20,11 +20,11 @@ La session Claude dans le cloud ne peut pas piloter HRC : elle prépare les entr
 | 4-bets, 5-bets | 90 % ou all-in en position, 120 % ou all-in hors de position |
 | All-in ajouté | SPR préflop 7, seuil 40 % ; postflop SPR 5, mise géométrique 66 %, pas de donk |
 
-**Profondeur d'export :** si HRC propose de choisir les nœuds à exporter, exporter **tous les nœuds préflop**. Les exports actuels s'arrêtent souvent à deux actions ; par exemple, la réponse du SB à un iso-raise du BB manque.
+**Profondeur d'export :** si la référence propose de choisir les nœuds à exporter, exporter **tous les nœuds préflop**. Les exports actuels s'arrêtent souvent à deux actions ; par exemple, la réponse du SB à un iso-raise du BB manque.
 
 ## 1. Calculs GTO manquants (priorité 1) — **reçus le 12 octobre 2026** (`data/hrc/raw/v2/`)
 
-Objectif : une solution HRC à chaque profondeur proposée dans les quiz (4 à 25 BB), toutes avec le même arbre. L'interpolation entre profondeurs coûte trop cher (8 à 64 mBB par main).
+Objectif : une solution de référence à chaque profondeur proposée dans les quiz (4 à 25 BB), toutes avec le même arbre. L'interpolation entre profondeurs coûte trop cher (8 à 64 mBB par main).
 
 | Table | Stacks à calculer | Pourquoi |
 |---|---|---|
@@ -40,7 +40,7 @@ Objectif : une solution HRC à chaque profondeur proposée dans les quiz (4 à 2
 
 Fichiers générés par `python tools/hrc/make_locks.py` dans `data/hrc/locks/` :
 - `manifest.csv` : la liste des calculs, avec priorité ;
-- un dossier par calcul, `<profil>/<table>_<stacks>/hero_<position>/`, qui contient `ranges.txt` (lisible, à coller dans HRC) et `locks.json` (même contenu, pour les scripts).
+- un dossier par calcul, `<profil>/<table>_<stacks>/hero_<position>/`, qui contient `ranges.txt` (lisible, à coller dans la référence) et `locks.json` (même contenu, pour les scripts).
 
 **135 calculs**, dont **45 en priorité P1** (12, 15 et 20 BB) ; la liste a été recalculée après réception de la base v2 :
 - 3 profils : nit, fish, maniac. Le profil Shark est inutile : c'est la solution GTO.
@@ -52,7 +52,7 @@ Procédure pour un calcul :
 2. Pour chaque bloc `=== Nœud ...` de `ranges.txt`, verrouiller ce nœud (joué par l'adversaire indiqué). Coller pour chaque action la range donnée : notation `main:poids`, poids entre 0 et 1, et une main seule vaut 1. Les nœuds du héros restent libres.
 3. Recalculer, puis exporter dans un dossier nommé exactement comme `solve_id` (par exemple `nit_3w_15-15-15_heroBTN`).
 
-**À tester d'abord sur un seul nœud :** si HRC refuse la notation `main:poids` ou attend des pourcentages, indiquez-moi le format accepté et je régénère les fichiers.
+**À tester d'abord sur un seul nœud :** si la référence refuse la notation `main:poids` ou attend des pourcentages, indiquez-moi le format accepté et je régénère les fichiers.
 
 Ils couvrent maintenant toutes les profondeurs de 10 à 25 BB, à 3 joueurs comme en heads-up, base v2 comprise.
 
@@ -78,17 +78,17 @@ Les stratégies affichées dans l'application sont arrondies : action dominante,
 
 ## 5. Précision des calculs (constat sur les exports reçus)
 
-`docs/hrc/VALIDATION_HRC.md` compare l'EV exportée par HRC à l'EV exacte sur les calls d'all-in. En heads-up, le calcul est exact. L'écart moyen croît avec la profondeur :
+`docs/reference/VALIDATION_REFERENCE.md` compare l'EV exportée par la référence à l'EV exacte sur les calls d'all-in. En heads-up, le calcul est exact. L'écart moyen croît avec la profondeur :
 - 7 mBB à 2 BB et 42 mBB à 8 BB ;
 - 100 à 140 mBB à 12–14 BB ;
 - 180 à 210 mBB à 15 BB ;
 - plus de 300 mBB à 18 BB à 3 joueurs (calcul approché à 3 joueurs).
 
-Le bruit vient du Monte-Carlo de HRC sur les nœuds peu fréquents : plus la range de shove adverse est étroite, plus il est fort. Il fausse aussi quelques décisions (J8s payé à 92 % à 15 BB alors que son EV exacte est de −0,22 BB).
+Le bruit vient du Monte-Carlo de la référence sur les nœuds peu fréquents : plus la range de shove adverse est étroite, plus il est fort. Il fausse aussi quelques décisions (J8s payé à 92 % à 15 BB alors que son EV exacte est de −0,22 BB).
 
 Conséquences :
-- **côté application** : les corrections de décisions tout ou rien utilisent l'EV exacte recalculée à partir des ranges HRC, pas l'EV HRC ;
-- **côté HRC, si possible** : relancer les calculs P1 avec une précision plus élevée (temps de calcul ou nombre d'itérations plus grand, selon les réglages de convergence proposés par HRC) et exporter **tous les nœuds préflop**. Les exports v2 s'arrêtent encore à deux actions.
+- **côté application** : les corrections de décisions tout ou rien utilisent l'EV exacte recalculée à partir des ranges de référence, pas l'EV de référence ;
+- **côté de référence, si possible** : relancer les calculs P1 avec une précision plus élevée (temps de calcul ou nombre d'itérations plus grand, selon les réglages de convergence proposés par la référence) et exporter **tous les nœuds préflop**. Les exports v2 s'arrêtent encore à deux actions.
 
 ## 6. Calculs demandés après l'évaluation par un joueur (2026-10-13)
 
@@ -120,7 +120,7 @@ Les 135 calculs verrouillés du §2 couvrent les limps, les limp-relances et les
 
 ### 6.4 Postflop dans les pots limpés (priorité 3)
 
-Pour 15 à 25 BB, pots limpés heads-up et à trois : exports postflop HRC (flop, avec les ranges d'entrée) sur une sélection de textures de board. Le solveur postflop maison n'est pas encore assez précis pour servir de référence (`docs/solver/CONTROLE_ABSTRACTION.md`).
+Pour 15 à 25 BB, pots limpés heads-up et à trois : exports postflop de référence (flop, avec les ranges d'entrée) sur une sélection de textures de board. Le solveur postflop maison n'est pas encore assez précis pour servir de référence (`docs/solver/CONTROLE_ABSTRACTION.md`).
 
 ### 6.5 ICM
 
@@ -146,7 +146,7 @@ Ouvertures à 2 et 2,5 BB en plus de 2,3 BB (BTN) et de 3,5 BB (SB), notamment e
 
 ### 7.4 Précision (priorité 2)
 
-Sur les mains où l'EV exacte existe, l'EV HRC s'en écarte de 58 mBB en médiane et de 251 mBB au 90e centile (3 à 12 fois la tolérance de correction). En attendant des calculs plus précis, l'application ne tire plus les questions HRC dont la leçon coûte moins de 150 mBB (`quiz.HRC_NOISE_MBB`). Des exports à précision plus élevée (plus d'itérations, mode postflop uniforme : certaines profondeurs viennent de `v2/general`, d'autres de `complement2/simple`) permettraient de baisser ce seuil.
+Sur les mains où l'EV exacte existe, l'EV de référence s'en écarte de 58 mBB en médiane et de 251 mBB au 90e centile (3 à 12 fois la tolérance de correction). En attendant des calculs plus précis, l'application ne tire plus les questions de référence dont la leçon coûte moins de 150 mBB (`quiz.REF_NOISE_MBB`). Des exports à précision plus élevée (plus d'itérations, mode postflop uniforme : certaines profondeurs viennent de `v2/general`, d'autres de `complement2/simple`) permettraient de baisser ce seuil.
 
 ## 8. Réception de la base v3 (13 octobre 2026)
 
@@ -165,13 +165,13 @@ Ce qui reste à produire pour terminer le plan de l'évaluation du MVP (`docs/pr
 
 ### 9.1 Précision (priorité 1) : débloque les décisions serrées
 
-Constat : l'EV HRC s'écarte de l'EV exacte de 35 mBB en médiane en heads-up et de 66 mBB à 3 joueurs (jusqu'à 200-300 mBB au 90e centile), à moteur et réglages identiques en v2 et v3. D'où le filtre qui écarte les questions dont la leçon coûte moins de 150 mBB.
+Constat : l'EV de référence s'écarte de l'EV exacte de 35 mBB en médiane en heads-up et de 66 mBB à 3 joueurs (jusqu'à 200-300 mBB au 90e centile), à moteur et réglages identiques en v2 et v3. D'où le filtre qui écarte les questions dont la leçon coûte moins de 150 mBB.
 1. **Test d'abord** sur deux mains : 12 / 12 / 12 et heads-up 12 / 12, en doublant puis en quadruplant le nombre d'itérations (ou la cible de convergence). Je mesure l'écart avec l'EV exacte et j'en déduis le réglage utile.
 2. Puis refaire au réglage retenu toutes les profondeurs symétriques : 4, 6, 8, 10, 12, 14, 15, 16, 18, 20, 22, 25 BB, à 3 joueurs et en heads-up.
 
 ### 9.2 Tapis direct à toutes les profondeurs (priorité 1)
 
-Dans l'arbre actuel, le tapis direct disparaît : pour le SB premier à parler et le BB face à un limp à partir de 16 BB, pour le BTN premier à parler à partir de 20 BB (`PREFLOP_ADD_ALLIN_SPR` 7, `PREFLOP_ALLIN_THRESHOLD` 40). Toujours proposer le tapis jusqu'à 25 BB effectifs : par exemple `PREFLOP_ADD_ALLIN_SPR` à 30 (à vérifier dans HRC). À combiner avec le 9.1 (mêmes mains : 16, 18, 20, 22, 25 BB, à 3 joueurs et en heads-up).
+Dans l'arbre actuel, le tapis direct disparaît : pour le SB premier à parler et le BB face à un limp à partir de 16 BB, pour le BTN premier à parler à partir de 20 BB (`PREFLOP_ADD_ALLIN_SPR` 7, `PREFLOP_ALLIN_THRESHOLD` 40). Toujours proposer le tapis jusqu'à 25 BB effectifs : par exemple `PREFLOP_ADD_ALLIN_SPR` à 30 (à vérifier dans la référence). À combiner avec le 9.1 (mêmes mains : 16, 18, 20, 22, 25 BB, à 3 joueurs et en heads-up).
 
 ### 9.3 Heads-up (priorité 1) : cible de 35 % des questions
 
@@ -194,7 +194,7 @@ Les 135 calculs verrouillés du §2 (dont 45 en P1 : 12, 15 et 20 BB) : profils 
 
 ### 9.7 Postflop minimal (priorité 3)
 
-Pots limpés à 15-25 BB, heads-up et à trois : exports postflop HRC au flop, avec les ranges d'entrée, sur environ 20 textures de board représentatives (sèche, assortie, connectée, paire, haute, basse). C'est la condition pour un contenu « après le flop » qui ne soit pas seulement statistique.
+Pots limpés à 15-25 BB, heads-up et à trois : exports postflop de référence au flop, avec les ranges d'entrée, sur environ 20 textures de board représentatives (sèche, assortie, connectée, paire, haute, basse). C'est la condition pour un contenu « après le flop » qui ne soit pas seulement statistique.
 
 ### 9.8 Hors périmètre sauf décision
 
@@ -206,4 +206,4 @@ Une archive par lot, comme la base v3 (dossier `settings.json` + `nodes/` par ma
 
 ### 9.9 Résultat du test de précision (14/10)
 
-Voir `docs/hrc/TEST_PRECISION_2026-10-14.md` : les 4 exports reçus par configuration ne sont pas plus précis les uns que les autres, mais leur moyenne divise l'écart par 2 environ (bruit aléatoire). Ils utilisaient un arbre sans limp en premier de parole (`ALLOWED_FLATS_PER_RAISE` = `[0, 1, 1, 1, 0]`) : à refaire sur l'arbre de référence `[1, 1, 1, 1, 0]`.
+Voir `docs/reference/TEST_PRECISION_2026-10-14.md` : les 4 exports reçus par configuration ne sont pas plus précis les uns que les autres, mais leur moyenne divise l'écart par 2 environ (bruit aléatoire). Ils utilisaient un arbre sans limp en premier de parole (`ALLOWED_FLATS_PER_RAISE` = `[0, 1, 1, 1, 0]`) : à refaire sur l'arbre de référence `[1, 1, 1, 1, 0]`.

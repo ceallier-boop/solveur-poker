@@ -263,7 +263,7 @@ def difficulty(gap):
 
 
 MIN_STACK_BB, MAX_STACK_BB = 4, 25
-HRC_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 90e centile ≈ 250 mBB (relecture du 2026-10-13)
+REF_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 90e centile ≈ 250 mBB (relecture du 2026-10-13)
 _TEACH = {}
 
 
@@ -280,13 +280,13 @@ def impossible_ev(sp, hand):
 
 def teachable(sp):
     """mains proposables dont la leçon dépasse le bruit du calcul : une action sanctionnée existe et, sur une EV HRC,
-    la moins chère coûte au moins HRC_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
+    la moins chère coûte au moins REF_NOISE_MBB. Les seuils de notation ne changent pas : on ne tire simplement pas les
     questions dont le verdict tiendrait dans l'imprécision de HRC. Le seuil porte sur la moins chère des vraies erreurs : une
     action proche (moins de grading.PERTINENT_MBB) n'empêche pas la question, elle reçoit une nuance."""
     if sp.get('field'): return list(sp['hands'])                  # mode Field : une question = une main (ou aucune)
     k = id(sp)
     if k not in _TEACH:
-        floor = 0.0 if sp['ev_reference'] == 'exact' else HRC_NOISE_MBB
+        floor = 0.0 if sp['ev_reference'] == 'exact' else REF_NOISE_MBB
         out = []; bad = sp.get('_unreliable', ())
         for h in NAMES if not sp.get('_poor') else ():
             x = sp['hands'][h]

@@ -6,9 +6,9 @@ Application d'entraînement au Spin & Go / Expresso. Cahier des charges : `docs/
 
 | Dossier | Contenu |
 |---|---|
-| `spinsacademy/` | moteur : lecture HRC, EV exactes des all-in, import des spots, correction |
-| `data/hrc/raw/` | exports HRC de référence (**jamais embarqués dans l'application**) |
-| `data/hrc/locks/` | stratégies à verrouiller dans HRC pour le mode exploitant |
+| `spinsacademy/` | moteur : lecture de référence, EV exactes des all-in, import des spots, correction |
+| `data/hrc/raw/` | exports de référence (**jamais embarqués dans l'application**) |
+| `data/hrc/locks/` | stratégies à verrouiller dans la référence pour le mode exploitant |
 | `data/datasets/` | datasets publiés, versionnés et immuables |
 | `tools/hrc/` | validation des exports, génération des verrouillages |
 | `legacy/` | travaux antérieurs, en lecture seule |
@@ -18,7 +18,7 @@ Application d'entraînement au Spin & Go / Expresso. Cahier des charges : `docs/
 ```bash
 pip install -r requirements.txt
 python -m pytest -q                                   # tests
-python tools/hrc/validate.py                          # rapport docs/hrc/VALIDATION_HRC.md
+python tools/hrc/validate.py                          # rapport docs/reference/VALIDATION_REFERENCE.md
 python -m spinsacademy.importer --version AAAA.MM.JJ-N  # produit un dataset en staging (à contrôler puis publier dans /admin)
 python -m spinsacademy.catalog gto_preflop/AAAA.MM.JJ-N  # contrôles de publication, hors application
 python tools/hrc/make_locks.py                        # régénère data/hrc/locks/

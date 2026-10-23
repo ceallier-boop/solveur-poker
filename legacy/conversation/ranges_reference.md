@@ -1,6 +1,6 @@
-# Ranges HRC de référence (chip EV, sans ante, SB 0,5 / BB 1)
+# Ranges de référence (chip EV, sans ante, SB 0,5 / BB 1)
 
-Données issues des solutions HRC fournies (arbre min-raise). Les mains jamais atteintes à un nœud sont exclues. Fréquences mixtes entre 5 % et 95 %.
+Données issues des solutions de référence fournies (arbre min-raise). Les mains jamais atteintes à un nœud sont exclues. Fréquences mixtes entre 5 % et 95 %.
 
 ## 3 joueurs, stacks égaux
 

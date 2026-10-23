@@ -24,7 +24,7 @@ J'ai lu en entier environ 170 fiches, sur toutes les strates (situation × tapis
 
 **Bilans.** Pour chaque tranche de tapis, j'ai comparé la part servie dans les séries à la fréquence réelle.
 
-**Ce qui tient.** Les ranges HRC sont propres. Elles évoluent régulièrement d'une profondeur à l'autre et collent au Nash. Exemples en HU, call du BB face au tapis : 73 % à 4 BB (Nash 74 %), 55 % à 6 BB (54 %), 37 % à 10 BB (37 %). Tapis du SB à 4 BB : 74 % (74 %).
+**Ce qui tient.** Les ranges de référence sont propres. Elles évoluent régulièrement d'une profondeur à l'autre et collent au Nash. Exemples en HU, call du BB face au tapis : 73 % à 4 BB (Nash 74 %), 55 % à 6 BB (54 %), 37 % à 10 BB (37 %). Tapis du SB à 4 BB : 74 % (74 %).
 
 En exploitant, les décisions préflop sont presque toutes justes en EV. Le mode « inconnu = rec passif » va dans le sens de Lucky : on paie plus serré à 10-12 BB, on vole plus.
 
@@ -115,7 +115,7 @@ Les problèmes viennent d'ailleurs :
 - **Exploitant : BB face au limp trop servi.** Il occupe 51 % des séries, contre environ 4 % des décisions à 3 et 20 % en HU. Le BTN premier à parler : 8 %. Les tapis 6 et 8 BB font 76 % des séries. À 10-12 BB, 85 % des questions sont des pièges.
 - **Proposition.** Tirer d'abord selon la fréquence réelle. Plafonner les lignes rares à 10 %. Viser environ 60/40 entre adaptations qui élargissent et adaptations qui resserrent.
 
-Je ne suis pas sûr de la part réelle des mains HU contre 3-way ni de la répartition par tapis en Expresso. J'ai utilisé les fréquences HRC du bilan, qui supposent un jeu théorique.
+Je ne suis pas sûr de la part réelle des mains HU contre 3-way ni de la répartition par tapis en Expresso. J'ai utilisé les fréquences de référence du bilan, qui supposent un jeu théorique.
 
 ## 6. Top 10 des priorités
 1. **GTO HU** : refaire l'arbre avec un open à 2 BB à toutes les profondeurs (bloquant).

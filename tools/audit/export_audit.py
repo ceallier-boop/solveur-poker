@@ -7,9 +7,9 @@ Produit :
     la stratégie de référence, les EV, le verdict de chaque option et la correction complète quand on joue l'action de
     référence ; le lexique, les profils postflop ; un guide de lecture.
   - SpinsAcademy_code_moteur.zip : le code (spinsacademy/, tools/, tests/), la documentation et les données de calcul
-    embarquées (matrice d'équités, profils postflop), sans les exports HRC bruts ni les datasets.
+    embarquées (matrice d'équités, profils postflop), sans les exports de référence bruts ni les datasets.
   - SpinsAcademy_datasets.zip : toutes les versions de data/datasets (spots.jsonl et manifest.json), publiées ou non.
-Les exports HRC bruts (data/hrc/raw) ne sont pas inclus : ils restent dans le dépôt.
+Les exports de référence bruts (data/hrc/raw) ne sont pas inclus : ils restent dans le dépôt.
 """
 import csv, io, json, os, subprocess, sys, zipfile
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -89,7 +89,7 @@ Les CSV sont en UTF-8, séparateur « ; » (ouverture directe dans Excel ou Libr
 
 - `mode`, `spot_id`, `jeu_de_donnees` : identification ; `spot_id` permet de retrouver la situation dans `spots.jsonl`.
 - `table`, `tapis_bb` (dans l'ordre BTN / SB / BB, ou SB / BB en heads-up), `position` du joueur, `tapis_effectif_bb` (le plus petit entre son tapis et le plus gros tapis adverse encore en jeu), `famille` (premier à parler, face à un limp, à une relance, à un tapis).
-- `arbre_preflop`, `ouvertures` : arbre HRC d'origine et ses tailles d'ouverture (`daa9aaa0` = arbre de référence, BTN 2,3 BB, SB 3,5 BB).
+- `arbre_preflop`, `ouvertures` : arbre de référence d'origine et ses tailles d'ouverture (`daa9aaa0` = arbre de référence, BTN 2,3 BB, SB 3,5 BB).
 - `historique`, `main`, `options` : ce que voit le joueur (mode exploitant : `enonce`).
 - `strategie_affichee` : la stratégie de référence telle qu'affichée (actions jouées au moins 10 % du temps, arrondies à 5 %).
 - `action_reference` : l'action présentée comme référence ; `action_plus_rentable` : l'action d'EV maximale (elles diffèrent quand l'action la plus jouée vaut l'EV maximale à 0,06 BB près).
@@ -100,19 +100,19 @@ Les CSV sont en UTF-8, séparateur « ; » (ouverture directe dans Excel ou Libr
 
 ## Les deux autres archives
 
-- `SpinsAcademy_code_moteur.zip` : tout le code (moteur de correction `spinsacademy/grading.py`, tirage et textes `spinsacademy/quiz.py`, import HRC `importer.py`, EV exactes `allin.py`, équilibre push/fold `pushfold.py`, mode exploitant `field.py` (moteur : `tools/field/`), API `api.py`, solveur maison `solver/` et `postflop/`, interface `web/`), les tests (`tests/`, `python -m pytest`), les outils et la documentation (`docs/`, dont `docs/audit/RELECTURES_2026-10-13.md`).
+- `SpinsAcademy_code_moteur.zip` : tout le code (moteur de correction `spinsacademy/grading.py`, tirage et textes `spinsacademy/quiz.py`, import de référence `importer.py`, EV exactes `allin.py`, équilibre push/fold `pushfold.py`, mode exploitant `field.py` (moteur : `tools/field/`), API `api.py`, solveur maison `solver/` et `postflop/`, interface `web/`), les tests (`tests/`, `python -m pytest`), les outils et la documentation (`docs/`, dont `docs/audit/RELECTURES_2026-10-13.md`).
 - `SpinsAcademy_datasets.zip` : toutes les versions des datasets (`gto_preflop/<version>/` et `exploit_field/<version>/`, chacune avec `manifest.json` et `spots.jsonl`). Versions publiées : `{gto}` et `{exp}`. Format : `docs/dataset/FORMAT_SPOT.md` et `docs/dataset/EXPLOIT_CALLS.md`.
 
-Les exports HRC bruts ne sont pas dans ce dossier : ils restent dans le dépôt (`data/hrc/raw`, inventaire `data/hrc/README.md`).
+Les exports de référence bruts ne sont pas dans ce dossier : ils restent dans le dépôt (`data/hrc/raw`, inventaire `data/hrc/README.md`).
 """
 
 NOTATION = """# Règles de notation et de tirage
 
-- Regret = EV de l'action la plus rentable − EV de l'action choisie, sur l'EV de référence du spot (exacte si chaque action autre que fold en a une, sinon HRC).
+- Regret = EV de l'action la plus rentable − EV de l'action choisie, sur l'EV de référence du spot (exacte si chaque action autre que fold en a une, sinon de référence).
 - Bonne réponse : regret ≤ {tol} mBB, ou action jouée au moins {mix} % du temps par la stratégie de référence. Imprécision : regret ≤ {imp} mBB. Erreur : au-delà. Points 1 / 0,5 / 0.
-- En EV exacte, la stratégie de référence est l'action la plus rentable (stratégie pure) ; ailleurs, les fréquences HRC.
-- Une main n'est proposée que si elle atteint le nœud (poids ≥ 0,05) et si la stratégie HRC est cohérente avec l'EV de référence (écart ≤ 60 mBB, et toute action jouée au moins 10 % du temps perd au plus 60 mBB).
-- Tirage : il faut une action sanctionnée ; sur une EV HRC, la moins chère doit coûter au moins {noise} mBB (bruit mesuré de HRC) ; tapis effectif du joueur entre {lo} et {hi} BB.
+- En EV exacte, la stratégie de référence est l'action la plus rentable (stratégie pure) ; ailleurs, les fréquences de référence.
+- Une main n'est proposée que si elle atteint le nœud (poids ≥ 0,05) et si la stratégie de référence est cohérente avec l'EV de référence (écart ≤ 60 mBB, et toute action jouée au moins 10 % du temps perd au plus 60 mBB).
+- Tirage : il faut une action sanctionnée ; sur une EV de référence, la moins chère doit coûter au moins {noise} mBB (bruit mesuré de la référence) ; tapis effectif du joueur entre {lo} et {hi} BB.
 - Montants affichés en BB : « <0,02 BB » sous la tolérance ; tout près de 0,02 ou 0,06 BB, trois décimales ou « un peu plus / moins de ».
 - Plusieurs actions à 0,02 BB ou moins de la plus rentable : « plusieurs bonnes décisions ».
 Code : `spinsacademy/grading.py`, `spinsacademy/quiz.py` (fonctions `candidates`, `teachable`, `correct`).
@@ -132,7 +132,7 @@ def main(out):
         z.writestr('LISEZ-MOI.md', GUIDE.format(date=datetime.date.today().isoformat(), commit=commit, n_gto=n_gto, n_exp=n_exp, gto=gto, exp=exp,
                                                 n_lex=n_lex, cat='profils du field : hypothèses du moteur (tools/field/profils_field.py)'))
         z.writestr('notation.md', NOTATION.format(tol=f'{grading.TOLERANCE_MBB:g}', mix=round(100 * grading.MIXED_MIN), imp=f'{3 * grading.TOLERANCE_MBB:g}',
-                                                  noise=quiz.HRC_NOISE_MBB, lo=quiz.MIN_STACK_BB, hi=quiz.MAX_STACK_BB))
+                                                  noise=quiz.REF_NOISE_MBB, lo=quiz.MIN_STACK_BB, hi=quiz.MAX_STACK_BB))
         z.writestr('questions_gto.csv', gto_csv); z.writestr('questions_exploitant.csv', exp_csv); z.writestr('lexique.csv', lex_csv)
         z.write(quiz.POSTFLOP_FILE, 'profils_postflop.json')
     files = subprocess.run(['git', '-C', ROOT, 'ls-files'], capture_output=True, text=True).stdout.split('\n')

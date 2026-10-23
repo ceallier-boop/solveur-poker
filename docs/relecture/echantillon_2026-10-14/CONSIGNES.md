@@ -11,14 +11,14 @@ relecteurs est mesuré ensuite.
 
 ## Ce que fait l'application (à juger, pas à refaire)
 
-- Référence : stratégie d'équilibre calculée par HoldemResources Calculator (HRC), ou EV exacte quand tout le monde est
+- Référence : stratégie d'équilibre calculée par le solveur de référence, ou EV exacte quand tout le monde est
   à tapis. En mode exploitant : meilleure réponse contre un profil fictif dont la fréquence de tapis (ou de call, pour
   la Station d'appel) est déformée par rapport à l'équilibre push/fold, en EV exacte.
-- EV en BB, en chip EV. Les EV HRC sont des estimations (Monte-Carlo) : un bruit d'environ 0,1 BB par main et par action
+- EV en BB, en chip EV. Les EV de référence sont des estimations (Monte-Carlo) : un bruit d'environ 0,1 BB par main et par action
   a été mesuré. C'est pourquoi une action à moins de 0,1 BB de la meilleure est jugée « pertinente ».
 - Verdicts :
   - **correct** : écart à la meilleure action ≤ 0,02 BB, ou action jouée au moins 10 % du temps par la référence ;
-  - **imprécision** : écart entre 0,02 et 0,06 BB, ou (EV HRC) entre 0,06 et 0,1 BB : la correction garde la référence et
+  - **imprécision** : écart entre 0,02 et 0,06 BB, ou (EV de référence) entre 0,06 et 0,1 BB : la correction garde la référence et
     ajoute une « nuance : … est aussi pertinente » ;
   - **erreur** : au-delà.
 - Points : correct 1, imprécision 0,5, erreur 0.
@@ -54,7 +54,7 @@ Règles de jugement :
 
 ## Questions générales (une réponse argumentée chacune, dans `questions_generales.md`)
 
-1. **Seuils de verdict** : 0,02 BB (correct), 0,06 BB (imprécision), 0,1 BB (action pertinente pour une EV HRC). Sont-ils
+1. **Seuils de verdict** : 0,02 BB (correct), 0,06 BB (imprécision), 0,1 BB (action pertinente pour une EV de référence). Sont-ils
    adaptés à 4-25 BB ? Faut-il des seuils différents selon la profondeur ou le format ?
 2. **Stratégies mixtes** : une action jouée au moins 10 % du temps par la référence est acceptée. Seuil adapté ?
 3. **Profils fictifs** : Serré = cote de tapis × 0,5 ; Prudent × 0,7 ; Agressif × 1,4 ; Maniaque × 2 (fréquence p devient
@@ -72,6 +72,6 @@ Règles de jugement :
 - Position : BB 147, BTN 39, SB 114
 - Situation : face à un limp 39, face à un tapis 145, face à une relance 65, premier à parler 51
 - Profondeur : 10_16 132, 17_25 87, lt10 81
-- Source de l'EV : exact 86, hrc 214
+- Source de l'EV : exact 86, référence 214
 - Type de cas : décision nette 221, décision serrée (autre action à moins de 0,1 BB) 55, stratégie mixte 24
 - Verdict de l'erreur la plus tentante : avec erreur 300

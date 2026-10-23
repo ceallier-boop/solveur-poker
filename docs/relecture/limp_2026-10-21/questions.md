@@ -15,7 +15,7 @@
 | Check | +1,59 BB |
 | Tapis (6 BB) | +1,72 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -28,7 +28,7 @@
 - Quand il paie, KQs a 47 % d'équité contre sa range de call (théorie : 44 %) ; contre tout son limp, 60 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +1,59 BB ; tapis +1,72 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 19 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 19 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -59,7 +59,7 @@ Ce qui avantage la range adverse :
 | Check | +1,66 BB |
 | Tapis (6 BB) | +1,88 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -72,7 +72,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, KJs a 53 % d'équité contre sa range de call (théorie : 42 %) ; contre tout son limp, 63 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +1,66 BB ; tapis +1,88 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 22 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 22 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -103,7 +103,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,11 BB |
 | Check | +0,88 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -116,7 +116,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, J7o a 33 % d'équité contre sa range de call (théorie : 28 %) ; contre tout son limp, 53 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +1,11 BB ; check +0,88 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 8 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 8 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -146,7 +146,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,38 BB |
 | Check | +1 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R10
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R10
 
 **Correction**
 
@@ -189,7 +189,7 @@ Ce qui avantage la range adverse :
 | Check | +1,13 BB |
 | Tapis (6 BB) | +1,47 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R9
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R9
 
 **Correction**
 
@@ -232,7 +232,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,23 BB |
 | Check | +0,97 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R10
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R10
 
 **Correction**
 
@@ -274,7 +274,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +0,89 BB |
 | Check | +1,04 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R10
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R10
 
 **Correction**
 
@@ -315,7 +315,7 @@ Ce qui avantage la range adverse :
 | Check | +1,11 BB |
 | Tapis (6 BB) | +1,38 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R10
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R10
 
 **Correction**
 
@@ -358,7 +358,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,55 BB |
 | Check | +1,31 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -371,7 +371,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, Q8s a 46 % d'équité contre sa range de call (théorie : 38 %) ; contre tout son limp, 59 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +1,55 BB ; check +1,31 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 26 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 26 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -401,7 +401,7 @@ Ce qui avantage la range adverse :
 | Check | +1,11 BB |
 | Tapis (6 BB) | +0,84 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R11
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R11
 
 **Correction**
 
@@ -442,7 +442,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,11 BB |
 | Check | +0,98 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -455,7 +455,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, T9s a 42 % d'équité contre sa range de call (théorie : 35 %) ; contre tout son limp, 55 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +1,11 BB ; check +0,98 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 18 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 18 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -485,7 +485,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,58 BB |
 | Check | +1,24 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -498,7 +498,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, QTo a 45 % d'équité contre sa range de call (théorie : 37 %) ; contre tout son limp, 60 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +1,58 BB ; check +1,24 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 16 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 16 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -527,7 +527,7 @@ Ce qui avantage la range adverse :
 | Check | +0,87 BB |
 | Tapis (6 BB) | +0,72 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Tapis (6 BB) · règle R13
+**Réponse du moteur** : Check · action théorique (la référence) : Tapis (6 BB) · règle R13
 
 **Correction**
 
@@ -540,7 +540,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, Q7o a 20 % d'équité contre sa range de call (théorie : 32 %) ; contre tout son limp, 49 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,87 BB ; tapis +0,72 BB.
-- En théorie (HRC), cette main joue déjà check 9 % du temps.
+- En théorie (la référence), cette main joue déjà check 9 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -569,7 +569,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,24 BB |
 | Check | +0,5 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R11
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R11
 
 **Correction**
 
@@ -610,7 +610,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,78 BB |
 | Check | +0,62 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -652,7 +652,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,29 BB |
 | Check | +0,91 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R9
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R9
 
 **Correction**
 
@@ -695,7 +695,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,02 BB |
 | Check | +0,72 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -737,7 +737,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,9 BB |
 | Check | +0,72 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -750,7 +750,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, J5o a 26 % d'équité contre sa range de call (théorie : 27 %) ; contre tout son limp, 47 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +0,9 BB ; check +0,72 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 11 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 11 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -779,7 +779,7 @@ Ce qui avantage la range adverse :
 | Check | +0,68 BB |
 | Tapis (8 BB) | +0,87 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -821,7 +821,7 @@ Ce qui avantage la range adverse :
 | Check | +1,18 BB |
 | Tapis (8 BB) | +1,41 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -834,7 +834,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, K6o a 40 % d'équité contre sa range de call (théorie : 38 %) ; contre tout son limp, 58 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +1,18 BB ; tapis +1,41 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 6 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 6 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -864,7 +864,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,01 BB |
 | Check | +0,78 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -877,7 +877,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, T5s a 20 % d'équité contre sa range de call (théorie : 27 %) ; contre tout son limp, 43 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +1,01 BB ; check +0,78 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 11 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 11 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -907,7 +907,7 @@ Ce qui avantage la range adverse :
 | Check | +1,25 BB |
 | Tapis (8 BB) | +1,5 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -948,7 +948,7 @@ Ce qui avantage la range adverse :
 | Check | +0,82 BB |
 | Tapis (8 BB) | +0,98 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -961,7 +961,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, T5s a 27 % d'équité contre sa range de call (théorie : 27 %) ; contre tout son limp, 45 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,82 BB ; tapis +0,98 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 11 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 11 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -992,7 +992,7 @@ Ce qui avantage la range adverse :
 | Check | +0,8 BB |
 | Tapis (8 BB) | +0,97 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1034,7 +1034,7 @@ Ce qui avantage la range adverse :
 | Check | +0,52 BB |
 | Tapis (8 BB) | +0,8 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -1075,7 +1075,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,57 BB |
 | Check | +1,16 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R9
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R9
 
 **Correction**
 
@@ -1116,7 +1116,7 @@ Ce qui avantage la range adverse :
 | Check | +1,07 BB |
 | Tapis (8 BB) | +1,44 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R10
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R10
 
 **Correction**
 
@@ -1158,7 +1158,7 @@ Ce qui avantage la range adverse :
 | Check | +0,57 BB |
 | Tapis (8 BB) | +0,86 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1200,7 +1200,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,76 BB |
 | Check | +0,76 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R10
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R10
 
 **Correction**
 
@@ -1242,7 +1242,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,74 BB |
 | Check | +1 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R9
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R9
 
 **Correction**
 
@@ -1282,7 +1282,7 @@ Ce qui avantage la range adverse :
 | Check | +1,37 BB |
 | Tapis (6 BB) | +1,6 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1295,7 +1295,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, KTs a 50 % d'équité contre sa range de call (théorie : 43 %) ; contre tout son limp, 62 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +1,37 BB ; tapis +1,6 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 22 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 22 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1324,7 +1324,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,32 BB |
 | Check | +1,09 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R10
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R10
 
 **Correction**
 
@@ -1366,7 +1366,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +0,64 BB |
 | Check | +0,52 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1407,7 +1407,7 @@ Ce qui avantage la range adverse :
 | Check | +0,79 BB |
 | Tapis (6 BB) | +1,04 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1420,7 +1420,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, J7o a 38 % d'équité contre sa range de call (théorie : 27 %) ; contre tout son limp, 53 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,79 BB ; tapis +1,04 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 10 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 10 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1449,7 +1449,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +0,8 BB |
 | Check | +0,93 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Tapis (6 BB) · règle R13
+**Réponse du moteur** : Check · action théorique (la référence) : Tapis (6 BB) · règle R13
 
 **Correction**
 
@@ -1462,7 +1462,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, K4s a 34 % d'équité contre sa range de call (théorie : 34 %) ; contre tout son limp, 52 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +0,8 BB ; check +0,93 BB.
-- En théorie (HRC), cette main joue déjà check 5 % du temps.
+- En théorie (la référence), cette main joue déjà check 5 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1492,7 +1492,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +0,93 BB |
 | Check | +0,74 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1533,7 +1533,7 @@ Ce qui avantage la range adverse :
 | Check | +2,92 BB |
 | Tapis (6 BB) | +2,79 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R10
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R10
 
 **Correction**
 
@@ -1573,7 +1573,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +0,98 BB |
 | Check | +0,84 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1586,7 +1586,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, 97s a 31 % d'équité contre sa range de call (théorie : 27 %) ; contre tout son limp, 49 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +0,98 BB ; check +0,84 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 11 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 11 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1615,7 +1615,7 @@ Ce qui avantage la range adverse :
 | Check | +0,41 BB |
 | Tapis (6 BB) | +0,55 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -1628,7 +1628,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, 43o a 24 % d'équité contre sa range de call (théorie : 21 %) ; contre tout son limp, 32 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,41 BB ; tapis +0,55 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 12 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 12 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1656,7 +1656,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,54 BB |
 | Check | +1,37 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1697,7 +1697,7 @@ Ce qui avantage la range adverse :
 | Tapis (6 BB) | +1,11 BB |
 | Check | +0,77 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Tapis (6 BB) · règle R9
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Tapis (6 BB) · règle R9
 
 **Correction**
 
@@ -1738,7 +1738,7 @@ Ce qui avantage la range adverse :
 | Check | +3,17 BB |
 | Tapis (6 BB) | +2,85 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R11
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R11
 
 **Correction**
 
@@ -1777,7 +1777,7 @@ Ce qui avantage la range adverse :
 | Check | +0,37 BB |
 | Tapis (6 BB) | +0,7 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1817,7 +1817,7 @@ Ce qui avantage la range adverse :
 | Check | +0,75 BB |
 | Tapis (6 BB) | +0,88 BB |
 
-**Réponse du moteur** : Tapis (6 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (6 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -1830,7 +1830,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, 87s a 31 % d'équité contre sa range de call (théorie : 28 %) ; contre tout son limp, 48 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,75 BB ; tapis +0,88 BB.
-- En théorie (HRC), cette main joue déjà tapis (6 BB) 7 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (6 BB) 7 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -1859,7 +1859,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,06 BB |
 | Check | +0,72 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1900,7 +1900,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,76 BB |
 | Check | +0,53 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -1941,7 +1941,7 @@ Ce qui avantage la range adverse :
 | Check | +1,63 BB |
 | Tapis (8 BB) | +1,57 BB |
 
-**Réponse du moteur** : Check · action théorique (HRC) : Check · règle R10
+**Réponse du moteur** : Check · action théorique (la référence) : Check · règle R10
 
 **Correction**
 
@@ -1981,7 +1981,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,06 BB |
 | Check | +0,72 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2022,7 +2022,7 @@ Ce qui avantage la range adverse :
 | Check | +0,62 BB |
 | Tapis (8 BB) | +0,83 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2063,7 +2063,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,95 BB |
 | Check | +0,56 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2076,7 +2076,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, 76o a 30 % d'équité contre sa range de call (théorie : 29 %) ; contre tout son limp, 39 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +0,95 BB ; check +0,56 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 12 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 12 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -2105,7 +2105,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +1,34 BB |
 | Check | +1,04 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R9
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R9
 
 **Correction**
 
@@ -2145,7 +2145,7 @@ Ce qui avantage la range adverse :
 | Check | +1,32 BB |
 | Tapis (8 BB) | +1,62 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R9
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R9
 
 **Correction**
 
@@ -2185,7 +2185,7 @@ Ce qui avantage la range adverse :
 | Check | +0,6 BB |
 | Tapis (8 BB) | +0,88 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2198,7 +2198,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, 63s a 30 % d'équité contre sa range de call (théorie : 29 %) ; contre tout son limp, 37 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : check +0,6 BB ; tapis +0,88 BB.
-- En théorie (HRC), cette main joue déjà tapis (8 BB) 8 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (8 BB) 8 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -2227,7 +2227,7 @@ Ce qui avantage la range adverse :
 | Check | +0,49 BB |
 | Tapis (8 BB) | +0,81 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R0
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R0
 
 **Correction**
 
@@ -2268,7 +2268,7 @@ Ce qui avantage la range adverse :
 | Check | +0,31 BB |
 | Tapis (8 BB) | +0,47 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2307,7 +2307,7 @@ Ce qui avantage la range adverse :
 | Tapis (8 BB) | +0,85 BB |
 | Check | +0,6 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2347,7 +2347,7 @@ Ce qui avantage la range adverse :
 | Check | +0,61 BB |
 | Tapis (8 BB) | +0,93 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Tapis (8 BB) · règle R10
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Tapis (8 BB) · règle R10
 
 **Correction**
 
@@ -2387,7 +2387,7 @@ Ce qui avantage la range adverse :
 | Check | +0,72 BB |
 | Tapis (8 BB) | +1,06 BB |
 
-**Réponse du moteur** : Tapis (8 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (8 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2428,7 +2428,7 @@ Ce qui avantage la range adverse :
 | Tapis (10 BB) | +0,99 BB |
 | Check | +0,48 BB |
 
-**Réponse du moteur** : Tapis (10 BB) · action théorique (HRC) : Check · règle R12
+**Réponse du moteur** : Tapis (10 BB) · action théorique (la référence) : Check · règle R12
 
 **Correction**
 
@@ -2441,7 +2441,7 @@ Ce qui avantage la range adverse :
 - Quand il paie, T4o a 26 % d'équité contre sa range de call (théorie : 28 %) ; contre tout son limp, 42 %.
 - Le check te donne le flop gratuitement, en position. Le tapis vaut mieux quand son limp est large et qu'il se couche ; le check, quand il paie ton tapis avec des mains qui te dominent.
 - EV par rapport au fold : tapis +0,99 BB ; check +0,48 BB.
-- En théorie (HRC), cette main joue déjà tapis (10 BB) 6 % du temps.
+- En théorie (la référence), cette main joue déjà tapis (10 BB) 6 % du temps.
 - À la table, fie-toi aux statistiques observées et à leur nombre d'occasions : un profil se confirme sur la durée.
 
 **Gérer le postflop**
@@ -2469,7 +2469,7 @@ Ce qui avantage la range adverse :
 | Check | +1,77 BB |
 | Tapis (10 BB) | +2,57 BB |
 
-**Réponse du moteur** : Tapis (10 BB) · action théorique (HRC) : Tapis (10 BB) · règle R9
+**Réponse du moteur** : Tapis (10 BB) · action théorique (la référence) : Tapis (10 BB) · règle R9
 
 **Correction**
 

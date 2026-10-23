@@ -4,7 +4,7 @@ Aucune dépendance au modèle préflop : seulement `numpy` et `numba`.
 
 - `postflop_core.py` : ranges à 1 326 combinaisons, équité exacte (cartes bloquées, égalités), main actuelle contre range, catégories, amélioration, tirages.
 - `ref_eval.py` : évaluateur de référence indépendant (meilleure main de 5 cartes parmi les sous-ensembles).
-- `ranges_export.json` : ranges préflop (169 classes) des lignes de flop principales, issues des exports HRC.
+- `ranges_export.json` : ranges préflop (169 classes) des lignes de flop principales, issues des exports de référence.
 - `tests_postflop.py` : `python tests_postflop.py` (environ 1 minute, compilation comprise).
 
 ## Métriques (jamais confondues)
@@ -35,7 +35,7 @@ Carte = rang * 4 + couleur, rang 0..12 (2..A), couleur 0..3 (c, d, h, s). Classe
 `python build_library.py` recalcule la bibliothèque (environ 20 minutes pour 63 flops et 2 lignes).
 
 ## Questions de quiz et tests de l'évaluation AMO
-- `postflop_quiz.py` : génère les questions (avantage de range, mains fortes, nuts, variation à la turn, équité d'une main, tirages). Chaque question porte sa définition, la note « conditionnel aux ranges HRC, pas une recommandation GTO », ses métriques et un hachage de contenu. Une question dont la mesure est à moins de 0,5 point d'un seuil est écartée. Aucune question « amélioration » n'est produite : l'écart maximal entre les deux ranges (2,8 points) reste sous le seuil de 3 points.
+- `postflop_quiz.py` : génère les questions (avantage de range, mains fortes, nuts, variation à la turn, équité d'une main, tirages). Chaque question porte sa définition, la note « conditionnel aux ranges de référence, pas une recommandation GTO », ses métriques et un hachage de contenu. Une question dont la mesure est à moins de 0,5 point d'un seuil est écartée. Aucune question « amélioration » n'est produite : l'écart maximal entre les deux ranges (2,8 points) reste sous le seuil de 3 points.
 - `tests_exact_bruteforce.py` : exactitude indépendante par énumération brute (évaluateur de référence).
 - `verify_postflop_quiz.py` : cohérence (chaque réponse recalculée depuis le noyau, définition présente, explication qui cite la valeur recalculée) et robustesse (structure, cartes bloquées, doublons, 300 quiz de 10 questions, 5 graines). Durée : environ 20 minutes (recalcul des turns), génération de la banque : 13 secondes.
 - Performance pour l'application : servir `postflop_quiz_bank.json` précalculé ; aucun calcul d'équité en ligne (un flop avec deux ranges de 1 200 combinaisons coûte environ 4,5 s).

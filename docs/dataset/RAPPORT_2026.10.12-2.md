@@ -26,7 +26,7 @@ Généré par `python -m spinsacademy.report --version 2026.10.12-2` à partir d
 | `data/hrc/raw/min_raise_3way/hand_13` | arbre préflop différent |
 | `data/hrc/raw/min_raise_3way/hand_14` | arbre préflop différent |
 
-| Export retenu | Table | Stacks (BB) | Postflop HRC | Spots | Questions |
+| Export retenu | Table | Stacks (BB) | Postflop de référence | Spots | Questions |
 |---|---|---|---|---|---|
 | `data/hrc/raw/v2/hand_1` | 3-handed | 8 / 8 / 8 | general | 10 | 1 626 |
 | `data/hrc/raw/v2/hand_2` | 3-handed | 10 / 10 / 10 | general | 11 | 1 783 |
@@ -87,7 +87,7 @@ La publication est refusée au moindre spot invalide. Deux tests injectent volon
 
 ## 3. Couverture
 
-Une main est proposable si elle atteint le nœud (poids ≥ 0.05) et si la stratégie HRC est cohérente avec l'EV de référence (écart ≤ 60 mBB). « Atteintes » compte les mains au-dessus du seuil de poids ; « proposables » retire les incohérentes.
+Une main est proposable si elle atteint le nœud (poids ≥ 0.05) et si la stratégie de référence est cohérente avec l'EV de référence (écart ≤ 60 mBB). « Atteintes » compte les mains au-dessus du seuil de poids ; « proposables » retire les incohérentes.
 
 | Table | Stacks (BB) | Spots | Mains atteintes | Proposables | Retirées pour incohérence |
 |---|---|---|---|---|---|
@@ -146,19 +146,19 @@ Les 169 classes sont proposables dans au moins 235 spots. Les moins représenté
 
 La couverture du catalogue de quiz (répartition réellement servie à l'utilisateur) dépendra du générateur de séries : à mesurer sur ses tirages.
 
-## 4. Comparaison avec HRC
+## 4. Comparaison avec la référence
 
-**Spots à EV exacte (49)** : décisions tout ou rien. Écart moyen entre l'EV HRC et l'EV exacte : **95 mBB**. Dans 137 cas sur 8 281 (1,7 %), l'action majoritaire de HRC perd plus de 20 mBB selon l'EV exacte. La correction suit l'EV exacte.
+**Spots à EV exacte (49)** : décisions tout ou rien. Écart moyen entre l'EV de référence et l'EV exacte : **95 mBB**. Dans 137 cas sur 8 281 (1,7 %), l'action majoritaire de la référence perd plus de 20 mBB selon l'EV exacte. La correction suit l'EV exacte.
 
-**Cohérence interne de HRC** (EV de la meilleure action moins EV de la stratégie HRC, sur l'EV de référence, mains atteintes, pondérées par combos) : médiane 0,5 mBB, 90ᵉ centile 27,0 mBB, 99ᵉ centile 108,9 mBB. Au-delà de 60 mBB, la main n'est pas proposée.
+**Cohérence interne de la référence** (EV de la meilleure action moins EV de la stratégie de référence, sur l'EV de référence, mains atteintes, pondérées par combos) : médiane 0,5 mBB, 90ᵉ centile 27,0 mBB, 99ᵉ centile 108,9 mBB. Au-delà de 60 mBB, la main n'est pas proposée.
 
-Détail par export et par nœud : `docs/hrc/VALIDATION_HRC.md`.
+Détail par export et par nœud : `docs/reference/VALIDATION_REFERENCE.md`.
 
 Limite : à 3 joueurs, l'EV exacte ne retire pas les cartes du joueur qui a foldé (`ev_exact_approximate`). Contrôle indépendant de la matrice d'équité : `spinsacademy/data/equity_169.json`.
 
 ## 5. Notation
 
-Barème : correct ≤ 20 mBB de regret, ou ≤ 60 mBB pour une action jouée au moins 10 % du temps par HRC (spots à EV HRC) ; imprécision ≤ 60 mBB ; erreur au-delà. Regret = EV de la meilleure action − EV de l'action choisie, toutes deux relatives au fold, en mBB, sur l'EV de référence du spot.
+Barème : correct ≤ 20 mBB de regret, ou ≤ 60 mBB pour une action jouée au moins 10 % du temps par la référence (spots à EV de référence) ; imprécision ≤ 60 mBB ; erreur au-delà. Regret = EV de la meilleure action − EV de l'action choisie, toutes deux relatives au fold, en mBB, sur l'EV de référence du spot.
 
 | Verdict | Points | Réponses possibles (spot × main × action) | Part |
 |---|---|---|---|
@@ -170,20 +170,20 @@ Dont 4 271 réponses correctes grâce à la tolérance de stratégie mixte (regr
 
 ### Exemples
 
-| Verdict | Spot | Main | Action | Regret | Fréquence HRC | Meilleure action | Source EV |
+| Verdict | Spot | Main | Action | Regret | Fréquence de référence | Meilleure action | Source EV |
 |---|---|---|---|---|---|---|---|
 | correct | `3w-8-4-4-BTN-allin_SB-fold-80d63e` | 98s | C | 0,0 mBB | 100 % | C | exact |
-| correct | `3w-18-18-18-BTN-raise2.3_SB-fold-26f277` | TT | A | 0,0 mBB | 100 % | A | hrc |
-| correct | `3w-12-12-12-BTN-raise2.3-11a89f` | A3o | F | 22,5 mBB | 54 % | A | hrc |
-| correct | `3w-16-16-16-BTN-fold_SB-call-f3e5f4` | Q6o | R3 | 32,1 mBB | 13 % | X | hrc |
-| imprécision | `hu-10-10-root-a2da5a` | 65s | R3.5 | 36,2 mBB | 7 % | A | hrc |
-| imprécision | `3w-22-22-22-BTN-fold-669553` | T6s | R3.5 | 31,9 mBB | 0 % | C | hrc |
-| imprécision | `3w-18-12-18-root-f6b4e5` | 44 | R2.3 | 32,8 mBB | 0 % | A | hrc |
-| imprécision | `3w-12-12-12-BTN-fold_SB-call-36f31e` | A7o | X | 41,4 mBB | 0 % | A | hrc |
-| erreur | `hu-10-10-SB-call_BB-raise3-d6f260` | 73s | A | 733,6 mBB | 0 % | F | hrc |
-| erreur | `3w-4-8-4-BTN-fold-2763b0` | A2o | F | 889,0 mBB | 0 % | A | hrc |
-| erreur | `3w-10-10-10-BTN-raise2.3_SB-fold-970467` | A7o | C | 384,4 mBB | 10 % | A | hrc |
-| erreur | `3w-18-18-18-BTN-fold-2617f9` | 76s | R3.5 | 140,0 mBB | 2 % | C | hrc |
+| correct | `3w-18-18-18-BTN-raise2.3_SB-fold-26f277` | TT | A | 0,0 mBB | 100 % | A | référence |
+| correct | `3w-12-12-12-BTN-raise2.3-11a89f` | A3o | F | 22,5 mBB | 54 % | A | référence |
+| correct | `3w-16-16-16-BTN-fold_SB-call-f3e5f4` | Q6o | R3 | 32,1 mBB | 13 % | X | référence |
+| imprécision | `hu-10-10-root-a2da5a` | 65s | R3.5 | 36,2 mBB | 7 % | A | référence |
+| imprécision | `3w-22-22-22-BTN-fold-669553` | T6s | R3.5 | 31,9 mBB | 0 % | C | référence |
+| imprécision | `3w-18-12-18-root-f6b4e5` | 44 | R2.3 | 32,8 mBB | 0 % | A | référence |
+| imprécision | `3w-12-12-12-BTN-fold_SB-call-36f31e` | A7o | X | 41,4 mBB | 0 % | A | référence |
+| erreur | `hu-10-10-SB-call_BB-raise3-d6f260` | 73s | A | 733,6 mBB | 0 % | F | référence |
+| erreur | `3w-4-8-4-BTN-fold-2763b0` | A2o | F | 889,0 mBB | 0 % | A | référence |
+| erreur | `3w-10-10-10-BTN-raise2.3_SB-fold-970467` | A7o | C | 384,4 mBB | 10 % | A | référence |
+| erreur | `3w-18-18-18-BTN-fold-2617f9` | 76s | R3.5 | 140,0 mBB | 2 % | C | référence |
 
 Ces exemples sont tirés au hasard (graine fixe) ; ils sont à faire relire par l'expert poker, en particulier les cas « correct » obtenus par la tolérance mixte et les « imprécision ».
 

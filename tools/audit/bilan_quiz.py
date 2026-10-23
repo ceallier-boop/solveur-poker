@@ -1,7 +1,7 @@
 """Bilan des quizz : situations couvertes, nombre de questions, fréquence réelle de chaque situation et part servie.
 
 Fréquence réelle d'une situation (point de décision du héros) : probabilité, sur une main jouée, que l'historique se
-produise, calculée avec les stratégies HRC du dataset GTO (produit des fréquences agrégées de chaque action de
+produise, calculée avec les stratégies de référence du dataset GTO (produit des fréquences agrégées de chaque action de
 l'historique, pondérées par les combos et l'atteinte). Part servie : part des questions tirées sur 3000 séries simulées.
 
 Usage : python tools/audit/bilan_quiz.py docs/relecture/bilan_2026-10-21

@@ -16,7 +16,7 @@ correction affichée quand on joue la référence et quand on fait l'erreur la p
   questions.csv        même contenu, une ligne par question (tableur)
   reponses_modele.csv  grille de réponse à remplir par chaque expert (une ligne par question)
   CONSIGNES.md         consignes communes aux experts, avec les questions générales (seuils, profils, règles)
-Le dossier ne contient aucun export HRC brut ; il contient des EV dérivées d'HRC (droits à clarifier avant diffusion
+Le dossier ne contient aucun export de référence brut ; il contient des EV dérivées de la référence (droits à clarifier avant diffusion
 hors de l'équipe : voir docs/produit/PLAN_EVALUATION_MVP_2026-10-14.md, remarque 27).
 """
 import argparse, collections, csv, datetime, json, math, os, random, subprocess, sys
@@ -112,7 +112,7 @@ def describe(i, x):
 
 def md(q):
     t = [f"## {q['id']} · {q['mode']} · {q['format']} · {q['position']} {q['situation']} · {q['tapis_effectif_bb']} BB · {q['main']}", '',
-         f"Type : {q['type_de_cas']} · EV : {'exacte (tout le monde à tapis)' if q['source_ev'] == 'exact' else 'HRC' if q['source_ev'] == 'hrc' else q['source_ev']}"
+         f"Type : {q['type_de_cas']} · EV : {'exacte (tout le monde à tapis)' if q['source_ev'] == 'exact' else 'la référence' if q['source_ev'] == 'hrc' else q['source_ev']}"
          f" · tapis {q['tapis_bb']}" + (f" · arbre {q['arbre_preflop']}" if q['arbre_preflop'] else ''), '']
     if q['profil']: t += [f"Profil adverse (fictif) : {q['profil']}", '']
     t += [f"**Énoncé** : {q['enonce']}", '', '| Option | EV (BB) | Fréquence de référence | Écart (BB) | Verdict de l\'application |', '|---|---|---|---|---|']
@@ -138,13 +138,13 @@ relecteurs est mesuré ensuite.
 
 ## Ce que fait l'application (à juger, pas à refaire)
 
-- Référence : stratégie d'équilibre calculée par HoldemResources Calculator (HRC), ou EV exacte quand tout le monde est
+- Référence : stratégie d'équilibre calculée par le solveur de référence, ou EV exacte quand tout le monde est
   à tapis.
-- EV en BB, en chip EV. Les EV HRC sont des estimations (Monte-Carlo) : un bruit d'environ 0,1 BB par main et par action
+- EV en BB, en chip EV. Les EV de référence sont des estimations (Monte-Carlo) : un bruit d'environ 0,1 BB par main et par action
   a été mesuré. C'est pourquoi une action à moins de 0,1 BB de la meilleure est jugée « pertinente ».
 - Verdicts :
   - **correct** : écart à la meilleure action ≤ 0,02 BB, ou action jouée au moins 10 % du temps par la référence ;
-  - **imprécision** : écart entre 0,02 et 0,06 BB, ou (EV HRC) entre 0,06 et 0,1 BB : la correction garde la référence et
+  - **imprécision** : écart entre 0,02 et 0,06 BB, ou (EV de référence) entre 0,06 et 0,1 BB : la correction garde la référence et
     ajoute une « nuance : … est aussi pertinente » ;
   - **erreur** : au-delà.
 - Points : correct 1, imprécision 0,5, erreur 0.
@@ -180,7 +180,7 @@ Règles de jugement :
 
 ## Questions générales (une réponse argumentée chacune, dans `questions_generales.md`)
 
-1. **Seuils de verdict** : 0,02 BB (correct), 0,06 BB (imprécision), 0,1 BB (action pertinente pour une EV HRC). Sont-ils
+1. **Seuils de verdict** : 0,02 BB (correct), 0,06 BB (imprécision), 0,1 BB (action pertinente pour une EV de référence). Sont-ils
    adaptés à 4-25 BB ? Faut-il des seuils différents selon la profondeur ou le format ?
 2. **Stratégies mixtes** : une action jouée au moins 10 % du temps par la référence est acceptée. Seuil adapté ?
 3. **Profils fictifs** : Serré = cote de tapis × 0,5 ; Prudent × 0,7 ; Agressif × 1,4 ; Maniaque × 2 (fréquence p devient

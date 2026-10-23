@@ -1,15 +1,15 @@
-# Exports HRC de référence
+# Exports de référence
 
 **Ces fichiers ne doivent jamais être embarqués dans l'application** (frontend, API publique, bundle, datasets publiés). Ils servent uniquement de source pour générer, valider et documenter les datasets. Ils ont été obtenus légalement par le propriétaire du projet.
 
 ## Contenu
 
-Ce dossier contient les mains exportées depuis HRC, toutes préflop (44 dans les premières bases, puis v2 et v3 ci-dessous). Chaque main a un fichier `settings.json` (configuration) et un dossier `nodes/*.json` (un fichier par nœud, avec la stratégie et les EV par classe de main).
+Ce dossier contient les mains exportées depuis la référence, toutes préflop (44 dans les premières bases, puis v2 et v3 ci-dessous). Chaque main a un fichier `settings.json` (configuration) et un dossier `nodes/*.json` (un fichier par nœud, avec la stratégie et les EV par classe de main).
 
 Configuration commune :
 - modèle : chip EV, sans rake ;
 - blinds 0,5 / 1, ante à 0 ;
-- moteur HRC Monte-Carlo ;
+- moteur de référence Monte-Carlo ;
 - tailles : open du BTN à 2,3 BB, open du SB à 3,5 BB, iso-raise du BB à 3 BB, puis all-in.
 
 Seule différence d'arbre entre les dossiers : `min_raise_3way` interdit le limp du BTN.
@@ -65,7 +65,7 @@ La colonne « Clé `hrcdata` » donne la correspondance avec les scripts de `leg
 
 ## Base v2 (12 octobre 2026)
 
-Calculs demandés dans `docs/hrc/EXPORTS_A_PRODUIRE.md` §1. L'arbre préflop est identique à `complement` et `complement2` (empreinte préflop `daa9aaa0`). En revanche, le postflop est en mode « general » (mise flop 66 %, mise à faible SPR « 66g », seuil SPR 2,5) au lieu de « simple ». À 12 / 12 / 12, la comparaison avec `complement2/hand_7` donne les mêmes fréquences globales à 1 ou 2 points près ; l'écart de regret, de 5 à 34 mBB selon le nœud, reste de l'ordre du bruit propre de HRC.
+Calculs demandés dans `docs/reference/EXPORTS_A_PRODUIRE.md` §1. L'arbre préflop est identique à `complement` et `complement2` (empreinte préflop `daa9aaa0`). En revanche, le postflop est en mode « general » (mise flop 66 %, mise à faible SPR « 66g », seuil SPR 2,5) au lieu de « simple ». À 12 / 12 / 12, la comparaison avec `complement2/hand_7` donne les mêmes fréquences globales à 1 ou 2 points près ; l'écart de regret, de 5 à 34 mBB selon le nœud, reste de l'ordre du bruit propre de la référence.
 
 | Dossier | Table | Stacks (BB) | Nœuds | Empreinte préflop |
 |---|---|---|---|---|
@@ -80,11 +80,11 @@ Calculs demandés dans `docs/hrc/EXPORTS_A_PRODUIRE.md` §1. L'arbre préflop es
 | `v2/hand_9` | heads-up | 16 / 16 | 3 | `daa9aaa0` |
 | `v2/hand_10` | heads-up | 22 / 22 | 3 | `daa9aaa0` |
 
-Le contrôle complet (structure et EV) est dans `docs/hrc/VALIDATION_HRC.md` (`python tools/hrc/validate.py`).
+Le contrôle complet (structure et EV) est dans `docs/reference/VALIDATION_REFERENCE.md` (`python tools/hrc/validate.py`).
 
 ## Base v3 (13 octobre 2026)
 
-Reçue après les relectures croisées (`docs/audit/RELECTURES_2026-10-13.md`). 63 mains, **arbre complet** (30 à 73 nœuds par main à 3 joueurs, contre 8 à 11 dans les bases précédentes) : décisions du BTN après sa première action, du SB après avoir complété, pots à trois, squeeze, sur-call. Tapis déséquilibrés des §6.1 et tailles d'ouverture des §6.2 et §7.3 de `docs/hrc/EXPORTS_A_PRODUIRE.md`. Moteur et abstractions identiques à v2 : à tapis égaux, l'écart avec l'EV exacte des calls de tapis est inchangé (par exemple 12 / 12 / 12 : médiane 116 mBB contre 110 en v2, mains atteintes). Le tapis direct du SB au-delà de 16 BB (§7.1) n'y est pas : mêmes réglages d'arbre (`PREFLOP_ADD_ALLIN_SPR` 7, `PREFLOP_ALLIN_THRESHOLD` 40).
+Reçue après les relectures croisées (`docs/audit/RELECTURES_2026-10-13.md`). 63 mains, **arbre complet** (30 à 73 nœuds par main à 3 joueurs, contre 8 à 11 dans les bases précédentes) : décisions du BTN après sa première action, du SB après avoir complété, pots à trois, squeeze, sur-call. Tapis déséquilibrés des §6.1 et tailles d'ouverture des §6.2 et §7.3 de `docs/reference/EXPORTS_A_PRODUIRE.md`. Moteur et abstractions identiques à v2 : à tapis égaux, l'écart avec l'EV exacte des calls de tapis est inchangé (par exemple 12 / 12 / 12 : médiane 116 mBB contre 110 en v2, mains atteintes). Le tapis direct du SB au-delà de 16 BB (§7.1) n'y est pas : mêmes réglages d'arbre (`PREFLOP_ADD_ALLIN_SPR` 7, `PREFLOP_ALLIN_THRESHOLD` 40).
 
 Importeur 1.4.0 : les six arbres ci-dessous sont importés ; à arbre et tapis égaux, v3 passe avant les bases précédentes, et le mode postflop « simple » avant « general » (`hand_1`, `hand_2`, `hand_10` sont donc doublés par `hand_5`, `hand_4`, `hand_33`).
 

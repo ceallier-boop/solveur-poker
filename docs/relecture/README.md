@@ -28,5 +28,5 @@ Déroulé proposé avec trois relecteurs indépendants :
 Si le kappa est inférieur à 0,4, les consignes sont à préciser avant d'exploiter les résultats : un désaccord fort entre
 relecteurs mesure les consignes autant que l'application.
 
-Contenu : EV dérivées d'HRC, sans export brut. À ne pas diffuser hors de l'équipe tant que les droits sur les données
+Contenu : EV dérivées de la référence, sans export brut. À ne pas diffuser hors de l'équipe tant que les droits sur les données
 dérivées ne sont pas clarifiés (remarque 27).
