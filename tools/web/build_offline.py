@@ -5,7 +5,7 @@ l'API) sur un échantillon de mains de chaque spot proposable, puis embarquées 
 un petit moteur local remplace les routes de l'API utilisées par l'interface (séries, questions, réponses, bilan,
 progression) ; la progression reste dans le navigateur (localStorage). Pas de signalement, pas d'adaptation, pas
 d'administration : ce n'est pas l'application de production.
-Usage : python tools/web/build_offline.py sortie.html [--hands-gto 12] [--exploit-max 4500]
+Usage : python tools/web/build_offline.py sortie.html [--hands-gto 12] [--exploit-max 8500]
 """
 import argparse, base64, gzip, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -293,7 +293,7 @@ EXTRA_CSS = """
 """
 
 
-def build(out, k_gto, exploit_max=4500):
+def build(out, k_gto, exploit_max=8500):
     html = open(os.path.join(WEB, 'index.html')).read(); css = open(os.path.join(WEB, 'app.css')).read(); js = open(os.path.join(WEB, 'app.js')).read()
     data = items(quiz.DEFAULT_VERSION, k_gto, field_ref=quiz.DEFAULT_FIELD, field_max=exploit_max)
     grids = {}                                                    # grille de stratégie : une par spot, pas une par réponse
@@ -321,6 +321,6 @@ def build(out, k_gto, exploit_max=4500):
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--hands-gto', type=int, default=12); ap.add_argument('--exploit-max', type=int, default=4500)
+    ap = argparse.ArgumentParser(); ap.add_argument('out'); ap.add_argument('--hands-gto', type=int, default=12); ap.add_argument('--exploit-max', type=int, default=8500)
     a = ap.parse_args(); n, size = build(a.out, a.hands_gto, a.exploit_max)
     print(f'{a.out} : {n} questions, {size // 1024} Kio')

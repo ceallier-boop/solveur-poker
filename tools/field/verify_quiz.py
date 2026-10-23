@@ -22,21 +22,13 @@ for q in qs:
         check('Rec passif' in q['options'] and 'Reg' in q['options'], "v4.2 : rec passif et reg sont deux réponses distinctes", q); continue
     if q['type'] in ('adaptation', 'piège', 'inconnu', 'échantillon'):
         check(q['gain_mBB'] >= 0, "gain négatif", q)
-        ev, evl = q['ev_jeu_vs_fold_mBB'], q.get('ev_limp_vs_fold_mBB')
-        best = {'Fold': 0.0, 'Limp': evl}
-        if 'limp du SB' in q['situation']:              # v4.2 : le BB face au limp, check ou tapis
-            evc = q['ev_check_vs_fold_mBB']
-            check(evc is not None and (ev >= evc if q['bonne_reponse'] == 'Pousser all-in' else evc >= ev), "limp du SB : la réponse n'est pas la meilleure action", q)
-        elif q['bonne_reponse'] == 'Fold':
-            check(ev < 0 and (evl is None or evl < 0), "réponse Fold mais une autre action a une EV >= 0", q)
-        elif q['bonne_reponse'] == 'Limp':
-            check(evl is not None and evl >= max(ev, 0), "réponse Limp mais le limp n'est pas la meilleure action", q)
-        else:
-            check(ev >= 0 and (evl is None or ev >= evl), "réponse de jeu mais une autre action est meilleure", q)
+        evo = q['ev_options_mBB']                       # v4.5 : EV de chaque option (relance comprise)
+        check(set(evo) == set(q['options']), "EV manquante pour une option", q)
+        check(evo[q['bonne_reponse']] >= max(evo.values()) - 1e-9, "la réponse n'est pas l'action la plus rentable", q)
         check(f"Règle {q['regle']}" in q['explication'], "explication sans règle", q)
     if q['type'] in ('adaptation', 'inconnu'):
         check(q['bonne_reponse'] != q['action_GTO'], "adaptation sans changement de décision", q)
-        mult = 3 if (q['action_GTO'] == 'Pousser all-in' and q['bonne_reponse'] == 'Fold' and q['regle'] != 'R16') else 2   # v4.4 : R16 = read significatif
+        mult = 3 if (q['action_GTO'] == 'Pousser all-in' and q['bonne_reponse'] == 'Fold' and q['regle'] not in ('R16', 'R18')) else 2   # v4.4 : R16 = read significatif ; v4.5 : R18 = défense face à un open (R5 vise le premier à parler)
         if q['type'] == 'adaptation':
             check(q['gain_mBB'] >= mult * q['seuil_bruit_mBB'] - 1, f"gain sous {mult} x bruit", q)
     if q['type'] in ('piège', 'échantillon'):
@@ -83,15 +75,17 @@ n_rec = 0; bad = 0
 cache = {}
 for q in qs:
     if q['type'] in ('identification', 'profil'): continue
-    key = (q['kind'], q['situation'], q['stack'], q['facteurs']['shove'], q['facteurs']['call'], q['facteurs'].get('iso', 1.0), q['facteurs'].get('limp_k', 1.0), q['facteurs'].get('limp', True))
+    fa = q['facteurs']
+    key = (q['kind'], q['situation'], q['stack'], fa['shove'], fa['call'], fa.get('iso', 1.0), fa.get('limp_k', 1.0), fa.get('limp', True), fa.get('shape', False))
     if key not in cache:
-        ee.PROFILES.clear(); ee.PROFILES['x'] = dict(shove=q['facteurs']['shove'], call=q['facteurs']['call'], iso=q['facteurs'].get('iso', 1.0), limp_k=q['facteurs'].get('limp_k', 1.0), limp=q['facteurs'].get('limp', True)); ee.INTENSITE = 1.0
+        ee.PROFILES.clear(); ee.PROFILES['x'] = dict(shove=fa['shove'], call=fa['call'], iso=fa.get('iso', 1.0), limp_k=fa.get('limp_k', 1.0),
+                                                     limp=fa.get('limp', True), shape=fa.get('shape', False)); ee.INTENSITE = 1.0
         cache[key] = ee.run_spot(q['kind'], q['stack'], q['situation'], ee.SPOTS[(q['kind'], q['situation'])])['x']
     r = cache[key]; i = NAMES.index(q['hero_hand'])
-    play = 'Payer' if ee.SPOTS[(q['kind'], q['situation'])]['type'] == 'call' else 'Pousser all-in'
-    expl = {'paie': play, 'pousse': play, 'limpe': 'Limp', 'checke': 'Check'}.get(r['expl'][i], 'Fold')
+    expl = qg.LABEL[r['expl'][i]]
     n_rec += 1
-    if expl != q['bonne_reponse'] or abs(1000 * float(r['ev_raw'][i]) - q['ev_jeu_vs_fold_mBB']) > 1.0 or not r['valid'][i]:
+    ev_ok = all(abs(1000 * qg.ev_of(r, i, a) - q['ev_options_mBB'][qg.LABEL[a]]) <= 1.0 for a in qg.acts_of(ee.SPOTS[(q['kind'], q['situation'])], r))
+    if expl != q['bonne_reponse'] or not ev_ok or not r['valid'][i]:
         bad += 1; fails.append(("recalcul différent", q['id']))
 print(f"2) recalcul avec les facteurs enregistrés : {n_rec - bad}/{n_rec} identiques")
 
@@ -133,7 +127,7 @@ def sim_decalage(hero, q_prof, q_gto, c_prof, c_gto, kind, S, N, seed):
 KIND = {"BB face à l'all-in du SB (BTN fold)": 0, "BB face à l'all-in du BTN (SB fold)": 1, "SB face à l'all-in du BTN": 2, "BB face à l'all-in du SB": 0}
 rng = np.random.default_rng(5); diffs = []
 for (kind, name), spec in ee.SPOTS.items():
-    if spec['type'] != 'call': continue
+    if spec['type'] != 'call' or name not in KIND: continue
     for S in (6, 10):
         ee.PROFILES.clear(); ee.PROFILES.update({'m': dict(shove=2.0, call=1.0), 'n': dict(shove=0.5, call=1.0)}); ee.INTENSITE = 1.0
         res = ee.run_spot(kind, S, name, spec)
@@ -152,4 +146,5 @@ for S_ in (6, 10):
     dd = np.array([abs(x[4] - x[5]) for x in diffs if x[1] == S_]); print(f"   stack {S_} BB : écart absolu moyen {1000*dd.mean():.1f} mBB, maximum {1000*dd.max():.1f} mBB")
 fails_total = len(fails)
 print("\nÉCHECS :", fails_total)
-for f in fails[:10]: print("  ", f)
+import collections as _c
+for m, k in _c.Counter(f[0] for f in fails).most_common(): print("  ", k, m, [f[1] for f in fails if f[0] == m][:3])

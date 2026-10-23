@@ -472,9 +472,9 @@ async function reviews() {
   }
 }
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
-  exploit: "Contre les vrais joueurs d'Expresso (4 à 12 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, complète ou paie trop." };
-const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_allin', 'read'] };
-const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16'] };   // exploitant : 4 à 12 BB
+  exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, complète ou paie trop." };
+const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin', 'read'] };
+const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
 function onMode() {
   reviews();
   $('mode-note').textContent = MODE_NOTE[mode()];

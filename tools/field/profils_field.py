@@ -24,13 +24,19 @@ DEFAULT = 'Rec passif (défaut)'
 # la station complètent beaucoup (y compris des mains qu'ils ne poussent pas), le dégène relance ou pousse au lieu de compléter,
 # le nit se couche plus souvent
 PROFILES = {
-    DEFAULT: dict(shove=None, call=None, iso=FIELD_ISO, limp_k=2.0, passif=True, limp=True, pastille='serpillère / rec passif',
+    DEFAULT: dict(shove=None, call=None, iso=FIELD_ISO, limp_k=2.0, passif=True, limp=True, shape=True, pastille='serpillère / rec passif',
                   prevalence=0.55),
-    'Calling station': dict(shove=0.8, call=1.8, iso=0.5, limp_k=2.0, passif=True, limp=True, pastille='calling station', prevalence=0.15),
+    'Calling station': dict(shove=0.8, call=1.8, iso=0.5, limp_k=2.0, passif=True, limp=True, shape=True, pastille='calling station', prevalence=0.15),
     'Dégène': dict(shove=2.0, call=1.3, iso=2.0, limp_k=0.6, passif=False, limp=False, pastille='dégène / agressif', prevalence=0.10),
     'Nit': dict(shove=0.5, call=0.5, iso=0.5, limp_k=0.7, passif=True, limp=False, pastille='nit (jackpot)', prevalence=0.05),
     'Reg': dict(shove=1.0, call=1.0, iso=1.0, limp_k=1.0, passif=False, limp=False, pastille='reg', prevalence=0.15),
 }
+
+# v4.5 (décision du porteur du projet, compromis Lucho / Lucky) : la range de tapis du récréatif n'est pas le haut de la range
+# théorique. Il pousse moins (Lucky : on paie plus serré), mais il complète ou relance une partie de ses grosses mains et garde
+# ses As faibles (Lucho) : la moitié de la réduction porte sur ses mains fortes, l'autre sur ses mains faibles (exploit_engine.rec_shape).
+REC_TOP = 0.5                                      # part de la réduction de tapis prise sur ses mains fortes
+REC_AX = tuple(f'A{r}{s}' for r in '98765432' for s in 'so')
 
 # v4 : paires premium que les coachs divergent à limper entre 5 et 10 BB (R8) : exclues des questions notées
 PREMIUM_PAIRS = ('AA', 'KK', 'QQ', 'JJ')
@@ -59,14 +65,15 @@ def factors(profile, S):
     p = PROFILES[profile]
     sh = p['shove'] if p['shove'] is not None else _interp_log(FIELD_REC, S, 0)
     ca = p['call'] if p['call'] is not None else _interp_log(FIELD_REC, S, 1)
-    return dict(shove=sh, call=ca, iso=p['iso'], limp_k=p['limp_k'], limp=p['limp'])
+    return dict(shove=sh, call=ca, iso=p['iso'], limp_k=p['limp_k'], limp=p['limp'], shape=p.get('shape', False))
 
 
 def posterior(observed, S, n, n0=N0):
     """facteurs effectifs après n occasions observées : moyenne des log-facteurs observé / défaut, pondérée n / n0.
     n = 0 → profil par défaut ; n → ∞ → facteurs observés."""
     prior = factors(DEFAULT, S)
-    out = {'limp': bool(observed.get('limp', prior['limp'])) if n >= n0 else prior['limp']}
+    out = {'limp': bool(observed.get('limp', prior['limp'])) if n >= n0 else prior['limp'],
+           'shape': bool(observed.get('shape', prior['shape'])) if n >= n0 else prior['shape']}
     for k in ('shove', 'call', 'iso', 'limp_k'):
         if k not in observed: out[k] = prior[k]; continue
         lo, lp = math.log(observed[k]), math.log(prior[k])

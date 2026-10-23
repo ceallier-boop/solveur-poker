@@ -5,7 +5,7 @@ Lancement : `python -m uvicorn spinsacademy.api:app --port 8000`. La documentati
 Variables d'environnement :
 - `SPINSACADEMY_DB` : base SQLite des sessions (par défaut `data/app/spinsacademy.sqlite`, hors dépôt) ;
 - `SPINSACADEMY_DATASET` : version du dataset GTO servie (par défaut `2026.10.13-2`) ;
-- `SPINSACADEMY_FIELD` : dataset exploitant servi (par défaut `exploit_field/2026.10.22-1`).
+- `SPINSACADEMY_FIELD` : dataset exploitant servi (par défaut `exploit_field/2026.10.23-1`).
 
 Mode invité au MVP : pas d'authentification. La question 22 du cahier des charges (comptes ou invité) reste à trancher. L'interface génère un identifiant anonyme d'appareil, envoyé dans l'en-tête `X-Player-Id`. Il relie les séries d'un même joueur ; une série créée sans cet en-tête n'entre dans aucune statistique.
 
@@ -43,9 +43,9 @@ La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md
 
 ## Mode exploitant : joueurs du field (`mode: "exploit"`, `spinsacademy/field.py`, dataset `exploit_field`)
 
-`POST /sessions` avec `mode: "exploit"` : questions fixes du moteur exploitant v4.3 (`tools/field`), contre les joueurs du field Expresso (4 à 12 BB). Filtres : `table`, `hero`, `family` (`first_in`, `vs_limp` pour le BB face au limp du SB, `vs_allin`, `read` pour la lecture du vilain), profondeur. Pas de série adaptée ; révision espacée, progression et signalements comme dans les autres modes.
+`POST /sessions` avec `mode: "exploit"` : questions fixes du moteur exploitant v4.5 (`tools/field`), contre les joueurs du field Expresso (4 à 25 BB). Filtres : `table`, `hero`, `family` (`first_in`, `vs_limp` pour le BB face au limp du SB ou du BTN, `vs_raise` pour le BB face à l'open du BTN, `vs_allin`, `read` pour la lecture du vilain), profondeur. Pas de série adaptée ; révision espacée, progression et signalements comme dans les autres modes.
 - `GET /quiz/next` : `question.field` = type (`adaptation`, `inconnu`, `piège`, `échantillon`, `identification`, `profil`), statistiques observées du vilain (`k` sur `n`, observé et théorie), question posée (`ask_fr`) pour la lecture du vilain ; jamais le profil interne.
-- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R15) et son texte, action théorique HRC, gain par rapport à la théorie, EV de chaque option ; `why_fr` = éléments théoriques (cote du pot, équité contre la range, fold equity) ; `next` = « Gérer le postflop » quand la main peut voir un flop (SPR, position, plan en trois consignes `plan`, ce qui aide ta main et la sienne) ; montants en BB.
+- `POST /attempts` : mêmes seuils de notation (0,02 / 0,06 BB, sur les EV par rapport au fold) ; `field` = règle (R0 à R20) et son texte, action théorique HRC, gain par rapport à la théorie, EV de chaque option ; `why_fr` = éléments théoriques (cote du pot, équité contre la range, fold equity) ; `next` = « Gérer le postflop » quand la main peut voir un flop (SPR, position, plan en trois consignes `plan`, ce qui aide ta main et la sienne) ; montants en BB.
 - Détail des corrections et de l'audit : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`.
 
 ## Révision espacée des erreurs (`spinsacademy/review.py`, évaluation du MVP, remarque 21)

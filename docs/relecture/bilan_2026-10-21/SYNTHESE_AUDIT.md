@@ -136,3 +136,39 @@ Effet mesuré (3000 séries simulées) :
 - Recaler le rec passif face au limp (la réponse « tapis » reste majoritaire dans la banque ; le tirage l'équilibre). Il faut un historique de mains du field.
 - Trancher le fold à 10-12 BB contre un inconnu (désaccord Lucho / Lucky).
 - Étendre l'exploitant (13-25 BB, open à 2 BB, iso non all-in, tapis inégaux, limp du BTN) et le postflop : il faut des développements du moteur et des calculs HRC.
+
+## 7. Extension du mode exploitant (23/10/2026, `exploit_field/2026.10.23-1`, moteur v4.5)
+
+**Fold à 10-12 BB : compromis Lucho / Lucky (décision du porteur du projet).** Le rec passif et la calling station poussent aussi peu que le dit leur profil, donc on paie plus serré contre eux (Lucky). Mais leur range de tapis n'est pas le haut de la range théorique (Lucho). La moitié de la réduction porte sur leurs mains fortes, qu'ils complètent ou relancent au lieu de pousser. Ils gardent leurs As faibles.
+
+Résultat en heads-up à 12 BB, en BB par rapport au fold :
+
+| Main | Modèle v4.5 | Ancien modèle | Décision |
+|---|---|---|---|
+| KQo | +0,29 | −0,77 | payer |
+| KJo | +0,21 | −0,79 | payer |
+| A4o | +0,37 | −0,59 | payer |
+| QJo | −0,40 | | fold |
+| T8o | −1,03 | | fold |
+
+**Ce qui est ajouté :**
+
+| Ajout | Détail |
+|---|---|
+| Profondeurs 15, 18, 20 et 25 BB | Partout où les exports HRC ont le nœud et ses EV. Au-delà de 16 BB, les arbres HRC n'ont pas de tapis au SB ni face au limp : les questions y portent sur fold, limp, check ou relance. |
+| Relance non all-in | Open du premier à parler (BTN 2,3 BB, SB 3,5 BB, heads-up 3,5 BB) et iso à 3 BB face au limp du SB. L'EV HRC est décomposée en fold equity et en valeur quand on est payé, puis recalculée contre le vilain. Avec un vilain théorique, on retrouve exactement l'EV HRC. Le limpeur répond à l'iso d'après l'arbre heads-up. 3345 questions proposent la relance. |
+| Nouvelles situations | BB face à l'open du BTN, SB couché (724 questions) ; SB face au tapis du BB après son limp (456) ; BB face au limp du BTN, SB couché (30 seulement : HRC n'a ses EV qu'à 6, 15 et 20 BB, souvent incohérentes). |
+| Tapis inégaux | Affichés en heads-up sur environ 40 % des questions (1233). En chip EV, seul le tapis effectif compte : la réponse ne change pas. Les tapis inégaux à 3 joueurs restent hors domaine. |
+| Nouvelles règles | R17 et R18 (face à un open), R19 et R20 (fold equity d'une relance). R4 est élargie au joueur qui paie trop. |
+| Seuil de bruit remesuré | max(ancien plancher, 90e centile du regret propre de HRC à la même profondeur) : 0,10 BB à 10-12 BB au lieu de 0,24-0,33 BB ; 0,13 à 0,25 BB de 15 à 25 BB. |
+| Volume | 8000 questions : 3278 de 4 à 8 BB, 2488 de 10 à 12 BB, 2234 de 15 à 25 BB. Dont 789 adaptations « plus serré ». |
+| Séries | Nouvelle famille « face à une relance » (10 % des tirages exploitants) ; filtres de profondeur jusqu'à 25 BB. |
+
+**Toujours hors domaine :**
+- les tailles d'open 2 BB (les arbres HRC ouvrent à 2,3 et 3,5 BB) ;
+- le 3-bet non all-in ;
+- le SB face au limp du BTN et les pots limpés à 3 ;
+- les tapis inégaux à 3 joueurs ;
+- les questions de postflop.
+
+Ces points demandent de nouveaux calculs HRC ou un nouveau modèle.

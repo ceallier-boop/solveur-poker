@@ -1,7 +1,7 @@
-"""Mode exploitant : questions contre les joueurs du field Expresso (moteur exploitant v4.4, tools/field).
+"""Mode exploitant : questions contre les joueurs du field Expresso (moteur exploitant v4.5, tools/field).
 
 Le moteur (tools/field, porté du moteur exploitant v4.1 et corrigé après l'audit Lucho / PA / Lucky du 2026-10-20)
-part des exports HRC (stacks de 4 à 12 BB), déforme la stratégie du vilain selon un profil du field (rec passif par
+part des exports HRC (stacks de 4 à 25 BB), déforme la stratégie du vilain selon un profil du field (rec passif par
 défaut, calling station, dégène, nit, reg) et calcule la meilleure réponse en EV. Il produit une banque de questions
 fixes ; ce module la convertit en jeu de données de l'application (data/datasets/exploit_field/<version>/), au format
 des spots (une question = un spot, une seule main) pour que séries, progression, révision et signalements restent
@@ -18,7 +18,7 @@ import argparse, datetime, hashlib, json, os, random, sys
 from . import grading
 from .hrc import ROOT
 
-BUILDER_VERSION = '4.4.0'
+BUILDER_VERSION = '4.5.0'
 OUT = os.path.join(ROOT, 'data', 'datasets', 'exploit_field')
 TOOLS = os.path.join(ROOT, 'tools', 'field')
 SEED = 11
@@ -42,14 +42,20 @@ SITU = {
     ('hu', 'Heads-up : lecture du vilain'): ('BB', [], ['SB']),
     ('hu', 'BB face au limp du SB'): ('BB', [('SB', 'limp')], ['SB']),
     ('3w', 'BB face au limp du SB (BTN fold)'): ('BB', [('BTN', 'fold'), ('SB', 'limp')], ['SB']),
+    ('3w', 'BB face au limp du BTN (SB fold)'): ('BB', [('BTN', 'limp'), ('SB', 'fold')], ['BTN']),
+    ('hu', 'SB face au tapis du BB après son limp'): ('SB', [('SB', 'limp'), ('BB', 'allin')], ['BB']),
+    ('3w', "BB face à l'open du BTN (SB fold)"): ('BB', [('BTN', 'raise'), ('SB', 'fold')], ['BTN']),
 }
-ACTION = {'Payer': ('C', 'call_allin'), 'Pousser all-in': ('A', 'allin'), 'Limp': ('L', 'limp'), 'Fold': ('F', 'fold'), 'Check': ('X', 'check')}
+ACTION = {'Payer': ('C', 'call_allin'), 'Pousser all-in': ('A', 'allin'), 'Limp': ('L', 'limp'), 'Fold': ('F', 'fold'), 'Check': ('X', 'check'),
+          'Relancer': ('R', 'raise')}
 ENGINE = {'paie': 'Payer', 'pousse': 'Pousser all-in', 'limpe': 'Limp', 'fold': 'Fold', 'checke': 'Check'}
-VERB = {'C': 'payer', 'A': 'tapis', 'L': 'compléter (limp)', 'F': 'fold', 'X': 'check'}
+VERB = {'C': 'payer', 'A': 'tapis', 'L': 'compléter (limp)', 'F': 'fold', 'X': 'check', 'R': 'relancer'}
 LEAK_FR = {'pousse trop souvent': 'part à tapis trop souvent', 'ne pousse pas assez': 'ne part pas assez à tapis',
            'paie trop souvent': 'paie trop souvent', 'ne paie pas assez': 'ne paie pas assez',
            'complète trop souvent': 'complète trop souvent', 'ne complète pas assez': 'ne complète pas assez',
-           'paie souvent ton tapis': 'paie souvent ton tapis après son limp', 'se couche souvent face au tapis': 'se couche souvent face au tapis après son limp'}
+           'paie souvent ton tapis': 'paie souvent ton tapis après son limp', 'se couche souvent face au tapis': 'se couche souvent face au tapis après son limp',
+           'ouvre trop souvent': 'ouvre trop souvent', "n'ouvre pas assez": "n'ouvre pas assez",
+           'défend trop face à ta relance': 'défend trop face à ta relance', 'se couche trop face à ta relance': 'se couche trop face à ta relance'}
 
 
 def _engine():
@@ -85,6 +91,12 @@ def _stats(q, hero, vill):
             label = f'Limps du {vill[0]} (il complète)'
         elif s['stat'] == 'call_after_limp_pct':
             label = 'Calls de ton tapis après son limp'
+        elif s['stat'] == 'jam_over_limp_pct':
+            label = 'Tapis du BB sur ton limp'
+        elif s['stat'] == 'open_pct':
+            label = f'Relances du {vill[0]} (ouverture)'
+        elif s['stat'] == 'defend_pct':
+            label = 'Défense face à ta relance'
         else:
             label = f'Calls du {vill[0]} face à ton tapis'
         out.append(dict(stat=s['stat'], label_fr=label, k=s['k'], n=s['n'], observed_pct=s['observed_pct'], gto_pct=s['gto_pct']))
@@ -100,7 +112,8 @@ def _read_sentence(q, stats, vill):
         if s['stat'] == 'call_after_limp_pct':
             parts.append(f"face à un tapis après son limp, il a payé {s['k']} fois sur {s['n']} ({pct(s['observed_pct'])} % ; théorie : {pct(s['gto_pct'])} %)")
             continue
-        verb = {'shove_pct': 'est parti à tapis', 'call_pct': 'a payé ton tapis', 'limp_pct': 'a complété'}.get(s['stat'], "a payé ton tapis quand le SB s'était couché")
+        verb = {'shove_pct': 'est parti à tapis', 'call_pct': 'a payé ton tapis', 'limp_pct': 'a complété', 'jam_over_limp_pct': 'est parti à tapis sur ton limp',
+                'open_pct': 'a relancé', 'defend_pct': 'a défendu face à ta relance'}.get(s['stat'], "a payé ton tapis quand le SB s'était couché")
         who = f"le {vill[0]}" if s['stat'] != 'call_pct_bb_sb_fold' else 'le BB'
         parts.append(f"{who} {verb} {s['k']} fois ({pct(s['observed_pct'])} % ; théorie : {pct(s['gto_pct'])} %)")
     return f"Sur {n} occasions dans cette situation, " + ' ; '.join(parts) + '.'
@@ -111,23 +124,46 @@ def _hand_display(h):
     return hand_display(h) if h else ''
 
 
+COVER_SHARE = 0.4        # v4.5 : part des questions heads-up affichées avec des tapis inégaux
+
+
+def _cover(q):
+    """tapis du joueur qui couvre (heads-up), ou None : tirage déterministe par question"""
+    h = int(hashlib.md5(q['id'].encode()).hexdigest()[:8], 16)
+    if q['type'] == 'profil' or (h % 1000) / 1000 >= COVER_SHARE: return None
+    S = float(q['stack']); r = (1.5, 2.0, 3.0)[h % 3]
+    return float(min(round(S * r), 60))
+
+
+def cover_seat(q, hero, vill):
+    """qui couvre l'autre : le héros ou le vilain, à parts égales"""
+    return hero if int(hashlib.md5(q['id'].encode()).hexdigest()[8:16], 16) % 2 else vill[0]
+
+
 def to_spot(q, qg):
     """une question de la banque du moteur -> un spot de l'application"""
     from .quiz import PREFLOP_ORDER, bb
     kind, S = q['kind'], float(q['stack'])
     hero, hist0, vill = SITU[(kind, q['situation'])]
     players = list(PREFLOP_ORDER[3 if kind == '3w' else 2]); stacks = [S] * len(players)
-    history = [dict(position=p, action=a, **({'to_bb': S} if a == 'allin' else {'to_bb': 1.0} if a == 'limp' else {})) for p, a in hist0]
+    cover = _cover(q) if kind == 'hu' else None            # v4.5 : tapis inégaux en heads-up (en chip EV, seul le tapis effectif compte)
+    if cover: stacks = [cover if p == cover_seat(q, hero, vill) else S for p in players]
+    opened = q.get('open_bb') or 2.3
+    history = [dict(position=p, action=a, **({'to_bb': stacks[players.index(p)]} if a == 'allin' else {'to_bb': 1.0} if a == 'limp'
+                                              else {'to_bb': opened} if a == 'raise' else {})) for p, a in hist0]
     commit = dict(zip(players, [0.0, 0.5, 1.0] if len(players) == 3 else [0.5, 1.0]))
     for h in history:
         if 'to_bb' in h: commit[h['position']] = h['to_bb']
-    pot = sum(commit.values()); to_call = max(commit.values()) - commit[hero]
+    pot = sum(commit.values()); to_call = min(max(commit.values()), S) - commit[hero]
     hand = q.get('hero_hand') or ''
     stats = _stats(q, hero, vill)
     table = '3 joueurs' if kind == '3w' else 'Heads-up'
-    lines = [f"{table}, tapis {' / '.join(bb(x) for x in stacks)} BB ({' / '.join(players)})."]
+    lines = [f"{table}, tapis {' / '.join(bb(x) for x in stacks)} BB ({' / '.join(players)})." + (f" Tapis effectif : {bb(S)} BB." if cover else '')]
     for h in history:
-        lines.append({'fold': f"Le {h['position']} se couche.", 'limp': f"Le {h['position']} complète."}.get(h['action'], f"Le {h['position']} part à tapis ({bb(S)} BB)."))
+        me = h['position'] == hero
+        a = h['action']
+        lines.append(f"Le {h['position']} se couche." if a == 'fold' else ('Tu complètes.' if me else f"Le {h['position']} complète.") if a == 'limp'
+                     else f"Le {h['position']} relance à {bb(h['to_bb'])} BB." if a == 'raise' else f"Le {h['position']} part à tapis ({bb(h['to_bb'])} BB).")
     read = _read_sentence(q, stats, vill)
     if q['type'] == 'profil':
         lines.append(f"Sur {q['observations']} occasions, ce vilain est parti à tapis {stats[0]['k']} fois quand il était au SB "
@@ -140,18 +176,21 @@ def to_spot(q, qg):
     if ask: lines.append(ask)
     else: lines.append(f"Tu es au {hero} avec {_hand_display(hand)}. Que fais-tu ?")
     if hand and q['type'] != 'identification':
-        options = []
+        options = []; evo = q.get('ev_options_mBB') or {}
         for lab in q['options']:
             aid, typ = ACTION[lab]
-            ev = 0.0 if aid == 'F' else (q['ev_limp_vs_fold_mBB'] if aid == 'L' else q['ev_check_vs_fold_mBB'] if aid == 'X' else q['ev_jeu_vs_fold_mBB'])
-            options.append(dict(id=aid, type=typ, to_bb=(S if typ in ('allin', 'call_allin') else 1.0 if typ in ('limp', 'check') else None), ev_mbb=ev))
+            if typ == 'call_allin' and not any(a == 'allin' for _, a in hist0): typ = 'call'      # payer une relance, pas un tapis
+            ev = evo[lab] if lab in evo else 0.0 if aid == 'F' else (q['ev_limp_vs_fold_mBB'] if aid == 'L' else q['ev_check_vs_fold_mBB'] if aid == 'X' else q['ev_jeu_vs_fold_mBB'])
+            to = (S if typ in ('allin', 'call_allin') else 1.0 if typ in ('limp', 'check') else q.get('relance_bb') if typ == 'raise'
+                  else opened if typ == 'call' else None)
+            options.append(dict(id=aid, type=typ, to_bb=to, ev_mbb=ev))
         correct = ACTION[q['bonne_reponse']][0]; gto = ACTION[q['action_GTO']][0] if q.get('action_GTO') else None
         acceptable = [ACTION[x][0] for x in q.get('acceptables', [])]
     else:
         options = [dict(id='ABCDE'[k], type='choice', label_fr=lab, ev_mbb=None) for k, lab in enumerate(q['options'])]
         correct = next(o['id'] for o in options if o['label_fr'] == q['bonne_reponse']); gto = None; acceptable = []
     fam = ('read' if q['type'] in ('profil', 'identification') else 'vs_allin' if any(a == 'allin' for _, a in hist0)
-           else 'vs_limp' if any(a == 'limp' for _, a in hist0) else 'first_in')
+           else 'vs_raise' if any(a == 'raise' for _, a in hist0) else 'vs_limp' if any(a == 'limp' for _, a in hist0) else 'first_in')
     sp = dict(spot_id=q['id'], dataset_kind='field', table='3-handed' if kind == '3w' else 'heads-up', players=players, stacks_bb=stacks,
               blinds_bb={'sb': 0.5, 'bb': 1.0}, ante_bb=0.0, model='chip_ev', hero=hero, node_key=q['situation'], history=history,
               pot_bb=pot, to_call_bb=to_call, hero_committed_bb=commit[hero], effective_stack_bb=S, field_family=fam,
@@ -167,7 +206,7 @@ def to_spot(q, qg):
                          theory=q.get('theorie') if q['type'] not in READ else None, postflop=q.get('postflop') if q['type'] not in READ else None,
                          engine_explanation_fr=q['explication'], data_level=q['niveau_donnees'], weight=q.get('poids', 1.0),
                          internal_profile=q['profil']),
-              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.4)', engine_id=q['id'],
+              provenance=dict(builder=BUILDER_VERSION, engine='tools/field (moteur exploitant v4.5)', engine_id=q['id'],
                               intensity=q.get('intensite', 1.0), factors=q.get('facteurs')))
     return sp
 
@@ -191,13 +230,15 @@ def publish(version, out=OUT, seed=SEED):
              builder=BUILDER_VERSION, scale=qg.SCALE, n_target=qg.N_TARGET, seed=seed, spots=len(items), questions_eligible=len(items), spots_sha256=digest,
              by_type=dict(Counter(i['field']['type'] for i in items)), by_rule=dict(Counter(i['field']['rule'] for i in items)),
              noise_mbb={str(k): round(1000 * v) for k, v in qg.ee.NOISE_BB.items()}, rules=qg.RULES,
-             reference_fr="Exports HRC (chip EV, blinds 0,5 / 1, sans ante), stacks de 4 à 12 BB ; profils du field (hypothèses, non mesurées)",
-             caveats_fr=["Facteurs des profils : hypothèses, à recaler sur de vraies mains (tools/field/calibrate_profiles.py).",
-                         "Limp du SB : EV estimée en heads-up (décomposition de l'EV HRC), borne basse en BvB à 3 joueurs. Check du BB sur un limp : EV HRC corrigée de l'écart d'équité.",
-                         "Domaine : tout ou rien, limp du SB, check ou tapis du BB sur un limp ; stacks égaux de 4 à 12 BB ; min-raise et iso non all-in exclus "
-                         "(les mains que HRC isole à 3 BB au moins 30 % du temps sont retirées).",
-                         "Banque x 10 : le volume prime sur les proportions. Les parts de référence sont visées d'abord, puis la banque est complétée "
-                         "sans plafond (le rec passif et le vilain inconnu manquent de candidats) ; le tirage des séries reste pondéré par la part de chaque profil dans le field."],
+             reference_fr="Exports HRC (chip EV, blinds 0,5 / 1, sans ante), stacks de 4 à 25 BB ; profils du field (hypothèses, non mesurées)",
+             caveats_fr=["Facteurs des profils : hypothèses, à recaler sur de vraies mains (tools/field/calibrate_profiles.py). Au-delà de 12 BB, ceux de 12 BB.",
+                         "Range de tapis du rec passif et de la station : la moitié des monstres limpés, les As faibles gardés (compromis Lucho / Lucky).",
+                         "Limp du SB : EV estimée en heads-up (décomposition de l'EV HRC), borne basse en BvB à 3 joueurs. Check du BB sur un limp, call d'un open : EV HRC corrigée de l'écart d'équité.",
+                         "Relance non all-in (open, iso) : EV HRC décomposée en fold equity (pot gagné quand tout le monde se couche) et valeur quand on est payé ; "
+                         "la réponse du limpeur à l'iso est lue dans l'arbre heads-up. Tailles des arbres HRC : open 2,3 BB au BTN, 3,5 BB au SB et en heads-up, iso 3 BB.",
+                         "Au-delà de 16 BB, les arbres HRC n'ont pas de tapis au SB ni face au limp : fold, limp, check ou relance.",
+                         "Tapis inégaux affichés en heads-up seulement : en chip EV, seul le tapis effectif compte.",
+                         "Seuil de bruit : max(ancien plancher, P90 du regret propre de HRC à la même profondeur)."],
              audit='docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md', status='staging')
     json.dump(m, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return m
@@ -238,27 +279,46 @@ def theory_lines(sp, f, lab, hand):
     if not t or not hand: return []
     out = []
     if t['kind'] == 'call':
-        out.append(f"Tu paies {num(t['call_bb'])} BB pour un pot de {num(t['pot_bb'])} BB : il te faut {pct(t['need_pct'])} % d'équité.")
+        out.append((f"Tu as déjà mis 1 BB en complétant : tu paies {num(t['call_bb'])} BB de plus pour un pot de {num(t['pot_bb'])} BB, il te faut {pct(t['need_pct'])} % d'équité."
+                    if t.get('after_limp') else f"Tu paies {num(t['call_bb'])} BB pour un pot de {num(t['pot_bb'])} BB : il te faut {pct(t['need_pct'])} % d'équité."))
         behind = sp['hero'] == 'SB' and sp['table'] == '3-handed'          # v4.4 (audit) : le BB peut encore payer ou surenchérir
         verdict = (("au-dessus de la cote, mais le BB parle encore derrière : il faut une marge." if t['eq_pct'] >= t['need_pct'] else "pas assez, même sans le BB derrière.")
                    if behind else ("assez pour payer." if t['eq_pct'] >= t['need_pct'] else "pas assez pour payer."))
         out.append(f"Il pousse environ {pct(t['range_pct'])} % de ses mains (théorie : {pct(t['range_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_pct'])} % d'équité : " + verdict)
-    elif t['kind'] == 'shove':
-        who = 'tout le monde se couche' if t['win_bb'] == 1.5 else 'il se couche'
-        out.append(f"Face à ton tapis, {who} environ {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : "
-                   f"tu gagnes {'1,5 BB' if t['win_bb'] == 1.5 else '1 BB'} sans abattage.")
-        out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+    elif t['kind'] in ('shove', 'open'):
+        if t['kind'] == 'shove':
+            who = 'tout le monde se couche' if t['win_bb'] == 1.5 else 'il se couche'
+            out.append(f"Face à ton tapis, {who} environ {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : "
+                       f"tu gagnes {'1,5 BB' if t['win_bb'] == 1.5 else '1 BB'} sans abattage.")
+            out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+        else:
+            out.append(f"Il défend environ {pct(t['defend_pct'])} % de ses mains face à une relance (théorie : {pct(t['defend_gto_pct'])} %). "
+                       f"Quand il défend, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+        if t.get('raise_bb'):
+            out.append(f"Face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche environ {pct(t['raise_fold_pct'])} % du temps "
+                       f"(théorie : {pct(t['raise_fold_gto_pct'])} %) : une petite relance gagne les mêmes blindes pour moins cher.")
         if t.get('iso_pct') is not None:
             out.append(f"Si tu complètes, il relance environ {pct(t['iso_pct'])} % du temps (théorie : {pct(t['iso_gto_pct'])} %) : "
                        "moins il relance, plus le limp est rentable.")
     elif t['kind'] == 'iso':
-        out.append(f"Il complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Face à ton tapis, il se couche "
-                   f"{pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends le pot de 2 BB.")
-        out.append(f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
-        out.append("Après un check, tu parles en premier au flop (il est au bouton) : ta main rapporte moins. D'où plus de tapis en heads-up."
-                   if sp['table'] == 'heads-up' else
-                   "Après un check, tu parles en dernier au flop : tes mains jouables rapportent plus. D'où plus de checks qu'en heads-up.")
+        who = t.get('limper', 'SB')
+        out.append(f"Le {who} complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
+                   f"{pct(t['eq_limp_pct'])} % d'équité.")
+        if t.get('has_jam', True):
+            out.append(f"Face à ton tapis, il se couche {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends le pot de "
+                       f"{num(t.get('win_bb', 2.0))} BB. Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
+        if t.get('raise_bb'):
+            out.append(f"Face à une iso à {num(t['raise_bb'])} BB, il se couche environ {pct(t['raise_fold_pct'])} % du temps (théorie : "
+                       f"{pct(t['raise_fold_gto_pct'])} %).")
+        out.append("Après un check, tu parles en premier au flop : ta main rapporte moins. D'où plus d'agressivité."
+                   if (f.get('postflop') or {}).get('position') == 'OOP' or (sp['table'] == 'heads-up' and not f.get('postflop')) else
+                   "Après un check, tu parles en dernier au flop : tes mains jouables rapportent plus.")
+    elif t['kind'] == 'vsopen':
+        out.append(f"Le BTN ouvre environ {pct(t['open_pct'])} % de ses mains (théorie : {pct(t['open_gto_pct'])} %). Contre ces mains, {hand} a "
+                   f"{pct(t['eq_open_pct'])} % d'équité.")
+        out.append(f"Face à ton tapis, il se couche {pct(t['fold_pct'])} % du temps (théorie : {pct(t['fold_gto_pct'])} %) : tu prends {num(t['win_bb'])} BB. "
+                   f"Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
     return out
 
 
@@ -287,9 +347,10 @@ def postflop_section(sp, f, hand):
     if not p or not hand: return None
     pf = postflop_profile(hand); pc = lambda x: f"{round(100 * x)} %"
     S = sp['effective_stack_bb']; hero = sp['hero']; hu = sp['table'] == 'heads-up'
-    ip = (hero == 'SB') == hu                     # heads-up : le SB est au bouton ; à 3 (BvB) : le BB parle en dernier
-    line = "tu checkes son limp" if hero == 'BB' else "il checke derrière ton limp"
-    intro = (f"Si le coup va au flop ({line}) : pot de 2 BB, il reste {bb(S - 1)} BB chacun, soit {num(p['spr'])} fois le pot (SPR). "
+    ip = p['position'] == 'IP' if p.get('line') else (hero == 'SB') == hu   # v4.5 : position fournie par le moteur (BB face au BTN : hors de position)
+    line = ("tu paies son ouverture" if p.get('line') == 'vsopen' else "tu checkes son limp" if hero == 'BB' else "il checke derrière ton limp")
+    pot, left = p.get('pot_bb', 2.0), p.get('left_bb', S - 1)
+    intro = (f"Si le coup va au flop ({line}) : pot de {num(round(pot, 2))} BB, il reste {bb(left)} BB chacun, soit {num(p['spr'])} fois le pot (SPR). "
              + ("Une paire max ou un gros tirage suffit pour mettre tapis." if p['spr'] <= 3
                 else "Paire max bon kicker : tapis. Paire moyenne : petites mises."))
     position = ("Tu parles en dernier : tu vois ce qu'il fait avant de jouer." if ip
@@ -371,7 +432,7 @@ def correct(sp, action_id):
                 why_fr=why, next=postflop_section(sp, f, hand), range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines))
 
 
-FAMILY_SHARE = {'first_in': 0.33, 'vs_allin': 0.38, 'vs_limp': 0.24, 'read': 0.05}   # v4.4 (audit) : parts visées par famille
+FAMILY_SHARE = {'first_in': 0.31, 'vs_allin': 0.33, 'vs_limp': 0.21, 'vs_raise': 0.10, 'read': 0.05}   # v4.4 (audit), v4.5 : face à l'open
 
 
 def draw(spots, size, seed=None, filters=None):

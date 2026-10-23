@@ -39,10 +39,10 @@ def test_audit_corrections_v4_2():
     spots = list(_spots().values()); F = [s['field'] for s in spots]
     # 1. HU contre un rec inconnu : le limp n'est plus sous-évalué (8 questions « pousser » rejetées par Lucho et PA)
     unknown_hu = [s for s in spots if s['field']['type'] == 'inconnu' and s['table'] == 'heads-up' and s['hero'] == 'SB']
-    assert sum(s['field']['correct'] == 'L' for s in unknown_hu) > 0.8 * len(unknown_hu)
+    assert sum(s['field']['correct'] in ('L', 'R') for s in unknown_hu) > 0.8 * len(unknown_hu)   # v4.5 : limp ou petite relance, pas le tapis
     for s in unknown_hu:
-        if s['field']['correct'] == 'A':
-            ev = {o['id']: o['ev_mbb'] for o in s['field']['options']}
+        ev = {o['id']: o['ev_mbb'] for o in s['field']['options']}
+        if s['field']['correct'] == 'A' and 'L' in ev:
             assert ev['A'] - ev['L'] >= s['field']['noise_mbb'] - 1                                # un tapis ne gagne que nettement
     # 2. rec passif et reg sont deux pastilles
     prof = [f for f in F if f['type'] == 'profil']
@@ -135,8 +135,10 @@ def test_limp_situations_theory_and_postflop():
     spots = list(_spots().values())
     limp = [s for s in spots if s['field_family'] == 'vs_limp']
     assert len(limp) >= 60 and {s['table'] for s in limp} == {'heads-up', '3-handed'}
-    assert all({o['id'] for o in s['field']['options']} == {'X', 'A'} for s in limp)             # check ou tapis sur le limp du SB
-    assert all(s['history'][-1]['action'] == 'limp' and s['hero'] == 'BB' for s in limp)
+    ids = lambda s: {o['id'] for o in s['field']['options']}
+    assert all('X' in ids(s) and ids(s) <= {'X', 'A', 'R'} and len(ids(s)) >= 2 for s in limp)    # check, tapis ou iso à 3 BB (v4.5)
+    assert any('R' in ids(s) for s in limp) and any(s['effective_stack_bb'] >= 15 for s in limp)
+    assert all([h for h in s['history'] if h['action'] != 'fold'][-1]['action'] == 'limp' and s['hero'] == 'BB' for s in limp)
     assert len(spots) >= 400
     banned = ('coach', 'Lucho', 'Lucky', 'marge de précision', 'bruit', 'borne basse', 'incertitude')
     for sp in spots[::3]:
@@ -147,11 +149,12 @@ def test_limp_situations_theory_and_postflop():
             assert not any(b in text for b in banned), (sp['spot_id'], [b for b in banned if b in text])
             if sp['field']['type'] not in field.READ:
                 assert any("d'équité" in l for l in r['why_fr'])                                # éléments théoriques chiffrés
-            if any(x['id'] in ('L', 'X') for x in sp['field']['options']) and sp['field']['type'] not in field.READ:
+            if (any(x['id'] in ('L', 'X') for x in sp['field']['options']) or sp['field_family'] == 'vs_raise') and sp['field']['type'] not in field.READ:
                 n = r['next']; assert n and n['title_fr'] == 'Gérer le postflop' and n['plus_fr'] and n['minus_fr']
                 assert 'SPR' in n['intro'] and n['forces'] and len(n['plan']) == 3
                 hu_bb = sp['table'] == 'heads-up' and sp['hero'] == 'BB'
-                assert ('premier' in n['position']) == (hu_bb or (sp['table'] == '3-handed' and sp['hero'] == 'SB'))   # heads-up : le SB est au bouton
+                vs_btn = any(h['position'] == 'BTN' and h['action'] in ('limp', 'raise') for h in sp['history'])   # le BTN parle après le BB
+                assert ('premier' in n['position']) == (hu_bb or (sp['table'] == '3-handed' and (sp['hero'] == 'SB' or vs_btn)))   # heads-up : le SB est au bouton
             elif sp['field']['type'] not in field.READ:
                 assert r['next'] is None                                                        # tout à tapis : pas de postflop
 
@@ -171,3 +174,24 @@ def test_audit_corrections_v4_4():
     assert len(tight) >= 100                                              # des adaptations « plus serré », pas seulement « plus large »
     lab = lambda f: next(o['label_fr'] for o in f['options'] if o['id'] == f['correct'])
     assert any(lab(s['field']) == 'Nit' for s in spots if s['field']['type'] == 'profil')          # le limp sépare le nit du rec passif
+
+
+def test_extension_v4_5():
+    """v4.5 : 4 à 25 BB, relance non all-in, nouvelles situations, tapis inégaux en heads-up, range de tapis du rec"""
+    spots = list(_spots().values())
+    assert max(s['effective_stack_bb'] for s in spots) == 25 and sum(s['effective_stack_bb'] >= 15 for s in spots) > 0.15 * len(spots)
+    sits = {s['field']['situation'] for s in spots}
+    assert {"BB face à l'open du BTN (SB fold)", 'SB face au tapis du BB après son limp'} <= sits
+    assert any(s['field_family'] == 'vs_raise' for s in spots)
+    raise_q = [s for s in spots if any(o['id'] == 'R' for o in s['field']['options'])]
+    assert raise_q and all(next(o for o in s['actions'] if o['id'] == 'R')['to_bb'] in (2.3, 3.0, 3.5) for s in raise_q)
+    hu = [s for s in spots if s['table'] == 'heads-up' and s['field']['type'] != 'profil']
+    cov = [s for s in hu if len(set(s['stacks_bb'])) > 1]
+    assert 0.25 * len(hu) <= len(cov) <= 0.55 * len(hu) and all(min(s['stacks_bb']) == s['effective_stack_bb'] for s in cov)
+    sys.path.insert(0, os.path.join(ROOT, 'tools', 'field'))
+    import exploit_engine as ee, profils_field as pf
+    from hrcdata import NAMES
+    f = pf.factors(pf.DEFAULT, 12)                     # compromis Lucho / Lucky : il pousse peu, mais pas seulement le haut de sa range
+    r = ee.run_spot('hu', 12, "BB face à l'all-in du SB", ee.SPOTS[('hu', "BB face à l'all-in du SB")], profiles={'rec': f, 'flat': dict(f, shape=False)})
+    for h in ('KQo', 'KJo', 'A4o'): assert r['rec']['evs']['paie'][NAMES.index(h)] > max(0, r['flat']['evs']['paie'][NAMES.index(h)])   # redevenus des calls
+    for h in ('QJo', 'T8o'): assert r['rec']['evs']['paie'][NAMES.index(h)] < 0                                                        # les mains faibles se couchent
