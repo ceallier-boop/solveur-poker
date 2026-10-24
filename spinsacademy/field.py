@@ -14,7 +14,7 @@ Montants affichés en BB (jamais en mBB). Le profil interne du vilain n'est jama
 statistiques observées (k sur n), comme à la table.
 Usage : python -m spinsacademy.field --version 2026.10.20-1
 """
-import argparse, datetime, hashlib, json, os, random, sys
+import argparse, datetime, hashlib, json, os, random, re, sys
 from . import grading
 from .hrc import ROOT
 
@@ -49,10 +49,10 @@ SITU = {
 ACTION = {'Payer': ('C', 'call_allin'), 'Pousser all-in': ('A', 'allin'), 'Limp': ('L', 'limp'), 'Fold': ('F', 'fold'), 'Check': ('X', 'check'),
           'Relancer': ('R', 'raise')}
 ENGINE = {'paie': 'Payer', 'pousse': 'Pousser all-in', 'limpe': 'Limp', 'fold': 'Fold', 'checke': 'Check'}
-VERB = {'C': 'payer', 'A': 'tapis', 'L': 'compléter (limp)', 'F': 'fold', 'X': 'check', 'R': 'relancer'}
+VERB = {'C': 'payer', 'A': 'tapis', 'L': 'limper', 'F': 'fold', 'X': 'check', 'R': 'relancer'}
 LEAK_FR = {'pousse trop souvent': 'part à tapis trop souvent', 'ne pousse pas assez': 'ne part pas assez à tapis',
            'paie trop souvent': 'paie trop souvent', 'ne paie pas assez': 'ne paie pas assez',
-           'complète trop souvent': 'complète trop souvent', 'ne complète pas assez': 'ne complète pas assez',
+           'complète trop souvent': 'limpe trop souvent', 'ne complète pas assez': 'ne limpe pas assez',
            'paie souvent ton tapis': 'paie souvent ton tapis après son limp', 'se couche souvent face au tapis': 'se couche souvent face au tapis après son limp',
            'ouvre trop souvent': 'ouvre trop souvent', "n'ouvre pas assez": "n'ouvre pas assez",
            'défend trop face à ta relance': 'défend trop face à ta relance', 'se couche trop face à ta relance': 'se couche trop face à ta relance'}
@@ -120,6 +120,16 @@ def _read_sentence(q, stats, vill):
         who = f"le {vill[0]}" if s['stat'] != 'call_pct_bb_sb_fold' else 'le BB'
         parts.append(f"{who} {verb} {s['k']} fois ({pct(s['observed_pct'])} % ; théorie : {pct(s['gto_pct'])} %)")
     return f"Sur {n} occasions dans cette situation, " + ' ; '.join(parts) + '.'
+
+
+LIMP_WORDS = ((r'\bcomplètes\b', 'limpes'), (r'\bcomplète\b', 'limpe'), (r'\bcompléter\b', 'limper'), (r'\bcomplété\b', 'limpé'),
+              (r'\bcomplétant\b', 'limpant'), (r'\bComplète\b', 'Limpe'), (r'\bCompléter\b', 'Limper'))
+
+
+def limp_words(text):
+    """test joueurs du 24/10 : un seul mot pour le limp (« limper », bouton CALL), y compris dans les textes du moteur"""
+    for a, b in LIMP_WORDS: text = re.sub(a, b, text)
+    return text
 
 
 def _hand_display(h):
@@ -255,11 +265,12 @@ def question(sp):
     rank = {'fold': 0, 'check': 1, 'limp': 1, 'call': 2, 'call_allin': 2, 'raise': 3, 'allin': 4}      # A2 : ordre fixe, Fold toujours en premier
     ordered = sorted(f['options'], key=lambda o: rank.get(o.get('type'), 9)) if all(o.get('type') in rank for o in f['options']) else f['options']
     opts = [dict(id=o['id'], label_fr=o.get('label_fr') or action_label(sp, o)) for o in ordered]
-    return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=sp['prompt_fr'], table=sp['table'],
+    stats = [dict(s, label_fr=limp_words(s['label_fr'].replace(' (il complète)', ''))) for s in f['stats']]   # données publiées inchangées
+    return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=limp_words(sp['prompt_fr']), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
-                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=f['stats'], ask_fr=f['ask_fr']))
+                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=stats, ask_fr=f['ask_fr']))
 
 
 SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
@@ -284,7 +295,7 @@ def theory_lines(sp, f, lab, hand):
     if not t or not hand: return []
     out = []
     if t['kind'] == 'call':
-        out.append((f"Tu as déjà mis 1 BB en complétant : tu paies {num(t['call_bb'])} BB de plus pour un pot de {num(t['pot_bb'])} BB, il te faut {pct(t['need_pct'])} % d'équité."
+        out.append((f"Tu as déjà mis 1 BB en limpant : tu paies {num(t['call_bb'])} BB de plus pour un pot de {num(t['pot_bb'])} BB, il te faut {pct(t['need_pct'])} % d'équité."
                     if t.get('after_limp') else f"Tu paies {num(t['call_bb'])} BB pour un pot de {num(t['pot_bb'])} BB : il te faut {pct(t['need_pct'])} % d'équité."))
         behind = sp['hero'] == 'SB' and sp['table'] == '3-handed'          # v4.4 (audit) : le BB peut encore payer ou surenchérir
         verdict = (("au-dessus de la cote, mais le BB parle encore derrière : il faut une marge." if t['eq_pct'] >= t['need_pct'] else "pas assez, même sans le BB derrière.")
@@ -306,11 +317,11 @@ def theory_lines(sp, f, lab, hand):
             out.append(f"Face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche environ {pct(t['raise_fold_pct'])} % du temps "
                        f"(théorie : {pct(t['raise_fold_gto_pct'])} %) : une petite relance gagne les mêmes blindes pour moins cher.")
         if t.get('iso_pct') is not None:
-            out.append(f"Si tu complètes, il relance environ {pct(t['iso_pct'])} % du temps (théorie : {pct(t['iso_gto_pct'])} %) : "
+            out.append(f"Si tu limpes, il relance environ {pct(t['iso_pct'])} % du temps (théorie : {pct(t['iso_gto_pct'])} %) : "
                        "moins il relance, plus le limp est rentable.")
     elif t['kind'] == 'iso':
         who = t.get('limper', 'SB')
-        out.append(f"{est(f)}le {who} complète environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
+        out.append(f"{est(f)}le {who} limpe environ {pct(t['limp_pct'])} % de ses mains (théorie : {pct(t['limp_gto_pct'])} %). Contre ces mains, {hand} a "
                    f"{pct(t['eq_limp_pct'])} % d'équité.")
         if t.get('has_jam', True):
             out.append(fold_line(t, f"tu prends le pot de {num(t.get('win_bb', 2.0))} BB") + f" Quand il paie, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
@@ -355,8 +366,8 @@ def _plan(ip, hero, table, hand=''):
         return ["Il checke : mise environ 1 BB (la moitié du pot) très souvent, il a souvent raté.",
                 (f"Il mise : avec {hand}, paie ou relance pour la valeur, sauf board très dangereux." if big else
                  "Il mise : un joueur passif mise surtout quand il a touché. Sans paire ni tirage, couche-toi."),
-                "Paire max ou mieux : mise pour la valeur à chaque tour, il paie trop."]
-    return ["Tu as touché (paire max ou mieux) : mise toi-même environ 1 BB, il paie avec trop de mains.",
+                "Paire max ou mieux : mise pour la valeur à chaque tour."]
+    return ["Tu as touché (paire max ou mieux) : mise toi-même environ 1 BB pour la valeur.",
             "Tu as raté : checke. S'il mise peu, paie avec une paire ou un tirage, couche le reste.",
             (f"Avec {hand} : mise dès le flop pour la valeur, n'attends pas." if big else
              "Il relance ta mise : un joueur passif le fait avec une grosse main. Sans paire max, couche-toi.")]
@@ -393,7 +404,7 @@ def postflop_section(sp, f, hand):
     if p['strong_pct'] >= p['strong_gto_pct'] + 3:
         his.append(f"Il a {pct(p['strong_pct'])} % de grosses mains (théorie : {pct(p['strong_gto_pct'])} %) : "
                    + ("son ouverture contient beaucoup de grosses mains." if p.get('line') == 'vsopen' else
-                      "il complète aussi ses grosses mains." if hero == 'BB' else "il checke aussi ses grosses mains."))
+                      "il limpe aussi ses grosses mains." if hero == 'BB' else "il checke aussi ses grosses mains."))
     elif p['strong_pct'] <= p['strong_gto_pct'] - 3:
         mine.append(f"Il a peu de grosses mains ({pct(p['strong_pct'])} %, théorie : {pct(p['strong_gto_pct'])} %) : "
                     + ("il ouvre large, avec beaucoup de mains moyennes." if p.get('line') == 'vsopen' else "il les a relancées."))
@@ -412,7 +423,7 @@ TRAP_LESSONS = {                         # A6 : la leçon d'un piège, selon le 
              "Un petit écart de stats ne rend pas une mauvaise main rentable."),
     'allin': ("Ce tapis gagne contre presque tous les profils : pas besoin de read pour le jouer.",
               "Main assez forte pour pousser, même s'il s'écarte un peu de la théorie."),
-    'limp': ("Compléter reste le meilleur coup : son écart de stats est trop petit pour pousser ou folder.",
+    'limp': ("Le limp reste le meilleur coup : son écart de stats est trop petit pour pousser ou folder.",
              "Le limp garde sa valeur : il faudrait un écart bien plus net pour changer de coup."),
     'check': ("Checker reste le meilleur coup : ses stats ne justifient pas d'attaquer cette main.",
               "Vois le flop gratuitement : son écart de stats ne rend pas le tapis rentable."),
@@ -441,9 +452,53 @@ def basis_line(f):
     return None
 
 
-RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ici, une petite relance suffit, pas besoin du tapis."}
+RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ici, une petite relance suffit, pas besoin du tapis.",
+                ('R15', 'raise'): "Il limpe peu : son limp est fort. Relance tes très bonnes mains, checke les moyennes.",
+                ('R15', 'allin'): "Il limpe peu : son limp est fort. Garde le tapis pour tes très bonnes mains, checke les moyennes."}
+
+
+def decisive(sp, f, best_t, hand):
+    """test joueurs du 24/10 : le chiffre qui décide la main, en une proposition (sans point final), ou None"""
+    t = f.get('theory')
+    if not t or not hand: return None
+    p_ = lambda k: pct(t[k])
+    if t['kind'] == 'call':
+        return f"il pousse {p_('range_pct')} % de ses mains : {hand} a {p_('eq_pct')} % d'équité, il en faut {p_('need_pct')} %"
+    if t['kind'] in ('shove', 'open'):
+        who = 'tout le monde se couche' if t.get('win_bb') == 1.5 else 'il se couche'
+        if best_t == 'allin' and 'fold_pct' in t:
+            return (f"face à ton tapis, {who} {p_('fold_pct')} % du temps" if t['fold_pct'] >= 1
+                    else f"personne ne se couche, mais payé, {hand} a {p_('eq_called_pct')} % d'équité")
+        if best_t == 'raise' and t.get('raise_bb'):
+            return f"face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche {p_('raise_fold_pct')} % du temps"
+        if best_t == 'limp' and t.get('iso_pct') is not None:
+            return f"si tu limpes, il ne relance que {p_('iso_pct')} % du temps"
+        if best_t == 'fold':
+            return (f"il défend {p_('defend_pct')} % de ses mains, et {hand} n'a alors que {p_('eq_called_pct')} % d'équité" if t['kind'] == 'open'
+                    else f"payée, {hand} n'a que {p_('eq_called_pct')} % d'équité")
+        return None
+    if t['kind'] == 'iso':
+        if best_t == 'allin':
+            return f"face à ton tapis, il se couche {p_('fold_pct')} % du temps, et payé, {hand} a {p_('eq_called_pct')} % d'équité"
+        if best_t == 'raise' and t.get('raise_bb'):
+            return f"face à une iso à {num(t['raise_bb'])} BB, il se couche {p_('raise_fold_pct')} % du temps"
+        if best_t == 'check':
+            return (f"face à ton tapis, il ne se couche que {p_('fold_pct')} % du temps, et payé, {hand} n'a que {p_('eq_called_pct')} % d'équité"
+                    if t.get('has_jam', True) else f"contre ses limps, {hand} a {p_('eq_limp_pct')} % d'équité : vois le flop")
+        return None
+    if t['kind'] == 'vsopen':
+        if best_t == 'allin': return f"il ouvre {p_('open_pct')} % de ses mains et se couche {p_('fold_pct')} % du temps face à ton tapis"
+        if best_t in ('call', 'fold'):
+            return f"il ouvre {p_('open_pct')} % de ses mains, et {hand} a {p_('eq_open_pct')} % d'équité contre elles"
+    return None
+
+
+def imperative(sp, f, best):
+    o = next(o for o in f['options'] if o['id'] == best); t = o.get('type')
+    return {'allin': 'Pousse.', 'raise': f"Relance à {num(o.get('to_bb'))} BB.", 'check': 'Checke.', 'call': 'Paie.', 'call_allin': 'Paie.',
+            'fold': 'Couche-toi.', 'limp': 'Limpe.'}.get(t, '')
 FLOP_MOVES = ('limp', 'check', 'call')        # A' : « Gérer le postflop » seulement quand le meilleur coup mène au flop prévu par le moteur
-STAT_VERB = {'shove_pct': ('part à tapis', 'partir à tapis'), 'call_pct': ('paie ton tapis', 'payer ton tapis'), 'limp_pct': ('complète', 'compléter'),
+STAT_VERB = {'shove_pct': ('part à tapis', 'partir à tapis'), 'call_pct': ('paie ton tapis', 'payer ton tapis'), 'limp_pct': ('limpe', 'limper'),
              'call_pct_bb_sb_fold': ('paie ton tapis', 'payer ton tapis'), 'call_after_limp_pct': ('paie ton tapis après son limp', 'payer ton tapis après son limp'),
              'jam_over_limp_pct': ('part à tapis sur ton limp', 'partir à tapis sur ton limp'), 'open_pct': ('ouvre', 'ouvrir'),
              'defend_pct': ('défend face à ta relance', 'défendre face à ta relance')}
@@ -478,14 +533,14 @@ def correct(sp, action_id):
     lab = {a: _label(sp, a) for a in ids}; v = f['villains'][0]; n = f['observations']
     best_t = next(o['type'] for o in f['options'] if o['id'] == best)
     rule_fr = (READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9'
-               else RULE_BY_MOVE.get((f['rule'], best_t), f['rule_fr']))           # A' : la leçon suit le meilleur coup
+               else limp_words(RULE_BY_MOVE.get((f['rule'], best_t), f['rule_fr'])))     # A' : la leçon suit le meilleur coup
     rule = f"À retenir : {rule_fr}"
     short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
     lines = []; best_l, gto_l = short(best), (short(f['gto']) if f['gto'] else '')
     if f['type'] == 'échantillon':
         lines.append(sample_sentence(f))
     elif f['type'] in ('profil', 'identification'):
-        lines.append(f['engine_explanation_fr'].split(' Règle R')[0])
+        lines.append(limp_words(f['engine_explanation_fr'].split(' Règle R')[0]))
     elif f['type'] == 'adaptation':
         sample = next((f"{st['n']} {'limps' if st['stat'] == 'call_after_limp_pct' else 'folds du SB'} observés" for st in f['stats']
                        if 'après son limp' in LEAK_FR.get(f['leak'], '') and st['stat'] == 'call_after_limp_pct'), f"{n} coups observés")   # v4.4 : le bon échantillon
@@ -518,13 +573,20 @@ def correct(sp, action_id):
         if f['gto'] and f['gto'] != best and (f['gto_freq_pct'] or 0) >= 5:
             why.append(f"La théorie joue déjà {best_l} {pct(f['gto_freq_pct'])} % du temps avec cette main.")
     basis = basis_line(f)
-    if basis: why.append(basis)
+    if basis: why.insert(0, basis)                                 # test joueurs du 24/10 : la base du conseil en tête des précisions
     gto_label = lab[f['gto']] if f['gto'] else None
     body = [l for l in lines[:-1] if not l.startswith('Tu perds ')]  # sans « À retenir » ni le coût, déjà dans le bandeau
     if f['type'] == 'profil':                                      # « Il pousse moins … et paie plus : calling station. » puis le détail
         essential, remember, details = f"{body[0].split(' : ')[0]} : c'est le profil « {lab[best]} ».", rule, body + why
     elif f['type'] in READ: essential, remember, details = body[0], rule, body[1:] + why
-    else: essential, remember, details = rule_fr, None, body + why  # la leçon est le message essentiel
+    else:                                                          # test joueurs du 24/10 : le chiffre qui décide, puis la règle à retenir
+        clause = decisive(sp, f, best_t, hand)
+        if clause:
+            lead = ('Sans info, on le suppose passif : ' if f['type'] == 'inconnu' else
+                    'Trop peu de coups pour le juger, on le suppose passif : ' if f['type'] == 'échantillon' else '')
+            essential = (lead + clause if lead else clause[0].upper() + clause[1:]) + '. ' + imperative(sp, f, best)
+            essential, remember, details = essential.strip(), rule, body + why
+        else: essential, remember, details = rule_fr, None, body + why
     return dict(verdict=verdict, points=grading.POINTS[verdict], regret_mbb=round(regret, 1), best_action=best, best_label=lab[best],
                 top_action=best, chosen_action=action_id, gto_action=f['gto'], gto_label=gto_label, good_actions=[], good_labels=[],
                 chosen_label=lab[action_id], strategy=[dict(id=a, label_fr=lab[a], pct=100 if a == best else 0, chosen=a == action_id,
@@ -561,6 +623,9 @@ def draw(spots, size, seed=None, filters=None):
         if not cand: break
         fams = sorted({fam(s) for s in cand}); f0 = rnd.choices(fams, [FAMILY_SHARE.get(x, 0.1) for x in fams])[0]
         cand = [s for s in cand if fam(s) == f0]
+        if f0 == 'read':                                           # test joueurs du 24/10 : « Quelle pastille ? » autant que « Défaut du vilain »,
+            cand = [s for s in spots if s['spot_id'] not in used and s['field']['type'] in READ]   # sur les deux tables (pastille : heads-up)
+            ty = pick(cand, lambda s: s['field']['type']); cand = [s for s in cand if s['field']['type'] == ty]
         st = pick(cand, lambda s: s['effective_stack_bb']); cand = [s for s in cand if s['effective_stack_bb'] == st]
         ans = pick(cand, lambda s: s['field']['correct']); cand = [s for s in cand if s['field']['correct'] == ans]
         sp = rnd.choices(cand, [max(s['field']['weight'], 1e-3) for s in cand])[0]

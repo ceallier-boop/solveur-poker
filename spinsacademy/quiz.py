@@ -179,12 +179,12 @@ def action_label(sp, a):
     """libellé d'une action avec les mots du client de jeu (lot 1, table du client) : Fold, Check, Call X BB, Raise to X BB,
     All-in X BB. Le montant d'un call est ce qu'il reste à mettre ; celui d'une relance ou d'un tapis, la mise totale"""
     t = a['type']; to = a.get('to_bb')
-    if t == 'fold': return 'Fold'
-    if t == 'check': return 'Check'
-    if t == 'limp': return 'Call 0,5 BB' if sp['hero'] == 'SB' else 'Call 1 BB'
-    if t in ('call', 'call_allin'): return f"Call {bb(call_terms(sp)[0])} BB"
-    if t == 'raise': return f'Raise to {bb1(to)} BB'
-    return f'All-in {bb(to)} BB'
+    if t == 'fold': return 'FOLD'
+    if t == 'check': return 'CHECK'
+    if t == 'limp': return 'CALL 0,5 BB' if sp['hero'] == 'SB' else 'CALL 1 BB'
+    if t in ('call', 'call_allin'): return f"CALL {bb(call_terms(sp)[0])} BB"
+    if t == 'raise': return f'RAISE TO {bb1(to)} BB'
+    return f'ALL-IN {bb(stack_of(sp, sp["hero"]))} BB'          # test joueurs du 24/10 : ton tapis, comme sur le bouton du client
 
 
 def history_text(sp):
@@ -194,7 +194,7 @@ def history_text(sp):
         p = h['position']; a = h['action']; to = h.get('to_bb'); me = p == sp['hero']
         if a == 'fold': out.append('Tu te couches' if me else f'Le {p} se couche')
         elif a == 'check': out.append('Tu checkes' if me else f'Le {p} checke')
-        elif a == 'limp': out.append(('Tu complètes' if p == 'SB' else 'Tu limpes') if me else f"Le {p} {'complète' if p == 'SB' else 'limpe'}")
+        elif a == 'limp': out.append('Tu limpes' if me else f"Le {p} limpe")
         elif a == 'call': out.append(f'Tu paies {bb(to)} BB' if me else f'Le {p} paie {bb(to)} BB')
         elif a == 'call_allin': out.append('Tu paies le tapis' if me else f'Le {p} paie le tapis')
         elif a == 'raise': out.append(f'Tu relances à {bb1(to)} BB' if me else f'Le {p} relance à {bb1(to)} BB')
@@ -206,7 +206,7 @@ def history_text(sp):
 
 
 def prompt(sp, hand):
-    if sp.get('field'): return sp['prompt_fr']
+    if sp.get('field'): return field.limp_words(sp['prompt_fr'])
     table = '3 joueurs' if sp['table'] == '3-handed' else 'Heads-up'
     stacks = ' / '.join(bb(x) for x in sp['stacks_bb']); pos = ' / '.join(sp['players'])
     hist = history_text(sp)
@@ -233,9 +233,36 @@ def candidates(spots, filters=None):
 
 
 def pool(version, filters=None, excluded=frozenset()):
-    """spots proposables d'une version : filtres, spots désactivés par l'administration"""
+    """spots proposables d'une version : filtres, spots désactivés par l'administration, un seul arbre par situation"""
     _, spots = load(version)
-    return [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded]
+    keep = served_ids(version)
+    return [sp for sp in candidates(spots, filters) if sp['spot_id'] not in excluded and sp['spot_id'] in keep]
+
+
+def situation_of(sp):
+    """même table, mêmes tapis, même joueur, même historique : la même situation, quel que soit l'arbre qui l'a calculée"""
+    return (sp['table'], tuple(sp['stacks_bb']), sp['hero'], tuple((h['position'], h['action'], h.get('to_bb')) for h in sp['history']))
+
+
+@lru_cache(maxsize=8)
+def served_ids(version):
+    """test joueurs du 24/10 : une situation calculée dans plusieurs arbres (tailles de relance différentes) n'est servie qu'une
+    fois, sinon la même main change de stratégie et de « mains à la limite » d'une série à l'autre. Arbre retenu : celui de
+    référence s'il couvre ces tapis, sinon le plus fréquent à ces tapis (le même pour toutes les situations de ces tapis)"""
+    from collections import Counter, defaultdict
+    from .importer import REF_PREFLOP
+    _, spots = load(version)
+    if any(sp.get('field') for sp in spots.values()): return frozenset(spots)      # exploitant : une question par main et par vilain
+    trees = defaultdict(Counter)
+    for sp in spots.values(): trees[(sp['table'], tuple(sp['stacks_bb']))][sp.get('preflop_tree')] += 1
+    main = {k: (REF_PREFLOP if REF_PREFLOP in c else sorted(c.items(), key=lambda x: (-x[1], str(x[0])))[0][0]) for k, c in trees.items()}
+    groups = defaultdict(list)
+    for sp in spots.values(): groups[situation_of(sp)].append(sp)
+    keep = set()
+    for (table, stacks, *_), g in groups.items():
+        best = [sp for sp in g if sp.get('preflop_tree') == main[(table, stacks)]] or g
+        keep.add(min(best, key=lambda sp: (-sp.get('eligible_hands', 0), sp['spot_id']))['spot_id'])
+    return frozenset(keep)
 
 
 EASY_MBB = 1000          # la première action sanctionnée coûte plus de 1 BB : question facile, tirée 4 fois moins souvent
@@ -461,7 +488,10 @@ def _pct(x): return f"{round(100 * x)} %"
 def _pct1(x): return f"{100 * x:.1f} %".replace('.', ',')
 
 
-def _low(t): return t[0].lower() + t[1:]
+def _low(t):
+    """minuscule initiale dans une phrase, sauf pour les mots du client en capitales (FOLD, CALL 2 BB, ALL-IN 8 BB)"""
+    first = t.split(' ')[0]
+    return t if first.isupper() and len(first) > 1 else t[0].lower() + t[1:]
 
 
 def to_do(sp, aid):
@@ -469,7 +499,7 @@ def to_do(sp, aid):
     a = next(x for x in sp['actions'] if x['id'] == aid); t = a['type']
     if t == 'fold': return 'te coucher'
     if t == 'check': return 'checker'
-    if t == 'limp': return 'compléter' if sp['hero'] == 'SB' else 'limper'
+    if t == 'limp': return 'limper'
     if t == 'allin': return f"partir à tapis ({bb(a['to_bb'])} BB)"
     return _low(action_label(sp, a))
 
@@ -544,8 +574,8 @@ def principle(sp, hand, best, labels):
         return (f"Relancer grossit le pot avec une bonne main : {who} environ {round(100 * fe)} % du temps, sinon tu gardes l'initiative."
                 if fe is not None and round(100 * fe) >= 1 else "Relancer grossit le pot avec une bonne main et garde l'initiative après le flop.")
     if t == 'limp':
-        if strong: return "Avec une très grosse main, compléter tend un piège : il relancera avec des mains moins fortes."
-        return ("Compléter ne coûte que 0,5 BB : la main mérite un flop pas cher." if sp['hero'] == 'SB' else
+        if strong: return "Avec une très grosse main, limper tend un piège : il relancera avec des mains moins fortes."
+        return ("Limper ne coûte que 0,5 BB au SB : la main mérite un flop pas cher." if sp['hero'] == 'SB' else
                 "Limper ne coûte que 1 BB : la main mérite un flop pas cher.")
     if t == 'check':
         return "Le check te donne le flop gratuitement : attaquer ferait coucher les mains que tu bats et payer celles qui te battent."
@@ -564,7 +594,7 @@ def principle(sp, hand, best, labels):
     if fam == 'first_in':
         return f"Avec {who} encore à parler, cette main gagne trop rarement : jouer coûte plus que se coucher."
     if fam == 'vs_limp':
-        return f"Avec {who} encore à parler, compléter cette main coûte plus qu'elle ne rapporte."
+        return f"Avec {who} encore à parler, limper cette main coûte plus qu'elle ne rapporte."
     return f"Avec {who} encore à parler, payer avec cette main gagne trop rarement."
 
 
@@ -607,7 +637,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
         mass = lambda f: sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq if f(h)) / max(sum(W[NAMES.index(h)] * sp['hands'][h]['reach'] for h in eq), 1e-12)
         share = mass(lambda h: eq[h] >= need)
         return out
-    j = ids.index(best); verb = 'complète' if types[best] == 'limp' and sp['hero'] == 'SB' else VERB_FR[types[best]]
+    j = ids.index(best); verb = VERB_FR[types[best]]
     f = grading.reference_freq(sp, hand); shown = grading.displayed_mix(sp, hand); pj = dict(shown).get(best, 0)
     if f[j] >= 0.5: tail = f"{hand} en fait partie."
     elif pj: tail = f"{hand}, {pj} % du temps."
@@ -621,7 +651,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
     tied = {ids[k] for k in range(len(ids)) if 1000 * (max(ev) - ev[k]) <= grading.TOLERANCE_MBB + 1e-9}   # déjà dans « plusieurs bonnes décisions »
     if sp['ev_reference'] == 'hrc': tied |= {ids[k] for k in range(len(ids)) if 1000 * (max(ev) - ev[k]) <= grading.PERTINENT_MBB + 1e-9}   # déjà dans la nuance
     others = sorted((k for k in range(len(ids)) if ids[k] not in (best, chosen, base_id, top) and ids[k] not in tied), key=lambda k: -ev[k])
-    if others:                                                     # le choix du joueur, le fold et l'action la plus rentable sont déjà dans l'explication
+    if others and 1000 * (ev[j] - ev[others[0]]) <= grading.PERTINENT_MBB:   # test joueurs du 24/10 : seulement une vraie alternative (moins de 0,1 BB)
         d = ev[j] - ev[others[0]]
         out.append(f"Autre option : {_low(labels[ids[others[0]]])}, {gain_bb(d)} {'de moins' if d >= 0 else 'de plus en EV'}.")
     if len(shown) > 1:
@@ -860,7 +890,7 @@ def rule_to_remember(sp, best, labels):
     plays = {h: grading.reference_freq(sp, h)[j] >= 0.5 for h in live}
     weight = {h: W[NAMES.index(h)] * live[h]['reach'] for h in live}
     share = range_grid(sp)['share_pct'][j]                          # A' : le même chiffre que « On … avec X % » du pourquoi
-    verb = {'fold': 'on se couche', 'check': 'on checke', 'limp': 'on complète' if sp['hero'] == 'SB' else 'on limpe', 'call': 'on paie',
+    verb = {'fold': 'on se couche', 'check': 'on checke', 'limp': 'on limpe', 'call': 'on paie',
             'call_allin': 'on paie', 'raise': 'on relance', 'allin': 'on part à tapis'}[t]
     sit = SITUATION_FR[family(sp)]
     if family(sp) == 'vs_allin' and sum(h['action'] in ('allin', 'call_allin') for h in sp['history']) > 1: sit = 'face à deux joueurs à tapis'
@@ -916,9 +946,9 @@ def correct(version, spot_id, hand, action_id):
         names = [_low(labels[a]) for a in good]
         lines = [(f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)." if action_id in good else
                   f"Les bons coups ici : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). Ton choix n'en fait pas partie.")]
-    elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Action de référence : {labels[best]}{played}.']
-    elif evb <= GAIN_MIN_BB: lines = [f"Action de référence : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
-    else: lines = [f"Action de référence : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
+    elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Meilleur coup : {labels[best]}{played}.']
+    elif evb <= GAIN_MIN_BB: lines = [f"Meilleur coup : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
+    else: lines = [f"Meilleur coup : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
     if best != top and len(good) == 1:
         lines.append(f"{_option(sp, labels, top)} rapporte {gain_bb(E_(top) - E_(best))} de plus : les deux sont acceptés.")
     # EV HRC : une autre action à moins de PERTINENT_MBB de la plus rentable reste pertinente (nuance, sans changer la référence)
@@ -945,7 +975,7 @@ def correct(version, spot_id, hand, action_id):
     ce = call_equity(sp, hand)
     essential = (f"Il te faut {_pct1(ce[0])} d'équité pour payer, et {hand} en a {_pct_eq(ce[1], ce[0])} : "
                  + ('payer rapporte.' if ce[1] >= ce[0] else 'couche-toi.')) if ce else principle(sp, hand, best, labels)
-    remember = rule_to_remember(sp, best, labels) if g['verdict'] != 'correct' else None    # après une erreur ou une imprécision : une règle simple
+    remember = rule_to_remember(sp, best, labels)                     # test joueurs du 24/10 : la règle à retenir sur chaque main
     core = list(lines) + [essential] + ([remember] if remember else [])
     lines = core + because                                         # la stratégie arrondie est affichée à part
     loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
@@ -955,7 +985,7 @@ def correct(version, spot_id, hand, action_id):
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
                 loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else gain_bb(loss)),
                 ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
-                core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Action de référence : {labels[best]}.'] + because)   # le bandeau dit déjà le bon coup et le coût
+                core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.'] + because)   # le bandeau dit déjà le bon coup et le coût
 
 
 def call_equity(sp, hand):

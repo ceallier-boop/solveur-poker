@@ -21,6 +21,7 @@ const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
 const PROFILES = ['Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'];
 const PAST_LETTER = { 'Rec passif': 'P', 'Calling station': 'S', 'Dégène': 'D', 'Nit': 'N', 'Reg': 'R' };
 const PALETTE = ['#e5484d', '#f76b15', '#f5c518', '#30a46c', '#0091ff', '#8e4ec6', '#e93d82', '#8b8d98'];
+const PALETTE_FR = { '#e5484d': 'rouge', '#f76b15': 'orange', '#f5c518': 'jaune', '#30a46c': 'vert', '#0091ff': 'bleu', '#8e4ec6': 'violet', '#e93d82': 'rose', '#8b8d98': 'gris' };
 const PAST_DEFAULT = { 'Rec passif': '#f5c518', 'Calling station': '#e5484d', 'Dégène': '#f76b15', 'Nit': '#0091ff', 'Reg': '#8b8d98' };
 function pastilles() { try { return { ...PAST_DEFAULT, ...JSON.parse(store.get('pastilles') || '{}') }; } catch (e) { return { ...PAST_DEFAULT }; } }
 const inkOn = (hex) => { const v = parseInt(hex.slice(1), 16), l = 0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255); return l > 150 ? '#111' : '#fff'; };
@@ -32,7 +33,7 @@ function pastilleDot(label) {
 function renderPastilles() {
   const p = pastilles();
   $('past-rows').innerHTML = PROFILES.map((name) => `<div class="past-row"><span>${pastilleDot(name)} ${name}</span><span class="swatches" role="group" aria-label="Couleur : ${name}">`
-    + PALETTE.map((c) => `<button type="button" class="swatch" style="--p:${c}" data-name="${name}" data-color="${c}" aria-pressed="${p[name] === c}" aria-label="${c}"></button>`).join('')
+    + PALETTE.map((c) => `<button type="button" class="swatch" style="--p:${c}" data-name="${name}" data-color="${c}" aria-pressed="${p[name] === c}" aria-label="${PALETTE_FR[c]}"></button>`).join('')
     + '</span></div>').join('');
 }
 const gainBB = (mbb) => { const a = Math.abs(mbb);                 // gains toujours en BB ; 3 décimales autour de 0,06 BB (limite d'imprécision)
@@ -113,7 +114,8 @@ async function start(f, review = false) {
     store.set('filters', JSON.stringify(state.filters));
     await next();
   } catch (e) {
-    loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.' : e.message;
+    loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
+      : e.status && e.status < 500 ? e.message : netMsg(e, "la série n'a pas pu démarrer");            // jamais « Failed to fetch »
     $('filters').open = true; $('home-error').hidden = false;
     $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
   } finally { state.starting = false; }
@@ -151,10 +153,11 @@ function renderTable(q) {
   const hud = hudLines(q);
   for (let k = 0; k < n; k++) {
     const i = (hero + k) % n, pos = q.players[i], left = q.stacks_bb[i] - c[i];
-    const act = left <= 1e-9 ? '' : ACT_TAG[last[pos]] || '';                 // tapis : « ALL-IN » à la place du tapis restant
+    const covers = last[pos] === 'allin' && left > 1e-9;                     // il pousse plus que ton tapis : il te couvre
+    const act = left <= 1e-9 ? '' : covers ? 'ALL-IN · te couvre' : ACT_TAG[last[pos]] || '';   // tapis : « ALL-IN » à la place du tapis restant
     const stack = left <= 1e-9 ? 'ALL-IN' : `${bb(left)} BB`;
     if (k === 0) {
-      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>`;
+      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '');   // ton action, comme pour les autres
     } else {
       const seat = document.createElement('div');
       seat.className = 'seat' + (folded[i] ? ' folded' : '');
@@ -169,7 +172,7 @@ function renderTable(q) {
     }
     if (pos === button) {
       const d = document.createElement('span'); d.className = 'dealer'; d.textContent = 'D'; d.title = 'Bouton';
-      const [x, y] = k === 0 ? [70, 74] : [seats[k][0] + (seats[k][0] < 50 ? 17 : seats[k][0] > 50 ? -17 : 17), seats[k][1] + 8];
+      const [x, y] = k === 0 ? [72, 84] : [seats[k][0] + (seats[k][0] < 50 ? 17 : seats[k][0] > 50 ? -17 : 17), seats[k][1] + 8];
       d.style.left = x + '%'; d.style.top = y + '%'; view.appendChild(d);
     }
   }
@@ -177,15 +180,17 @@ function renderTable(q) {
 }
 
 // stats du vilain en une ligne sous son siège (comme le HUD du client) ; le détail (observé / théorie) se déplie sous la table
+// arrondi « au pair » comme l'énoncé et la correction (12,5 % -> 12 %), pour que les chiffres concordent
+const rnd0 = (x) => { const f = Math.floor(x), d = x - f; return d > 0.5 + 1e-9 ? f + 1 : d < 0.5 - 1e-9 ? f : (f % 2 === 0 ? f : f + 1); };
 function hudLines(q) {
   const f = q.field, out = {};
   if (!f || !q.hand || f.ask_fr) return out;
   const main = (f.villains || [])[0];
   if (!f.stats.length) { if (main) out[main] = 'Inconnu'; return out; }
-  for (const s of f.stats) {
+  for (const s of f.stats) {                                            // une ligne par stat : observé, théorie et échantillon (k/n)
     const who = s.stat === 'call_pct_bb_sb_fold' ? 'BB' : main;
-    const line = `${HUD_FR[s.stat] || s.label_fr} ${Math.round(s.observed_pct)} %`;
-    out[who] = out[who] ? `${out[who]} · ${line}` : line;
+    const line = `<span class="hl"><b>${HUD_FR[s.stat] || s.label_fr} ${rnd0(s.observed_pct)} %</b> <small>th. ${rnd0(s.gto_pct)} % · ${s.k}/${s.n}</small></span>`;
+    out[who] = (out[who] || '') + line;
   }
   return out;
 }
@@ -202,7 +207,7 @@ function renderCards(display, id = 'hero-cards') {
 }
 
 // bouton d'action : le montant en gros, le verbe du client en dessous (« 0,5 BB / CALL »), comme à la table
-const VERB_RE = /^(Fold|Check|Call|Raise to|All-in)(?: (.+))?$/;
+const VERB_RE = /^(FOLD|CHECK|CALL|RAISE TO|ALL-IN)(?: (.+))?$/i;
 function actionHTML(label) {
   const m = VERB_RE.exec(label);
   if (!m) return `${pastilleDot(label)}<b>${escT(label)}</b>`;
@@ -405,7 +410,7 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>Joué : ${e.chosen} · Référence : <b>${e.best}</b> (${e.loss_fr || gainBB(e.regret_mbb)} de moins)</li>`).join('')
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>Ton coup : ${e.chosen} (coûte ${e.loss_fr || gainBB(e.regret_mbb)}) · Meilleur coup : <b>${e.best}</b></li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   show('summary');
@@ -615,10 +620,11 @@ async function reviews() {
   }
 }
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
-  exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, complète ou paie trop." };
+  exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
 const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin', 'read'] };
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
 function onMode() {
+  store.set('mode', mode());                                         // gardé après un rechargement
   reviews();
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
@@ -663,6 +669,18 @@ $('past-rows').addEventListener('click', (e) => {
   const p = pastilles(); p[b.dataset.name] = b.dataset.color; store.set('pastilles', JSON.stringify(p)); renderPastilles();
 });
 renderPastilles();
+// test joueurs du 24/10 : le mode et le thème choisis restent après un rechargement
+(function restoreHome() {
+  const m = store.get('mode'); const btn = m && document.querySelector(`.mode-switch [data-value="${m}"]`);
+  if (btn) { for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn)); }
+  let f = {}; try { f = JSON.parse(store.get('filters') || '{}') || {}; } catch (e) { f = {}; }
+  const want = { family: f.family, hero: f.hero, table: f.table, depth: f.min_stack !== undefined ? `${f.min_stack}-${f.max_stack - 0.5}` : undefined };
+  for (const [name, v] of Object.entries(want)) {
+    const grp = document.querySelector(`.chips[data-name="${name}"]`); const b = v && grp && grp.querySelector(`[data-value="${v}"]`);
+    if (b) for (const x of grp.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+  }
+  onMode();
+}());
 home();
 
 // l'application s'ouvre aussi sans connexion (service worker) ; pas dans la démo autonome, qui est déjà une seule page

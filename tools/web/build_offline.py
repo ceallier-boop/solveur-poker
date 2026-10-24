@@ -104,6 +104,10 @@ const DEMO = (() => {
       let i;
       if (mode === 'exploit') {
         const fam = wpick(uniq(cand.map((x) => ITEMS[x].g)).sort(), (g) => FAMILY_SHARE[g] || 0.1); cand = cand.filter((x) => ITEMS[x].g === fam);
+        if (fam === 'read') {                                       // « Quelle pastille ? » autant que « Défaut du vilain », sur les deux tables
+          cand = pool.filter((x) => ITEMS[x].rd && !used.has(ITEMS[x].q.spot_id));
+          const ty = rnd(uniq(cand.map((x) => ITEMS[x].q.field.type)).sort()); cand = cand.filter((x) => ITEMS[x].q.field.type === ty);
+        }
         const st = rnd(uniq(cand.map((x) => ITEMS[x].eff))); cand = cand.filter((x) => ITEMS[x].eff === st);
         const a = rnd(uniq(cand.map((x) => ITEMS[x].a))); cand = cand.filter((x) => ITEMS[x].a === a);
         i = wpick(cand, (x) => ITEMS[x].w); traps += ITEMS[i].tr ? 1 : 0; reads += ITEMS[i].rd ? 1 : 0;

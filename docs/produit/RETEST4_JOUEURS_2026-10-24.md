@@ -58,3 +58,25 @@ Moyenne des six : 3,75 → **4,0**.
 - Lot court d'affichage : points 1 à 8, 18 et 19 (table, libellés, message hors ligne, mémoire du mode).
 - Lot de textes : points 9 à 15 (phrases variées et ciblées, « À retenir » en exploitant, équité, « Autre option »).
 - Vérification de données : points 16 et 17, avant toute correction.
+
+## 5. Corrections faites (24/10/2026)
+
+| Point | Correction |
+|---|---|
+| 1, 2 | Ton action s'affiche sous ton siège ; ta mise est posée devant toi, au-dessus de tes cartes. |
+| 3 | Tapis restant en blanc, le jaune est réservé aux mises. |
+| 4 | Ligne de stats : une ligne par stat, avec la théorie et l'échantillon (« Limp 13 % · th. 8 % · 10/80 »), arrondi identique à l'énoncé. |
+| 5 | Bouton D placé à côté de ton siège quand tu as le bouton. |
+| 6 | ALL-IN affiche ton tapis ; un adversaire qui te couvre est marqué « ALL-IN · te couvre ». |
+| 7 | Pastille séparée du mot ; couleurs nommées en français pour les lecteurs d'écran ; mot souligné qui ne se coupe plus après l'apostrophe. Les cartes gardent « 10 », comme au client. |
+| 8 | Mêmes libellés partout en capitales (FOLD, CALL 0,5 BB, RAISE TO 2,3 BB, ALL-IN 8 BB) ; un seul mot pour le limp dans les textes (« limper »). |
+| 9, 13, 14 | Exploitant : le message essentiel donne le chiffre qui décide la main et le coup à jouer (« Face à ton tapis, il se couche 75 % du temps, et payé, T5o a 26 % d'équité. Pousse. ») ; 320 messages différents sur 381 mains tirées, contre 28 avant. Règles corrigées pour AA contre un vilain qui limpe peu ; plan postflop sans « il paie trop ». « Sur quoi ça repose » en tête des précisions. |
+| 10 | « À retenir » sur chaque main, dans les deux modes. |
+| 12 | « Autre option » seulement pour une vraie alternative (moins de 0,1 BB d'écart). |
+| 15 | « Meilleur coup » au lieu de « Action de référence » ; bilan : « Ton coup : X (coûte 0,2 BB) · Meilleur coup : Y ». |
+| 16 | GTO : une seule version par situation (arbre de référence, sinon le plus fréquent à ces tapis) ; 1458 situations servies au lieu de 1927 doublons compris. La démo passe à 6710 questions (2,6 Mo). |
+| 18 | Sans réseau, « Série recommandée » dit « Pas de réseau… » au lieu de « Failed to fetch ». |
+| 19 | Mode et thème gardés après un rechargement. |
+| 20 | Lecture du vilain : « Quelle pastille ? » aussi souvent que « Défaut du vilain » (48 % contre 17 %). |
+
+Non traités : équité de ta main quand un joueur reste à parler (11) ; SB à 25 BB sans limp ni tapis (17, limite des arbres de calcul) ; raccourcis vus sur téléphone (21, attribués à l'outil de test). Vérifié et sans erreur : l'équité élevée de T8s ou K7s contre un petit tapis du BTN à 18 BB (ses tapis sont surtout des mains moyennes, il relance ses grosses mains).

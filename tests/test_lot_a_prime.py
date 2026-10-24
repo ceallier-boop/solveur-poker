@@ -89,3 +89,24 @@ def test_correction_leads_with_one_clear_message():
                 assert r['remember_fr'] is None or r['remember_fr'].startswith('À retenir : ')
                 assert e not in r['details_fr'] and r['remember_fr'] not in r['details_fr']
                 assert not any(l.startswith('Tu perds ') for l in r['details_fr'])          # le coût est dans le bandeau
+
+
+def test_fourth_player_test_fixes():
+    """test joueurs du 24/10 : un seul arbre par situation GTO, message essentiel chiffré et règle à retenir, mots du client"""
+    pool = quiz.pool(quiz.DEFAULT_VERSION)
+    assert len({quiz.situation_of(sp) for sp in pool}) == len(pool)             # la même situation n'a qu'une stratégie
+    assert len(quiz.pool(quiz.DEFAULT_FIELD)) == len(quiz.load(quiz.DEFAULT_FIELD)[1])   # exploitant : rien d'écarté
+    spots = [s for s in quiz.pool(quiz.DEFAULT_FIELD) if s['field']['type'] not in field.READ]
+    seen = set(); with_number = 0
+    for sp in spots[::20]:
+        r = field.correct(sp, sp['field']['correct'])
+        seen.add(r['essential_fr']); with_number += bool(re.search(r'\d+ %', r['essential_fr']))
+        assert r['remember_fr'] is None or r['remember_fr'].startswith('À retenir : ')
+        assert 'complète' not in r['essential_fr'] + (r['remember_fr'] or '')
+    assert with_number >= 0.9 * len(spots[::20]) and len(seen) >= 0.6 * len(spots[::20])   # chiffré, et pas une phrase toute faite
+    sp = pool[0]; labels = [quiz.action_label(sp, a) for a in sp['actions']]
+    assert all(l.split(' ')[0] in ('FOLD', 'CHECK', 'CALL', 'RAISE', 'ALL-IN') for l in labels)
+    from collections import Counter
+    reads = [s for s in quiz.pool(quiz.DEFAULT_FIELD) if s['field']['type'] in field.READ]; S = quiz.load(quiz.DEFAULT_FIELD)[1]
+    c = Counter(S[sid]['field']['type'] for seed in range(60) for sid, _ in field.draw(reads, 5, seed))
+    assert c['profil'] >= 0.35 * sum(c.values())                                  # « Quelle pastille ? » aussi souvent que « Défaut du vilain »
