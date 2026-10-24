@@ -7,7 +7,7 @@ progression) ; la progression reste dans le navigateur (localStorage). Pas de si
 d'administration : ce n'est pas l'application de production.
 Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit-max 2500]   (A11 : 3,6 Mo, première question en 9 s en 4G ; l'application servie charge question par question)
 """
-import argparse, base64, gzip, json, os, random, re, sys
+import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from spinsacademy import adaptive, field, quiz, review
 from spinsacademy.cards import NAMES, W
@@ -119,11 +119,19 @@ const DEMO = (() => {
     return out.length === size ? out : null;
   }
 
-  function answered(s) { return s.items.map((i, k) => [ITEMS[i], s.answers[k]]).filter(([, r]) => r); }
+  // une série garde des numéros de questions, valables seulement pour la démo qui l'a créée (BUILD) : après une reconstruction,
+  // ses réponses comptent encore dans le score, et par thème si elles portent leur description (meta, depuis le 24/10/2026)
+  const BUILD = '__BUILD__';
+  const own = (s) => s.build === BUILD;
+  const metaOf = (it) => ({ m: it.m, eff: it.eff, family: it.q.family, hero: it.q.hero, table: it.q.table, prompt_fr: it.q.prompt_fr });
+  const fromMeta = (x) => ({ m: x.m, eff: x.eff, q: { family: x.family, hero: x.hero, table: x.table, prompt_fr: x.prompt_fr } });
+  function answered(s) {
+    return s.items.map((i, k) => { const r = s.answers[k]; return [r && r.meta ? fromMeta(r.meta) : own(s) ? ITEMS[i] || null : null, r]; }).filter(([, r]) => r);
+  }
 
   function summary(s) {
     const rows = answered(s); const n = rows.length; const pts = rows.reduce((a, [, r]) => a + r.points, 0);
-    const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it.q.prompt_fr.replace(' Que fais-tu ?', ''),
+    const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
       chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb })).sort((a, b) => b.regret_mbb - a.regret_mbb);
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
     return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
@@ -139,6 +147,9 @@ const DEMO = (() => {
       const rows = answered(s); if (!rows.length) continue;
       let sp = 0;
       for (const [it, r] of rows) {
+        if (!it) {                                                    // version précédente, sans description : score seulement
+          total.questions += 1; total.points += r.points; total.errors += r.verdict === 'erreur'; verdicts[r.verdict] += 1; sp += r.points; continue;
+        }
         const keys = { mode: it.m, family: it.q.family, hero: it.q.hero, table: it.q.table, depth: depthOf(it.eff) };
         const err = r.verdict === 'erreur';
         for (const b of [total, ...Object.entries(keys).map(([d, k]) => (dims[d][k] = dims[d][k] || bucket()))]) { b.questions += 1; b.points += r.points; b.errors += err; }
@@ -193,7 +204,7 @@ const DEMO = (() => {
   // signalements : base de données partagée de l'artefact (lue par le porteur du projet), un document par signalement
   let dbp = null;
   async function report(body) {
-    const s = load().sessions[body.session_id]; if (!s) return [404, { detail: 'session inconnue' }];
+    const s = load().sessions[body.session_id]; if (!s || !own(s)) return [404, { detail: 'session inconnue' }];
     const k = body.question_index, ans = s.answers[k]; const it = ITEMS[s.items[k]];
     if (!it || !ans) return [409, { detail: "réponds d'abord à la question" }];
     if ((s.reported || {})[k]) return [409, { detail: 'question déjà signalée' }];
@@ -221,7 +232,7 @@ const DEMO = (() => {
   const DAY = 864e5, INTERVALS = __INTERVALS__;
   function reviewItems(mode) {
     const st = {}; const ev = [];
-    for (const s of Object.values(load().sessions)) if (s.mode === mode) s.items.forEach((i, k) => { const a = s.answers[k]; if (a && a.at) ev.push([a.at, i, a.verdict]); });
+    for (const s of Object.values(load().sessions)) if (s.mode === mode && own(s)) s.items.forEach((i, k) => { const a = s.answers[k]; if (a && a.at) ev.push([a.at, i, a.verdict]); });
     ev.sort((a, b) => (a[0] < b[0] ? -1 : 1));
     for (const [at, i, v] of ev) {
       const t = Date.parse(at);
@@ -252,26 +263,26 @@ const DEMO = (() => {
       }
       if (!picked || !picked.length) return [422, { detail: 'pas assez de situations pour ces filtres' }];
       const id = Math.random().toString(16).slice(2) + Date.now().toString(16);
-      db.sessions[id] = { id, created_at: now(), mode, items: picked, answers: {}, purposes }; save();
+      db.sessions[id] = { id, build: BUILD, created_at: now(), mode, items: picked, answers: {}, purposes }; save();
       return [201, { session_id: id, mode, size: picked.length, adaptive: null }];
     }
     const sm = p.match(/^\/sessions\/([^/]+)\/summary$/);
-    if (sm) { const s = db.sessions[decodeURIComponent(sm[1])]; return s ? [200, summary(s)] : [404, { detail: 'session inconnue' }]; }
+    if (sm) { const s = db.sessions[decodeURIComponent(sm[1])]; return s && own(s) ? [200, summary(s)] : [404, { detail: 'session inconnue' }]; }
     if (p === '/quiz/next') {
-      const s = db.sessions[url.searchParams.get('session_id')]; if (!s) return [404, { detail: 'session inconnue' }];
+      const s = db.sessions[url.searchParams.get('session_id')]; if (!s || !own(s)) return [404, { detail: 'session inconnue' }];
       const k = s.items.findIndex((_, i) => !s.answers[i]);
       if (k < 0) return [200, { done: true, session_id: s.id }];
       return [200, { done: false, session_id: s.id, question_index: k, size: s.items.length, question: ITEMS[s.items[k]].q,
         purpose: (s.purposes || {})[k] ? 'spaced' : null, purpose_fr: (s.purposes || {})[k] || null }];
     }
     if (p === '/attempts' && method === 'POST') {
-      const s = db.sessions[body.session_id]; if (!s) return [404, { detail: 'session inconnue' }];
+      const s = db.sessions[body.session_id]; if (!s || !own(s)) return [404, { detail: 'session inconnue' }];
       const it = ITEMS[s.items[body.question_index]]; if (!it) return [404, { detail: 'question inconnue' }];
       const prev = s.answers[body.question_index];
       if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { range: GRIDS[it.q.spot_id] || null, already_answered: true })] : [409, { detail: 'question déjà répondue' }];
       const r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
       const r = Object.assign({}, r0, { range: GRIDS[it.q.spot_id] || null });
-      s.answers[body.question_index] = Object.assign({ action_id: body.action_id, at: now() }, r0); save();       // sans la grille : stockage léger
+      s.answers[body.question_index] = Object.assign({ action_id: body.action_id, at: now(), meta: metaOf(it) }, r0); save();       // sans la grille : stockage léger
       return [200, Object.assign({}, r, { already_answered: false })];
     }
     if (p === '/reports' && method === 'POST') return report(body);
@@ -305,6 +316,7 @@ def build(out, k_gto, exploit_max=2500):
     grids = {}                                                    # grille de stratégie : une par spot, pas une par réponse
     for it in data:
         for r in it['c'].values(): grids[it['q']['spot_id']] = r.pop('range', None)
+    build_id = hashlib.sha256(json.dumps([(it['q']['spot_id'], it['q']['hand'], it['m']) for it in data]).encode()).hexdigest()[:12]   # ordre des questions
     blob = base64.b64encode(gzip.compress(json.dumps(dict(items=data, grids=grids), ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
     body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
     body = re.sub(r'<script[^>]*></script>', '', body)
@@ -321,7 +333,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 
