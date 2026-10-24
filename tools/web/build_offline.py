@@ -141,14 +141,14 @@ const DEMO = (() => {
   function stats() {
     const bucket = () => ({ questions: 0, points: 0, errors: 0 });
     const total = bucket(); const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 };
-    const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {};
+    const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {}; let untracked = 0;
     const sess = Object.values(load().sessions).sort((a, b) => a.created_at.localeCompare(b.created_at));
     for (const s of sess) {
       const rows = answered(s); if (!rows.length) continue;
       let sp = 0;
       for (const [it, r] of rows) {
         if (!it) {                                                    // version précédente, sans description : score seulement
-          total.questions += 1; total.points += r.points; total.errors += r.verdict === 'erreur'; verdicts[r.verdict] += 1; sp += r.points; continue;
+          untracked += 1; total.questions += 1; total.points += r.points; total.errors += r.verdict === 'erreur'; verdicts[r.verdict] += 1; sp += r.points; continue;
         }
         const keys = { mode: it.m, family: it.q.family, hero: it.q.hero, table: it.q.table, depth: depthOf(it.eff) };
         const err = r.verdict === 'erreur';
@@ -198,7 +198,7 @@ const DEMO = (() => {
         ? `Pas encore assez de réponses pour un diagnostic : encore ${need} question${need > 1 ? 's' : ''}.` : "Rien à retravailler pour l'instant : continue avec des séries rapides." };
     }
     return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null,
-      verdicts, min_sample: MIN_SAMPLE, by, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
+      verdicts, min_sample: MIN_SAMPLE, by, untracked_questions: untracked, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
   }
 
   // signalements : base de données partagée de l'artefact (lue par le porteur du projet), un document par signalement

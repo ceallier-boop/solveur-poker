@@ -465,8 +465,13 @@ async function stats() {
     + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
     + (f.filters && !offline ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
   if (f.filters && !offline) $('train-focus').addEventListener('click', () => start(f.filters));
-  $('st-themes').innerHTML = Object.entries(s.by).map(([k, rows]) =>
-    `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
+  const groups = Object.entries(s.by).filter(([, rows]) => rows.length);          // pas de carte vide
+  const old = s.untracked_questions || 0;                                         // démo : réponses d'une version précédente, sans description
+  $('st-themes').innerHTML = groups.map(([k, rows]) =>
+    `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('')
+    + (old ? `<p class="note">${old} réponse${old > 1 ? 's' : ''} d'une version précédente de la démo compte${old > 1 ? 'nt' : ''} dans ton score, mais pas par thème : `
+      + `elles ont été enregistrées sans leur situation. ${groups.length ? 'Les thèmes ci-dessus viennent de tes séries récentes.' : 'Le détail par thème commence avec ta prochaine série.'}</p>` : '')
+    + (!groups.length && !old ? '<p class="note">Le détail par thème s\'affiche après ta première série.</p>' : '');
   $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;
   show('stats');
 }
