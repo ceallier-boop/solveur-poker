@@ -88,17 +88,24 @@
         <p class="error" id="home-error" role="alert" tabindex="-1" hidden></p>
         <button class="primary" id="custom-start">Lancer cette série</button>
       </details>
+      <details class="filters" id="past-box">
+        <summary>Mes pastilles</summary>
+        <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche sur les questions « Quelle pastille ? ».</p>
+        <div id="past-rows"></div>
+      </details>
     </section>
 
     <!-- Question -->
     <section id="screen-question" class="screen" hidden aria-labelledby="q-title">
       <p class="purpose" id="purpose" hidden></p>
       <h2 id="q-title" class="sr-only">Question</h2>
-      <div class="villain" id="villain" hidden></div>
       <p class="seat-line" id="seat-line"></p>
-      <div class="table-view" id="table-view" aria-hidden="true"></div>
-      <p class="chip-legend" id="chip-legend" aria-hidden="true"></p>
-      <ol class="history" id="history" aria-label="Historique du coup"></ol>
+      <div class="table-wrap" id="table-wrap">
+        <div class="table-view" id="table-view" aria-hidden="true"></div>
+        <div class="hero-zone" aria-hidden="true"><div class="cards hole" id="hero-cards"></div><div class="hero-seat" id="hero-seat"></div></div>
+      </div>
+      <div class="villain" id="villain" hidden></div>
+      <ol class="history sr-only" id="history" aria-label="Historique du coup"></ol>
       <p class="sr-only" id="prompt-full"></p>
       <p class="ask" id="ask"></p>
       <div class="actions" id="actions" role="group" aria-labelledby="ask"></div>

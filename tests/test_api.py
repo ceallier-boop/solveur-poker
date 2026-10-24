@@ -201,7 +201,7 @@ def history_lines(sp):
 def test_second_review_fixes():
     _, spots = quiz.load()
     sp = spots['3w-8-8-4-BTN-allin_SB-fold-eee730']                                            # BB couvert : 4 BB effectifs
-    assert quiz.call_terms(sp) == (3.0, 8.5) and quiz.action_label(sp, sp['actions'][1]) == 'Payer le tapis (3 BB de plus)'
+    assert quiz.call_terms(sp) == (3.0, 8.5) and quiz.action_label(sp, sp['actions'][1]) == 'Call 3 BB'
     aa = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], 'AA', 'C')['why_fr'][1]
     assert '85,' in aa                                                                             # (4,29 + 3) / 8,5
     assert quiz.gain_bb(0.062) == 'un peu plus de 0,06 BB' and quiz.gain_bb(0.058) == 'un peu moins de 0,06 BB' and quiz.gain_bb(0.07) == '0,07 BB'

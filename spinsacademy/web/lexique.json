@@ -1,5 +1,5 @@
 {
- "version": "1.8.0",
+ "version": "1.9.0",
  "date": "2026-10-23",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
@@ -188,7 +188,7 @@
     "payer",
     "paie"
    ],
-   "def": "Payer la mise ou la relance d'un adversaire pour rester dans le coup."
+   "def": "Payer la mise ou la relance d'un adversaire pour rester dans le coup. Sur le bouton, le montant est ce qu'il te reste à mettre (« 0,5 BB CALL » au SB : tu complètes la blinde)."
   },
   {
    "term": "Relance (raise, open)",
@@ -196,10 +196,11 @@
    "match": [
     "relance",
     "relancer",
+    "raise to",
     "raise",
     "open"
    ],
-   "def": "Augmenter la mise. La première relance d'un coup s'appelle l'open, par exemple 2,3 BB au BTN ou 3,5 BB au SB."
+   "def": "Augmenter la mise. La première relance d'un coup s'appelle l'open, par exemple 2,3 BB au BTN ou 3,5 BB au SB. « RAISE TO 2,3 BB » : ta mise totale sera de 2,3 BB."
   },
   {
    "term": "Min-raise",
@@ -237,7 +238,7 @@
     "part à tapis",
     "pousse"
    ],
-   "def": "Miser tous ses jetons. À tapis court, on joue souvent « push/fold » : tapis ou fold."
+   "def": "Miser tous ses jetons. À tapis court, on joue souvent « push/fold » : tapis ou fold. Sur le bouton « ALL-IN », le montant est ton tapis."
   },
   {
    "term": "Push/fold",
@@ -489,14 +490,13 @@
    "def": "Facile si la moins chère des réponses fausses coûte plus de 1 BB, difficile si elle coûte moins de 0,2 BB, moyen entre les deux."
   },
   {
-   "term": "Jeton de mise",
+   "term": "Mise",
    "cat": "appli",
    "match": [
-    "jeton",
-    "blinde",
-    "légende"
+    "mise",
+    "pot total"
    ],
-   "def": "Jeton posé devant chaque joueur : gris pour une blinde, = pour un limp, ✓ pour un call, ▲ pour une relance, ★ pour un tapis."
+   "def": "Chiffre jaune devant un joueur : ce qu'il a misé dans ce coup (blinde comprise). Sous son nom, son tapis restant ; « Pot total » additionne toutes les mises."
   },
   {
    "term": "Paire max (top pair)",
@@ -712,7 +712,25 @@
    "match": [
     "pastille"
    ],
-   "def": "Étiquette que tu poses sur un adversaire (rec passif, reg, calling station, dégène, nit) d'après ses stats."
+   "def": "Couleur que tu poses sur un adversaire pour noter son profil (rec passif, calling station, dégène, nit, reg), comme dans ton client de jeu. Choisis tes couleurs dans « Mes pastilles » sur l'accueil ; une lettre dans la pastille aide si tu distingues mal les couleurs."
+  },
+  {
+   "term": "Bouton (D)",
+   "cat": "jeu",
+   "match": [
+    "bouton",
+    "dealer"
+   ],
+   "def": "Jeton « D » posé devant le donneur. À 3 joueurs, c'est le BTN ; en heads-up, le SB a le bouton et parle en premier avant le flop."
+  },
+  {
+   "term": "Stats sous le siège (HUD)",
+   "cat": "appli",
+   "match": [
+    "hud",
+    "stats du vilain"
+   ],
+   "def": "Ligne sous le siège du vilain : ses fréquences observées (par exemple « Limp 60 % »). Touche « Stats du vilain » sous la table pour le détail : nombre de coups, et comparaison avec la théorie."
   }
  ]
 }

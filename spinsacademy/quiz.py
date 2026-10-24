@@ -176,15 +176,15 @@ def hero_effective(sp):
 
 
 def action_label(sp, a):
+    """libellé d'une action avec les mots du client de jeu (lot 1, table du client) : Fold, Check, Call X BB, Raise to X BB,
+    All-in X BB. Le montant d'un call est ce qu'il reste à mettre ; celui d'une relance ou d'un tapis, la mise totale"""
     t = a['type']; to = a.get('to_bb')
     if t == 'fold': return 'Fold'
     if t == 'check': return 'Check'
-    if t == 'limp': return 'Compléter (0,5 BB de plus)' if sp['hero'] == 'SB' else 'Limper (1 BB)'
-    if t == 'call': return f"Payer ({bb(call_terms(sp)[0])} BB de plus)"
-    if t == 'call_allin': return f"Payer le tapis ({bb(call_terms(sp)[0])} BB de plus)"
-    if t == 'raise': return f'Relancer à {bb1(to)} BB'
-    eff = hero_effective(sp)
-    return f'Tapis ({bb(to)} BB, {bb(eff)} BB effectifs)' if to > eff + 1e-9 else f'Tapis ({bb(to)} BB)'
+    if t == 'limp': return 'Call 0,5 BB' if sp['hero'] == 'SB' else 'Call 1 BB'
+    if t in ('call', 'call_allin'): return f"Call {bb(call_terms(sp)[0])} BB"
+    if t == 'raise': return f'Raise to {bb1(to)} BB'
+    return f'All-in {bb(to)} BB'
 
 
 def history_text(sp):

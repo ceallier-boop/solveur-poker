@@ -294,3 +294,61 @@ button.term { background: none; border: 0; padding: 0; font: inherit; color: inh
 .remember { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--ok); border-radius: var(--radius); padding: 10px 12px; margin: 0; font-size: .95rem; }
 .remember b { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ok); margin-bottom: 2px; }
 .details p { margin: 0 0 8px; font-size: .92rem; } .details { margin-bottom: 8px; }
+
+/* ---------------------------------------------------------------- lot 1 : table et actions comme au client de jeu */
+.seat-line { font-size: .95rem; color: var(--muted); } .seat-line b { font-size: 1rem; }
+.table-wrap { position: relative; padding-bottom: 92px; }
+.table-wrap .table-view { height: 250px; border-radius: 120px 120px 90px 90px; }
+.table-view .seat { top: 0; transform: translate(-50%, 0); min-width: 86px; padding: 5px 8px 6px; background: rgba(0,0,0,.55); border-radius: 12px; }
+.table-view .seat b { font-size: .92rem; letter-spacing: .02em; }
+.seat .stack { display: block; font-weight: 750; font-size: 1.02rem; color: #ffd76a; font-variant-numeric: tabular-nums; }
+.seat .act { display: block; margin-top: 2px; font-size: .74rem; font-weight: 800; letter-spacing: .06em; color: #fff; }
+.seat .act.a-fold { color: #c9d1cc; } .seat .act.a-allin { color: #9cc4ff; } .seat .act.a-raise { color: #ffb3a8; }
+.seat .hud { display: block; margin-top: 3px; padding: 2px 6px; border-radius: 999px; background: rgba(0,0,0,.45); font-size: .7rem; color: #e8eeea;
+  white-space: normal; max-width: 150px; line-height: 1.25; }
+.seat.folded { opacity: .55; } .seat.folded .stack { color: #c9d1cc; }
+.betnum { position: absolute; transform: translate(-50%, -50%); color: #ffd76a; font-weight: 800; font-size: 1.05rem; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  font-variant-numeric: tabular-nums; }
+.dealer { position: absolute; transform: translate(-50%, -50%); width: 22px; height: 22px; border-radius: 50%; background: #f4f1e8; color: #222;
+  font-weight: 800; font-size: .72rem; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.table-view .pot { top: 50%; background: none; text-align: center; line-height: 1.15; font-size: 1.15rem; }
+.table-view .pot small { display: block; font-size: .78rem; font-weight: 600; opacity: .85; }
+.hero-zone { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.hero-zone .cards.hole { position: static; transform: none; gap: 4px; margin-bottom: -8px; z-index: 1; }
+.hero-zone .cards.hole .card { width: 60px; height: 84px; font-size: 1.6rem; box-shadow: 0 3px 10px rgba(0,0,0,.35); }
+.hero-seat { background: var(--surface); color: var(--text); border: 2px solid var(--accent); border-radius: 12px; padding: 8px 14px 4px; text-align: center;
+  min-width: 130px; line-height: 1.2; }
+.hero-seat b { display: block; font-size: .85rem; } .hero-seat .stack { display: block; font-weight: 800; font-size: 1.1rem; color: var(--accent); }
+
+/* barre d'actions : montant en gros, verbe du client en dessous ; au-delà de trois actions, une colonne à droite, au-dessus */
+.actions { display: flex; flex-direction: column-reverse; gap: 8px; }
+.actions .mainrow { display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 8px; }
+.actions .presets { display: flex; flex-direction: column-reverse; gap: 8px; align-self: flex-end; width: calc((100% - 16px) / 3); }
+.actions button { min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.1;
+  border: 2px solid var(--accent); background: var(--surface); color: var(--text); border-radius: 12px; }
+.actions button b { font-size: 1.08rem; font-weight: 800; } .actions button small { font-size: .74rem; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+.actions button.fold { border-color: var(--line); }
+.actions.read .mainrow { grid-template-columns: 1fr 1fr; }
+.actions.read button { flex-direction: row; gap: 8px; }
+.actions.read button b { font-size: .98rem; font-weight: 650; }
+
+/* stats du vilain : détail replié sous la table */
+.vdetails summary { cursor: pointer; font-weight: 650; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vdetails[open] summary { margin-bottom: 6px; }
+
+/* pastilles */
+.pastille { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--p); color: var(--pi, #fff);
+  font-style: normal; font-weight: 800; font-size: .68rem; vertical-align: -4px; box-shadow: 0 0 0 2px rgba(255,255,255,.7); flex: none; }
+.past-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 28px; height: 28px; border-radius: 50%; background: var(--p); border: 2px solid transparent; padding: 0; }
+.swatch[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface) inset; }
+
+.table-wrap .table-view { height: 300px; }
+.table-view .seat .betnum { position: absolute; left: 50%; top: calc(100% + 14px); transform: translate(-50%, 0); }
+.betnum.hero-bet { left: 30%; top: 74%; }
+.table-view .pot { top: 60%; }
+.table-view.hu .pot { top: 64%; }
+.table-view.hu .seat .hud { max-width: 260px; }
+.table-view.hu .pot { top: 74%; }
+.past-row { flex-direction: column; align-items: flex-start; }

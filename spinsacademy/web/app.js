@@ -16,6 +16,25 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+
+// pastilles (lot 1) : la couleur que le joueur donne à chaque profil, comme dans son client ; une lettre pour les daltoniens
+const PROFILES = ['Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'];
+const PAST_LETTER = { 'Rec passif': 'P', 'Calling station': 'S', 'Dégène': 'D', 'Nit': 'N', 'Reg': 'R' };
+const PALETTE = ['#e5484d', '#f76b15', '#f5c518', '#30a46c', '#0091ff', '#8e4ec6', '#e93d82', '#8b8d98'];
+const PAST_DEFAULT = { 'Rec passif': '#f5c518', 'Calling station': '#e5484d', 'Dégène': '#f76b15', 'Nit': '#0091ff', 'Reg': '#8b8d98' };
+function pastilles() { try { return { ...PAST_DEFAULT, ...JSON.parse(store.get('pastilles') || '{}') }; } catch (e) { return { ...PAST_DEFAULT }; } }
+const inkOn = (hex) => { const v = parseInt(hex.slice(1), 16), l = 0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255); return l > 150 ? '#111' : '#fff'; };
+function pastilleDot(label) {
+  if (!PROFILES.includes(label)) return '';
+  const c = pastilles()[label];
+  return `<i class="pastille" style="--p:${c};--pi:${inkOn(c)}" aria-hidden="true">${PAST_LETTER[label]}</i>`;
+}
+function renderPastilles() {
+  const p = pastilles();
+  $('past-rows').innerHTML = PROFILES.map((name) => `<div class="past-row"><span>${pastilleDot(name)} ${name}</span><span class="swatches" role="group" aria-label="Couleur : ${name}">`
+    + PALETTE.map((c) => `<button type="button" class="swatch" style="--p:${c}" data-name="${name}" data-color="${c}" aria-pressed="${p[name] === c}" aria-label="${c}"></button>`).join('')
+    + '</span></div>').join('');
+}
 const gainBB = (mbb) => { const a = Math.abs(mbb);                 // gains toujours en BB ; 3 décimales autour de 0,06 BB (limite d'imprécision)
   return a < 20 ? '<0,02 BB' : Math.abs(a - 60) < 5 ? (a / 1000).toFixed(3).replace('.', ',') + ' BB' : bb(a / 1000) + ' BB'; };
 const pc = (x) => String(x).replace('.', ',') + ' %';
@@ -113,34 +132,62 @@ function contributions(q) {
   return { c, folded, kind };
 }
 
-// jetons : un symbole et une couleur par type de mise (légende sous la table)
-const CHIP = { blind: ['', 'Blinde'], limp: ['=', 'Limp'], call: ['✓', 'Call'], raise: ['▲', 'Relance'], allin: ['★', 'Tapis'] };
-function chip(kind, amount, x, y) {
-  const el = document.createElement('div'); el.className = `chip k-${kind}`;
-  el.style.left = x + '%'; el.style.top = y + '%';
-  el.innerHTML = `<i>${CHIP[kind][0]}</i><span>${bb(amount)}</span>`;
-  return el;
+// lot 1 (table du client) : l'action sous le joueur, la mise en chiffres devant lui, le tapis restant, le bouton D
+const ACT_TAG = { fold: 'FOLD', check: 'CHECK', limp: 'CALL', call: 'CALL', call_allin: 'CALL', raise: 'RAISE', allin: 'ALL-IN' };
+const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call tapis', call_pct_bb_sb_fold: 'Call tapis', limp_pct: 'Limp', call_after_limp_pct: 'Call tapis après limp',
+  jam_over_limp_pct: 'Tapis sur limp', open_pct: 'Open', defend_pct: 'Défense' };
+function lastActions(q) {
+  const last = {};
+  for (const h of q.history) last[h.position] = h.action;
+  return last;
 }
 
 function renderTable(q) {
   const view = $('table-view'); view.innerHTML = '';
-  const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded, kind } = contributions(q);
-  const spots = n === 3 ? [[50, 84], [17, 22], [83, 22]] : [[50, 84], [50, 18]];
-  const chips = n === 3 ? [[27, 84], [17, 43], [83, 43]] : [[27, 84], [73, 20]];      // devant chaque place, hors du pot et des cartes
+  const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded } = contributions(q), last = lastActions(q);
+  view.classList.toggle('hu', n === 2);
+  const seats = n === 3 ? [[50, 0], [21, 5], [79, 5]] : [[50, 0], [50, 4]];          // héros en bas (placé à part), adversaires en haut
+  const button = n === 3 ? 'BTN' : 'SB';                                                // en heads-up, le SB a le bouton
+  const hud = hudLines(q);
   for (let k = 0; k < n; k++) {
-    const i = (hero + k) % n, [x, y] = spots[k];
-    const seat = document.createElement('div');
-    seat.className = 'seat' + (i === hero ? ' hero' : '') + (folded[i] ? ' folded' : '');
-    seat.style.left = x + '%'; seat.style.top = y + '%';
-    const backs = i !== hero && !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';      // cartes cachées des adversaires en jeu
-    seat.innerHTML = backs + `<b>${q.players[i]}${i === hero ? ' · toi' : ''}</b>${bb(q.stacks_bb[i])} BB` + (folded[i] ? '<span class="bet">fold</span>' : '');
-    view.appendChild(seat);
-    if (c[i] > 0 && kind[i]) view.appendChild(chip(kind[i], c[i], ...chips[k]));     // un joueur couché laisse sa mise devant lui
+    const i = (hero + k) % n, pos = q.players[i], left = q.stacks_bb[i] - c[i];
+    const act = left <= 1e-9 ? '' : ACT_TAG[last[pos]] || '';                 // tapis : « ALL-IN » à la place du tapis restant
+    const stack = left <= 1e-9 ? 'ALL-IN' : `${bb(left)} BB`;
+    if (k === 0) {
+      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>`;
+    } else {
+      const seat = document.createElement('div');
+      seat.className = 'seat' + (folded[i] ? ' folded' : '');
+      seat.style.left = seats[k][0] + '%'; seat.style.top = seats[k][1] + '%';
+      const backs = !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';           // cartes cachées des adversaires encore dans le coup
+      seat.innerHTML = backs + `<b>${pos}</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '')
+        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}</span>` : '');   // sa mise, devant lui
+      view.appendChild(seat);
+    }
+    if (k === 0 && c[i] > 0) {
+      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.textContent = bb(c[i]); view.appendChild(b);
+    }
+    if (pos === button) {
+      const d = document.createElement('span'); d.className = 'dealer'; d.textContent = 'D'; d.title = 'Bouton';
+      const [x, y] = k === 0 ? [70, 74] : [seats[k][0] + (seats[k][0] < 50 ? 17 : seats[k][0] > 50 ? -17 : 17), seats[k][1] + 8];
+      d.style.left = x + '%'; d.style.top = y + '%'; view.appendChild(d);
+    }
   }
-  const pot = document.createElement('div'); pot.className = 'pot'; pot.textContent = `Pot ${bb(q.pot_bb)} BB`; view.appendChild(pot);
-  const used = [...new Set(kind.filter((k, i) => k && c[i] > 0))];
-  $('chip-legend').innerHTML = used.map((k) => `<span class="chip k-${k}"><i>${CHIP[k][0]}</i></span>${CHIP[k][1]}`).join('');
-  const hole = document.createElement('div'); hole.className = 'cards hole'; hole.id = 'hero-cards'; view.appendChild(hole);   // tes cartes, devant ta place
+  const pot = document.createElement('div'); pot.className = 'pot'; pot.innerHTML = `<small>Pot total</small>${bb(q.pot_bb)} BB`; view.appendChild(pot);
+}
+
+// stats du vilain en une ligne sous son siège (comme le HUD du client) ; le détail (observé / théorie) se déplie sous la table
+function hudLines(q) {
+  const f = q.field, out = {};
+  if (!f || !q.hand || f.ask_fr) return out;
+  const main = (f.villains || [])[0];
+  if (!f.stats.length) { if (main) out[main] = 'Inconnu'; return out; }
+  for (const s of f.stats) {
+    const who = s.stat === 'call_pct_bb_sb_fold' ? 'BB' : main;
+    const line = `${HUD_FR[s.stat] || s.label_fr} ${Math.round(s.observed_pct)} %`;
+    out[who] = out[who] ? `${out[who]} · ${line}` : line;
+  }
+  return out;
 }
 
 function renderCards(display, id = 'hero-cards') {
@@ -154,47 +201,66 @@ function renderCards(display, id = 'hero-cards') {
   box.setAttribute('aria-label', 'Ta main : ' + names.join(' et '));
 }
 
+// bouton d'action : le montant en gros, le verbe du client en dessous (« 0,5 BB / CALL »), comme à la table
+const VERB_RE = /^(Fold|Check|Call|Raise to|All-in)(?: (.+))?$/;
+function actionHTML(label) {
+  const m = VERB_RE.exec(label);
+  if (!m) return `${pastilleDot(label)}<b>${escT(label)}</b>`;
+  return m[2] ? `<b>${escT(m[2])}</b><small>${m[1].toUpperCase()}</small>` : `<b>${m[1].toUpperCase()}</b>`;
+}
+
 function renderQuestion(data) {
   state.q = data.question; state.index = data.question_index; state.size = data.size;
   $('purpose').hidden = !data.purpose_fr; $('purpose').textContent = data.purpose_fr || '';
   $('purpose').className = `purpose ${data.purpose || ''}`;
   const q = state.q;
   progress(`Question ${state.index + 1} / ${state.size}`);
-  renderTable(q); renderCards(q.hand_display);
-  const noHand = !q.hand || !!(q.field && q.field.ask_fr); $('hero-cards').hidden = noHand;   // questions de lecture du vilain : sans main
-  for (const id of ['seat-line', 'table-view', 'chip-legend', 'history']) $(id).hidden = noHand;   // pas de coup joué : ni table ni historique
-  $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';
+  const noHand = !q.hand || !!(q.field && q.field.ask_fr);           // questions de lecture du vilain : sans main ni table
+  $('table-wrap').hidden = noHand;
+  if (!noHand) { renderTable(q); renderCards(q.hand_display); }
+  $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
-  $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
+  $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
-  $('ask').innerHTML = !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}\uFE0E</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
+  $('ask').className = noHand ? 'ask' : 'ask sr-only';               // la table suffit ; la question reste lue par les lecteurs d'écran
+  $('ask').innerHTML = !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}︎</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
   $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
-  $('villain').hidden = !q.field; $('villain').className = 'villain';
-  if (q.field) renderFieldStats(q.field, noHand ? q.prompt_fr.split('\n').filter((l) => !/^Sur \d+ occasions|\?$/.test(l)).join(' ') : '');
+  renderFieldStats(q, noHand);
   const box = $('actions'); box.innerHTML = '';
+  const main = document.createElement('div'); main.className = 'mainrow';
+  const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
+  const read = noHand; box.classList.toggle('read', read);
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
-    b.innerHTML = `${o.label_fr}<span class="key">${k + 1}</span>`; b.dataset.id = o.id;
-    if (q.options.length % 2 === 1 && k === q.options.length - 1) b.classList.add('only');
+    b.innerHTML = actionHTML(o.label_fr) + `<span class="key">${k + 1}</span>`; b.dataset.id = o.id; b.dataset.k = k + 1;
+    if (/^Fold$/.test(o.label_fr)) b.classList.add('fold');
     b.addEventListener('click', () => answer(o.id));
-    box.appendChild(b);
+    (read || k < 3 ? main : extra).appendChild(b);
   });
+  main.style.setProperty('--n', String(main.children.length));
+  box.appendChild(main); if (extra.children.length) box.appendChild(extra);
   show('question');
   box.querySelector('button').focus({ preventScroll: true });
 }
 
-// mode Field : ce qui est observé sur le vilain (k sur n), comparé à la théorie ; jamais son profil interne
-function renderFieldStats(f, context) {
+// mode exploitant : la ligne de stats est sous le siège du vilain ; ici, le détail (k sur n, observé contre théorie), replié.
+// Jamais son profil interne. Questions de lecture : le contexte et les stats restent affichés en entier.
+function renderFieldStats(q, noHand) {
+  const f = q.field, box = $('villain');
+  box.hidden = !f; if (!f) return;
+  const context = noHand ? q.prompt_fr.split('\n').filter((l) => !/^Sur \d+ occasions|\?$/.test(l)).join(' ') : '';
   const bars = f.stats.map((s) => {
     const top = Math.min(100, Math.max(s.observed_pct, s.gto_pct) * 1.15), w = (x) => (100 * x / top).toFixed(1) + '%';
     return `<p class="vstat">${s.label_fr} : ${s.k} sur ${s.n}</p>`
       + `<div class="vbar obs"><span>Observé</span><em><i style="width:${w(s.observed_pct)}"></i></em><b>${bb(s.observed_pct)} %</b></div>`
       + `<div class="vbar gto"><span>Théorie</span><em><i style="width:${w(s.gto_pct)}"></i></em><b>${bb(s.gto_pct)} %</b></div>`;
   }).join('');
-  $('villain').className = 'fstats';
-  $('villain').innerHTML = `<span class="ftype">${f.type_fr}</span>` + (context ? `<p class="fnone">${escT(context)}</p>` : '')
+  const body = (context ? `<p class="fnone">${escT(context)}</p>` : '')
     + (f.stats.length ? bars + `<p class="fn">${f.observations} occasions : plus il y en a, plus la tendance est fiable.</p>`
       : `<p class="fnone">Aucune information sur ce vilain : compte sur le profil le plus fréquent du field (rec passif).</p>`);
+  box.className = 'fstats';
+  box.innerHTML = noHand ? `<span class="ftype">${f.type_fr}</span>` + body
+    : `<details class="vdetails"><summary><span class="ftype">${f.type_fr}</span> ${f.observations ? `Stats du vilain · ${f.observations} mains` : 'Aucune information'}</summary>${body}</details>`;
 }
 
 async function next() {
@@ -224,7 +290,7 @@ function renderAnswer(r) {
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
   const mixPct = ((r.strategy.find((x) => x.chosen) || {}).pct || 0);
   const short = (l) => l.replace(/ \(.*\)$/, '');                     // « Tapis », pas « Tapis (12 BB) » dans la phrase courte
-  const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${r.best_label}.` : `La bonne lecture : ${r.best_label}.`)
+  const sub = r.field && r.field.read ? (r.chosen_label === r.best_label ? `Bonne lecture : ${pastilleDot(r.best_label)}${r.best_label}.` : `La bonne lecture : ${pastilleDot(r.best_label)}${r.best_label}.`)
     : many ? 'Ton choix fait partie des bons coups.'
     : r.chosen_label === r.best_label ? `Le bon coup : ${r.best_label}.`
     : r.verdict === 'correct' && !r.field && mixPct > 0 ? `La théorie joue aussi ce coup (${mixPct} % du temps).`   // A5 : stratégie mixte
@@ -551,8 +617,8 @@ $('home-btn').addEventListener('click', home);
 $('resume').addEventListener('click', () => { state.sid = store.get('sid'); next().catch(home); });
 document.addEventListener('keydown', (e) => {
   if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
-  const k = Number(e.key); const btns = $('actions').querySelectorAll('button');
-  if (k >= 1 && k <= btns.length) btns[k - 1].click();
+  const b = $('actions').querySelector(`button[data-k="${Number(e.key)}"]`);
+  if (b) b.click();
 });
 
 async function home() {
@@ -565,4 +631,9 @@ async function home() {
     if (!s.complete) $('resume').hidden = false; else store.del('sid');
   } catch (e) { store.del('sid'); }
 }
+$('past-rows').addEventListener('click', (e) => {
+  const b = e.target.closest('.swatch'); if (!b) return;
+  const p = pastilles(); p[b.dataset.name] = b.dataset.color; store.set('pastilles', JSON.stringify(p)); renderPastilles();
+});
+renderPastilles();
 home();
