@@ -58,6 +58,7 @@ async function api(path, opts = {}) {
 }
 
 function show(name) {
+  if (name !== 'question' && state.timer) stopTimer();
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
   $('loading').hidden = true;
   window.scrollTo(0, 0);
@@ -101,6 +102,7 @@ for (const group of document.querySelectorAll('.chips')) {
   group.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     for (const x of group.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+    if (group.dataset.name === 'chrono') store.set('chrono', b.dataset.value);       // réglage gardé sur l'appareil
   });
 }
 
@@ -216,6 +218,25 @@ function actionHTML(label) {
   return m[2] ? `<b>${escT(m[2])}</b><small>${m[1].toUpperCase()}</small>` : `<b>${m[1].toUpperCase()}</b>`;
 }
 
+// mode chrono (chantier 5) : comme au client, le temps est compté ; à zéro, fold automatique (check s'il n'y a rien à payer)
+const chrono = () => { const v = Number(store.get('chrono') || 0); return [0, 8, 15].includes(v) ? v : 0; };
+function stopTimer() { clearInterval(state.timer); state.timer = null; $('q-timer').hidden = true; }
+function startTimer(q) {
+  stopTimer(); state.timedOut = false;
+  const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr)) return;   // pas de chrono pour la lecture du vilain
+  const end = Date.now() + secs * 1000, box = $('q-timer'); box.hidden = false;
+  const tick = () => {
+    const left = Math.max(0, end - Date.now());
+    box.querySelector('i').style.width = `${100 * left / (secs * 1000)}%`; box.querySelector('span').textContent = `${Math.ceil(left / 1000)} s`;
+    box.classList.toggle('late', left < 3000);
+    if (left > 0) return;
+    stopTimer();
+    const auto = q.options.find((o) => /^FOLD$/i.test(o.label_fr)) || q.options.find((o) => /^CHECK$/i.test(o.label_fr)) || q.options[0];
+    state.timedOut = auto.label_fr.toLowerCase(); answer(auto.id);
+  };
+  tick(); state.timer = setInterval(tick, 100);
+}
+
 function renderQuestion(data) {
   state.q = data.question; state.index = data.question_index; state.size = data.size;
   $('purpose').hidden = !data.purpose_fr; $('purpose').textContent = data.purpose_fr || '';
@@ -246,7 +267,7 @@ function renderQuestion(data) {
   });
   main.style.setProperty('--n', String(main.children.length));
   box.appendChild(main); if (extra.children.length) box.appendChild(extra);
-  show('question');
+  show('question'); startTimer(q);
   box.querySelector('button').focus({ preventScroll: true });
 }
 
@@ -279,7 +300,7 @@ async function next() {
 
 // ------------------------------------------------------------------ correction
 async function answer(id) {
-  if (state.busy) return; state.busy = true;
+  if (state.busy) return; state.busy = true; clearInterval(state.timer); state.timer = null;
   for (const b of $('actions').querySelectorAll('button')) b.disabled = true;
   try {
     const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id }) });
@@ -303,7 +324,8 @@ function renderAnswer(r) {
     : r.verdict === 'correct' && !r.field && mixPct > 0 ? `La théorie joue aussi ce coup (${mixPct} % du temps).`   // A5 : stratégie mixte
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
-  v.innerHTML = title + `<small>${sub}</small>`;
+  v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, comme au client.\n` : ''}${sub}</small>`;
+  stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
   $('a-strategy-title').textContent = r.gto_label ? `Contre ce joueur : ${r.best_label} · contre un joueur GTO : ${r.gto_label}` : 'Stratégie de référence';
@@ -408,7 +430,8 @@ async function sendReport(e) {
 async function summary() {
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
-  $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`;
+  $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
+    + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB` : 'Aucun BB perdu sur cette série'} par rapport aux meilleurs coups.</small>` : '');
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
@@ -427,7 +450,7 @@ function themeRow(x, min) {
     const need = Math.max(min - x.questions, 1);
     return `<div class="trow unreliable"><span>${x.label}</span><span>encore ${need} question${need > 1 ? 's' : ''} pour un score</span></div>`;
   }
-  return `<div class="trow${cls}"><span>${x.label}</span><span>${pc(x.score_pct)}</span><div class="sbar"><i style="width:${x.score_pct}%"></i></div></div>`;
+  return `<div class="trow${cls}"><span>${x.label}</span><span>${pc(x.score_pct)}${x.bb_per_100 != null ? ` <small class="bb100">· ${bb(x.bb_per_100)} BB/100</small>` : ''}</span><div class="sbar"><i style="width:${x.score_pct}%"></i></div></div>`;
 }
 // progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
 // ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
@@ -461,7 +484,9 @@ async function stats() {
     $('st-focus').className = 'focus none'; $('st-focus').innerHTML = '<p class="focus-title">À travailler maintenant</p><p>Joue une première série pour un diagnostic.</p>';
     $('st-note').textContent = ''; show('stats'); return;
   }
-  $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`;
+  $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`
+    + (s.bb_per_100 != null ? `<small class="bblost"><b>${bb(s.bb_per_100)} BB</b> perdus pour 100 décisions (plus c'est bas, mieux c'est)</small>` : '')   // chantier 5
+    + (s.ranges && s.ranges.count ? `<small class="bblost">Ranges construites : ${s.ranges.count} · ${pc(s.ranges.accuracy_pct)} de mains bien classées en moyenne${s.ranges.count > s.ranges.recent ? ` (${s.ranges.recent} dernières)` : ''}</small>` : '');
   $('st-evolution').innerHTML = s.evolution.length > 1
     ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
     : '<span>L\'évolution s\'affiche après deux séries.</span>';
@@ -627,6 +652,7 @@ const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], 
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
 function onMode() {
   store.set('mode', mode());                                         // gardé après un rechargement
+  $('range-btn').hidden = mode() !== 'gto';                          // l'exercice de range demande la stratégie complète (GTO)
   reviews();
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
@@ -671,6 +697,79 @@ $('past-rows').addEventListener('click', (e) => {
   const p = pastilles(); p[b.dataset.name] = b.dataset.color; store.set('pastilles', JSON.stringify(p)); renderPastilles();
 });
 renderPastilles();
+// ------------------------------------------------------------------ « Construis ta range » (chantier 2) : colorier une range, correction main par main
+const RK13 = 'AKQJT98765432';
+const cellName = (i, j) => (i === j ? RK13[i] + RK13[j] : i < j ? RK13[i] + RK13[j] + 's' : RK13[j] + RK13[i] + 'o');
+const combos = (h) => (h.length === 2 ? 6 : h.endsWith('s') ? 4 : 12);
+const RG_STATUS = { ok_in: 'à jouer : bien vu', ok_out: 'à laisser : bien vu', extra: 'jouée à tort', missing: 'oubliée', mixed: 'mixte : les deux sont acceptés' };
+async function rangeStart() {
+  const f = filters(); delete f.mode;
+  if (f.family === 'read') delete f.family;
+  const qs = Object.entries(f).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  loading(true);
+  let t;
+  try { t = await api('/ranges/next' + (qs ? `?${qs}` : '')); }
+  catch (e) { loading(false); notify(e.status === 422 ? 'Pas de range à construire pour ce thème : élargis les filtres.' : netMsg(e, "l'exercice n'a pas pu démarrer"), retryable(e) ? rangeStart : null); return; }
+  state.range = { t, sel: new Set(), done: false };
+  $('rg-situation').textContent = t.situation_fr; $('rg-question').textContent = t.question_fr;
+  $('rg-result').hidden = true; $('rg-edit').hidden = false; $('rg-after').hidden = true; $('rg-help').hidden = false;
+  renderRangeGrid(); show('range'); progress('Construis ta range');
+}
+function renderRangeGrid(result) {
+  const g = $('rg-grid'), r = state.range, live = new Set(r.t.hands); g.innerHTML = '';
+  for (let i = 0; i < 13; i++) for (let j = 0; j < 13; j++) {
+    const h = cellName(i, j), b = document.createElement('button'); b.type = 'button'; b.dataset.h = h; b.textContent = h;
+    b.className = 'rc' + (live.has(h) ? '' : ' off') + (r.sel.has(h) ? ' on' : '') + (result && result.cells[h] ? ` st-${result.cells[h]}` : '');
+    if (!live.has(h)) { b.disabled = true; b.title = "Main qui n'arrive pas à cette décision"; }
+    else if (result && result.cells[h]) b.title = `${h} : ${RG_STATUS[result.cells[h]]} (référence ${Math.round(100 * result.reference[h])} %)`;
+    b.setAttribute('aria-pressed', String(r.sel.has(h)));
+    g.appendChild(b);
+  }
+  rangeCount();
+}
+function rangeCount() {
+  const r = state.range; let n = 0; for (const h of r.sel) n += combos(h);
+  $('rg-count').textContent = `Ta range : ${Math.round(100 * n / 1326)} % des mains (${r.sel.size} cases).`;
+}
+function paint(b, on) {
+  const r = state.range; if (!b || !b.dataset.h || b.disabled || r.done) return;
+  if (on) r.sel.add(b.dataset.h); else r.sel.delete(b.dataset.h);
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); rangeCount();
+}
+(function rangePainting() {                                          // toucher une case, ou glisser le doigt pour en colorier plusieurs
+  const g = $('rg-grid'); let mode = null;
+  g.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.rc'); if (!b || b.disabled || state.range.done) return;
+    mode = !state.range.sel.has(b.dataset.h); paint(b, mode); e.preventDefault();
+  });
+  g.addEventListener('pointermove', (e) => { if (mode === null) return; paint(document.elementFromPoint(e.clientX, e.clientY)?.closest('.rc'), mode); });
+  addEventListener('pointerup', () => { mode = null; }); addEventListener('pointercancel', () => { mode = null; });
+  g.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.rc')) { const b = e.target.closest('.rc'); paint(b, !state.range.sel.has(b.dataset.h)); e.preventDefault(); } });
+}());
+async function rangeSubmit() {
+  const r = state.range; if (r.done) return;
+  loading(true);
+  let g;
+  try { g = await api('/ranges/answer', { method: 'POST', body: JSON.stringify({ spot_id: r.t.spot_id, hands: [...r.sel] }) }); }
+  catch (e) { loading(false); notify(netMsg(e, "ta range n'a pas pu être corrigée"), retryable(e) ? rangeSubmit : null); return; }
+  loading(false); r.done = true; renderRangeGrid(g);
+  const worst = g.worst.length ? `<ul class="rg-worst">${g.worst.map((w) => `<li><b>${w.hand}</b> ${w.kind === 'extra' ? 'jouée à tort' : 'oubliée'} : ${bb(w.cost_bb)} BB perdus à chaque fois</li>`).join('')}</ul>` : '';
+  const rem = (g.rule_fr || '').replace(/^À retenir : /, '');
+  $('rg-result').innerHTML = `<p class="rg-score"><b>${pc(g.accuracy_pct)}</b> des mains bien classées<small>${bb(g.bb_per_100)} BB perdus pour 100 mains jouées dans cette situation</small></p>`
+    + `<p>Ta range : ${g.my_share_pct} % des mains · référence : ${g.ref_share_pct} %. ${g.extra} main${g.extra > 1 ? 's' : ''} en trop, ${g.missing} oubliée${g.missing > 1 ? 's' : ''}.</p>`
+    + worst
+    + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte</span></p>`
+    + (rem ? `<p class="remember"><b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span></p>` : '');
+  $('rg-result').hidden = false; $('rg-edit').hidden = true; $('rg-after').hidden = false; $('rg-help').hidden = true;
+  glossify($('rg-result'));
+  refreshStats();
+}
+$('range-btn').addEventListener('click', rangeStart);
+$('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });
+$('rg-submit').addEventListener('click', rangeSubmit);
+$('rg-again').addEventListener('click', rangeStart);
+$('rg-home').addEventListener('click', home);
+
 // test joueurs du 24/10 : le mode et le thème choisis restent après un rechargement
 (function restoreHome() {
   const m = store.get('mode'); const btn = m && document.querySelector(`.mode-switch [data-value="${m}"]`);
@@ -681,6 +780,7 @@ renderPastilles();
     const grp = document.querySelector(`.chips[data-name="${name}"]`); const b = v && grp && grp.querySelector(`[data-value="${v}"]`);
     if (b) for (const x of grp.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
   }
+  for (const c of document.querySelectorAll('.chips[data-name="chrono"] button')) c.setAttribute('aria-pressed', String(Number(c.dataset.value) === chrono()));
   onMode();
 }());
 home();

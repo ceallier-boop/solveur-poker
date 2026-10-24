@@ -40,9 +40,16 @@
         <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
       </div>
       <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
+      <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
+        <div class="chips" data-name="chrono">
+          <button type="button" data-value="0" aria-pressed="true">Sans</button>
+          <button type="button" data-value="15" aria-pressed="false">15 s</button>
+          <button type="button" data-value="8" aria-pressed="false">8 s</button>
+        </div></div>
       <button class="primary big" id="quick-start">Série recommandée</button>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
       <button class="secondary review-btn" id="review-btn" hidden>Revoir mes mains</button>
+      <button class="secondary" id="range-btn">Construis ta range</button>
       <p class="note" id="review-note" hidden></p>
       <button class="secondary" id="stats-btn">Ma progression</button>
 
@@ -95,9 +102,23 @@
       </details>
     </section>
 
+    <!-- Construis ta range (chantier 2) -->
+    <section id="screen-range" class="screen" hidden aria-labelledby="rg-title">
+      <h2 id="rg-title">Construis ta range</h2>
+      <p class="recap" id="rg-situation"></p>
+      <p class="ask" id="rg-question"></p>
+      <p class="note" id="rg-help">Touche ou fais glisser ton doigt sur les mains. Paires sur la diagonale, assorties en haut à droite, dépareillées en bas à gauche.</p>
+      <div class="rgrid" id="rg-grid" role="group" aria-label="Grille des 169 mains"></div>
+      <p class="rg-count" id="rg-count" role="status"></p>
+      <div class="rg-result" id="rg-result" hidden></div>
+      <div class="rg-actions" id="rg-edit"><button class="secondary" id="rg-clear">Effacer</button><button class="primary" id="rg-submit">Valider ma range</button></div>
+      <div class="rg-actions" id="rg-after" hidden><button class="secondary" id="rg-home">Accueil</button><button class="primary" id="rg-again">Nouvelle range</button></div>
+    </section>
+
     <!-- Question -->
     <section id="screen-question" class="screen" hidden aria-labelledby="q-title">
       <p class="purpose" id="purpose" hidden></p>
+      <div class="qtimer" id="q-timer" hidden role="timer" aria-live="off"><i></i><span></span></div>
       <h2 id="q-title" class="sr-only">Question</h2>
       <p class="seat-line" id="seat-line"></p>
       <div class="table-wrap" id="table-wrap">

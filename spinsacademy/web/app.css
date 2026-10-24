@@ -373,3 +373,35 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .seat .hud { white-space: nowrap; max-width: none; font-size: .66rem; padding: 1px 6px; margin-top: 2px; }
 .table-view .seat .pastille { width: 16px; height: 16px; font-size: .58rem; margin-right: 4px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.8); }
 .pastille.none { background: transparent; color: rgba(255,255,255,.75); box-shadow: 0 0 0 1.5px rgba(255,255,255,.5) !important; }
+
+/* chantier 5 : BB perdus */
+.score small.bblost { display: block; margin-top: 6px; font-size: .9rem; color: var(--text); font-weight: 500; }
+.trow .bb100 { color: var(--muted); font-size: .8rem; font-weight: 500; }
+
+/* chantier 5 : chrono */
+.chrono-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .9rem; color: var(--muted); }
+.chrono-row .chips button { min-height: 34px; padding: 4px 12px; }
+.qtimer { position: relative; height: 22px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.qtimer i { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .1s linear; }
+.qtimer.late i { background: var(--bad); }
+.qtimer span { position: relative; display: block; text-align: center; font-size: .8rem; font-weight: 700; line-height: 22px; color: var(--text); }
+
+/* chantier 2 : construis ta range */
+.rgrid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.rc { aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 4px; font-size: clamp(.5rem, 2.3vw, .72rem); font-weight: 650;
+  background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.rc.on { background: var(--a-allin, #2c5aa0); color: #fff; box-shadow: none; }
+.rc.off { opacity: .25; }
+.rc.st-ok_in { background: var(--ok); color: #fff; } .rc.st-ok_out { background: var(--surface); color: var(--muted); }
+.rc.st-extra { background: var(--bad); color: #fff; } .rc.st-missing { background: var(--surface); color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad); }
+.rc.st-mixed { background: repeating-linear-gradient(45deg, var(--warn-bg) 0 4px, var(--surface) 4px 8px); color: var(--text); }
+.rg-count { margin: 0; text-align: center; font-weight: 600; }
+.rg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rg-result { display: flex; flex-direction: column; gap: 8px; } .rg-result p { margin: 0; }
+.rg-score b { font-size: 1.6rem; } .rg-score small { display: block; color: var(--muted); }
+.rg-worst { margin: 0; padding-left: 18px; }
+.rg-legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .8rem; }
+.rg-legend span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -2px; }
+.rg-legend .st-ok_in::before { background: var(--ok); } .rg-legend .st-extra::before { background: var(--bad); }
+.rg-legend .st-missing::before { box-shadow: inset 0 0 0 2px var(--bad); } .rg-legend .st-mixed::before { background: repeating-linear-gradient(45deg, var(--warn-bg) 0 3px, var(--surface) 3px 6px); }
+.rc.st-mixed.on { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 800; }   /* mixte, et choisie par le joueur */

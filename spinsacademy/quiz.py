@@ -1008,7 +1008,9 @@ def summary(version, answers):
     errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'], verdict=r['verdict'],
                           loss_fr=r.get('loss_fr'))
                      for sid, h, r in answers if r['verdict'] != 'correct'], key=lambda e: -e['regret_mbb'])
-    return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0,
+    ev = [r for sid, _, r in answers if not (spots[sid].get('field') and spots[sid]['field']['type'] in ('identification', 'profil'))]
+    lost = sum(r['regret_mbb'] or 0 for r in ev) / 1000                     # chantier 5 : ce que la série a coûté, en BB
+    return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0, bb_lost=round(lost, 2), ev_questions=len(ev),
                 verdicts={v: sum(1 for *_, r in answers if r['verdict'] == v) for v in grading.POINTS},
                 by_theme=[dict(family=f, hero=p, questions=c, points=s) for (f, p), (c, s) in sorted(by.items())],
                 errors=errors, review=[e['prompt_fr'] for e in errors[:3]])

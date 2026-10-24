@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, field, quiz, review
+from spinsacademy import adaptive, field, quiz, ranges, review
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -47,6 +47,22 @@ SLIM = ('explanation_fr', 'core_fr', 'why_fr')       # la page affiche essential
 def slim(c): return {k: v for k, v in c.items() if k not in SLIM}
 
 
+RANGE_TASKS = 240          # exercices « Construis ta range » embarqués dans la démo (tirés selon la fréquence des situations)
+
+
+def range_tasks(ref, n=RANGE_TASKS, seed=5):
+    rnd = random.Random(seed); weights = quiz.situation_weights(ref); ok = ranges.drawable(ref)
+    spots = [sp for sp in quiz.pool(ref) if sp['spot_id'] in ok]
+    rnd.shuffle(spots)
+    spots.sort(key=lambda sp: -rnd.random() * weights.get((sp['table'], quiz.stack_band(sp), quiz.situation_key(sp)), quiz.RARE_FLOOR))
+    out = []
+    for sp in spots:
+        t = ranges.task(sp)
+        if t: out.append(t)
+        if len(out) >= n: break
+    return out
+
+
 def theme_css(css):
     """thème de l'hôte : prefers-color-scheme sans choix explicite, data-theme sinon ; barre collante sous l'encoche"""
     m = re.search(r'@media \(prefers-color-scheme: dark\) \{\s*:root \{(.*?)\}\s*\}', css, re.S)
@@ -60,11 +76,11 @@ def theme_css(css):
 SHIM = r"""
 // ---------------------------------------------------------------- moteur local (remplace l'API dans la version autonome)
 const DEMO = (() => {
-  let ITEMS = null; let GRIDS = {};
+  let ITEMS = null; let GRIDS = {}; let RTASKS = [];
   const ready = (async () => {
     const bin = Uint8Array.from(atob(document.getElementById('demo-data').textContent.trim()), (c) => c.charCodeAt(0));
     const txt = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
-    const d = JSON.parse(txt); ITEMS = d.items; GRIDS = d.grids;
+    const d = JSON.parse(txt); ITEMS = d.items; GRIDS = d.grids; RTASKS = d.ranges || [];
   })();
   const KEY = 'spinsacademy_demo_v1';
   let mem = null;
@@ -138,34 +154,38 @@ const DEMO = (() => {
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
       chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb })).sort((a, b) => b.regret_mbb - a.regret_mbb);
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
-    return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
+    const ev = rows.filter(([, r]) => !(r.field && r.field.read)); const lost = ev.reduce((a, [, r]) => a + (r.regret_mbb || 0), 0) / 1000;
+    return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
       session_id: s.id, size: s.items.length, complete: n === s.items.length };
   }
 
   function stats() {
-    const bucket = () => ({ questions: 0, points: 0, errors: 0 });
+    const bucket = () => ({ questions: 0, points: 0, errors: 0, evq: 0, regret: 0 });
+    const addEv = (b, r) => { if (!(r.field && r.field.read)) { b.evq += 1; b.regret += r.regret_mbb || 0; } };   // BB perdus : sans la lecture du vilain
+    const per100 = (b) => (b.evq ? Math.round(b.regret / 1000 * 100 / b.evq * 100) / 100 : null);
     const total = bucket(); const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 };
     const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {}; let untracked = 0;
     const sess = Object.values(load().sessions).sort((a, b) => a.created_at.localeCompare(b.created_at));
     for (const s of sess) {
       const rows = answered(s); if (!rows.length) continue;
-      let sp = 0;
+      let sp = 0; const sb = bucket();
       for (const [it, r] of rows) {
+        addEv(sb, r);
         if (!it) {                                                    // version précédente, sans description : score seulement
-          untracked += 1; total.questions += 1; total.points += r.points; total.errors += r.verdict === 'erreur'; verdicts[r.verdict] += 1; sp += r.points; continue;
+          untracked += 1; total.questions += 1; total.points += r.points; total.errors += r.verdict === 'erreur'; verdicts[r.verdict] += 1; sp += r.points; addEv(total, r); continue;
         }
         const keys = { mode: it.m, family: it.q.family, hero: it.q.hero, table: it.q.table, depth: depthOf(it.eff) };
         const err = r.verdict === 'erreur';
-        for (const b of [total, ...Object.entries(keys).map(([d, k]) => (dims[d][k] = dims[d][k] || bucket()))]) { b.questions += 1; b.points += r.points; b.errors += err; }
+        for (const b of [total, ...Object.entries(keys).map(([d, k]) => (dims[d][k] = dims[d][k] || bucket()))]) { b.questions += 1; b.points += r.points; b.errors += err; addEv(b, r); }
         verdicts[r.verdict] += 1; sp += r.points;
         const tk = [it.m, it.q.family, it.q.hero, keys.depth].join('|');
         const t = (themes[tk] = themes[tk] || { errors: 0, imprecisions: 0, questions: 0, regret: 0, examples: [] }); t.questions += 1; t.imprecisions += r.verdict === 'imprécision';
         if (err) { t.errors += 1; t.regret += r.regret_mbb; if (t.examples.length < 2) t.examples.push(it.q.prompt_fr); }
       }
-      sessions.push({ session_id: s.id, date: s.created_at, questions: rows.length, score_pct: Math.round(1000 * sp / rows.length) / 10 });
+      sessions.push({ session_id: s.id, date: s.created_at, questions: rows.length, score_pct: Math.round(1000 * sp / rows.length) / 10, bb_per_100: per100(sb) });
     }
     const close = (b, label, filters) => ({ label, questions: b.questions, score_pct: b.questions ? Math.round(1000 * b.points / b.questions) / 10 : null,
-      errors: b.errors, reliable: b.questions >= MIN_SAMPLE, filters });
+      errors: b.errors, reliable: b.questions >= MIN_SAMPLE, filters, bb_per_100: per100(b) });
     const df = Object.fromEntries(DEPTHS.map(([k, , lo, hi]) => [k, { min_stack: lo, max_stack: hi }]));
     const by = {
       mode: Object.keys(MODE_FR).filter((k) => dims.mode[k]).map((k) => close(dims.mode[k], MODE_FR[k], { mode: k })),
@@ -201,7 +221,7 @@ const DEMO = (() => {
       focus = { kind: 'none', label: null, filters: null, examples: [], reason_fr: need
         ? `Pas encore assez de réponses pour un diagnostic : encore ${need} question${need > 1 ? 's' : ''}.` : "Rien à retravailler pour l'instant : continue avec des séries rapides." };
     }
-    return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null,
+    return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null, bb_per_100: per100(total),
       verdicts, min_sample: MIN_SAMPLE, by, untracked_questions: untracked, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
   }
 
@@ -251,6 +271,22 @@ const DEMO = (() => {
     return { rule_fr: __REVIEW_RULE__, due: due.length, pending: later.length, next_due_at: later.length ? new Date(later[0].due_at).toISOString() : null, mode };
   }
 
+  // « Construis ta range » : même règle que spinsacademy.ranges.grade
+  function rangeGrade(t, selected) {
+    const sel = new Set(selected); const cells = {}; let wt = 0, good = 0, lost = 0, refw = 0, myw = 0; const extra = [], missing = [];
+    for (const [h, [f, cin, cout, w]] of Object.entries(t.hands)) {
+      const played = sel.has(h), ref = f >= 0.75 ? 'in' : f <= 0.25 ? 'out' : 'mixed'; const cost = played ? cin : cout; let st, ok;
+      if (ref === 'mixed') { st = 'mixed'; ok = true; } else if (ref === 'in') { st = played ? 'ok_in' : 'missing'; ok = played; } else { st = played ? 'extra' : 'ok_out'; ok = !played; }
+      cells[h] = st; wt += w; good += ok ? w : 0; lost += w * cost; refw += w * f; if (played) myw += w;
+      if (st === 'extra') extra.push([cost, h]); if (st === 'missing') missing.push([cost, h]);
+    }
+    const worst = extra.concat(missing).sort((a, b) => b[0] - a[0] || (a[1] < b[1] ? 1 : -1)).slice(0, 5);
+    return { spot_id: t.spot_id, cells, accuracy_pct: wt ? Math.round(1000 * good / wt) / 10 : 0, bb_per_100: wt ? Math.round(10000 * lost / wt) / 100 : 0,
+      extra: extra.length, missing: missing.length, worst: worst.map(([c, h]) => ({ hand: h, cost_bb: Math.round(100 * c) / 100, kind: cells[h] })),
+      ref_share_pct: wt ? Math.round(100 * refw / wt) : 0, my_share_pct: wt ? Math.round(100 * myw / wt) : 0, rule_fr: t.rule_fr,
+      reference: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[0]])), situation_fr: t.situation_fr, question_fr: t.question_fr };
+  }
+
   async function route(path, opts) {
     await ready;
     const url = new URL(path, 'https://demo.local/'); const p = url.pathname; const method = (opts && opts.method) || 'GET';
@@ -290,7 +326,25 @@ const DEMO = (() => {
       return [200, Object.assign({}, r, { already_answered: false })];
     }
     if (p === '/reports' && method === 'POST') return report(body);
-    if (p === '/users/me/stats') return [200, stats()];
+    if (p === '/ranges/next') {
+      const q = url.searchParams, lo = Number(q.get('min_stack') || 0), hi = Number(q.get('max_stack') || 999);
+      const c = RTASKS.filter((t) => (!q.get('table') || t.table === q.get('table')) && (!q.get('hero') || t.hero === q.get('hero'))
+        && (!q.get('family') || t.family === q.get('family')) && t.effective_stack_bb >= lo && t.effective_stack_bb <= hi);
+      if (!c.length) return [422, { detail: 'pas de situation à dessiner pour ces filtres' }];
+      const t = rnd(c); const { hands, rule_fr, ...rest } = t; return [200, Object.assign(rest, { hands: Object.keys(hands).sort() })];
+    }
+    if (p === '/ranges/answer' && method === 'POST') {
+      const t = RTASKS.find((x) => x.spot_id === body.spot_id); if (!t) return [404, { detail: 'situation inconnue' }];
+      const g = rangeGrade(t, (body.hands || []).filter((h) => h in t.hands));
+      db.ranges = (db.ranges || []).concat([{ spot_id: t.spot_id, accuracy_pct: g.accuracy_pct, bb_per_100: g.bb_per_100, at: now() }]); save();
+      return [200, g];
+    }
+    if (p === '/users/me/stats') {
+      const s = stats(), rs = (load().ranges || []).slice(-20);
+      s.ranges = rs.length ? { count: (load().ranges || []).length, recent: rs.length, accuracy_pct: Math.round(10 * rs.reduce((a, r) => a + r.accuracy_pct, 0) / rs.length) / 10,
+        bb_per_100: Math.round(100 * rs.reduce((a, r) => a + r.bb_per_100, 0) / rs.length) / 100 } : { count: 0 };
+      return [200, s];
+    }
     if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
@@ -321,7 +375,8 @@ def build(out, k_gto, exploit_max=2500):
     for it in data:
         for r in it['c'].values(): grids[it['q']['spot_id']] = r.pop('range', None)
     build_id = hashlib.sha256(json.dumps([(it['q']['spot_id'], it['q']['hand'], it['m']) for it in data]).encode()).hexdigest()[:12]   # ordre des questions
-    blob = base64.b64encode(gzip.compress(json.dumps(dict(items=data, grids=grids), ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
+    rtasks = range_tasks(quiz.DEFAULT_VERSION)
+    blob = base64.b64encode(gzip.compress(json.dumps(dict(items=data, grids=grids, ranges=rtasks), ensure_ascii=False, separators=(',', ':')).encode(), 9)).decode()
     body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
     body = re.sub(r'<script[^>]*></script>', '', body)
     gto, fld = (quiz.load(r)[0]['version'] for r in (quiz.DEFAULT_VERSION, quiz.DEFAULT_FIELD))

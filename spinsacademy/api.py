@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, progress, quiz, ratelimit, review
+from . import adaptive, catalog, progress, quiz, ranges, ratelimit, review
 from .hrc import ROOT
 
 SCHEMA = """
@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS disabled_spots(spot_id TEXT PRIMARY KEY, dataset_vers
   report_id INTEGER, disabled_at TEXT NOT NULL, actor TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS preferences(player_id TEXT PRIMARY KEY, adaptive INTEGER NOT NULL DEFAULT 1, adaptation_reset_at TEXT,
   updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS range_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT, dataset_version TEXT NOT NULL,
+  spot_id TEXT NOT NULL, hands TEXT NOT NULL, accuracy_pct REAL NOT NULL, bb_per_100 REAL NOT NULL, answered_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
 """
@@ -130,7 +132,7 @@ def _warm():
         for v in versions:
             try:
                 quiz.load(v)
-                if quiz.mode_of(v) == 'gto': quiz.situation_weights(v)
+                if quiz.mode_of(v) == 'gto': quiz.situation_weights(v); ranges.drawable(v)
             except Exception:
                 pass
     threading.Thread(target=run, daemon=True).start()
@@ -293,7 +295,48 @@ def _player_rows(con, pid):
 def my_stats(x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=True)
     with closing(connect()) as con:
-        return progress.compute(_player_rows(con, pid))
+        out = progress.compute(_player_rows(con, pid))
+        out['ranges'] = _range_stats(con, pid)
+        return out
+
+
+# ------------------------------------------------------------------ exercice « Construis ta range » (chantier 2)
+def _range_stats(con, pid):
+    rows = [dict(r) for r in con.execute('SELECT accuracy_pct, bb_per_100 FROM range_attempts WHERE player_id = ? ORDER BY id DESC LIMIT 20', (pid,))]
+    n = con.execute('SELECT COUNT(*) FROM range_attempts WHERE player_id = ?', (pid,)).fetchone()[0]
+    if not rows: return dict(count=0)
+    return dict(count=n, recent=len(rows), accuracy_pct=round(sum(r['accuracy_pct'] for r in rows) / len(rows), 1),
+                bb_per_100=round(sum(r['bb_per_100'] for r in rows) / len(rows), 2))
+
+
+@app.get('/ranges/next')
+def range_next(table: Optional[str] = None, hero: Optional[str] = None, family: Optional[str] = None, min_stack: Optional[float] = None,
+               max_stack: Optional[float] = None, seed: Optional[int] = None):
+    """une situation à dessiner ; les fréquences de référence restent sur le serveur jusqu'à la réponse"""
+    f = Filters(table=table, hero=hero, family=family, min_stack=min_stack, max_stack=max_stack).model_dump(exclude_none=True)
+    with closing(connect()) as con:
+        version = serving_version(con, 'gto')
+        t = ranges.pick(version, f or None, seed, _excluded(con))
+    if not t: raise HTTPException(422, 'pas de situation à dessiner pour ces filtres')
+    return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'rule_fr')}, hands=sorted(t['hands']))
+
+
+class RangeAnswer(BaseModel):
+    spot_id: str
+    hands: list[str] = Field(default_factory=list, max_length=169)
+
+
+@app.post('/ranges/answer')
+def range_answer(body: RangeAnswer, x_player_id: Optional[str] = Header(None)):
+    pid = player(x_player_id)
+    with closing(connect()) as con, con:
+        version = serving_version(con, 'gto'); _, spots = quiz.load(version)
+        sp = spots.get(body.spot_id); t = sp and ranges.task(sp)
+        if not t: raise HTTPException(404, 'situation inconnue')
+        g = ranges.grade(t, [h for h in body.hands if h in t['hands']])
+        con.execute('INSERT INTO range_attempts(player_id, dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at) VALUES (?,?,?,?,?,?,?)',
+                    (pid, version, body.spot_id, json.dumps(sorted(set(body.hands))), g['accuracy_pct'], g['bb_per_100'], _now()))
+    return dict(g, reference={h: x[0] for h, x in t['hands'].items()}, situation_fr=t['situation_fr'], question_fr=t['question_fr'])
 
 
 class Preferences(BaseModel):
@@ -352,7 +395,8 @@ def my_export(x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=True)
     with closing(connect()) as con:
         sessions = [dict(r) for r in con.execute('SELECT id, created_at, dataset_version, filters, seed, size FROM sessions WHERE player_id = ?', (pid,))]
-        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid))
+        ranges_done = [dict(r) for r in con.execute('SELECT dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
+        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done)
 
 
 @app.delete('/users/me', status_code=204)
@@ -364,6 +408,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         for sid in ids:
             con.execute('DELETE FROM attempts WHERE session_id = ?', (sid,)); con.execute('DELETE FROM questions WHERE session_id = ?', (sid,))
         con.execute('DELETE FROM sessions WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM range_attempts WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
 
 

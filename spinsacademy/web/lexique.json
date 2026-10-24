@@ -1,5 +1,5 @@
 {
- "version": "1.9.2",
+ "version": "1.11.0",
  "date": "2026-10-23",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
@@ -732,6 +732,33 @@
     "stats du vilain"
    ],
    "def": "Ligne sous le siège du vilain : ses fréquences observées (par exemple « Limp 60 % »). Touche « Stats du vilain » sous la table pour le détail : nombre de coups, et comparaison avec la théorie."
+  },
+  {
+   "term": "BB perdus pour 100 décisions",
+   "cat": "appli",
+   "match": [
+    "BB perdus",
+    "BB/100"
+   ],
+   "def": "Ce que tes réponses coûtent par rapport aux meilleurs coups, ramené à 100 décisions. C'est le chiffre le plus proche de ton résultat en partie : 5 BB/100, c'est 5 BB laissés sur la table toutes les 100 décisions. Plus il est bas, mieux c'est ; les questions de lecture du vilain n'y comptent pas."
+  },
+  {
+   "term": "Construis ta range",
+   "cat": "appli",
+   "match": [
+    "construis ta range",
+    "mains bien classées"
+   ],
+   "def": "Exercice du mode GTO : colorie sur la grille toutes les mains avec lesquelles tu joues l'action demandée, puis compare avec la référence. Vert : à jouer, bien vu ; rouge : jouée à tort ; contour rouge : oubliée ; hachuré : main mixte, les deux réponses sont acceptées. La note donne la part des mains bien classées et les BB perdus pour 100 mains jouées dans cette situation."
+  },
+  {
+   "term": "Chrono",
+   "cat": "appli",
+   "match": [
+    "chrono",
+    "temps écoulé"
+   ],
+   "def": "Réglage de l'accueil : 15 s ou 8 s par décision, comme au client de jeu. À zéro, la main est couchée (ou checkée s'il n'y a rien à payer) et la correction l'indique. Les questions de lecture du vilain ne sont pas chronométrées."
   }
  ]
 }

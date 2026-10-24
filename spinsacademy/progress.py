@@ -9,7 +9,9 @@ Règles :
     thème situation · position · profondeur au taux d'erreur lissé le plus haut parmi ceux qui ont au moins 3 réponses
     et 2 erreurs ; à défaut, le thème de jeu fiable (situation, position, format, profondeur ; jamais le mode seul) au score le
     plus bas ; à défaut, le nombre de questions qui manquent ;
-  - les statistiques ne modifient jamais les solutions ni la correction.
+  - les statistiques ne modifient jamais les solutions ni la correction ;
+  - indicateur « BB perdus par 100 décisions » (chantier 5, 24/10/2026) : somme des écarts en EV avec le meilleur coup, ramenée à
+    100 décisions ; les questions de lecture du vilain (sans EV) n'y comptent pas. Plus il est bas, mieux c'est.
 """
 from collections import defaultdict
 from . import quiz
@@ -29,30 +31,38 @@ def depth_of(stack):
 
 
 def _bucket():
-    return dict(questions=0, points=0.0, errors=0)
+    return dict(questions=0, points=0.0, errors=0, ev_questions=0, regret=0.0)
+
+
+def bb_per_100(b):
+    """BB perdus pour 100 décisions, à 2 décimales ; None sans décision chiffrée"""
+    return round(b['regret'] / 1000 * 100 / b['ev_questions'], 2) if b['ev_questions'] else None
 
 
 def _close(b, label, filters):
     n = b['questions']
     return dict(label=label, questions=n, score_pct=round(100 * b['points'] / n, 1) if n else None,
-                errors=b['errors'], reliable=n >= MIN_SAMPLE, filters=filters)
+                errors=b['errors'], reliable=n >= MIN_SAMPLE, filters=filters, bb_per_100=bb_per_100(b))
 
 
 def compute(rows):
     """rows : dicts {session_id, session_created_at, dataset_version, spot_id, hand, verdict, points, regret_mbb, answered_at}"""
     total = _bucket(); verdicts = defaultdict(int)
     dims = {'mode': defaultdict(_bucket), 'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
-    sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None))
+    sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None, ev_questions=0, regret=0.0))
     themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[]))
     rows = [r for r in rows if quiz.mode_of(r['dataset_version']) in MODE_FR]      # l'ancien mode des profils fictifs (retiré) ne compte plus
     for r in rows:
         _, spots = quiz.load(r['dataset_version']); sp = spots[r['spot_id']]
         fam, hero, table, depth = quiz.family(sp), sp['hero'], sp['table'], depth_of(sp['effective_stack_bb'])
         err = r['verdict'] == 'erreur'; mode = quiz.mode_of(r['dataset_version'])
-        for b in (total, dims['mode'][mode], dims['family'][fam], dims['hero'][hero], dims['table'][table], dims['depth'][depth]):
-            b['questions'] += 1; b['points'] += r['points']; b['errors'] += err
+        has_ev = not (sp.get('field') and sp['field']['type'] in ('identification', 'profil'))      # lecture du vilain : pas d'EV
+        s = sessions[r['session_id']]; s['date'] = r['session_created_at']
+        for b in (total, dims['mode'][mode], dims['family'][fam], dims['hero'][hero], dims['table'][table], dims['depth'][depth], s):
+            b['questions'] += 1; b['points'] += r['points']
+            if has_ev: b['ev_questions'] += 1; b['regret'] += r['regret_mbb'] or 0
+            if b is not s: b['errors'] += err
         verdicts[r['verdict']] += 1
-        s = sessions[r['session_id']]; s['questions'] += 1; s['points'] += r['points']; s['date'] = r['session_created_at']
         t = themes[(mode, fam, hero, depth)]; t['questions'] += 1; t['imprecisions'] += r['verdict'] == 'imprécision'
         if err:
             t['errors'] += 1; t['regret'] += r['regret_mbb']
@@ -71,11 +81,11 @@ def compute(rows):
                               regret_mbb=round(t['regret']), examples=t['examples'],
                               filters=dict(mode=m, hero=h, **depth_filter[d], family=f))
                          for (m, f, h, d), t in themes.items() if t['errors'] >= 2]), key=lambda x: (-x['errors'], -x['regret_mbb']))[:3]
-    evolution = [dict(session_id=k, date=v['date'], questions=v['questions'], score_pct=round(100 * v['points'] / v['questions'], 1))
+    evolution = [dict(session_id=k, date=v['date'], questions=v['questions'], score_pct=round(100 * v['points'] / v['questions'], 1), bb_per_100=bb_per_100(v))
                  for k, v in sorted(sessions.items(), key=lambda kv: kv[1]['date'] or '')]
     n = total['questions']
     return dict(sessions=len(sessions), questions=n, points=round(total['points'], 1),
-                score_pct=round(100 * total['points'] / n, 1) if n else None,
+                score_pct=round(100 * total['points'] / n, 1) if n else None, bb_per_100=bb_per_100(total),
                 verdicts={v: verdicts.get(v, 0) for v in ('correct', 'imprécision', 'erreur')},
                 min_sample=MIN_SAMPLE, by=by, evolution=evolution[-20:], recurring_errors=recurring, weakest=weakest,
                 focus=focus(themes, weakest, n, depth_label, depth_filter))
