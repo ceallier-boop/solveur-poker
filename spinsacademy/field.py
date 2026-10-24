@@ -270,27 +270,30 @@ def question(sp):
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
-                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=stats, ask_fr=f['ask_fr'], pastille=pastille(f)))
+                field=dict(type=shown_type(f, sp['spot_id']), type_fr=SHOWN_FR[shown_type(f, sp['spot_id'])], observations=f['observations'], villains=f['villains'], stats=stats, ask_fr=f['ask_fr'], pastille=pastille(f, sp['spot_id'])))
 
 
 PASTILLE_OF = {'Rec passif (défaut)': 'Rec passif', 'Calling station': 'Calling station', 'Dégène': 'Dégène', 'Nit': 'Nit', 'Reg': 'Reg'}
 
 
-def pastille(f):
+def pastille(f, spot_id=''):
     """test joueurs du 24/10 : la pastille du vilain, comme la note de couleur posée dans le client. Seulement quand ses coups
-    observés suffisent à le classer (adaptation, piège) ; aucune pour un inconnu ou un petit échantillon, ni dans les questions
-    de lecture, dont c'est la réponse"""
-    return PASTILLE_OF.get(f['internal_profile']) if f['type'] in ('adaptation', 'piège') and f['observations'] else None
+    observés suffisent à le classer (adaptation, piège), et pour une question sur deux (tirage fixe par question) : l'autre
+    moitié entraîne à lire ses stats sans pastille. Aucune pour un inconnu, un petit échantillon, ni dans les questions de
+    lecture, dont c'est la réponse"""
+    if f['type'] not in ('adaptation', 'piège') or not f['observations']: return None
+    if int(hashlib.md5(('pastille' + spot_id).encode()).hexdigest()[:8], 16) % 2: return None
+    return PASTILLE_OF.get(f['internal_profile'])
 
 
-SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
+SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'pastille': 'Pastille posée', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
 
 
-def shown_type(f):
-    """v4.4 (audit Lucho) : avant la réponse, seul ce que le joueur sait est affiché (vilain inconnu ou observé) ; le type de la
-    question (adaptation, piège, petit échantillon) se découvre à la correction"""
+def shown_type(f, spot_id=''):
+    """v4.4 (audit Lucho) : avant la réponse, seul ce que le joueur sait est affiché (vilain inconnu, observé, ou avec sa
+    pastille) ; le type de la question (adaptation, piège, petit échantillon) se découvre à la correction"""
     if f['type'] in READ: return f['type']
-    return 'inconnu' if not f['observations'] else 'observé'
+    return 'inconnu' if not f['observations'] else 'pastille' if pastille(f, spot_id) else 'observé'
 
 
 def _label(sp, aid):

@@ -1,5 +1,5 @@
 {
- "version": "1.9.1",
+ "version": "1.9.2",
  "date": "2026-10-23",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
@@ -710,9 +710,10 @@
    "term": "Pastille",
    "cat": "profils",
    "match": [
-    "pastille"
+    "pastille",
+    "pastille posée"
    ],
-   "def": "Couleur posée à côté d'un adversaire pour noter son profil (rec passif, calling station, dégène, nit, reg), comme dans ton client de jeu. Elle s'affiche quand ses coups observés suffisent à le classer ; « ? » quand tu n'as pas assez d'information. Choisis tes couleurs dans « Mes pastilles » sur l'accueil ; la lettre dans la pastille aide si tu distingues mal les couleurs."
+   "def": "Couleur posée à côté d'un adversaire pour noter son profil (rec passif, calling station, dégène, nit, reg), comme dans ton client de jeu. « Pastille posée » : tu l'as assez observé et tu connais son profil, adapte-toi. « Vilain observé » : seulement ses stats, à toi de le lire. « ? » : pas assez d'information. Choisis tes couleurs dans « Mes pastilles » sur l'accueil ; la lettre dans la pastille aide si tu distingues mal les couleurs."
   },
   {
    "term": "Bouton (D)",

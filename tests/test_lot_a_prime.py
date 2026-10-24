@@ -114,10 +114,12 @@ def test_fourth_player_test_fixes():
 
 def test_pastille_next_to_villain():
     """la pastille du vilain s'affiche quand ses coups observés suffisent ; jamais pour un inconnu, un petit échantillon ou une lecture"""
-    S = quiz.load(quiz.DEFAULT_FIELD)[1]; shown = 0
+    S = quiz.load(quiz.DEFAULT_FIELD)[1]; shown = hidden = 0
     for sp in list(S.values())[::25]:
         q = quiz.question(quiz.DEFAULT_FIELD, sp['spot_id'], next(iter(sp['hands']))); t = sp['field']['type']
         if t in ('adaptation', 'piège') and sp['field']['observations']:
-            assert q['field']['pastille'] in ('Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'); shown += 1
+            if q['field']['pastille']:
+                assert q['field']['pastille'] in ('Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg') and q['field']['type_fr'] == 'Pastille posée'; shown += 1
+            else: assert q['field']['type_fr'] == 'Vilain observé'; hidden += 1
         else: assert q['field']['pastille'] is None, t
-    assert shown > 100
+    assert shown > 50 and hidden > 50 and 0.35 <= shown / (shown + hidden) <= 0.65     # une question sur deux : avec ou sans pastille

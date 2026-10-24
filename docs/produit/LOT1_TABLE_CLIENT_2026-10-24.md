@@ -20,3 +20,4 @@ Hors de ce lot (lot 2) : questions « pastille connue » (le vilain arrive avec 
 - Sièges plus sobres : une seule ligne courte sous chaque adversaire, comme le compteur du client (« Limp 27 · Call/limp 22 (150) ») ; théorie et k sur n restent dans « Stats du vilain ».
 - Pastille de couleur à côté du nom de chaque adversaire : la couleur choisie dans « Mes pastilles » quand ses coups observés suffisent à le classer (questions d'adaptation et pièges) ; « ? » pour un inconnu, un petit échantillon, ou un joueur sans stats. Jamais dans les questions de lecture, dont c'est la réponse.
 - « te couvre » en petit sous le tapis d'un adversaire qui a plus de jetons que toi.
+- Alternance (décision du porteur du projet) : parmi les vilains assez observés, une question sur deux affiche sa pastille (« Pastille posée » : tu connais son profil, adapte-toi), l'autre seulement ses stats (« Vilain observé » : à toi de le lire). Tirage fixe par question.

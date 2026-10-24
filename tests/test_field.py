@@ -170,7 +170,7 @@ def test_audit_corrections_v4_4():
         if 'call_after_limp_pct' in st: assert st['call_after_limp_pct']['n'] >= 10      # pas de stat de call sous 10 limps
     for sp in spots[::7]:
         q = quiz.question(quiz.DEFAULT_FIELD, sp['spot_id'], next(iter(sp['hands'])))
-        assert q['field']['type'] in ('inconnu', 'observé', 'identification', 'profil')    # piège / adaptation : seulement à la correction
+        assert q['field']['type'] in ('inconnu', 'observé', 'pastille', 'identification', 'profil')    # piège / adaptation : seulement à la correction
     tight = [s for s in spots if s['field']['type'] == 'adaptation' and s['field']['gto'] in ('A', 'C') and s['field']['correct'] in ('F', 'L', 'X')]
     assert len(tight) >= 100                                              # des adaptations « plus serré », pas seulement « plus large »
     lab = lambda f: next(o['label_fr'] for o in f['options'] if o['id'] == f['correct'])
