@@ -409,6 +409,7 @@ async function summary() {
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   show('summary');
+  refreshStats();                                                    // la progression hors connexion suit la dernière série
 }
 
 // ------------------------------------------------------------------ progression
@@ -421,11 +422,32 @@ function themeRow(x, min) {
   }
   return `<div class="trow${cls}"><span>${x.label}</span><span>${pc(x.score_pct)}</span><div class="sbar"><i style="width:${x.score_pct}%"></i></div></div>`;
 }
+// progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
+// ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
+const STATS_KEY = 'stats_cache';
+function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); }
+function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
+function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
+
 async function stats() {
   loading(true);
-  const s = await api('/users/me/stats');
+  let s, offline = null;
+  try { s = await api('/users/me/stats'); cacheStats(s); }
+  catch (e) {
+    const c = (!e || !e.status || e.status >= 500) ? cachedStats() : null;      // coupure réseau ou panne du serveur
+    if (!c) throw e;
+    s = c.s; offline = c.at;
+  }
   progress('');
-  await adaptation();
+  const when = offline && new Date(offline);
+  $('st-offline').hidden = !offline;
+  if (offline) {
+    $('st-offline').textContent = `Hors connexion : ta progression au ${when.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} `
+      + `à ${when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Elle se mettra à jour dès que la connexion reviendra.`;
+  }
+  for (const id of ['st-export', 'st-delete']) $(id).hidden = !!offline;   // ces actions demandent le serveur
+  if (offline) $('st-adapt').hidden = true; else await adaptation();
+  $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
   if (!s.questions) {
     $('st-score').innerHTML = '—<small>Joue une première série pour voir ta progression.</small>';
     for (const id of ['st-evolution', 'st-themes']) $(id).innerHTML = '';
@@ -441,8 +463,8 @@ async function stats() {
   $('st-focus').innerHTML = `<p class="focus-title">À travailler maintenant</p>`
     + (f.label ? `<p><b>${f.label}</b></p>` : '') + `<p>${f.reason_fr}</p>`
     + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
-    + (f.filters ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
-  if (f.filters) $('train-focus').addEventListener('click', () => start(f.filters));
+    + (f.filters && !offline ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
+  if (f.filters && !offline) $('train-focus').addEventListener('click', () => start(f.filters));
   $('st-themes').innerHTML = Object.entries(s.by).map(([k, rows]) =>
     `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
   $('st-note').textContent = `Un score n'est affiché qu'à partir de ${s.min_sample} questions sur le thème. Tes données restent anonymes : elles sont liées à cet appareil, pas à ton identité.`;
@@ -569,7 +591,7 @@ $('st-export').addEventListener('click', async () => {              // droit d'a
 });
 $('st-delete').addEventListener('click', async () => {
   if (!confirmTwice($('st-delete'), 'Confirmer : tout effacer définitivement')) return;
-  await api('/users/me', { method: 'DELETE' }); store.del('sid'); stats();
+  await api('/users/me', { method: 'DELETE' }); store.del('sid'); store.del(STATS_KEY); stats();
 });
 $('quick-start').addEventListener('click', () => start({}));
 $('review-btn').addEventListener('click', () => start({}, true));
@@ -629,7 +651,7 @@ async function home() {
   try {
     const s = await api(`/sessions/${encodeURIComponent(sid)}/summary`);
     if (!s.complete) $('resume').hidden = false; else store.del('sid');
-  } catch (e) { store.del('sid'); }
+  } catch (e) { if (e && e.status && e.status < 500) store.del('sid'); }     // hors ligne : la série en cours reste reprenable
 }
 $('past-rows').addEventListener('click', (e) => {
   const b = e.target.closest('.swatch'); if (!b) return;
@@ -637,3 +659,8 @@ $('past-rows').addEventListener('click', (e) => {
 });
 renderPastilles();
 home();
+
+// l'application s'ouvre aussi sans connexion (service worker) ; pas dans la démo autonome, qui est déjà une seule page
+const canSW = 'serviceWorker' in navigator && !window.SA_LEXIQUE
+  && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname));
+if (canSW) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => { /* navigateur sans service worker : en ligne seulement */ }));

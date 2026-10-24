@@ -152,6 +152,12 @@ def index():
     return FileResponse(os.path.join(WEB, 'index.html'))
 
 
+@app.get('/sw.js', include_in_schema=False)
+def service_worker():
+    """service worker servi à la racine (portée « / ») : l'application s'ouvre hors connexion"""
+    return FileResponse(os.path.join(WEB, 'sw.js'), media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
+
+
 @app.get('/admin', include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(WEB, 'admin.html'))

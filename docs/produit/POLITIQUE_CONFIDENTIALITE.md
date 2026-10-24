@@ -16,6 +16,7 @@ SpinsAcademy fonctionne **sans compte** : aucun nom, courriel, mot de passe ni m
 | Donnée | Pourquoi | Où | Durée |
 |---|---|---|---|
 | Identifiant aléatoire de l'appareil (créé par l'application, gardé dans le stockage local du navigateur) | relier tes séries entre elles pour ta progression | ton navigateur et le serveur | jusqu'à l'effacement, ou [24 mois] sans activité |
+| Copie de ta dernière progression (scores par thème, sans identité) | l'afficher sans connexion | ton navigateur seulement | remplacée à chaque mise à jour, effacée avec le bouton « Effacer mes données » |
 | Séries, questions posées, réponses, verdicts et dates | correction, bilan, progression, révision de tes erreurs (1, 3 et 7 jours) | serveur | idem |
 | Préférences (séries adaptées activées ou non, date de réinitialisation) | adapter les séries à tes erreurs | serveur | idem |
 | Signalements d'une question (motif et commentaire libre) | corriger les questions | serveur | [12 mois] après leur traitement |

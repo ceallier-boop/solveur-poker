@@ -171,6 +171,7 @@
     <!-- Progression -->
     <section id="screen-stats" class="screen" hidden aria-labelledby="st-title">
       <h2 id="st-title">Ma progression</h2>
+      <p class="offline-note" id="st-offline" role="status" hidden></p>
       <div class="score" id="st-score"></div>
       <div class="focus" id="st-focus" role="status"></div>
       <h3>Score des dernières séries</h3>
@@ -179,7 +180,7 @@
       <p class="note evo-x" aria-hidden="true">← plus ancienne · plus récente →</p>
       <h3>Par thème</h3>
       <div id="st-themes"></div>
-      <h3>Exercices adaptatifs</h3>
+      <h3 id="st-adapt-title">Exercices adaptatifs</h3>
       <div class="adapt" id="st-adapt">
         <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
         <p class="note" id="adapt-rule"></p>

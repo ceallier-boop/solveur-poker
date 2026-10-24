@@ -242,3 +242,10 @@ def test_dataset_loaded_once_under_concurrency():
         assert len(calls) == 1 and len(set(out)) == 1
     finally:
         quiz._load = quiz.lru_cache(maxsize=8)(real); quiz.load.cache_clear()
+
+
+def test_service_worker_served_at_root(client):
+    """hors connexion : le service worker est servi à la racine (portée « / ») et ne met en cache que la page et ses fichiers"""
+    r = client.get('/sw.js')
+    assert r.status_code == 200 and 'javascript' in r.headers['content-type'] and r.headers.get('cache-control') == 'no-cache'
+    assert "'/static/app.js'" in r.text and '/users/' not in r.text
