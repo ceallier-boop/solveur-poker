@@ -148,8 +148,11 @@ function lastActions(q) {
 
 function renderTable(q) {
   const view = $('table-view'); view.innerHTML = '';
-  const n = q.players.length, hero = q.players.indexOf(q.hero), { c, folded } = contributions(q), last = lastActions(q);
+  const n = q.players.length, hero = q.players.indexOf(q.hero), { c: c0, folded } = contributions(q), last = lastActions(q);
   view.classList.toggle('hu', n === 2);
+  // une mise au-delà du plus gros tapis adverse encore en jeu ne peut pas être payée : on l'affiche plafonnée, comme le pot de la correction
+  const c = c0.map((x, i) => Math.min(x, Math.max(...q.stacks_bb.map((s, j) => (j !== i && !folded[j] ? s : 0)), 0) || x));
+  const potShown = c.reduce((a, x) => a + x, 0);
   const seats = n === 3 ? [[50, 0], [21, 5], [79, 5]] : [[50, 0], [50, 4]];          // héros en bas (placé à part), adversaires en haut
   const button = n === 3 ? 'BTN' : 'SB';                                                // en heads-up, le SB a le bouton
   const hud = hudLines(q);
@@ -179,7 +182,7 @@ function renderTable(q) {
       d.style.left = x + '%'; d.style.top = y + '%'; view.appendChild(d);
     }
   }
-  const pot = document.createElement('div'); pot.className = 'pot'; pot.innerHTML = `<small>Pot total</small>${bb(q.pot_bb)} BB`; view.appendChild(pot);
+  const pot = document.createElement('div'); pot.className = 'pot'; pot.innerHTML = `<small>Pot total</small>${bb(potShown)} BB`; view.appendChild(pot);
 }
 
 // stats du vilain en une ligne sous son siège (comme le HUD du client) ; le détail (observé / théorie) se déplie sous la table
@@ -187,7 +190,7 @@ function renderTable(q) {
 const rnd0 = (x) => { const f = Math.floor(x), d = x - f; return d > 0.5 + 1e-9 ? f + 1 : d < 0.5 - 1e-9 ? f : (f % 2 === 0 ? f : f + 1); };
 function hudLines(q) {
   const f = q.field, out = {};
-  if (!f || !q.hand || f.ask_fr) return out;
+  if (!f || !q.hand || f.ask_fr || f.pastille) return out;            // pastille posée : elle résume ses stats (détail sous la table)
   const main = (f.villains || [])[0];
   if (!f.stats.length) { if (main) out[main] = 'Inconnu'; return out; }
   for (const s of f.stats) {                                            // une ligne courte, comme le HUD du client ; théorie et k/n dans « Stats du vilain »
@@ -219,7 +222,7 @@ function actionHTML(label) {
 }
 
 // mode chrono (chantier 5) : comme au client, le temps est compté ; à zéro, fold automatique (check s'il n'y a rien à payer)
-const chrono = () => { const v = Number(store.get('chrono') || 0); return [0, 8, 15].includes(v) ? v : 0; };
+const chrono = () => { const v = Number(store.get('chrono') ?? 15); return [0, 8, 15].includes(v) ? v : 15; };   // 15 s par défaut
 function stopTimer() { clearInterval(state.timer); state.timer = null; $('q-timer').hidden = true; }
 function startTimer(q) {
   stopTimer(); state.timedOut = false;
@@ -232,7 +235,7 @@ function startTimer(q) {
     if (left > 0) return;
     stopTimer();
     const auto = q.options.find((o) => /^FOLD$/i.test(o.label_fr)) || q.options.find((o) => /^CHECK$/i.test(o.label_fr)) || q.options[0];
-    state.timedOut = auto.label_fr.toLowerCase(); answer(auto.id);
+    state.timedOut = auto.label_fr.toLowerCase(); answer(auto.id, true);
   };
   tick(); state.timer = setInterval(tick, 100);
 }
@@ -280,8 +283,8 @@ function renderFieldStats(q, noHand) {
   const bars = f.stats.map((s) => {
     const top = Math.min(100, Math.max(s.observed_pct, s.gto_pct) * 1.15), w = (x) => (100 * x / top).toFixed(1) + '%';
     return `<p class="vstat">${s.label_fr} : ${s.k} sur ${s.n}</p>`
-      + `<div class="vbar obs"><span>Observé</span><em><i style="width:${w(s.observed_pct)}"></i></em><b>${bb(s.observed_pct)} %</b></div>`
-      + `<div class="vbar gto"><span>Théorie</span><em><i style="width:${w(s.gto_pct)}"></i></em><b>${bb(s.gto_pct)} %</b></div>`;
+      + `<div class="vbar obs"><span>Observé</span><em><i style="width:${w(s.observed_pct)}"></i></em><b>${rnd0(s.observed_pct)} %</b></div>`   // mêmes arrondis que le texte
+      + `<div class="vbar gto"><span>Théorie</span><em><i style="width:${w(s.gto_pct)}"></i></em><b>${rnd0(s.gto_pct)} %</b></div>`;
   }).join('');
   const body = (context ? `<p class="fnone">${escT(context)}</p>` : '')
     + (f.stats.length ? bars + `<p class="fn">${f.observations} occasions : plus il y en a, plus la tendance est fiable.</p>`
@@ -299,11 +302,11 @@ async function next() {
 }
 
 // ------------------------------------------------------------------ correction
-async function answer(id) {
+async function answer(id, timedOut = false) {
   if (state.busy) return; state.busy = true; clearInterval(state.timer); state.timer = null;
   for (const b of $('actions').querySelectorAll('button')) b.disabled = true;
   try {
-    const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id }) });
+    const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id, timed_out: timedOut }) });
     renderAnswer(r);
   } catch (e) {
     if (!e.status) console.error(e);                              // erreur d'affichage : visible dans la console
@@ -324,7 +327,7 @@ function renderAnswer(r) {
     : r.verdict === 'correct' && !r.field && mixPct > 0 ? `La théorie joue aussi ce coup (${mixPct} % du temps).`   // A5 : stratégie mixte
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
-  v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, comme au client.\n` : ''}${sub}</small>`;
+  v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n` : ''}${sub}</small>`;
   stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -431,11 +434,12 @@ async function summary() {
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
   $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
-    + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB` : 'Aucun BB perdu sur cette série'} par rapport aux meilleurs coups.</small>` : '');
+    + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB, soit ${bb(s.bb_per_100)} BB pour 100 décisions` : 'Aucun BB perdu sur cette série'}.</small>` : '')
+    + (s.timeouts ? `<small class="bblost">${s.timeouts} coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps, compté${s.timeouts > 1 ? 's' : ''} comme erreur${s.timeouts > 1 ? 's' : ''}.</small>` : '');
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>Ton coup : ${e.chosen} (coûte ${e.loss_fr || gainBB(e.regret_mbb)}) · Meilleur coup : <b>${e.best}</b></li>`).join('')
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${e.chosen} automatique)` : `Ton coup : ${e.chosen} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${e.best}</b></li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   show('summary');
@@ -485,7 +489,9 @@ async function stats() {
     $('st-note').textContent = ''; show('stats'); return;
   }
   $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`
-    + (s.bb_per_100 != null ? `<small class="bblost"><b>${bb(s.bb_per_100)} BB</b> perdus pour 100 décisions (plus c'est bas, mieux c'est)</small>` : '')   // chantier 5
+    + (s.bb_per_100 != null ? `<small class="bblost"><b>${bb(s.bb_per_100)} BB</b> perdus pour 100 décisions (plus c'est bas, mieux c'est)`
+      + (s.ev_questions < 100 ? ` · échantillon faible : ${s.ev_questions} décisions, le chiffre se stabilise vers 100` : '') + '</small>' : '')   // chantier 5
+    + (s.timeouts ? `<small class="bblost">Dont ${s.timeouts} coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps.</small>` : '')
     + (s.ranges && s.ranges.count ? `<small class="bblost">Ranges construites : ${s.ranges.count} · ${pc(s.ranges.accuracy_pct)} de mains bien classées en moyenne${s.ranges.count > s.ranges.recent ? ` (${s.ranges.recent} dernières)` : ''}</small>` : '');
   $('st-evolution').innerHTML = s.evolution.length > 1
     ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
@@ -705,13 +711,17 @@ const RG_STATUS = { ok_in: 'à jouer : bien vu', ok_out: 'à laisser : bien vu',
 async function rangeStart() {
   const f = filters(); delete f.mode;
   if (f.family === 'read') delete f.family;
-  const qs = Object.entries(f).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  let recent = []; try { recent = JSON.parse(store.get('ranges_recent') || '[]'); } catch (e) { recent = []; }
+  f.exclude = recent.join(',');                                          // pas deux fois la même situation de suite
+  const qs = Object.entries(f).filter(([, v]) => v !== '').map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
   loading(true);
   let t;
   try { t = await api('/ranges/next' + (qs ? `?${qs}` : '')); }
   catch (e) { loading(false); notify(e.status === 422 ? 'Pas de range à construire pour ce thème : élargis les filtres.' : netMsg(e, "l'exercice n'a pas pu démarrer"), retryable(e) ? rangeStart : null); return; }
   state.range = { t, sel: new Set(), done: false };
-  $('rg-situation').textContent = t.situation_fr; $('rg-question').textContent = t.question_fr;
+  store.set('ranges_recent', JSON.stringify([t.spot_id, ...recent.filter((x) => x !== t.spot_id)].slice(0, 15)));
+  $('rg-situation').textContent = t.situation_fr; $('rg-question').innerHTML = `${escT(t.question_fr)}<small>${escT(t.others_fr || '')}</small>`;
+  $('rg-cellinfo').hidden = true;
   $('rg-result').hidden = true; $('rg-edit').hidden = false; $('rg-after').hidden = true; $('rg-help').hidden = false;
   renderRangeGrid(); show('range'); progress('Construis ta range');
 }
@@ -721,15 +731,20 @@ function renderRangeGrid(result) {
     const h = cellName(i, j), b = document.createElement('button'); b.type = 'button'; b.dataset.h = h; b.textContent = h;
     b.className = 'rc' + (live.has(h) ? '' : ' off') + (r.sel.has(h) ? ' on' : '') + (result && result.cells[h] ? ` st-${result.cells[h]}` : '');
     if (!live.has(h)) { b.disabled = true; b.title = "Main qui n'arrive pas à cette décision"; }
-    else if (result && result.cells[h]) b.title = `${h} : ${RG_STATUS[result.cells[h]]} (référence ${Math.round(100 * result.reference[h])} %)`;
+    else if (result && result.cells[h]) b.title = cellInfo(h, result);
     b.setAttribute('aria-pressed', String(r.sel.has(h)));
     g.appendChild(b);
   }
   rangeCount();
 }
-function rangeCount() {
-  const r = state.range; let n = 0; for (const h of r.sel) n += combos(h);
-  $('rg-count').textContent = `Ta range : ${Math.round(100 * n / 1326)} % des mains (${r.sel.size} cases).`;
+function rangeCount() {                                              // même calcul que la correction : combinaisons pondérées
+  const r = state.range, w = r.t.weights || {}; let n = 0, tot = 0;
+  for (const h of r.t.hands) { tot += w[h] || combos(h); if (r.sel.has(h)) n += w[h] || combos(h); }
+  $('rg-count').textContent = `Ta range : ${tot ? Math.round(100 * n / tot) : 0} % des mains (${r.sel.size} cases).`;
+}
+function cellInfo(h, g) {
+  const st = g.cells[h], ref = (g.reference_fr || {})[h], pct = Math.round(100 * g.reference[h]);
+  return `${h} : ${RG_STATUS[st]}. La référence ${ref || ''} (action demandée : ${pct} % du temps).`;
 }
 function paint(b, on) {
   const r = state.range; if (!b || !b.dataset.h || b.disabled || r.done) return;
@@ -739,7 +754,9 @@ function paint(b, on) {
 (function rangePainting() {                                          // toucher une case, ou glisser le doigt pour en colorier plusieurs
   const g = $('rg-grid'); let mode = null;
   g.addEventListener('pointerdown', (e) => {
-    const b = e.target.closest('.rc'); if (!b || b.disabled || state.range.done) return;
+    const b = e.target.closest('.rc');
+    if (b && state.range.done && state.range.result) { const i = $('rg-cellinfo'); i.textContent = cellInfo(b.dataset.h, state.range.result); i.hidden = false; return; }
+    if (!b || b.disabled || state.range.done) return;
     mode = !state.range.sel.has(b.dataset.h); paint(b, mode); e.preventDefault();
   });
   g.addEventListener('pointermove', (e) => { if (mode === null) return; paint(document.elementFromPoint(e.clientX, e.clientY)?.closest('.rc'), mode); });
@@ -752,13 +769,13 @@ async function rangeSubmit() {
   let g;
   try { g = await api('/ranges/answer', { method: 'POST', body: JSON.stringify({ spot_id: r.t.spot_id, hands: [...r.sel] }) }); }
   catch (e) { loading(false); notify(netMsg(e, "ta range n'a pas pu être corrigée"), retryable(e) ? rangeSubmit : null); return; }
-  loading(false); r.done = true; renderRangeGrid(g);
-  const worst = g.worst.length ? `<ul class="rg-worst">${g.worst.map((w) => `<li><b>${w.hand}</b> ${w.kind === 'extra' ? 'jouée à tort' : 'oubliée'} : ${bb(w.cost_bb)} BB perdus à chaque fois</li>`).join('')}</ul>` : '';
+  loading(false); r.done = true; r.result = g; renderRangeGrid(g);
+  const worst = g.worst.length ? `<ul class="rg-worst">${g.worst.map((w) => `<li><b>${w.hand}</b> ${w.kind === 'extra' ? 'jouée à tort' : 'oubliée'} : la référence ${w.ref_fr}, ${bb(w.cost_bb)} BB perdus à chaque fois</li>`).join('')}</ul>` : '';
   const rem = (g.rule_fr || '').replace(/^À retenir : /, '');
   $('rg-result').innerHTML = `<p class="rg-score"><b>${pc(g.accuracy_pct)}</b> des mains bien classées<small>${bb(g.bb_per_100)} BB perdus pour 100 mains jouées dans cette situation</small></p>`
     + `<p>Ta range : ${g.my_share_pct} % des mains · référence : ${g.ref_share_pct} %. ${g.extra} main${g.extra > 1 ? 's' : ''} en trop, ${g.missing} oubliée${g.missing > 1 ? 's' : ''}.</p>`
     + worst
-    + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte</span></p>`
+    + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte (les deux acceptés)</span><span class="st-chosen">ton choix</span></p><p class="note">Touche une case pour voir ce que fait la référence.</p>`
     + (rem ? `<p class="remember"><b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span></p>` : '');
   $('rg-result').hidden = false; $('rg-edit').hidden = true; $('rg-after').hidden = false; $('rg-help').hidden = true;
   glossify($('rg-result'));

@@ -583,7 +583,8 @@ def principle(sp, hand, best, labels):
         call, final = call_terms(sp)
         return f"Tu paies {bb(call)} BB pour un pot de {bb(final)} BB : bon prix, et la main joue bien après le flop."
     if t == 'call_allin':
-        return "Contre sa range, ta main gagne assez souvent pour le prix à payer : payer rapporte."
+        two = sum(h['action'] in ('allin', 'call_allin') for h in sp['history']) > 1
+        return f"Contre {'leurs ranges' if two else 'sa range'}, ta main gagne assez souvent pour le prix à payer : payer rapporte."
     if fam == 'vs_allin':
         return "Contre sa range, ta main ne gagne pas assez souvent pour le prix à payer : payer perd des jetons."
     if fam == 'vs_raise':
@@ -1005,12 +1006,13 @@ def summary(version, answers):
     by = {}
     for sid, h, r in answers:
         k = (family(spots[sid]), spots[sid]['hero']); b = by.setdefault(k, [0, 0.0]); b[0] += 1; b[1] += r['points']
-    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'], verdict=r['verdict'],
+    errors = sorted([dict(spot_id=sid, hand=h, prompt_fr=prompt(spots[sid], h), chosen=r['chosen_label'], best=r['best_label'], regret_mbb=r['regret_mbb'], verdict=r['verdict'], timed_out=bool(r.get('timed_out')),
                           loss_fr=r.get('loss_fr'))
                      for sid, h, r in answers if r['verdict'] != 'correct'], key=lambda e: -e['regret_mbb'])
     ev = [r for sid, _, r in answers if not (spots[sid].get('field') and spots[sid]['field']['type'] in ('identification', 'profil'))]
     lost = sum(r['regret_mbb'] or 0 for r in ev) / 1000                     # chantier 5 : ce que la série a coûté, en BB
     return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0, bb_lost=round(lost, 2), ev_questions=len(ev),
+                bb_per_100=round(100 * lost / len(ev), 2) if ev else None, timeouts=sum(1 for *_, r in answers if r.get('timed_out')),
                 verdicts={v: sum(1 for *_, r in answers if r['verdict'] == v) for v in grading.POINTS},
                 by_theme=[dict(family=f, hero=p, questions=c, points=s) for (f, p), (c, s) in sorted(by.items())],
                 errors=errors, review=[e['prompt_fr'] for e in errors[:3]])

@@ -47,7 +47,7 @@ def _close(b, label, filters):
 
 def compute(rows):
     """rows : dicts {session_id, session_created_at, dataset_version, spot_id, hand, verdict, points, regret_mbb, answered_at}"""
-    total = _bucket(); verdicts = defaultdict(int)
+    total = _bucket(); verdicts = defaultdict(int); timeouts = 0
     dims = {'mode': defaultdict(_bucket), 'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
     sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None, ev_questions=0, regret=0.0))
     themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[]))
@@ -62,7 +62,7 @@ def compute(rows):
             b['questions'] += 1; b['points'] += r['points']
             if has_ev: b['ev_questions'] += 1; b['regret'] += r['regret_mbb'] or 0
             if b is not s: b['errors'] += err
-        verdicts[r['verdict']] += 1
+        verdicts[r['verdict']] += 1; timeouts += bool(r.get('timed_out'))
         t = themes[(mode, fam, hero, depth)]; t['questions'] += 1; t['imprecisions'] += r['verdict'] == 'imprécision'
         if err:
             t['errors'] += 1; t['regret'] += r['regret_mbb']
@@ -85,7 +85,8 @@ def compute(rows):
                  for k, v in sorted(sessions.items(), key=lambda kv: kv[1]['date'] or '')]
     n = total['questions']
     return dict(sessions=len(sessions), questions=n, points=round(total['points'], 1),
-                score_pct=round(100 * total['points'] / n, 1) if n else None, bb_per_100=bb_per_100(total),
+                score_pct=round(100 * total['points'] / n, 1) if n else None, bb_per_100=bb_per_100(total), timeouts=timeouts,
+                ev_questions=total['ev_questions'],
                 verdicts={v: verdicts.get(v, 0) for v in ('correct', 'imprécision', 'erreur')},
                 min_sample=MIN_SAMPLE, by=by, evolution=evolution[-20:], recurring_errors=recurring, weakest=weakest,
                 focus=focus(themes, weakest, n, depth_label, depth_filter))

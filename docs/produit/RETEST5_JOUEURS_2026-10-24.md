@@ -53,3 +53,33 @@ Moyenne : 4,0 → **3,7**. Les nouveautés plaisent dans leur principe, mais l'e
 - **Chrono** (8, 9) : un coup joué au temps compte comme une erreur de temps (zéro point, sans BB perdus si c'était le bon coup ?) : décision à prendre ; mention dans le bilan ; 15 s par défaut.
 - **Pastilles** (11, 12) : la correction s'appuie sur la pastille posée ; stats réduites quand la pastille est posée ; alternance équilibrée dans une série.
 - **Textes et chiffres** (10, 13 à 17).
+
+## 5. Corrections faites (24/10/2026)
+
+Décision du porteur du projet : **un coup joué au temps est une erreur**, même quand le fold (ou le check) automatique était le bon coup. Il vaut zéro point ; les BB perdus restent l'écart réel avec le meilleur coup.
+
+| # | Correction |
+|---|---|
+| 1 | Plus aucune case grisée à tort : une seule version de chaque situation est servie, toutes les mains qui arrivent à la décision sont à classer (169 au premier à parler). |
+| 2 | Un seul calcul de part de range (combinaisons pondérées) pour le compteur, le résultat, la référence et « À retenir » : les chiffres concordent. |
+| 3, 7 | La question dit ce que font les autres mains (« Les autres mains limpent, relancent à 2 BB ou se couchent ») ; chaque erreur donne le coup de la référence (« AA : la référence la relance à 2 BB »). |
+| 4 | Tirage varié : famille de décision puis tranche de tapis à parts égales, jamais une des 15 dernières situations. |
+| 5 | « À retenir » ne cite plus de liste de mains : la situation, l'action et la part de la référence, le même chiffre que sous la grille. |
+| 6 | Hachuré mixte plus marqué, « ton choix » dans la légende, toucher une case après la correction affiche la main, sa fréquence de référence et son coût. Une erreur à moins de 0,01 BB compte comme mixte (plus de « 0 BB perdus »). Une main correctement classée n'est jamais requalifiée. |
+| 8, 9 | Coup joué au temps compté comme une erreur, signalé dans la correction, le bilan de série (« Temps écoulé (FOLD automatique) ») et la progression (« Dont n coups joués au temps »). Chrono à 15 s par défaut (Sans / 15 s / 8 s). |
+| 10 | Bilan : « Cette série t'a coûté X BB, soit Y BB pour 100 décisions » ; mention « échantillon faible » sous 100 décisions. |
+| 11 | Avec une pastille posée, la correction s'appuie dessus (« Pastille Nit : … » et « Sur quoi ça repose : ta pastille « Nit », posée sur ses n coups observés »). |
+| 12 | Une question « Pastille posée » n'affiche plus les stats ; alternance équilibrée dans une série (entre 35 % et 65 % de pastilles, vérifié par un test). |
+| 13 | Contre un vilain qui limpe peu, avec une très grosse main, la règle dit de checker pour le piéger ; « À retenir » contre un inconnu dépend du meilleur coup. |
+| 14 | Arrondis de la ligne de stats alignés sur le texte. |
+| 15 | Pot et mises à table plafonnés au plus gros tapis adverse encore en jeu (« te couvre »), comme dans la correction. |
+| 16 | « Contre leurs ranges » quand deux adversaires sont dans le coup. |
+| 17 | Lexique 1.12.0 : notation des ranges (22+, A2s+), BB perdus, Construis ta range, Chrono, Pastille, Mise, Bouton, HUD. |
+
+**Reste ouvert** :
+- équité de ta main quand un joueur reste à parler (16) ;
+- libellé du bouton « ALL-IN 35 BB » quand le tapis effectif est de 15 BB (15) : le bouton montre ton tapis, pas ce qui est réellement en jeu ;
+- écart entre l'énoncé et la correction (38 % contre 36 %) quand une pastille est posée (14) : l'énoncé donne la stat observée, la correction l'estimation du profil ;
+- « Calling station : se couche 75 % » jugé surprenant : chiffre estimé, à recalibrer avec un historique de mains (B2).
+
+Contrôles : 102 tests automatiques ; parcours téléphone GTO et exploitant, bêta, hors ligne, exercice de range (application et démo), démo avec données d'une ancienne version.

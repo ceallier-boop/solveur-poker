@@ -465,6 +465,15 @@ def basis_line(f):
     return None
 
 
+PREMIUM = ('AA', 'KK', 'QQ', 'JJ', 'AKs', 'AKo')
+UNKNOWN_RULE = {                         # test joueurs du 24/10 (5e) : la règle contre un inconnu suit le coup à jouer
+    'allin': "Sans info, joue contre un rec passif : il paie peu, ton tapis passe souvent.",
+    'raise': "Sans info, joue contre un rec passif : il se couche souvent, une petite relance suffit.",
+    'check': "Sans info, joue contre un rec passif : sans bonne main, vois le flop gratuitement.",
+    'limp': "Sans info, joue contre un rec passif : il relance peu, limpe les mains jouables.",
+    'call': "Sans info, joue contre un rec passif : il attaque surtout avec de bonnes mains, paie un peu plus serré.",
+    'call_allin': "Sans info, joue contre un rec passif : son tapis est plus fort que la théorie, paie un peu plus serré.",
+    'fold': "Sans info, joue contre un rec passif : il attaque surtout avec de bonnes mains, couche les mains limites."}
 RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ici, une petite relance suffit, pas besoin du tapis.",
                 ('R15', 'raise'): "Il limpe peu : son limp est fort. Relance tes très bonnes mains, checke les moyennes.",
                 ('R15', 'allin'): "Il limpe peu : son limp est fort. Garde le tapis pour tes très bonnes mains, checke les moyennes."}
@@ -495,6 +504,8 @@ def decisive(sp, f, best_t, hand):
             return f"face à ton tapis, il se couche {p_('fold_pct')} % du temps, et payé, {hand} a {p_('eq_called_pct')} % d'équité"
         if best_t == 'raise' and t.get('raise_bb'):
             return f"face à une iso à {num(t['raise_bb'])} BB, il se couche {p_('raise_fold_pct')} % du temps"
+        if best_t == 'check' and t['eq_called_pct'] >= 60:                   # très grosse main : on le garde dans le coup
+            return f"face à ton tapis, il se couche {p_('fold_pct')} % du temps et ne paie qu'avec ses meilleures mains : garde-le dans le coup"
         if best_t == 'check':
             return (f"face à ton tapis, il ne se couche que {p_('fold_pct')} % du temps, et payé, {hand} n'a que {p_('eq_called_pct')} % d'équité"
                     if t.get('has_jam', True) else f"contre ses limps, {hand} a {p_('eq_limp_pct')} % d'équité : vois le flop")
@@ -546,6 +557,9 @@ def correct(sp, action_id):
     lab = {a: _label(sp, a) for a in ids}; v = f['villains'][0]; n = f['observations']
     best_t = next(o['type'] for o in f['options'] if o['id'] == best)
     rule_fr = (READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9'
+               else UNKNOWN_RULE.get(best_t, f['rule_fr']) if f['rule'] == 'R0'
+               else "Il limpe peu : son limp est fort. Avec une très grosse main, checke pour le piéger : ne le fais pas coucher."
+               if f['rule'] == 'R15' and best_t == 'check' and hand in PREMIUM
                else limp_words(RULE_BY_MOVE.get((f['rule'], best_t), f['rule_fr'])))     # A' : la leçon suit le meilleur coup
     rule = f"À retenir : {rule_fr}"
     short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
@@ -585,7 +599,8 @@ def correct(sp, action_id):
     if ev[best] is not None:
         if f['gto'] and f['gto'] != best and (f['gto_freq_pct'] or 0) >= 5:
             why.append(f"La théorie joue déjà {best_l} {pct(f['gto_freq_pct'])} % du temps avec cette main.")
-    basis = basis_line(f)
+    pst = pastille(f, sp['spot_id'])
+    basis = (f"Sur quoi ça repose : ta pastille « {pst} », posée sur ses {n} coups observés : on joue contre ce profil." if pst else basis_line(f))
     if basis: why.insert(0, basis)                                 # test joueurs du 24/10 : la base du conseil en tête des précisions
     gto_label = lab[f['gto']] if f['gto'] else None
     body = [l for l in lines[:-1] if not l.startswith('Tu perds ')]  # sans « À retenir » ni le coût, déjà dans le bandeau
@@ -595,8 +610,8 @@ def correct(sp, action_id):
     else:                                                          # test joueurs du 24/10 : le chiffre qui décide, puis la règle à retenir
         clause = decisive(sp, f, best_t, hand)
         if clause:
-            lead = ('Sans info, on le suppose passif : ' if f['type'] == 'inconnu' else
-                    'Trop peu de coups pour le juger, on le suppose passif : ' if f['type'] == 'échantillon' else '')
+            lead = (f"Pastille {pst} : " if pst else 'Sans info, on le suppose passif : ' if f['type'] == 'inconnu' else
+                    'Trop peu de coups, on le suppose passif : ' if f['type'] == 'échantillon' else '')
             essential = (lead + clause if lead else clause[0].upper() + clause[1:]) + '. ' + imperative(sp, f, best)
             essential, remember, details = essential.strip(), rule, body + why
         else: essential, remember, details = rule_fr, None, body + why
@@ -619,7 +634,7 @@ def draw(spots, size, seed=None, filters=None):
     bonne réponse tirée à parts égales (on ne peut pas répondre « tapis » sans réfléchir), enfin question pondérée par la
     fréquence du profil dans le field. Au plus MAX_TRAPS pièges et MAX_READ question de lecture (sans limite si les filtres ne
     laissent que de la lecture), jamais deux fois la même main ni la même question"""
-    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0; used = set()
+    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0; used = set(); shown_p = shown_o = 0
     max_read = MAX_READ if any(s['field']['type'] not in READ for s in spots) else size
     max_traps = MAX_TRAPS if any(s['field']['type'] not in ('piège', 'échantillon') for s in spots) else size
     by_table = {t: [s for s in spots if s['table'] == t] for t in ('heads-up', '3-handed')}
@@ -641,10 +656,18 @@ def draw(spots, size, seed=None, filters=None):
             ty = pick(cand, lambda s: s['field']['type']); cand = [s for s in cand if s['field']['type'] == ty]
         st = pick(cand, lambda s: s['effective_stack_bb']); cand = [s for s in cand if s['effective_stack_bb'] == st]
         ans = pick(cand, lambda s: s['field']['correct']); cand = [s for s in cand if s['field']['correct'] == ans]
+        both = [s for s in cand if s['field']['type'] in ('adaptation', 'piège') and s['field']['observations']]
+        if both:                                                   # test joueurs du 24/10 (5e) : autant de « Pastille posée » que de « Vilain observé »
+            want = shown_p <= shown_o
+            keep = [s for s in both if bool(pastille(s['field'], s['spot_id'])) == want]
+            if keep: cand = keep
         sp = rnd.choices(cand, [max(s['field']['weight'], 1e-3) for s in cand])[0]
         h = next(iter(sp['hands'])); out.append(sp); used.add(sp['spot_id'])
         if h and sp['field']['type'] not in READ: seen.add(h)
         traps += sp['field']['type'] in ('piège', 'échantillon'); reads += sp['field']['type'] in READ
+        if sp['field']['type'] in ('adaptation', 'piège') and sp['field']['observations']:
+            if pastille(sp['field'], sp['spot_id']): shown_p += 1
+            else: shown_o += 1
     return [(s['spot_id'], next(iter(s['hands']))) for s in out]
 
 

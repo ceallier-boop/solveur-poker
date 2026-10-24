@@ -65,6 +65,8 @@ def connect():
         con.execute('ALTER TABLE sessions ADD COLUMN player_id TEXT')
     if 'purpose' not in {r[1] for r in con.execute('PRAGMA table_info(questions)')}:      # migration : objectif de la question
         con.execute('ALTER TABLE questions ADD COLUMN purpose TEXT'); con.execute('ALTER TABLE questions ADD COLUMN purpose_fr TEXT')
+    if 'timed_out' not in {r[1] for r in con.execute('PRAGMA table_info(attempts)')}:      # migration : coup joué au temps (chrono)
+        con.execute('ALTER TABLE attempts ADD COLUMN timed_out INTEGER NOT NULL DEFAULT 0')
     con.execute('CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id)')
     catalog.sync(con); con.commit()
     return con
@@ -114,6 +116,7 @@ class Attempt(BaseModel):
     session_id: str
     question_index: int = Field(ge=0)
     action_id: str
+    timed_out: bool = False          # chrono écoulé : le coup automatique compte comme une erreur, même s'il tombe sur le bon coup
 
 
 app = FastAPI(title='SpinsAcademy', version='0.1.0')
@@ -269,8 +272,11 @@ def answer(body: Attempt):
             r = quiz.correct(s['dataset_version'], q['spot_id'], q['hand'], body.action_id)
         except ValueError as e:
             raise HTTPException(422, str(e))
-        con.execute('INSERT INTO attempts VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (body.session_id, body.question_index, body.action_id, r['verdict'],
-                                                                           r['points'], r['regret_mbb'], json.dumps(r, ensure_ascii=False), _now()))
+        if body.timed_out:                                    # décision du porteur du projet : à la table, le temps dépassé n'est jamais un choix
+            r = dict(r, verdict='erreur', points=0.0, timed_out=True)
+        con.execute('INSERT INTO attempts(session_id, idx, action_id, verdict, points, regret_mbb, result, answered_at, timed_out) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (body.session_id, body.question_index, body.action_id, r['verdict'], r['points'], r['regret_mbb'],
+                     json.dumps(r, ensure_ascii=False), _now(), int(body.timed_out)))
         return dict(r, already_answered=False)
 
 
@@ -287,7 +293,7 @@ def session_summary(session_id: str):
 def _player_rows(con, pid):
     return [dict(r) for r in con.execute(
         'SELECT s.id AS session_id, s.created_at AS session_created_at, s.dataset_version, q.spot_id, q.hand, a.action_id, a.verdict, '
-        'a.points, a.regret_mbb, a.answered_at FROM sessions s JOIN questions q ON q.session_id = s.id '
+        'a.points, a.regret_mbb, a.answered_at, a.timed_out FROM sessions s JOIN questions q ON q.session_id = s.id '
         'JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx WHERE s.player_id = ? ORDER BY a.answered_at', (pid,))]
 
 
@@ -311,14 +317,16 @@ def _range_stats(con, pid):
 
 @app.get('/ranges/next')
 def range_next(table: Optional[str] = None, hero: Optional[str] = None, family: Optional[str] = None, min_stack: Optional[float] = None,
-               max_stack: Optional[float] = None, seed: Optional[int] = None):
+               max_stack: Optional[float] = None, seed: Optional[int] = None, exclude: str = ''):
     """une situation à dessiner ; les fréquences de référence restent sur le serveur jusqu'à la réponse"""
     f = Filters(table=table, hero=hero, family=family, min_stack=min_stack, max_stack=max_stack).model_dump(exclude_none=True)
     with closing(connect()) as con:
         version = serving_version(con, 'gto')
-        t = ranges.pick(version, f or None, seed, _excluded(con))
+        recent = {x for x in exclude.split(',') if x}                      # dernières situations vues : pas deux fois de suite
+        t = ranges.pick(version, f or None, seed, set(_excluded(con)) | recent)
     if not t: raise HTTPException(422, 'pas de situation à dessiner pour ces filtres')
-    return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'rule_fr')}, hands=sorted(t['hands']))
+    return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'where_fr', 'verb_fr')},
+                hands=sorted(t['hands']), weights={h: x[3] for h, x in t['hands'].items()})      # poids : la part de range, sans la réponse
 
 
 class RangeAnswer(BaseModel):
@@ -336,7 +344,8 @@ def range_answer(body: RangeAnswer, x_player_id: Optional[str] = Header(None)):
         g = ranges.grade(t, [h for h in body.hands if h in t['hands']])
         con.execute('INSERT INTO range_attempts(player_id, dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at) VALUES (?,?,?,?,?,?,?)',
                     (pid, version, body.spot_id, json.dumps(sorted(set(body.hands))), g['accuracy_pct'], g['bb_per_100'], _now()))
-    return dict(g, reference={h: x[0] for h, x in t['hands'].items()}, situation_fr=t['situation_fr'], question_fr=t['question_fr'])
+    return dict(g, reference={h: x[0] for h, x in t['hands'].items()}, reference_fr={h: x[5] for h, x in t['hands'].items()},
+                situation_fr=t['situation_fr'], question_fr=t['question_fr'])
 
 
 class Preferences(BaseModel):

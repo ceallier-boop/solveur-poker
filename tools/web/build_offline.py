@@ -55,12 +55,16 @@ def range_tasks(ref, n=RANGE_TASKS, seed=5):
     spots = [sp for sp in quiz.pool(ref) if sp['spot_id'] in ok]
     rnd.shuffle(spots)
     spots.sort(key=lambda sp: -rnd.random() * weights.get((sp['table'], quiz.stack_band(sp), quiz.situation_key(sp)), quiz.RARE_FLOOR))
-    out = []
-    for sp in spots:
-        t = ranges.task(sp)
-        if t: out.append(t)
-        if len(out) >= n: break
-    return out
+    per = {}                                                       # même nombre d'exercices par famille et tranche de tapis
+    for sp in spots: per.setdefault((quiz.family(sp), quiz.stack_band(sp)), []).append(sp)
+    out = []; quota = max(1, n // max(1, len(per)))
+    for group in per.values():
+        k = 0
+        for sp in group:
+            t = ranges.task(sp)
+            if t: out.append(t); k += 1
+            if k >= quota: break
+    return out[:n]
 
 
 def theme_css(css):
@@ -152,10 +156,11 @@ const DEMO = (() => {
   function summary(s) {
     const rows = answered(s); const n = rows.length; const pts = rows.reduce((a, [, r]) => a + r.points, 0);
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
-      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb })).sort((a, b) => b.regret_mbb - a.regret_mbb);
+      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out })).sort((a, b) => b.regret_mbb - a.regret_mbb);
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
     const ev = rows.filter(([, r]) => !(r.field && r.field.read)); const lost = ev.reduce((a, [, r]) => a + (r.regret_mbb || 0), 0) / 1000;
-    return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
+    return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length,
+      bb_per_100: ev.length ? Math.round(10000 * lost / ev.length) / 100 : null, timeouts: rows.filter(([, r]) => r.timed_out).length, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
       session_id: s.id, size: s.items.length, complete: n === s.items.length };
   }
 
@@ -222,6 +227,7 @@ const DEMO = (() => {
         ? `Pas encore assez de réponses pour un diagnostic : encore ${need} question${need > 1 ? 's' : ''}.` : "Rien à retravailler pour l'instant : continue avec des séries rapides." };
     }
     return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null, bb_per_100: per100(total),
+      ev_questions: total.evq, timeouts: sess.reduce((a, s) => a + answered(s).filter(([, r]) => r.timed_out).length, 0),
       verdicts, min_sample: MIN_SAMPLE, by, untracked_questions: untracked, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
   }
 
@@ -273,18 +279,21 @@ const DEMO = (() => {
 
   // « Construis ta range » : même règle que spinsacademy.ranges.grade
   function rangeGrade(t, selected) {
-    const sel = new Set(selected); const cells = {}; let wt = 0, good = 0, lost = 0, refw = 0, myw = 0; const extra = [], missing = [];
-    for (const [h, [f, cin, cout, w]] of Object.entries(t.hands)) {
-      const played = sel.has(h), ref = f >= 0.75 ? 'in' : f <= 0.25 ? 'out' : 'mixed'; const cost = played ? cin : cout; let st, ok;
+    const sel = new Set(selected); const cells = {}; let wt = 0, good = 0, lost = 0, refw = 0, myw = 0; const errs = [];
+    for (const [h, [f, cin, cout, w, unstable]] of Object.entries(t.hands)) {
+      const played = sel.has(h); const cost = played ? cin : cout; const ref = unstable ? 'mixed' : f >= 0.75 ? 'in' : f <= 0.25 ? 'out' : 'mixed'; let st, ok;
       if (ref === 'mixed') { st = 'mixed'; ok = true; } else if (ref === 'in') { st = played ? 'ok_in' : 'missing'; ok = played; } else { st = played ? 'extra' : 'ok_out'; ok = !played; }
+      if ((st === 'extra' || st === 'missing') && cost < 0.01) { st = 'mixed'; ok = true; }      // erreur sans coût mesurable
       cells[h] = st; wt += w; good += ok ? w : 0; lost += w * cost; refw += w * f; if (played) myw += w;
-      if (st === 'extra') extra.push([cost, h]); if (st === 'missing') missing.push([cost, h]);
+      if (st === 'extra' || st === 'missing') errs.push([cost, h]);
     }
-    const worst = extra.concat(missing).sort((a, b) => b[0] - a[0] || (a[1] < b[1] ? 1 : -1)).slice(0, 5);
+    const worst = errs.sort((a, b) => b[0] - a[0] || (a[1] < b[1] ? 1 : -1)).slice(0, 5);
+    const ref = wt ? Math.round(100 * refw / wt) : 0, n = (k) => Object.values(cells).filter((x) => x === k).length;
     return { spot_id: t.spot_id, cells, accuracy_pct: wt ? Math.round(1000 * good / wt) / 10 : 0, bb_per_100: wt ? Math.round(10000 * lost / wt) / 100 : 0,
-      extra: extra.length, missing: missing.length, worst: worst.map(([c, h]) => ({ hand: h, cost_bb: Math.round(100 * c) / 100, kind: cells[h] })),
-      ref_share_pct: wt ? Math.round(100 * refw / wt) : 0, my_share_pct: wt ? Math.round(100 * myw / wt) : 0, rule_fr: t.rule_fr,
-      reference: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[0]])), situation_fr: t.situation_fr, question_fr: t.question_fr };
+      extra: n('extra'), missing: n('missing'), worst: worst.map(([c, h]) => ({ hand: h, cost_bb: Math.round(100 * c) / 100, kind: cells[h], ref_fr: t.hands[h][5] })),
+      ref_share_pct: ref, my_share_pct: wt ? Math.round(100 * myw / wt) : 0, rule_fr: `À retenir : ${t.where_fr}, ${t.verb_fr} avec environ ${ref} % des mains.`,
+      reference: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[0]])), reference_fr: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[5]])),
+      situation_fr: t.situation_fr, question_fr: t.question_fr };
   }
 
   async function route(path, opts) {
@@ -320,7 +329,8 @@ const DEMO = (() => {
       const it = ITEMS[s.items[body.question_index]]; if (!it) return [404, { detail: 'question inconnue' }];
       const prev = s.answers[body.question_index];
       if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { range: GRIDS[it.q.spot_id] || null, already_answered: true })] : [409, { detail: 'question déjà répondue' }];
-      const r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
+      let r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
+      if (body.timed_out) r0 = Object.assign({}, r0, { verdict: 'erreur', points: 0, timed_out: true });     // chrono écoulé : erreur
       const r = Object.assign({}, r0, { range: GRIDS[it.q.spot_id] || null });
       s.answers[body.question_index] = Object.assign({ action_id: body.action_id, at: now(), meta: metaOf(it) }, r0); save();       // sans la grille : stockage léger
       return [200, Object.assign({}, r, { already_answered: false })];
@@ -331,7 +341,11 @@ const DEMO = (() => {
       const c = RTASKS.filter((t) => (!q.get('table') || t.table === q.get('table')) && (!q.get('hero') || t.hero === q.get('hero'))
         && (!q.get('family') || t.family === q.get('family')) && t.effective_stack_bb >= lo && t.effective_stack_bb <= hi);
       if (!c.length) return [422, { detail: 'pas de situation à dessiner pour ces filtres' }];
-      const t = rnd(c); const { hands, rule_fr, ...rest } = t; return [200, Object.assign(rest, { hands: Object.keys(hands).sort() })];
+      const recent = new Set((q.get('exclude') || '').split(',')); let pool = c.filter((t) => !recent.has(t.spot_id)); if (!pool.length) pool = c;
+      const fam = rnd(uniq(pool.map((t) => t.family)).sort()); pool = pool.filter((t) => t.family === fam);       // famille, puis tapis, à parts égales
+      const band = rnd(uniq(pool.map((t) => t.band)).sort()); pool = pool.filter((t) => t.band === band);
+      const t = rnd(pool); const { hands, where_fr, verb_fr, ...rest } = t;
+      return [200, Object.assign(rest, { hands: Object.keys(hands).sort(), weights: Object.fromEntries(Object.entries(hands).map(([h, x]) => [h, x[3]])) })];
     }
     if (p === '/ranges/answer' && method === 'POST') {
       const t = RTASKS.find((x) => x.spot_id === body.spot_id); if (!t) return [404, { detail: 'situation inconnue' }];

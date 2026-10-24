@@ -405,3 +405,12 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .rg-legend .st-ok_in::before { background: var(--ok); } .rg-legend .st-extra::before { background: var(--bad); }
 .rg-legend .st-missing::before { box-shadow: inset 0 0 0 2px var(--bad); } .rg-legend .st-mixed::before { background: repeating-linear-gradient(45deg, var(--warn-bg) 0 3px, var(--surface) 3px 6px); }
 .rc.st-mixed.on { box-shadow: inset 0 0 0 2px var(--accent); font-weight: 800; }   /* mixte, et choisie par le joueur */
+
+/* test joueurs du 24/10 (5e) : mixte bien visible, ton choix marqué après la correction */
+.rc.st-mixed { background: repeating-linear-gradient(45deg, var(--warn) 0 3px, var(--warn-bg) 3px 7px); color: var(--text); }
+.rc.on.st-ok_in, .rc.on.st-extra, .rc.on.st-mixed { box-shadow: inset 0 0 0 2px var(--text); }
+.rg-legend .st-mixed::before { background: repeating-linear-gradient(45deg, var(--warn) 0 2px, var(--warn-bg) 2px 5px); }
+.rg-legend .st-chosen::before { box-shadow: inset 0 0 0 2px var(--text); }
+#rg-question small { display: block; font-size: .9rem; font-weight: 500; color: var(--muted); margin-top: 4px; }
+.rg-cellinfo { margin: 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line); font-size: .9rem; }
+.rc.st-mixed { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--warn) 45%, transparent) 0 3px, var(--warn-bg) 3px 7px); }

@@ -83,7 +83,7 @@ C1 postflop, C2 ICM, C3 tapis inégaux à 3 joueurs et 3-bet non all-in, C4 calc
 4. **Décisions** : invité ou comptes (A16), relecture experte (A18), journal d'usage de la bêta (A17).
 
 ### Côté application, court terme
-5. **Cinquième test joueurs** sur la version actuelle (corrections du test 4, pastilles à table et alternance).
+5. **Cinquième test joueurs** fait le 24/10 (`RETEST5_JOUEURS_2026-10-24.md`), corrections faites ; un sixième test sur la version corrigée reste à faire.
 6. **Points ouverts du test 4** :
    - équité de ta main quand un joueur reste à parler ;
    - raccourcis clavier vus sur téléphone, à vérifier sur un vrai appareil.
