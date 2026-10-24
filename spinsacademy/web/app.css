@@ -364,3 +364,12 @@ button.term { background: none; border: 0; padding: 0; font: inherit; color: inh
 .hero-seat .act { display: block; font-size: .72rem; font-weight: 800; letter-spacing: .06em; color: var(--muted); }
 .pastille { margin-right: 6px; }
 button.term { display: inline; white-space: normal; }   /* « d'équité » ne se coupe pas entre l'apostrophe et le mot */
+
+/* lot 1 bis : sièges plus sobres, pastille à côté du nom */
+.table-view .seat { min-width: 76px; padding: 4px 8px 5px; }
+.table-view .seat b { font-size: .86rem; display: flex; align-items: center; justify-content: center; gap: 0; }
+.seat .stack { font-size: .95rem; } .seat .stack small { font-size: .62rem; font-weight: 600; opacity: .85; }
+.seat .act { font-size: .68rem; }
+.seat .hud { white-space: nowrap; max-width: none; font-size: .66rem; padding: 1px 6px; margin-top: 2px; }
+.table-view .seat .pastille { width: 16px; height: 16px; font-size: .58rem; margin-right: 4px; box-shadow: 0 0 0 1.5px rgba(255,255,255,.8); }
+.pastille.none { background: transparent; color: rgba(255,255,255,.75); box-shadow: 0 0 0 1.5px rgba(255,255,255,.5) !important; }

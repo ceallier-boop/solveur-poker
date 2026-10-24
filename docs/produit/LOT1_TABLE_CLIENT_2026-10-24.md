@@ -9,8 +9,14 @@ Point de départ : deux captures du client Expresso fournies par le porteur du p
 | 3. Mises et tapis | Jetons de couleur, légende, tapis de départ | Mise en chiffre jaune devant chaque joueur, tapis restant sous son nom (« ALL-IN » quand il a tout misé), « Pot total » au centre. Plus de légende. |
 | 4. Tes cartes | Au centre de la table | À ta place, en bas, plus grandes. |
 | 5. Stats du vilain | Grand encadré au-dessus de la table | Une ligne sous son siège (« Limp 60 % », « Call tapis 35 % », « Inconnu ») ; le détail observé / théorie se déplie sous la table (« Stats du vilain · 150 mains »). Les questions de lecture gardent l'encadré complet. |
-| Pastilles | Seulement le texte des réponses | « Mes pastilles » sur l'accueil : une couleur par profil (8 couleurs, choix gardé sur l'appareil), une lettre dans la pastille (P, S, D, N, R) pour les daltoniens. Affichées sur les réponses de « Quelle pastille ? » et dans la correction. |
+| Pastilles | Seulement le texte des réponses | « Mes pastilles » sur l'accueil : une couleur par profil (8 couleurs, choix gardé sur l'appareil), une lettre dans la pastille (P, S, !, N, R) pour les daltoniens ; « ! » pour le dégène, pour ne pas confondre avec le bouton D. Affichées sur les réponses de « Quelle pastille ? » et dans la correction. |
 
 Lexique 1.9.0 : Call, Raise to, All-in, Mise, Pot total, Bouton (D), Stats sous le siège, Pastille.
 
 Hors de ce lot (lot 2) : questions « pastille connue » (le vilain arrive avec sa pastille) et « pastille douteuse », mode chrono, correction affichée sur la table.
+
+## Retouche du 24/10/2026 (retour du porteur du projet)
+
+- Sièges plus sobres : une seule ligne courte sous chaque adversaire, comme le compteur du client (« Limp 27 · Call/limp 22 (150) ») ; théorie et k sur n restent dans « Stats du vilain ».
+- Pastille de couleur à côté du nom de chaque adversaire : la couleur choisie dans « Mes pastilles » quand ses coups observés suffisent à le classer (questions d'adaptation et pièges) ; « ? » pour un inconnu, un petit échantillon, ou un joueur sans stats. Jamais dans les questions de lecture, dont c'est la réponse.
+- « te couvre » en petit sous le tapis d'un adversaire qui a plus de jetons que toi.

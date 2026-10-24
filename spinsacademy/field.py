@@ -270,7 +270,17 @@ def question(sp):
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
-                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=stats, ask_fr=f['ask_fr']))
+                field=dict(type=shown_type(f), type_fr=SHOWN_FR[shown_type(f)], observations=f['observations'], villains=f['villains'], stats=stats, ask_fr=f['ask_fr'], pastille=pastille(f)))
+
+
+PASTILLE_OF = {'Rec passif (défaut)': 'Rec passif', 'Calling station': 'Calling station', 'Dégène': 'Dégène', 'Nit': 'Nit', 'Reg': 'Reg'}
+
+
+def pastille(f):
+    """test joueurs du 24/10 : la pastille du vilain, comme la note de couleur posée dans le client. Seulement quand ses coups
+    observés suffisent à le classer (adaptation, piège) ; aucune pour un inconnu ou un petit échantillon, ni dans les questions
+    de lecture, dont c'est la réponse"""
+    return PASTILLE_OF.get(f['internal_profile']) if f['type'] in ('adaptation', 'piège') and f['observations'] else None
 
 
 SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}

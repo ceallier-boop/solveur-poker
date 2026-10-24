@@ -110,3 +110,14 @@ def test_fourth_player_test_fixes():
     reads = [s for s in quiz.pool(quiz.DEFAULT_FIELD) if s['field']['type'] in field.READ]; S = quiz.load(quiz.DEFAULT_FIELD)[1]
     c = Counter(S[sid]['field']['type'] for seed in range(60) for sid, _ in field.draw(reads, 5, seed))
     assert c['profil'] >= 0.35 * sum(c.values())                                  # « Quelle pastille ? » aussi souvent que « Défaut du vilain »
+
+
+def test_pastille_next_to_villain():
+    """la pastille du vilain s'affiche quand ses coups observés suffisent ; jamais pour un inconnu, un petit échantillon ou une lecture"""
+    S = quiz.load(quiz.DEFAULT_FIELD)[1]; shown = 0
+    for sp in list(S.values())[::25]:
+        q = quiz.question(quiz.DEFAULT_FIELD, sp['spot_id'], next(iter(sp['hands']))); t = sp['field']['type']
+        if t in ('adaptation', 'piège') and sp['field']['observations']:
+            assert q['field']['pastille'] in ('Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'); shown += 1
+        else: assert q['field']['pastille'] is None, t
+    assert shown > 100

@@ -19,7 +19,7 @@ const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
 
 // pastilles (lot 1) : la couleur que le joueur donne à chaque profil, comme dans son client ; une lettre pour les daltoniens
 const PROFILES = ['Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'];
-const PAST_LETTER = { 'Rec passif': 'P', 'Calling station': 'S', 'Dégène': 'D', 'Nit': 'N', 'Reg': 'R' };
+const PAST_LETTER = { 'Rec passif': 'P', 'Calling station': 'S', 'Dégène': '!', 'Nit': 'N', 'Reg': 'R' };   // pas de « D » : c'est le bouton
 const PALETTE = ['#e5484d', '#f76b15', '#f5c518', '#30a46c', '#0091ff', '#8e4ec6', '#e93d82', '#8b8d98'];
 const PALETTE_FR = { '#e5484d': 'rouge', '#f76b15': 'orange', '#f5c518': 'jaune', '#30a46c': 'vert', '#0091ff': 'bleu', '#8e4ec6': 'violet', '#e93d82': 'rose', '#8b8d98': 'gris' };
 const PAST_DEFAULT = { 'Rec passif': '#f5c518', 'Calling station': '#e5484d', 'Dégène': '#f76b15', 'Nit': '#0091ff', 'Reg': '#8b8d98' };
@@ -136,8 +136,8 @@ function contributions(q) {
 
 // lot 1 (table du client) : l'action sous le joueur, la mise en chiffres devant lui, le tapis restant, le bouton D
 const ACT_TAG = { fold: 'FOLD', check: 'CHECK', limp: 'CALL', call: 'CALL', call_allin: 'CALL', raise: 'RAISE', allin: 'ALL-IN' };
-const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call tapis', call_pct_bb_sb_fold: 'Call tapis', limp_pct: 'Limp', call_after_limp_pct: 'Call tapis après limp',
-  jam_over_limp_pct: 'Tapis sur limp', open_pct: 'Open', defend_pct: 'Défense' };
+const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call', call_pct_bb_sb_fold: 'Call', limp_pct: 'Limp', call_after_limp_pct: 'Call/limp',
+  jam_over_limp_pct: 'Tapis/limp', open_pct: 'Open', defend_pct: 'Déf.' };
 function lastActions(q) {
   const last = {};
   for (const h of q.history) last[h.position] = h.action;
@@ -154,7 +154,7 @@ function renderTable(q) {
   for (let k = 0; k < n; k++) {
     const i = (hero + k) % n, pos = q.players[i], left = q.stacks_bb[i] - c[i];
     const covers = last[pos] === 'allin' && left > 1e-9;                     // il pousse plus que ton tapis : il te couvre
-    const act = left <= 1e-9 ? '' : covers ? 'ALL-IN · te couvre' : ACT_TAG[last[pos]] || '';   // tapis : « ALL-IN » à la place du tapis restant
+    const act = left <= 1e-9 ? '' : ACT_TAG[last[pos]] || '';                 // tapis : « ALL-IN » à la place du tapis restant
     const stack = left <= 1e-9 ? 'ALL-IN' : `${bb(left)} BB`;
     if (k === 0) {
       $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '');   // ton action, comme pour les autres
@@ -163,7 +163,8 @@ function renderTable(q) {
       seat.className = 'seat' + (folded[i] ? ' folded' : '');
       seat.style.left = seats[k][0] + '%'; seat.style.top = seats[k][1] + '%';
       const backs = !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';           // cartes cachées des adversaires encore dans le coup
-      seat.innerHTML = backs + `<b>${pos}</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '')
+      const tag = q.field ? (q.field.pastille && (q.field.villains || []).includes(pos) ? pastilleDot(q.field.pastille) : '<i class="pastille none" title="Pas de pastille">?</i>') : '';
+      seat.innerHTML = backs + `<b>${tag}${pos}</b><span class="stack">${stack}${covers ? ' <small>te couvre</small>' : ''}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '')
         + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}</span>` : '');   // sa mise, devant lui
       view.appendChild(seat);
     }
@@ -187,11 +188,12 @@ function hudLines(q) {
   if (!f || !q.hand || f.ask_fr) return out;
   const main = (f.villains || [])[0];
   if (!f.stats.length) { if (main) out[main] = 'Inconnu'; return out; }
-  for (const s of f.stats) {                                            // une ligne par stat : observé, théorie et échantillon (k/n)
+  for (const s of f.stats) {                                            // une ligne courte, comme le HUD du client ; théorie et k/n dans « Stats du vilain »
     const who = s.stat === 'call_pct_bb_sb_fold' ? 'BB' : main;
-    const line = `<span class="hl"><b>${HUD_FR[s.stat] || s.label_fr} ${rnd0(s.observed_pct)} %</b> <small>th. ${rnd0(s.gto_pct)} % · ${s.k}/${s.n}</small></span>`;
-    out[who] = (out[who] || '') + line;
+    const item = `${HUD_FR[s.stat] || s.label_fr} ${rnd0(s.observed_pct)}`;
+    out[who] = out[who] ? `${out[who]} · ${item}` : item;
   }
+  if (main && out[main]) out[main] += ` (${f.observations})`;                // nombre de coups observés, comme le compteur du client
   return out;
 }
 
