@@ -21,7 +21,7 @@ def test_range_task_and_grade():
     assert best['accuracy_pct'] >= 99 and best['bb_per_100'] < 1                       # la référence ne perd presque rien
     assert empty['accuracy_pct'] < best['accuracy_pct'] and empty['bb_per_100'] > best['bb_per_100'] and empty['missing'] > 0
     assert full['extra'] > 0 and full['my_share_pct'] == 100
-    assert set(best['cells'].values()) <= {'ok_in', 'ok_out', 'mixed'}
+    assert set(best['cells'].values()) <= {'ok_in', 'ok_out', 'mixed', 'close'}
     assert all(w['cost_bb'] >= 0 and w['kind'] in ('extra', 'missing') for w in empty['worst'])
     assert int(best['rule_fr'].split('environ ')[1].split(' %')[0]) == best['ref_share_pct']        # même chiffre que « À retenir »
     assert best['my_share_pct'] == round(100 * sum(t['hands'][h][3] for h in ref) / sum(x[3] for x in t['hands'].values()))   # même calcul que le compteur
@@ -54,7 +54,7 @@ def test_bb_lost_per_100(client):
     for k in range(s['size']):
         q = client.get(f"/quiz/next?session_id={s['session_id']}").json()['question']
         r = client.post('/attempts', json={'session_id': s['session_id'], 'question_index': k, 'action_id': q['options'][-1]['id']}).json()
-        lost += r['regret_mbb']
+        lost += 10 * round(r['regret_mbb'] / 10)                                   # au centième de BB, comme l'affichage
     summ = client.get(f"/sessions/{s['session_id']}/summary").json()
     assert summ['ev_questions'] == s['size'] and abs(summ['bb_lost'] - lost / 1000) < 0.02
     st = client.get('/users/me/stats', headers=H).json()

@@ -60,7 +60,7 @@ def compute(rows):
         s = sessions[r['session_id']]; s['date'] = r['session_created_at']
         for b in (total, dims['mode'][mode], dims['family'][fam], dims['hero'][hero], dims['table'][table], dims['depth'][depth], s):
             b['questions'] += 1; b['points'] += r['points']
-            if has_ev: b['ev_questions'] += 1; b['regret'] += r['regret_mbb'] or 0
+            if has_ev: b['ev_questions'] += 1; b['regret'] += 10 * round((r['regret_mbb'] or 0) / 10)   # au centième de BB, comme le bilan de série
             if b is not s: b['errors'] += err
         verdicts[r['verdict']] += 1; timeouts += bool(r.get('timed_out'))
         t = themes[(mode, fam, hero, depth)]; t['questions'] += 1; t['imprecisions'] += r['verdict'] == 'imprécision'

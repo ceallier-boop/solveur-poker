@@ -206,7 +206,7 @@ def history_text(sp):
 
 
 def prompt(sp, hand):
-    if sp.get('field'): return field.limp_words(sp['prompt_fr'])
+    if sp.get('field'): return field.served_prompt(sp)
     table = '3 joueurs' if sp['table'] == '3-handed' else 'Heads-up'
     stacks = ' / '.join(bb(x) for x in sp['stacks_bb']); pos = ' / '.join(sp['players'])
     hist = history_text(sp)
@@ -245,17 +245,29 @@ def situation_of(sp):
 
 
 @lru_cache(maxsize=8)
+def main_trees(version):
+    """arbre retenu pour chaque table et chaque jeu de tapis : celui de référence s'il couvre ces tapis, sinon le plus fréquent"""
+    from collections import Counter, defaultdict
+    from .importer import REF_PREFLOP
+    trees = defaultdict(Counter)
+    for sp in load(version)[1].values(): trees[(sp['table'], tuple(sp['stacks_bb']))][sp.get('preflop_tree')] += 1
+    return {k: (REF_PREFLOP if REF_PREFLOP in c else sorted(c.items(), key=lambda x: (-x[1], str(x[0])))[0][0]) for k, c in trees.items()}
+
+
+def in_main_tree(version, sp):
+    """la situation vient de l'arbre retenu à ces tapis : ses mains en jeu suivent la stratégie servie aux coups précédents"""
+    return sp.get('preflop_tree') == main_trees(version).get((sp['table'], tuple(sp['stacks_bb'])))
+
+
+@lru_cache(maxsize=8)
 def served_ids(version):
     """test joueurs du 24/10 : une situation calculée dans plusieurs arbres (tailles de relance différentes) n'est servie qu'une
     fois, sinon la même main change de stratégie et de « mains à la limite » d'une série à l'autre. Arbre retenu : celui de
     référence s'il couvre ces tapis, sinon le plus fréquent à ces tapis (le même pour toutes les situations de ces tapis)"""
-    from collections import Counter, defaultdict
-    from .importer import REF_PREFLOP
+    from collections import defaultdict
     _, spots = load(version)
     if any(sp.get('field') for sp in spots.values()): return frozenset(spots)      # exploitant : une question par main et par vilain
-    trees = defaultdict(Counter)
-    for sp in spots.values(): trees[(sp['table'], tuple(sp['stacks_bb']))][sp.get('preflop_tree')] += 1
-    main = {k: (REF_PREFLOP if REF_PREFLOP in c else sorted(c.items(), key=lambda x: (-x[1], str(x[0])))[0][0]) for k, c in trees.items()}
+    main = main_trees(version)
     groups = defaultdict(list)
     for sp in spots.values(): groups[situation_of(sp)].append(sp)
     keep = set()
@@ -621,7 +633,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
         right = best_choice or accepted
         stake = f"soit environ {gain_bb(abs(ev[1]))} sur ce pot"   # les points d'équité, convertis en BB (= EV du call)
         if abs(margin) < 5:
-            out.append(f"Décision serrée ({stake}) : " + (
+            out.append(f"Équité proche du seuil ({stake}) : " + (      # test joueurs 6 : plus de « décision serrée » à côté d'un verdict « erreur »
                 "bien vu, mais elle peut basculer si sa range change un peu." if best_choice else
                 f"ton choix coûte moins de {bb(GAIN_MIN_BB)} BB, il est accepté." if accepted else
                 "c'est le seuil d'équité qui tranche."))
@@ -667,7 +679,7 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
     rf = {h: grading.reference_freq(sp, h) for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq') and h != hand}
     edge = sorted((abs(v[j] - 0.5), h) for h, v in rf.items() if 0.2 <= v[j] <= 0.8)
     if edge:
-        out.append(f"Mains à la limite pour « {_low(labels[best])} » : {', '.join(h for _, h in edge[:5])}.")
+        out.append(f"Mains jouées tantôt ainsi, tantôt autrement (« {_low(labels[best])} » de 20 à 80 % du temps) : {', '.join(h for _, h in edge[:5])}.")
     return out
 
 
@@ -859,17 +871,19 @@ RULE_MAX_GROUPS = 12             # au-delà, la règle n'est plus « simple » :
 RULE_MIN_FIT = 0.93               # « À retenir » : la règle à seuils doit classer au moins 93 % des mains (pondérées) comme la référence
 
 
-def threshold_rule(inside, weight):
+def threshold_rule(inside, weight, cover=False):
     """règle à seuils la plus fidèle : pour les paires et pour chaque carte haute (assorties, dépareillées), un kicker
-    minimal (« A7+ », « K9s+ », « 55+ ») ; renvoie (texte, part des mains bien classées). inside : {main: bool} ; weight : {main: poids}"""
+    minimal (« A7+ », « K9s+ », « 55+ ») ; renvoie (texte, part des mains bien classées), plus les mains couvertes si cover.
+    inside : {main: bool} ; weight : {main: poids}"""
     groups = [('pair', [r + r for r in _RK])] + [(h + sfx, [h + k + sfx for k in _RK[i + 1:]]) for i, h in enumerate(_RK[:-1]) for sfx in ('s', 'o')]
-    tot = sum(weight.values()) or 1; good = 0.0; parts = {}
+    tot = sum(weight.values()) or 1; good = 0.0; parts = {}; covered = set()
     for name, hs in groups:                                   # hs du plus fort au plus faible : seuil = nombre de mains gardées
         hs = [h for h in hs if h in weight]
         if not hs: continue
         best = max(range(len(hs) + 1), key=lambda n: sum(weight[h] for h in hs[:n] if inside[h]) + sum(weight[h] for h in hs[n:] if not inside[h]))
         good += sum(weight[h] for h in hs[:best] if inside[h]) + sum(weight[h] for h in hs[best:] if not inside[h])
         if best: parts[name] = hs[best - 1]
+        covered.update(hs[:best])
     out = []
     if 'pair' in parts: out.append(f"{parts['pair']}+" if parts['pair'] != 'AA' else 'AA')
     for i, h in enumerate(_RK[:-1]):
@@ -879,12 +893,13 @@ def threshold_rule(inside, weight):
         else:
             for x, sfx in ((s_, 's'), (o_, 'o')):
                 if x: out.append(f"{h}{last(x)}{sfx}+" if last(x) != _RK[i + 1] else f"{h}{last(x)}{sfx}")
-    return ', '.join(out), good / tot
+    return (', '.join(out), good / tot, covered) if cover else (', '.join(out), good / tot)
 
 
-def rule_to_remember(sp, best, labels):
+def rule_to_remember(sp, best, labels, hand=None):
     """« À retenir » : la range de l'action de référence (mains qui la jouent au moins 50 %) résumée en règle à seuils,
-    affichée seulement si elle est fidèle (RULE_MIN_FIT) ; sinon la part des mains. Pour un fold : ce qu'on joue."""
+    affichée seulement si elle est fidèle (RULE_MIN_FIT) ; sinon la part des mains. Pour un fold : ce qu'on joue. Test joueurs 6 :
+    quand la main jouée est une exception à la règle simplifiée (A6s à tapis avec « J9s+ »), la règle le dit"""
     j = [a['id'] for a in sp['actions']].index(best)
     live = {h: x for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq')}
     t = {a['id']: a['type'] for a in sp['actions']}[best]
@@ -897,12 +912,15 @@ def rule_to_remember(sp, best, labels):
     if family(sp) == 'vs_allin' and sum(h['action'] in ('allin', 'call_allin') for h in sp['history']) > 1: sit = 'face à deux joueurs à tapis'
     where = f"au {sp['hero']} {sit}, avec {bb(hero_effective(sp))} BB de tapis" + (' (heads-up)' if sp['table'] == 'heads-up' else '')   # v4.4 : le montant est ton tapis, pas la relance
     target = {h: not v for h, v in plays.items()} if t == 'fold' else plays
-    txt, fit = threshold_rule(target, weight)
+    txt, fit, covered = threshold_rule(target, weight, cover=True)
     if txt and fit >= RULE_MIN_FIT and 0 < share < 100 and txt.count(',') < RULE_MAX_GROUPS:
         n = 100 - share if t == 'fold' else share
         what = f"on ne joue que {txt}" if t == 'fold' else f"{verb} avec {txt}"
         exact = '' if fit >= 0.995 else f", règle simplifiée à {round(100 * fit)} %"
-        return f"À retenir : {where}, {what} (environ {n} % des mains{exact})."
+        odd = ''
+        if hand in target and target[hand] != (hand in covered):
+            odd = (f" {hand} est une exception : elle se joue aussi." if target[hand] else f" {hand} est une exception : elle ne se joue pas.")
+        return f"À retenir : {where}, {what} (environ {n} % des mains{exact}).{odd}"
     return f"À retenir : {where}, {verb} avec environ {share} % des mains."
 
 
@@ -947,6 +965,8 @@ def correct(version, spot_id, hand, action_id):
         names = [_low(labels[a]) for a in good]
         lines = [(f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)." if action_id in good else
                   f"Les bons coups ici : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). Ton choix n'en fait pas partie.")]
+        never = [_low(labels[a]) for a in good if not shown.get(a)]       # test joueurs 6 : « ALL-IN ou CALL » avec CALL à 0 %
+        if never: lines.append(f"La théorie ne joue pas {' ni '.join(never)}, mais l'écart est trop petit pour compter.")
     elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Meilleur coup : {labels[best]}{played}.']
     elif evb <= GAIN_MIN_BB: lines = [f"Meilleur coup : {labels[best]}{played}, à peine mieux que le {ref} (moins de {bb(GAIN_MIN_BB)} BB)."]
     else: lines = [f"Meilleur coup : {labels[best]}{played}, {gain_bb(evb, signed=True)} par rapport au {ref}."]
@@ -976,10 +996,12 @@ def correct(version, spot_id, hand, action_id):
     ce = call_equity(sp, hand)
     essential = (f"Il te faut {_pct1(ce[0])} d'équité pour payer, et {hand} en a {_pct_eq(ce[1], ce[0])} : "
                  + ('payer rapporte.' if ce[1] >= ce[0] else 'couche-toi.')) if ce else principle(sp, hand, best, labels)
-    remember = rule_to_remember(sp, best, labels)                     # test joueurs du 24/10 : la règle à retenir sur chaque main
+    if not ce and action_id != best and g['verdict'] == 'correct':      # test joueurs 6 : un coup accepté est expliqué, pas l'autre
+        essential = principle(sp, hand, action_id, labels)
+    remember = rule_to_remember(sp, best, labels, hand)               # test joueurs du 24/10 : la règle à retenir sur chaque main
     core = list(lines) + [essential] + ([remember] if remember else [])
     lines = core + because                                         # la stratégie arrondie est affichée à part
-    loss = max(0.0, E_(best) - E_(action_id)) if best != top else raw / 1000
+    loss = raw / 1000                                    # test joueurs 6 : le même coût que le verdict et le bilan de série
     return dict(verdict=g['verdict'], points=g['points'], regret_mbb=g['regret_mbb'], best_action=best, best_label=labels[best],
                 top_action=top, chosen_action=action_id, gto_action=None, gto_label=None,
                 good_actions=(good if len(good) > 1 else []), good_labels=([labels[a] for a in good] if len(good) > 1 else []),
@@ -1010,7 +1032,8 @@ def summary(version, answers):
                           loss_fr=r.get('loss_fr'))
                      for sid, h, r in answers if r['verdict'] != 'correct'], key=lambda e: -e['regret_mbb'])
     ev = [r for sid, _, r in answers if not (spots[sid].get('field') and spots[sid]['field']['type'] in ('identification', 'profil'))]
-    lost = sum(r['regret_mbb'] or 0 for r in ev) / 1000                     # chantier 5 : ce que la série a coûté, en BB
+    lost = sum(round((r['regret_mbb'] or 0) / 1000, 2) for r in ev)         # chantier 5 : ce que la série a coûté, en BB ; test joueurs 6 :
+    #                                                                        somme des coûts affichés (au centième), pour que la liste tombe juste
     return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0, bb_lost=round(lost, 2), ev_questions=len(ev),
                 bb_per_100=round(100 * lost / len(ev), 2) if ev else None, timeouts=sum(1 for *_, r in answers if r.get('timed_out')),
                 verdicts={v: sum(1 for *_, r in answers if r['verdict'] == v) for v in grading.POINTS},

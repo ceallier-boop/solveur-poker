@@ -7,7 +7,8 @@ référence n'est pas toujours du push/fold. La correction compare sa range à l
     réponses sont acceptées). Aucune main en jeu n'est grisée : une seule version de chaque situation est servie, la marque
     des mains dont la référence changeait d'un arbre à l'autre ne s'applique plus ici ;
   - le coût d'une main mal classée est son écart en EV avec le meilleur coup ; sous CLOSE_BB, l'erreur ne coûte rien de
-    mesurable et compte comme mixte ;
+    mesurable : acceptée, avec son propre statut « écart négligeable » (test joueurs 6 : « mixte » affiché sur une main jouée
+    97 % du temps contredisait la règle 25-75 %) ;
   - chaque erreur dit le coup de référence de la main (« la référence la limpe ») ;
   - un seul calcul de part de range partout (combinaisons, pondérées par la probabilité d'arriver à la situation) : ta range,
     celle de la référence et la règle « À retenir » utilisent le même ;
@@ -16,6 +17,7 @@ Seules les mains qui atteignent vraiment la situation (REACH_MIN) sont à classe
 servent à l'API et à la démo autonome, qui refait la correction dans le navigateur avec la même règle (grade).
 """
 import random
+from collections import Counter
 from functools import lru_cache
 from . import grading, quiz
 from .cards import NAMES, W
@@ -30,6 +32,7 @@ VERB_Q = {'allin': 'pousses-tu à tapis', 'call_allin': 'paies-tu le tapis', 'ra
 VERB_ON = {'allin': 'on pousse à tapis', 'call_allin': 'on paie le tapis', 'raise': 'on relance', 'call': 'on paie', 'limp': 'on limpe'}
 OTHERS = {'fold': 'se couchent', 'check': 'checkent', 'limp': 'limpent', 'call': 'paient', 'call_allin': 'paient le tapis',
           'raise': 'relancent à {to} BB', 'allin': 'partent à tapis'}
+PREMIUM = ('AA', 'KK', 'QQ', 'AKs', 'JJ', 'AKo')
 REF_FR = {'fold': 'la couche', 'check': 'la checke', 'limp': 'la limpe', 'call': 'la paie', 'call_allin': 'paie le tapis',
           'raise': 'la relance à {to} BB', 'allin': 'la pousse à tapis'}
 
@@ -75,11 +78,17 @@ def task(sp):
     share = quiz.range_grid(sp)['share_pct']
     others = [_fmt(OTHERS, x) for k, x in enumerate(acts) if k != j and share[k] >= 1]
     rest = (f"Les autres mains {', '.join(others[:-1])} ou {others[-1]}." if len(others) > 1 else f"Les autres mains {others[0]}." if others else '')
+    prem = [h for h in PREMIUM if h in hands]                            # test joueurs 6 : range polarisée, à dire
+    poles = Counter(max(range(len(acts)), key=lambda k: grading.reference_freq(sp, h)[k]) for h in prem if hands[h][0] < 0.5)
+    polar = ''
+    if prem and sum(poles.values()) * 2 > len(prem):
+        k = poles.most_common(1)[0][0]
+        polar = f" Attention : les très grosses mains ({', '.join(prem[:3])}…) {_fmt(OTHERS, acts[k])} plutôt ; {VERB_ON[a['type']]} surtout avec des mains plus faibles."
     where = (f"au {sp['hero']} {quiz.SITUATION_FR[quiz.family(sp)]}, avec {quiz.bb(quiz.hero_effective(sp))} BB de tapis"
              + (' (heads-up)' if sp['table'] == 'heads-up' else ''))
     return dict(spot_id=sp['spot_id'], situation_fr=situation_fr(sp), question_fr=f"Avec quelles mains {_fmt(VERB_Q, a)} ?", others_fr=rest,
                 action_id=a['id'], action_type=a['type'], table=sp['table'], hero=sp['hero'], effective_stack_bb=sp['effective_stack_bb'],
-                family=quiz.family(sp), band=quiz.stack_band(sp), hands=hands, where_fr=where, verb_fr=VERB_ON[a['type']])
+                family=quiz.family(sp), band=quiz.stack_band(sp), hands=hands, where_fr=where, verb_fr=VERB_ON[a['type']], polar_fr=polar)
 
 
 def grade(t, selected):
@@ -91,7 +100,7 @@ def grade(t, selected):
         if ref == 'mixed': status = 'mixed'; ok = True
         elif ref == 'in': status = 'ok_in' if played else 'missing'; ok = played
         else: status = 'extra' if played else 'ok_out'; ok = not played
-        if status in ('extra', 'missing') and cost < CLOSE_BB: status = 'mixed'; ok = True     # erreur sans coût mesurable
+        if status in ('extra', 'missing') and cost < CLOSE_BB: status = 'close'; ok = True     # erreur sans coût mesurable
         cells[h] = status; wt += w; good += w * ok; lost += w * cost
         if status in ('extra', 'missing'): errs.append((cost, h))
     ref_share = round(100 * sum(w * x[0] for x in t['hands'].values() for w in [x[3]]) / wt) if wt else 0
@@ -102,13 +111,15 @@ def grade(t, selected):
                 missing=sum(1 for s in cells.values() if s == 'missing'),
                 worst=[dict(hand=h, cost_bb=round(c, 2), kind=cells[h], ref_fr=t['hands'][h][5]) for c, h in worst],
                 ref_share_pct=ref_share, my_share_pct=my_share,
-                rule_fr=f"À retenir : {t['where_fr']}, {t['verb_fr']} avec environ {ref_share} % des mains.")
+                rule_fr=f"À retenir : {t['where_fr']}, {t['verb_fr']} avec environ {ref_share} % des mains.{t.get('polar_fr', '')}")
 
 
 @lru_cache(maxsize=4)
 def drawable(version):
-    """situations qui se prêtent à l'exercice (calcul de quelques secondes, gardé en mémoire)"""
-    return frozenset(sp['spot_id'] for sp in quiz.pool(version) if target_action(sp))
+    """situations qui se prêtent à l'exercice (calcul de quelques secondes, gardé en mémoire). Seules celles de l'arbre retenu à
+    ces tapis : une situation calculée seulement dans un autre arbre (le BB relance à 2 BB quand l'arbre retenu relance à 3 BB)
+    a des mains en jeu qui contredisent la stratégie servie au coup précédent (test joueurs 6 : ATs grisée, A6s en jeu)"""
+    return frozenset(sp['spot_id'] for sp in quiz.pool(version) if quiz.in_main_tree(version, sp) and target_action(sp))
 
 
 def pick(version, filters=None, seed=None, exclude=()):

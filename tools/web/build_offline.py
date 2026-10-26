@@ -158,7 +158,7 @@ const DEMO = (() => {
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
       chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out })).sort((a, b) => b.regret_mbb - a.regret_mbb);
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
-    const ev = rows.filter(([, r]) => !(r.field && r.field.read)); const lost = ev.reduce((a, [, r]) => a + (r.regret_mbb || 0), 0) / 1000;
+    const ev = rows.filter(([, r]) => !(r.field && r.field.read)); const lost = ev.reduce((a, [, r]) => a + Math.round((r.regret_mbb || 0) / 10) / 100, 0);   // somme des coûts affichés
     return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length,
       bb_per_100: ev.length ? Math.round(10000 * lost / ev.length) / 100 : null, timeouts: rows.filter(([, r]) => r.timed_out).length, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
       session_id: s.id, size: s.items.length, complete: n === s.items.length };
@@ -166,7 +166,7 @@ const DEMO = (() => {
 
   function stats() {
     const bucket = () => ({ questions: 0, points: 0, errors: 0, evq: 0, regret: 0 });
-    const addEv = (b, r) => { if (!(r.field && r.field.read)) { b.evq += 1; b.regret += r.regret_mbb || 0; } };   // BB perdus : sans la lecture du vilain
+    const addEv = (b, r) => { if (!(r.field && r.field.read)) { b.evq += 1; b.regret += 10 * Math.round((r.regret_mbb || 0) / 10); } };   // BB perdus : sans la lecture du vilain
     const per100 = (b) => (b.evq ? Math.round(b.regret / 1000 * 100 / b.evq * 100) / 100 : null);
     const total = bucket(); const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 };
     const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {}; let untracked = 0;
@@ -283,7 +283,7 @@ const DEMO = (() => {
     for (const [h, [f, cin, cout, w, unstable]] of Object.entries(t.hands)) {
       const played = sel.has(h); const cost = played ? cin : cout; const ref = unstable ? 'mixed' : f >= 0.75 ? 'in' : f <= 0.25 ? 'out' : 'mixed'; let st, ok;
       if (ref === 'mixed') { st = 'mixed'; ok = true; } else if (ref === 'in') { st = played ? 'ok_in' : 'missing'; ok = played; } else { st = played ? 'extra' : 'ok_out'; ok = !played; }
-      if ((st === 'extra' || st === 'missing') && cost < 0.01) { st = 'mixed'; ok = true; }      // erreur sans coût mesurable
+      if ((st === 'extra' || st === 'missing') && cost < 0.01) { st = 'close'; ok = true; }      // erreur sans coût mesurable
       cells[h] = st; wt += w; good += ok ? w : 0; lost += w * cost; refw += w * f; if (played) myw += w;
       if (st === 'extra' || st === 'missing') errs.push([cost, h]);
     }
@@ -291,7 +291,7 @@ const DEMO = (() => {
     const ref = wt ? Math.round(100 * refw / wt) : 0, n = (k) => Object.values(cells).filter((x) => x === k).length;
     return { spot_id: t.spot_id, cells, accuracy_pct: wt ? Math.round(1000 * good / wt) / 10 : 0, bb_per_100: wt ? Math.round(10000 * lost / wt) / 100 : 0,
       extra: n('extra'), missing: n('missing'), worst: worst.map(([c, h]) => ({ hand: h, cost_bb: Math.round(100 * c) / 100, kind: cells[h], ref_fr: t.hands[h][5] })),
-      ref_share_pct: ref, my_share_pct: wt ? Math.round(100 * myw / wt) : 0, rule_fr: `À retenir : ${t.where_fr}, ${t.verb_fr} avec environ ${ref} % des mains.`,
+      ref_share_pct: ref, my_share_pct: wt ? Math.round(100 * myw / wt) : 0, rule_fr: `À retenir : ${t.where_fr}, ${t.verb_fr} avec environ ${ref} % des mains.${t.polar_fr || ''}`,
       reference: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[0]])), reference_fr: Object.fromEntries(Object.entries(t.hands).map(([h, x]) => [h, x[5]])),
       situation_fr: t.situation_fr, question_fr: t.question_fr };
   }
@@ -303,7 +303,13 @@ const DEMO = (() => {
     const db = load();
     if (p === '/sessions' && method === 'POST') {
       const f = Object.assign({}, body.filters || {}); const mode = f.mode || body.mode || 'gto'; delete f.mode;
-      const size = body.size || 5; let picked = draw(mode, f, size); const purposes = {};
+      const size = body.size || 5; const purposes = {};
+      const last = Object.values(db.sessions).filter((x) => x.build === BUILD).sort((x, y) => (x.created_at < y.created_at ? 1 : -1)).slice(0, 6);
+      const rSpots = new Set(last.flatMap((x) => x.items.map((i) => ITEMS[i] && ITEMS[i].q.spot_id))), rHands = new Set(last.flatMap((x) => x.items.map((i) => ITEMS[i] && ITEMS[i].q.hand)));
+      const first = last.length && ITEMS[last[0].items[0]] ? ITEMS[last[0].items[0]].q.hand : null;
+      const score = (xs) => xs.reduce((a, i) => a + 2 * rSpots.has(ITEMS[i].q.spot_id) + rHands.has(ITEMS[i].q.hand), 0) + (xs.length && ITEMS[xs[0]].q.hand === first ? 3 : 0);
+      let picked = draw(mode, f, size);                                // test joueurs 6 : la série qui répète le moins les dernières
+      for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
       if (body.review) {
         const due = reviewItems(mode).filter((x) => x.due_at <= Date.now()).slice(0, size);
         const rest = (picked || []).filter((i) => !due.some((x) => x.i === i));
@@ -344,7 +350,7 @@ const DEMO = (() => {
       const recent = new Set((q.get('exclude') || '').split(',')); let pool = c.filter((t) => !recent.has(t.spot_id)); if (!pool.length) pool = c;
       const fam = rnd(uniq(pool.map((t) => t.family)).sort()); pool = pool.filter((t) => t.family === fam);       // famille, puis tapis, à parts égales
       const band = rnd(uniq(pool.map((t) => t.band)).sort()); pool = pool.filter((t) => t.band === band);
-      const t = rnd(pool); const { hands, where_fr, verb_fr, ...rest } = t;
+      const t = rnd(pool); const { hands, where_fr, verb_fr, polar_fr, ...rest } = t;
       return [200, Object.assign(rest, { hands: Object.keys(hands).sort(), weights: Object.fromEntries(Object.entries(hands).map(([h, x]) => [h, x[3]])) })];
     }
     if (p === '/ranges/answer' && method === 'POST') {

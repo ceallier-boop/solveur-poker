@@ -1,5 +1,5 @@
 {
- "version": "1.12.0",
+ "version": "1.12.1",
  "date": "2026-10-23",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
@@ -761,14 +761,15 @@
    "def": "Réglage de l'accueil : 15 s (par défaut) ou 8 s par décision, comme au client de jeu, ou sans chrono. À zéro, la main est couchée (ou checkée s'il n'y a rien à payer) et le coup compte comme une erreur, même si le fold était le bon coup : à la table, le temps dépassé n'est jamais un choix. Les questions de lecture du vilain ne sont pas chronométrées."
   },
   {
-   "term": "Notation des ranges (22+, A2s+, KTo+)",
+   "term": "Notation des ranges (22+, A2+, A2s+, KTo+)",
    "cat": "calcul",
    "match": [
     "22+",
+    "A2+",
     "A2s+",
     "notation"
    ],
-   "def": "Façon courte d'écrire une range. « 22+ » : toutes les paires de 22 à AA. « A2s+ » : As accompagné d'une carte de 2 à K, assortis (A2s, A3s… AKs). « KTo+ » : KT, KJ, KQ dépareillées. « s » veut dire assorties (même couleur), « o » dépareillées."
+   "def": "Façon courte d'écrire une range. « 22+ » : toutes les paires de 22 à AA. « A2s+ » : As accompagné d'une carte de 2 à K, assortis (A2s, A3s… AKs). « A2+ » (sans lettre) : les assorties et les dépareillées à la fois. « KTo+ » : KT, KJ, KQ dépareillées. « s » veut dire assorties (même couleur), « o » dépareillées."
   }
  ]
 }

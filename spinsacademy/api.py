@@ -202,6 +202,32 @@ def _adaptation(con, pid, mode, version, size, seed):
     return adaptive.plan(rows, available, size, seed)
 
 
+RECENT_QUESTIONS = 30      # test joueurs 6 : une série évite les situations et les mains des dernières séries du joueur
+REDRAWS = 6
+
+
+def _recent(con, pid):
+    """(spots, mains, première main de la dernière série) des dernières questions servies au joueur"""
+    if pid is None: return set(), set(), None
+    rows = con.execute('SELECT q.spot_id, q.hand, q.idx FROM questions q JOIN sessions s ON s.id = q.session_id WHERE s.player_id = ? '
+                       'ORDER BY s.created_at DESC, q.idx LIMIT ?', (pid, RECENT_QUESTIONS)).fetchall()
+    first = next((r['hand'] for r in rows if r['idx'] == 0), None)
+    return {r['spot_id'] for r in rows}, {r['hand'] for r in rows}, first
+
+
+def _least_repeated(draw, seed, recent):
+    """tire jusqu'à REDRAWS séries et garde celle qui répète le moins les dernières (le premier tirage s'il ne répète rien)"""
+    spots, hands, first = recent
+    if not spots: return draw(seed)
+    score = lambda ser: (2 * sum(x[0] in spots for x in ser) + sum(x[1] in hands for x in ser) + 3 * bool(ser and ser[0][1] == first))
+    best = None
+    for k in range(REDRAWS):
+        ser = draw(seed if k == 0 or seed is None else seed * 1000 + k)
+        if best is None or score(ser) < score(best): best = ser
+        if score(best) == 0: break
+    return best
+
+
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=body.review); filters = body.filters.model_dump(exclude_none=True); info = None
@@ -211,19 +237,20 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             want = pid is not None and not filters and not body.review and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
             due = review.summary(_mode_rows(con, pid, body.mode, None), version)['due_items'] if body.review else None
+            recent = _recent(con, pid)
         if due is not None:
             series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
             taken = {(s, h) for s, h, _, _ in series}
             for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded):
                 if len(series) < body.size and (s, h) not in taken: series.append((s, h, None, None)); taken.add((s, h))
         elif info and info['active']:
-            drawn = quiz.draw_plan(version, info['slots'], adaptive.theme_of, body.seed, excluded)
+            drawn = _least_repeated(lambda sd: quiz.draw_plan(version, info['slots'], adaptive.theme_of, sd, excluded), body.seed, recent)
             series = [(s, h, slot['kind'] if ok or slot['kind'] == 'discovery' else 'complement',
                        (f"{adaptive.PURPOSE_FR[slot['kind']]} : {adaptive.label(tuple(slot['theme']))}" if ok else
                         adaptive.PURPOSE_FR['discovery'] if slot['kind'] == 'discovery' else 'Complément : plus de situation libre sur ce thème'))
                       for s, h, slot, ok in drawn]
         else:
-            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded)]
+            series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded), body.seed, recent)]
     except ValueError as e:
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
@@ -325,7 +352,7 @@ def range_next(table: Optional[str] = None, hero: Optional[str] = None, family: 
         recent = {x for x in exclude.split(',') if x}                      # dernières situations vues : pas deux fois de suite
         t = ranges.pick(version, f or None, seed, set(_excluded(con)) | recent)
     if not t: raise HTTPException(422, 'pas de situation à dessiner pour ces filtres')
-    return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'where_fr', 'verb_fr')},
+    return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'where_fr', 'verb_fr', 'polar_fr')},
                 hands=sorted(t['hands']), weights={h: x[3] for h, x in t['hands'].items()})      # poids : la part de range, sans la réponse
 
 

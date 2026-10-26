@@ -64,7 +64,7 @@ def test_disable_spot_excludes_it_from_draws_then_enable(client):
     assert client.get('/quiz/next', params={'session_id': s2}).json()['question']['spot_id'] != spot
     assert client.delete(f'/admin/disabled/{spot}', params={'reason': 'corrigé', 'actor': 'expert'}, headers=ADMIN).status_code == 200
     assert client.delete(f'/admin/disabled/{spot}', params={'reason': 'bis'}, headers=ADMIN).status_code == 404
-    s3 = client.post('/sessions', json={'seed': 1, 'size': 1}, headers=ME).json()['session_id']
+    s3 = client.post('/sessions', json={'seed': 1, 'size': 1}, headers={'X-Player-Id': 'n' * 32}).json()['session_id']   # joueur neuf : rien à éviter
     assert client.get('/quiz/next', params={'session_id': s3}).json()['question']['spot_id'] == spot   # même graine : le spot revient
     log = client.get('/admin/log', headers=ADMIN).json()
     assert [e['action'] for e in log] == ['resolve_report', 'enable_spot'] and log[0]['actor'] == 'expert' and log[0]['details']['disabled_spot'] == spot

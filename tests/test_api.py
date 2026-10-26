@@ -148,7 +148,7 @@ def test_equity_gap_bands_and_next_steps():
             for a in sp['actions']:
                 r = quiz.correct(quiz.DEFAULT_VERSION, sp['spot_id'], h, a['id'])
                 for line in r['why_fr']:
-                    for b in ('Décision serrée', 'Écart moyen', 'Écart large'):
+                    for b in ('Équité proche du seuil', 'Écart moyen', 'Écart large'):
                         if line.startswith(b): bands.add((b, a['id'] == r['best_action']))
                 n = r['next'] or dict(metrics=[]); kinds.add(bool(n['metrics']))
                 for m in n['metrics']:

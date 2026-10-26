@@ -63,3 +63,28 @@ Moyenne : 3,7 → **4,1**, la meilleure depuis le début. Personne ne baisse. Le
 - **Tout de suite** (1, 3, 5 à 9) : message d'erreur exact selon la réponse du serveur ; « mixte » réservé à 25-75 % et les erreurs bon marché dites « erreur sans coût réel » plutôt que « mixte » ; « À retenir » sans liste de mains ou avec la liste exacte ; tapis effectif dans « À retenir » ; « échantillon faible » dans le bilan ; une seule règle d'arrondi pour les BB.
 - **À vérifier dans les données** (2, 4, 12) : bruit des ranges de référence (arbres à 20 BB heads-up, bluffs) ; reach de la case grisée ; calibration de la pastille Dégène.
 - **Textes exploitants** (10, 11, 13 à 15) et **tirage** (16 : pas deux fois la même main dans une série, ni en ouverture de deux séries de suite ; plafonner les questions face à un tapis).
+
+## 5. Corrections faites (26/10/2026)
+
+| # | Correction |
+|---|---|
+| 1 | Sans banque publiée, le message dit la vraie cause : « L'entraînement n'est pas ouvert sur ce serveur : … aucune banque de questions n'est en ligne. Réessayer ne changera rien : préviens l'équipe. » Plus de bouton « Réessayer » inutile ; l'exercice de range affiche le même message. |
+| 2 | Ranges polarisées expliquées : quand les très grosses mains jouent un autre coup, « À retenir » le dit (« Attention : les très grosses mains (AA, KK, QQ…) limpent plutôt ; on pousse à tapis surtout avec des mains plus faibles. »), sur 173 des 975 situations de l'exercice. Le bruit propre aux arbres de référence (bluffs isolés) reste une question de données (B1). |
+| 3 | « Mixte » réservé aux mains jouées de 25 à 75 % du temps. Une erreur qui coûte moins de 0,01 BB a son propre statut, « écart négligeable » (case blanche au contour pointillé, dans la légende). |
+| 4 | L'exercice ne sert plus que les situations de l'arbre retenu à ces tapis : les mains en jeu suivent la stratégie servie au coup précédent (ATs n'est plus grisée, A6s plus en jeu). 975 situations restent. |
+| 5 | « À retenir » des corrections GTO : quand la main jouée est une exception à la règle simplifiée, la règle le dit (« A6s est une exception : elle se joue aussi. »). « Mains à la limite » devient « Mains jouées tantôt ainsi, tantôt autrement (… de 20 à 80 % du temps) ». Le tapis de 20 BB cité par Nadia est juste : le BB (45 BB) la couvre. |
+| 6 | Titre « Les 5 erreurs les plus coûteuses » au-dessus de la liste ; « à laisser » devient « pas avec cette action » ; cases de la grille agrandies sur téléphone (environ 28 px) ; lexique 1.12.1 avec « A2+ ». |
+| 7 | « Échantillon faible » dans le bilan de série sous 100 décisions. |
+| 8 | Un seul arrondi : le coût de chaque coup au centième de BB, le bilan et la progression en font la somme (la liste tombe juste, même chiffre pour 100 décisions partout). Le coût affiché d'un coup est celui du verdict. |
+| 9 | « Décision serrée » devient « Équité proche du seuil » ; « Plusieurs bonnes décisions » précise quand la théorie ne joue jamais un des coups. Un coup accepté qui n'est pas le plus joué est expliqué lui-même (KQo relancée : plus d'explication du limp). |
+| 10, 13 | « À retenir » suit le chiffre décisif : contre un vilain qui se couche trop face au tapis, « Il se couche souvent face au tapis : pousse plus large » ; KK contre un limp : « checke pour le piéger : face à une relance, il se couche trop souvent ». |
+| 11 | Avec une pastille posée, la leçon parle de la pastille (« sa pastille ne suffit pas pour… »), plus de « son écart de stats ». |
+| 12 | Une pastille n'est posée que si les stats et l'estimation vont dans son sens (plus de « Dégène » qui limpe ou se couche plus que la théorie). L'écart énoncé / correction reste celui de l'estimation (stats mêlées au profil). |
+| 14 | Énoncé : « Sur 120 coups observés dans cette situation : … 41 fois sur 91 (45 %) ». |
+| 15 | « Piège » devient « Écart sans effet » ; plus de « checker » quand on ne peut pas checker ; « il se couche » quand un seul adversaire reste. |
+| 16 | Une nouvelle série évite les situations et les mains des 30 dernières questions du joueur, et ne commence pas par la même main que la précédente (application et démo). |
+| 17 | Un joueur à tapis affiche « ALL-IN » à sa place, plus de jetons derrière. |
+
+Non traité : 8 questions sur 15 face à un tapis avec les filtres heads-up et moins de 10 BB (c'est la fréquence réelle de ces situations) ; le bouton « ALL-IN » montre ton tapis, comme le client de jeu.
+
+Contrôles : 108 tests automatiques (dont `tests/test_retest6.py`) ; parcours téléphone, bêta, hors ligne, exercice de range (application et démo), démo avec données d'une ancienne version ; message exact vérifié sur un serveur sans banque publiée.

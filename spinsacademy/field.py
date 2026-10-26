@@ -132,6 +132,16 @@ def limp_words(text):
     return text
 
 
+def served_prompt(sp):
+    """énoncé servi (données publiées inchangées) : un seul mot pour le limp, et le vrai dénominateur de chaque stat (test
+    joueurs 6 : « Sur 120 occasions… 41 fois (45 %) » alors que 45 % = 41 sur 91)"""
+    text = limp_words(sp['prompt_fr']); f = sp.get('field') or {}
+    for st in f.get('stats', []):
+        if st.get('n') and st['n'] != f.get('observations'):
+            text = text.replace(f" {st['k']} fois ({pct(st['observed_pct'])} %", f" {st['k']} fois sur {st['n']} ({pct(st['observed_pct'])} %", 1)
+    return text.replace(' occasions dans cette situation, ', ' coups observés dans cette situation : ')
+
+
 def _hand_display(h):
     from .quiz import hand_display
     return hand_display(h) if h else ''
@@ -266,7 +276,7 @@ def question(sp):
     ordered = sorted(f['options'], key=lambda o: rank.get(o.get('type'), 9)) if all(o.get('type') in rank for o in f['options']) else f['options']
     opts = [dict(id=o['id'], label_fr=o.get('label_fr') or action_label(sp, o)) for o in ordered]
     stats = [dict(s, label_fr=limp_words(s['label_fr'].replace(' (il complète)', ''))) for s in f['stats']]   # données publiées inchangées
-    return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=limp_words(sp['prompt_fr']), table=sp['table'],
+    return dict(spot_id=sp['spot_id'], hand=hand, hand_display=hand_display(hand) if hand else '', prompt_fr=served_prompt(sp), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=sp['field_family'], difficulty=f['difficulty'], mode='exploit',
                 villain=None, profile=None, options=opts,
@@ -283,7 +293,28 @@ def pastille(f, spot_id=''):
     lecture, dont c'est la réponse"""
     if f['type'] not in ('adaptation', 'piège') or not f['observations']: return None
     if int(hashlib.md5(('pastille' + spot_id).encode()).hexdigest()[:8], 16) % 2: return None
-    return PASTILLE_OF.get(f['internal_profile'])
+    p = PASTILLE_OF.get(f['internal_profile'])
+    return p if p and fits(p, f) else None
+
+
+PROFILE_SENSE = {   # test joueurs 6 : sens attendu de chaque stat pour une pastille (+1 : au-dessus de la théorie, -1 : en dessous)
+    'Dégène': {'shove_pct': 1, 'limp_pct': 1, 'jam_over_limp_pct': 1, 'open_pct': 1, 'call_pct': 1, 'defend_pct': 1, 'call_after_limp_pct': 1,
+               'call_pct_bb_sb_fold': 1, 'fold': -1},
+    'Calling station': {'call_pct': 1, 'defend_pct': 1, 'call_after_limp_pct': 1, 'call_pct_bb_sb_fold': 1, 'fold': -1},
+    'Nit': {'shove_pct': -1, 'limp_pct': -1, 'open_pct': -1, 'call_pct': -1, 'defend_pct': -1, 'jam_over_limp_pct': -1, 'fold': 1},
+    'Rec passif': {'shove_pct': -1, 'open_pct': -1, 'jam_over_limp_pct': -1}}
+SENSE_TOL = 3.0     # points de pourcentage : un écart plus petit ne contredit pas la pastille
+
+
+def fits(p, f):
+    """la pastille ne contredit ni ses stats observées ni l'estimation de la correction (un « Dégène » qui limpe moins que la
+    théorie, ou qui se couche plus qu'elle face au tapis, n'est pas montré avec cette pastille)"""
+    sense = PROFILE_SENSE.get(p, {})
+    vals = [(st['stat'], st['observed_pct'], st['gto_pct']) for st in f.get('stats', []) if st.get('observed_pct') is not None and st.get('gto_pct') is not None]
+    t = f.get('theory') or {}
+    for k, g in (('fold_pct', 'fold_gto_pct'), ('raise_fold_pct', 'raise_fold_gto_pct')):
+        if t.get(k) is not None and t.get(g) is not None: vals.append(('fold', t[k], t[g]))
+    return all(sense.get(k, 0) * (o - g) >= -SENSE_TOL for k, o, g in vals)
 
 
 SHOWN_FR = {'inconnu': 'Vilain inconnu', 'observé': 'Vilain observé', 'pastille': 'Pastille posée', 'identification': 'Défaut du vilain', 'profil': 'Quelle pastille ?'}
@@ -327,7 +358,7 @@ def theory_lines(sp, f, lab, hand):
             out.append(f"{est(f)}il défend environ {pct(t['defend_pct'])} % de ses mains face à une relance (théorie : {pct(t['defend_gto_pct'])} %). "
                        f"Quand il défend, {hand} a {pct(t['eq_called_pct'])} % d'équité.")
         if t.get('raise_bb'):
-            out.append(f"Face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche environ {pct(t['raise_fold_pct'])} % du temps "
+            out.append(f"Face à une relance à {num(t['raise_bb'])} BB, {'tout le monde se couche' if everyone(sp, t) else 'il se couche'} environ {pct(t['raise_fold_pct'])} % du temps "
                        f"(théorie : {pct(t['raise_fold_gto_pct'])} %) : une petite relance gagne les mêmes blindes pour moins cher.")
         if t.get('iso_pct') is not None:
             out.append(f"Si tu limpes, il relance environ {pct(t['iso_pct'])} % du temps (théorie : {pct(t['iso_gto_pct'])} %) : "
@@ -440,15 +471,25 @@ TRAP_LESSONS = {                         # A6 : la leçon d'un piège, selon le 
              "Le limp garde sa valeur : il faudrait un écart bien plus net pour changer de coup."),
     'check': ("Checker reste le meilleur coup : ses stats ne justifient pas d'attaquer cette main.",
               "Vois le flop gratuitement : son écart de stats ne rend pas le tapis rentable."),
-    'raise': ("La petite relance reste le meilleur coup : son écart de stats est trop petit pour checker ou pousser à la place.",
+    'raise': ("La petite relance reste le meilleur coup : son écart de stats est trop petit pour changer de coup.",
               "Relance comme d'habitude : il faudrait un écart plus net pour pousser ou abandonner."),
 }
+
+
+WITH_PASTILLE = (("Ses stats bougent un peu, mais", "Même avec sa pastille,"), ("Un petit écart de stats ne suffit pas à", "Sa pastille ne suffit pas à"),
+                 ("Un petit écart de stats ne", "Sa pastille ne"), ("son écart de stats est trop petit pour", "sa pastille ne suffit pas pour"),
+                 ("son écart de stats ne", "sa pastille ne"), ("ses stats ne justifient pas", "sa pastille ne justifie pas"),
+                 ("Même s'il joue un peu différemment,", "Même avec sa pastille,"), ("même s'il s'écarte un peu de la théorie", "quelle que soit sa pastille"),
+                 ("il faudrait un écart bien plus net pour", "sa pastille ne suffit pas pour"), ("il faudrait un écart plus net pour", "sa pastille ne suffit pas pour"))
 
 
 def trap_lesson(sp, best):
     t = next((o['type'] for o in sp['field']['options'] if o['id'] == best), 'fold')
     opts = TRAP_LESSONS.get(t, TRAP_LESSONS['fold'])
-    return opts[int(hashlib.md5(sp['spot_id'].encode()).hexdigest()[:4], 16) % len(opts)]
+    txt = opts[int(hashlib.md5(sp['spot_id'].encode()).hexdigest()[:4], 16) % len(opts)]
+    if pastille(sp['field'], sp['spot_id']):                      # test joueurs 6 : c'est la pastille posée qui compte, pas « ses stats »
+        for a, b in WITH_PASTILLE: txt = txt.replace(a, b)
+    return txt
 
 
 def basis_line(f):
@@ -466,6 +507,7 @@ def basis_line(f):
 
 
 PREMIUM = ('AA', 'KK', 'QQ', 'JJ', 'AKs', 'AKo')
+SERVED_TYPE_FR = {'piège': 'Écart sans effet'}   # test joueurs 6 : « Piège » sur une relance standard déroutait (données publiées inchangées)
 UNKNOWN_RULE = {                         # test joueurs du 24/10 (5e) : la règle contre un inconnu suit le coup à jouer
     'allin': "Sans info, joue contre un rec passif : il paie peu, ton tapis passe souvent.",
     'raise': "Sans info, joue contre un rec passif : il se couche souvent, une petite relance suffit.",
@@ -477,6 +519,18 @@ UNKNOWN_RULE = {                         # test joueurs du 24/10 (5e) : la règl
 RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ici, une petite relance suffit, pas besoin du tapis.",
                 ('R15', 'raise'): "Il limpe peu : son limp est fort. Relance tes très bonnes mains, checke les moyennes.",
                 ('R15', 'allin'): "Il limpe peu : son limp est fort. Garde le tapis pour tes très bonnes mains, checke les moyennes."}
+
+
+def shove_folds(f):
+    """test joueurs 6 : le tapis passe parce qu'il se couche plus que la théorie face au tapis (et non parce que son limp est faible)"""
+    t = f.get('theory') or {}
+    return t.get('kind') == 'shove' and t.get('fold_pct') is not None and t['fold_pct'] - (t.get('fold_gto_pct') or 0) >= SENSE_TOL
+
+
+def everyone(sp, t):
+    """« tout le monde se couche » seulement quand plusieurs adversaires restent à parler ; en heads-up, « il se couche »"""
+    folded = {h['position'] for h in sp['history'] if h['action'] == 'fold'}
+    return sum(1 for p in sp['players'] if p != sp['hero'] and p not in folded) > 1
 
 
 def decisive(sp, f, best_t, hand):
@@ -492,7 +546,7 @@ def decisive(sp, f, best_t, hand):
             return (f"face à ton tapis, {who} {p_('fold_pct')} % du temps" if t['fold_pct'] >= 1
                     else f"personne ne se couche, mais payé, {hand} a {p_('eq_called_pct')} % d'équité")
         if best_t == 'raise' and t.get('raise_bb'):
-            return f"face à une relance à {num(t['raise_bb'])} BB, tout le monde se couche {p_('raise_fold_pct')} % du temps"
+            return f"face à une relance à {num(t['raise_bb'])} BB, {'tout le monde se couche' if everyone(sp, t) else 'il se couche'} {p_('raise_fold_pct')} % du temps"
         if best_t == 'limp' and t.get('iso_pct') is not None:
             return f"si tu limpes, il ne relance que {p_('iso_pct')} % du temps"
         if best_t == 'fold':
@@ -558,8 +612,10 @@ def correct(sp, action_id):
     best_t = next(o['type'] for o in f['options'] if o['id'] == best)
     rule_fr = (READ_RULE_FR if f['type'] in READ else trap_lesson(sp, best) if f['rule'] == 'R9'
                else UNKNOWN_RULE.get(best_t, f['rule_fr']) if f['rule'] == 'R0'
-               else "Il limpe peu : son limp est fort. Avec une très grosse main, checke pour le piéger : ne le fais pas coucher."
+               else "Avec une très grosse main contre lui, checke pour le piéger : face à une relance, il se couche trop souvent."
                if f['rule'] == 'R15' and best_t == 'check' and hand in PREMIUM
+               else "Il se couche souvent face au tapis : pousse plus large."
+               if f['rule'] == 'R12' and best_t == 'allin' and shove_folds(f)
                else limp_words(RULE_BY_MOVE.get((f['rule'], best_t), f['rule_fr'])))     # A' : la leçon suit le meilleur coup
     rule = f"À retenir : {rule_fr}"
     short = lambda a: _low(lab[a]).split(' (')[0]                  # « tapis », pas « tapis (6 BB) » dans une phrase
@@ -620,7 +676,7 @@ def correct(sp, action_id):
                 chosen_label=lab[action_id], strategy=[dict(id=a, label_fr=lab[a], pct=100 if a == best else 0, chosen=a == action_id,
                                                              ev_mbb=ev[a]) for a in ids],
                 loss_fr=(bbx(regret) if action_id != best and ev[best] is not None else None), ev_source='field', exploit=None,
-                field=dict(type=f['type'], type_fr=f['type_fr'], rule=f['rule'], rule_fr=rule_fr, gto_label=gto_label, read=f['type'] in READ,
+                field=dict(type=f['type'], type_fr=SERVED_TYPE_FR.get(f['type'], f['type_fr']), rule=f['rule'], rule_fr=rule_fr, gto_label=gto_label, read=f['type'] in READ,
                            gain_fr=(bbx(f['gain_mbb']) if f['type'] in ('adaptation', 'inconnu') else None), evs=[dict(label_fr=lab[a], ev_fr=bbx(ev[a], True)) for a in ids if ev[a] is not None and a != 'F']),
                 why_fr=why, next=postflop_section(sp, f, hand) if best_t in FLOP_MOVES else None, range=None, explanation_fr='\n'.join(lines), core_fr='\n'.join(lines),
                 essential_fr=essential, remember_fr=remember, details_fr=details)

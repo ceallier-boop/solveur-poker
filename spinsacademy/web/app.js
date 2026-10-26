@@ -72,11 +72,13 @@ function notify(msg, retry) {
   $('notice-retry').onclick = () => { n.hidden = true; retry(); };
   clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; }, 6000);
 }
-const netMsg = (e, what) => (e && e.status >= 500 ? `Le serveur ne répond pas : ${what}. Ce n'est pas ta connexion ; réessaie dans un instant.`   // A' : panne serveur ≠ coupure réseau
+const closed = (e) => !!(e && e.status === 503 && /aucun dataset publié/.test(e.message));   // test joueurs 6 : rien en ligne, réessayer ne sert à rien
+const netMsg = (e, what) => (closed(e) ? `L'entraînement n'est pas ouvert sur ce serveur : ${what}, aucune banque de questions n'est en ligne. Réessayer ne changera rien : préviens l'équipe.`
+  : e && e.status >= 500 ? `Le serveur ne répond pas : ${what}. Ce n'est pas ta connexion ; réessaie dans un instant.`   // A' : panne serveur ≠ coupure réseau
   : e && e.status ? e.message
   : navigator.onLine === false ? `Pas de réseau : ${what}. Vérifie ta connexion, puis réessaie.`
   : `Le serveur est injoignable : ${what}. Vérifie ta connexion ou réessaie dans un instant.`);
-const retryable = (e) => !e || !e.status || e.status === 429 || e.status >= 500;                 // coupure réseau ou trop de requêtes : « Réessayer »
+const retryable = (e) => !closed(e) && (!e || !e.status || e.status === 429 || e.status >= 500);                 // coupure réseau ou trop de requêtes : « Réessayer »
 function confirmTwice(btn, question) {                              // 1er appui : demande ; 2e appui dans les 5 s : confirme
   if (btn.dataset.armed) { clearTimeout(btn._t); delete btn.dataset.armed; btn.textContent = btn.dataset.label; return true; }
   btn.dataset.label = btn.dataset.label || btn.textContent; btn.dataset.armed = '1'; btn.textContent = question;
@@ -159,8 +161,9 @@ function renderTable(q) {
   for (let k = 0; k < n; k++) {
     const i = (hero + k) % n, pos = q.players[i], left = q.stacks_bb[i] - c[i];
     const covers = last[pos] === 'allin' && left > 1e-9;                     // il pousse plus que ton tapis : il te couvre
-    const act = left <= 1e-9 ? '' : ACT_TAG[last[pos]] || '';                 // tapis : « ALL-IN » à la place du tapis restant
-    const stack = left <= 1e-9 ? 'ALL-IN' : `${bb(left)} BB`;
+    const allin = left <= 1e-9 || last[pos] === 'allin';                     // test joueurs 6 : un joueur à tapis n'affiche plus de jetons derrière
+    const act = allin ? '' : ACT_TAG[last[pos]] || '';                        // tapis : « ALL-IN » à la place du tapis restant
+    const stack = allin ? 'ALL-IN' : `${bb(left)} BB`;
     if (k === 0) {
       $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '');   // ton action, comme pour les autres
     } else {
@@ -434,7 +437,8 @@ async function summary() {
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
   $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
-    + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB, soit ${bb(s.bb_per_100)} BB pour 100 décisions` : 'Aucun BB perdu sur cette série'}.</small>` : '')
+    + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB, soit ${bb(s.bb_per_100)} BB pour 100 décisions` : 'Aucun BB perdu sur cette série'}.`
+      + (s.bb_lost > 0 && s.ev_questions < 100 ? ` Échantillon faible (${s.ev_questions} décisions) : ce chiffre varie beaucoup d'une série à l'autre, regarde plutôt « Ma progression ».` : '') + '</small>' : '')
     + (s.timeouts ? `<small class="bblost">${s.timeouts} coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps, compté${s.timeouts > 1 ? 's' : ''} comme erreur${s.timeouts > 1 ? 's' : ''}.</small>` : '');
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
@@ -707,7 +711,8 @@ renderPastilles();
 const RK13 = 'AKQJT98765432';
 const cellName = (i, j) => (i === j ? RK13[i] + RK13[j] : i < j ? RK13[i] + RK13[j] + 's' : RK13[j] + RK13[i] + 'o');
 const combos = (h) => (h.length === 2 ? 6 : h.endsWith('s') ? 4 : 12);
-const RG_STATUS = { ok_in: 'à jouer : bien vu', ok_out: 'à laisser : bien vu', extra: 'jouée à tort', missing: 'oubliée', mixed: 'mixte : les deux sont acceptés' };
+const RG_STATUS = { ok_in: 'à jouer : bien vu', ok_out: 'pas avec cette action : bien vu', extra: 'jouée à tort', missing: 'oubliée',
+  mixed: 'mixte (action demandée de 25 à 75 % du temps) : les deux sont acceptés', close: 'écart négligeable (moins de 0,01 BB) : les deux sont acceptés' };
 async function rangeStart() {
   const f = filters(); delete f.mode;
   if (f.family === 'read') delete f.family;
@@ -774,8 +779,8 @@ async function rangeSubmit() {
   const rem = (g.rule_fr || '').replace(/^À retenir : /, '');
   $('rg-result').innerHTML = `<p class="rg-score"><b>${pc(g.accuracy_pct)}</b> des mains bien classées<small>${bb(g.bb_per_100)} BB perdus pour 100 mains jouées dans cette situation</small></p>`
     + `<p>Ta range : ${g.my_share_pct} % des mains · référence : ${g.ref_share_pct} %. ${g.extra} main${g.extra > 1 ? 's' : ''} en trop, ${g.missing} oubliée${g.missing > 1 ? 's' : ''}.</p>`
-    + worst
-    + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte (les deux acceptés)</span><span class="st-chosen">ton choix</span></p><p class="note">Touche une case pour voir ce que fait la référence.</p>`
+    + (g.worst.length ? `<p class="rg-worst-title">${g.worst.length < g.extra + g.missing ? `Les ${g.worst.length} erreurs les plus coûteuses :` : 'Tes erreurs :'}</p>` : '') + worst
+    + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte (les deux acceptés)</span><span class="st-close">écart négligeable</span><span class="st-chosen">ton choix</span></p><p class="note">Touche une case pour voir ce que fait la référence.</p>`
     + (rem ? `<p class="remember"><b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span></p>` : '');
   $('rg-result').hidden = false; $('rg-edit').hidden = true; $('rg-after').hidden = false; $('rg-help').hidden = true;
   glossify($('rg-result'));
