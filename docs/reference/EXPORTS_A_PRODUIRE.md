@@ -207,3 +207,67 @@ Une archive par lot, comme la base v3 (dossier `settings.json` + `nodes/` par ma
 ### 9.9 Résultat du test de précision (14/10)
 
 Voir `docs/reference/TEST_PRECISION_2026-10-14.md` : les 4 exports reçus par configuration ne sont pas plus précis les uns que les autres, mais leur moyenne divise l'écart par 2 environ (bruit aléatoire). Ils utilisaient un arbre sans limp en premier de parole (`ALLOWED_FLATS_PER_RAISE` = `[0, 1, 1, 1, 0]`) : à refaire sur l'arbre de référence `[1, 1, 1, 1, 0]`.
+
+## 10. Commande v4 (26 octobre 2026) : une base unique, précise et cohérente
+
+Objectif : remplacer toutes les bases précédentes par **un seul arbre de référence**, refait à toutes les profondeurs, assez précis pour que les ranges ne paraissent plus bruitées. Constats des tests joueurs 4 à 6 à l'origine de cette commande :
+- références jugées bruitées (bluffs isolés : 42s relance mais KQs limpe, 76s à laisser mais 95s à jouer) ;
+- une même situation calculée dans plusieurs arbres (relance à 2 ou 3 BB), donc des mains en jeu qui ne suivent pas la stratégie servie au coup précédent ;
+- tapis direct absent au-delà de 16 BB (SB, BB face à un limp) et de 20 BB (BTN) ;
+- tapis presque toujours ronds et symétriques ;
+- bruit des EV par main : 100 mBB en médiane, d'où le filtre `REF_NOISE_MBB` à 150 mBB qui écarte les décisions serrées.
+
+### 10.1 Réglages de l'arbre (identiques pour tous les calculs)
+
+| Réglage | Valeur | Changement par rapport à la base v3 |
+|---|---|---|
+| Modèle | chip EV, sans rake, ante 0, blinds 0,5 / 1 | — |
+| Moteur | Monte-Carlo, abstractions 169 / 256 / 256 / 256 | — (le moteur « enumerated » ne joue pas le postflop : écarté) |
+| Postflop | mode « simple » partout | v2 mélangeait « general » et « simple » |
+| `ALLOWED_FLATS_PER_RAISE` | `[1, 1, 1, 1, 0]` (limp du BTN autorisé) | — (le test de précision du 14/10 l'avait à `[0, …]` : à ne pas reprendre) |
+| `ALLOW_SB_COMPLETE` | oui | — |
+| Tailles d'ouverture | **choix A** ci-dessous | un seul jeu de tailles pour toutes les profondeurs |
+| 3-bets, 4-bets, 5-bets | comme au §0 | — |
+| Tapis direct | toujours proposé jusqu'à 25 BB effectifs (par exemple `PREFLOP_ADD_ALLIN_SPR` à 30 ; à vérifier dans la référence) | nouveau (§7.1, §9.2) |
+| Nœuds exportés | **tous les nœuds préflop** (arbre complet) | les bases `complement` s'arrêtaient à deux actions |
+
+### 10.2 Configurations
+
+| Lot | Configurations | Nombre |
+|---|---|---|
+| P1 symétriques, 3 joueurs | 4, 6, 8, 10, 12, 14, 15, 16, 18, 20, 22, 25 BB | 12 |
+| P1 symétriques, heads-up | 2, 4, 6, 8, 10, 12, 14, 15, 16, 18, 20, 22, 25 BB | 13 |
+| P1 inégaux, heads-up (SB / BB) | 4/8, 8/4, 10/20, 20/10, 12/18, 18/12, 15/25, 25/15, 20/30, 30/20, 35/15, 15/35 | 12 |
+| P1 inégaux, 3 joueurs (BTN / SB / BB) | les 16 du §6.1, plus les 6 permutations de 6 / 10 / 14 | 22 |
+| P2 tailles d'ouverture | si le choix A garde une seule taille : un arbre par taille alternative, à 12, 16 et 20 BB (3 joueurs et heads-up), pour de futures questions « quelle taille ? » | 6 par taille |
+| P2 exploitant verrouillé | les 45 calculs P1 du §2 (`data/hrc/locks/manifest.csv`), après le choix E | 45 |
+| P3 postflop | §9.7 (pots limpés, environ 20 textures) | — |
+
+Total P1 : 59 configurations, multipliées par le nombre de répétitions (choix B).
+
+### 10.3 Choix à faire avant de lancer
+
+- **A. Tailles d'ouverture.** Recommandé : BTN 2 BB ; SB 3 BB à 3 joueurs et 2 BB en heads-up ; iso du BB 3 BB face au limp du SB, 3,5 BB face au limp du BTN (+1 BB par limper en plus). Ce sont les tailles courantes en Expresso, et tout est refait de toute façon. Autre choix : garder BTN 2,3 BB / SB 3,5 BB, ce qui permet de réutiliser la base v3 comme une répétition de plus.
+- **B. Précision.** Recommandé : 4 exports identiques par configuration P1 symétrique, 2 par configuration inégale ; l'importeur fait la moyenne des EV et des fréquences. Mesuré le 14/10 : l'écart avec l'EV exacte passe de 100 à 42 mBB en médiane (heads-up 12 BB) avec 4 exports. Si la référence propose un réglage de précision des EV par main (échantillons d'évaluation), le tester d'abord sur le pilote (10.4) : il peut remplacer les répétitions.
+- **C. Périmètre des tapis.** Les 59 configurations P1, ou seulement les 25 symétriques dans un premier temps.
+- **D. Modèle.** Recommandé : chip EV (décision du 13/10). L'ICM ne vaut que pour les gros multiplicateurs.
+- **E. Exploitant verrouillé.** Recommandé : après l'historique de mains (B2), qui calibre les profils. Sans lui, les verrouillages reposent sur des profils supposés.
+- **F. Postflop.** Recommandé : plus tard (lot C1).
+
+### 10.4 Ordre de production
+
+1. **Pilote** : 3 joueurs 12 / 12 / 12 et heads-up 12 / 12, sur l'arbre final, en 4 exports chacun. Je contrôle l'arbre (empreinte, tapis direct, nœuds complets), la précision contre l'EV exacte et la moyenne des répétitions, avant que tu lances le reste.
+2. P1 symétriques, puis P1 inégaux.
+3. P2 et P3 selon les choix.
+
+### 10.5 Livraison
+
+- Un dossier par export : `v4/<table>_<tapis>_r<n>/` avec `settings.json` et `nodes/`, par exemple `v4/3w_12-12-12_r1/` ou `v4/hu_10-20_r2/` (tapis dans l'ordre BTN / SB / BB, ou SB / BB en heads-up).
+- Un fichier `NOTES.txt` par lot : version de la référence, réglage de précision ou nombre d'itérations, durée d'un calcul. Ces informations ne figurent pas dans `settings.json`.
+- Les exports restent dans `data/hrc/raw/v4/` : jamais embarqués dans l'application.
+
+### 10.6 Ce que je fais à réception
+
+Moyenne des répétitions dans l'importeur, contrôle de chaque lot, reconstruction de la banque GTO sur ce seul arbre, baisse du filtre de bruit selon la précision mesurée, puis nouveau test joueurs.
+
+Rappel : les droits sur les données de référence (A13) restent à régler avant toute mise en ligne publique.
