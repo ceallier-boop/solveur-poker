@@ -35,7 +35,7 @@ Les corrections du test 4 et les pastilles à table n'ont pas encore été test�
 | # | Prévu | État |
 |---|---|---|
 | A1 à A12 | Corrections issues du premier test (filtres, ordre des actions, barème, un seul chiffre, stratégie mixte, pièges, vocabulaire, progression, « Sur quoi ça repose », signalement, 4G, coupure réseau) | **Fait** le 23/10, puis complété par trois séries de corrections (lot A', correction allégée, corrections du test 4). |
-| A13 | Droits sur les données dérivées de la référence | **À faire, bloquant** (porteur du projet). Toutes les mentions du solveur et des coachs ont été retirées des textes servis et des documents ; les chemins techniques restent. |
+| A13 | Droits sur les données dérivées de la référence | **Réglé** (26/10/2026) : le porteur du projet confirme que l'usage respecte les conditions de l'éditeur de la référence. Les exports bruts restent hors de l'application. |
 | A14 | Politique de confidentialité, mentions légales, conditions d'utilisation, relecture d'un juriste | **Projet rédigé**, mis à jour pour la copie locale de la progression ; relecture à faire. |
 | A15 | Hébergeur, installation de la production, sauvegardes externes chiffrées, surveillance | **Procédure prête et testée**, production non installée. |
 | A16 | Mode invité ou comptes pour le MVP | **À trancher** (recommandation : invité). |
@@ -61,7 +61,7 @@ Les corrections du test 4 et les pastilles à table n'ont pas encore été test�
 | B1 | Exports de référence priorité 1 (précision, 25 BB, heads-up open 2 / 2,5 / 3 BB, tapis inégaux), puis reconstruire les banques | **À faire** : calculs du porteur du projet. |
 | B2 | Calibrer les profils sur un historique de mains réel | **À faire** : historique à fournir. |
 | B3 | Comptes, synchronisation entre appareils, administrateurs nominatifs | **À faire** (après A16). |
-| B4 | Offre gratuite / payante, paiement | **À faire** (après A13). |
+| B4 | Offre gratuite / payante, paiement | **À faire** (A13 réglé). |
 | B5 | Accueil en trois écrans, objectif du jour, série de jours | **À faire**. |
 | B6 | Mode hors ligne | **En partie** : l'application s'ouvre et la progression s'affiche sans réseau ; jouer une série demande encore le serveur. |
 | B7 | Exploitant : open à 2 BB, SB face au limp du BTN, pots limpés à 3 | **À faire** (après B1). |
@@ -77,7 +77,7 @@ C1 postflop, C2 ICM, C3 tapis inégaux à 3 joueurs et 3-bet non all-in, C4 calc
 ## 3. Ce qu'il reste à faire
 
 ### Avant la mise en ligne (bloquant)
-1. **Droits sur les données de référence** (A13) : licence ou accord écrit ; à défaut, au moins l'accord pour une bêta fermée et gratuite.
+1. ~~Droits sur les données de référence (A13)~~ : réglé le 26/10/2026.
 2. **Juriste** (A14) : politique de confidentialité, mentions légales, conditions d'utilisation.
 3. **Production** (A15) : choisir l'hébergeur (4 Go de mémoire recommandés), domaine en HTTPS, jeton d'administration, sauvegardes externes, surveillance.
 4. **Décisions** : invité ou comptes (A16), relecture experte (A18), journal d'usage de la bêta (A17).
