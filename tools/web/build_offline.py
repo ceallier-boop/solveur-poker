@@ -407,6 +407,7 @@ def build(out, k_gto, exploit_max=2500):
     for hide in ('id="st-delete"',):                               # pas d'effacement sans confirmation possible
         body = body.replace(hide, hide + ' hidden', 1)
     body = body.replace('<h3>Exercices adaptatifs</h3>', '<h3 hidden>Exercices adaptatifs</h3>', 1)
+    body = body.replace('<a class="secondary conseil-link" href="conseil">', '<a class="secondary conseil-link" href="conseil" hidden>', 1)   # conseiller : seulement sur le serveur
     body = body.replace('id="quick-start">Série recommandée<', 'id="quick-start">Série rapide<', 1)
     page = (f'<meta charset="utf-8">\n<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
