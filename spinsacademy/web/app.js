@@ -341,7 +341,7 @@ function renderAnswer(r) {
   for (const id of ['a-strategy-title', 'a-strategy']) $(id).hidden = !!fd;         // exploitant : correction courte
   if (fd) {
     $('a-exploit').innerHTML = `<div class="ref"><dt>${fd.read ? 'Bonne lecture' : 'Contre ce vilain'}${fd.gain_fr ? `<span class="conf net">${fd.gain_fr} de plus que la théorie</span>` : ''}</dt><dd>${escT(r.best_label)}</dd></div>`
-      + (fd.gto_label ? `<div><dt>En théorie</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')
+      + (fd.gto_label ? `<div><dt>Théorie estimée (sans read)</dt><dd>${escT(fd.gto_label)}</dd></div>` : '')   // test joueurs 7 : moteur exploitant, pas la référence du mode GTO
       + (fd.evs.length ? `<div><dt>Gain par rapport au fold <small>(ajusté à ce vilain)</small></dt><dd>${fd.evs.map((e) => `${escT(e.label_fr)} : ${e.ev_fr}`).join('\n')}</dd></div>` : '')
       + `<p class="note">${fd.type_fr}</p>`;
   }
@@ -662,7 +662,7 @@ const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], 
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
 function onMode() {
   store.set('mode', mode());                                         // gardé après un rechargement
-  $('range-btn').hidden = mode() !== 'gto';                          // l'exercice de range demande la stratégie complète (GTO)
+  $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
   reviews();
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {

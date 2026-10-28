@@ -61,3 +61,29 @@ Autres constats : KJo au SB en 18/18/12, « Bonne réponse » puis « Ton choix 
 - **Conseiller, interface (7 à 12)** : remise à zéro à chaque visite, contraste du verdict, verdict au-dessus du clavier, tapis récents en un toucher, lexique et vocabulaire unifié, mention « théorie, pas exploitation ».
 - **Quiz** : « Bonne réponse » et « n'en fait pas partie » ensemble (KJo) ; règle « limpe beaucoup » ; polarisation dans les corrections du quiz.
 - La couverture des tapis (impairs, inégaux) dépend de la commande v4.
+
+## 6. Corrections faites (29/10/2026)
+
+### Conseiller
+| # | Correction |
+|---|---|
+| 1 | « Jeu mixte » seulement pour des coups joués au moins 10 % du temps (comme la correction des séries) **et** à moins de 0,1 BB du meilleur. Un coup joué mais nettement moins rentable est signalé : « La référence joue aussi all-in 17 % du temps, mais il rapporte 0,83 BB de moins. » |
+| 2 | Tapis : la note dit toujours si tes tapis sont calculés ; sinon « Tes tapis ne sont pas calculés… au lieu de 9 / 30 / 13. Réponse approchée. », et le verdict affiche « calcul à 12 BB effectifs, toi 9 BB » (cote marquée « tapis calculés »). Au-delà de 50 % d'écart (30 / 6 / 30), **plus de conseil** : il serait trompeur. |
+| 3 | Heads-up inégal : « Stratégie calculée pour 4 / 4 BB : même tapis effectif que les tiens, même stratégie » ; à distance égale, l'arbre le plus complet est choisi. |
+| 4 | Contradictions : en mode exploitant, « En théorie » devient « Théorie estimée (sans read) » (moteur exploitant, distinct de la référence du conseiller et du mode GTO). |
+| 5 | Action absente des calculs : « une action absente de la liste, par exemple une autre taille de relance, n'est pas calculée » ; fin de l'arbre : « Le calcul s'arrête là ». |
+| 6 | Mains qui arrivent 2 à 5 % du temps : affichées, avec la note « n'arrive ici que x % du temps ». |
+| 7 | Chaque visite repart sans main ; une main non reconnue efface l'ancienne réponse ; le préréglage se désélectionne après une saisie à la main. |
+| 8 | Jeu mixte lisible : fond clair et bande de couleurs, plus de texte noir sur bleu nuit. |
+| 9 | Verdict placé au-dessus du champ de saisie (visible au-dessus du clavier) ; grille un peu plus grande. |
+| 11 | Vocabulaire des boutons de jeu : Fold, Check, Call 0,5 BB (limp), Raise to, All-in ; encadré « Les mots » ; « as roi assortis », « paire de dix » reconnus. |
+| 12 | « Conseil théorique : il ne tient pas compte du profil de ton adversaire. » |
+
+### Quiz
+- « Mains jouées tantôt ainsi, tantôt autrement » : de 25 à 75 %, comme l'exercice de range.
+- KJo : « Les coups les plus rentables : … Ton choix est aussi joué par la théorie : accepté. » au lieu de « n'en fait pas partie » avec une bonne réponse.
+- « Il se couche souvent face au tapis : pousse plus large » dès qu'il se couche au moins autant que la théorie (au lieu de 3 points de plus).
+- Range polarisée signalée aussi dans « À retenir » des séries.
+- « Construis ta range (théorie) » accessible en mode exploitant.
+
+Non changé : une action jouée au moins 10 % du temps reste une bonne réponse (règle de correction, lexique) ; « Rec passif » qui se couche plus que la théorie est cohérent avec ce profil (il paie peu) ; couverture des tapis impairs et inégaux (commande v4) ; tapis récents en un toucher et équité (à faire).

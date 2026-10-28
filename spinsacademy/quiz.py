@@ -677,9 +677,9 @@ def why(sp, hand, ev, best, labels, grid, chosen=None, verdict=None):
     elif chosen is not None and chosen != best and accepted and chosen not in dict(shown):
         out.append(f"Ton choix {_named(labels[chosen])} n'est pas dans la stratégie, mais il coûte moins de {bb(GAIN_MIN_BB)} BB : accepté.")
     rf = {h: grading.reference_freq(sp, h) for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05 and x.get('freq') and h != hand}
-    edge = sorted((abs(v[j] - 0.5), h) for h, v in rf.items() if 0.2 <= v[j] <= 0.8)
+    edge = sorted((abs(v[j] - 0.5), h) for h, v in rf.items() if 0.25 <= v[j] <= 0.75)      # test joueurs 7 : même seuil que l'exercice de range
     if edge:
-        out.append(f"Mains jouées tantôt ainsi, tantôt autrement (« {_low(labels[best])} » de 20 à 80 % du temps) : {', '.join(h for _, h in edge[:5])}.")
+        out.append(f"Mains jouées tantôt ainsi, tantôt autrement (« {_low(labels[best])} » de 25 à 75 % du temps) : {', '.join(h for _, h in edge[:5])}.")
     return out
 
 
@@ -920,8 +920,24 @@ def rule_to_remember(sp, best, labels, hand=None):
         odd = ''
         if hand in target and target[hand] != (hand in covered):
             odd = (f" {hand} est une exception : elle se joue aussi." if target[hand] else f" {hand} est une exception : elle ne se joue pas.")
-        return f"À retenir : {where}, {what} (environ {n} % des mains{exact}).{odd}"
-    return f"À retenir : {where}, {verb} avec environ {share} % des mains."
+        return f"À retenir : {where}, {what} (environ {n} % des mains{exact}).{odd}{_polar(sp, j, live, t)}"
+    return f"À retenir : {where}, {verb} avec environ {share} % des mains.{_polar(sp, j, live, t)}"
+
+
+POLAR_HANDS = ('AA', 'KK', 'QQ', 'AKs', 'JJ', 'AKo')
+POLAR_FR = {'fold': 'se couchent', 'check': 'checkent', 'limp': 'limpent', 'call': 'paient', 'call_allin': 'paient',
+            'raise': 'relancent', 'allin': 'partent à tapis'}
+
+
+def _polar(sp, j, live, t):
+    """test joueurs 7 : range polarisée, dite aussi dans la correction des séries (comme dans l'exercice de range)"""
+    if t == 'fold': return ''
+    prem = [h for h in POLAR_HANDS if h in live]
+    other = [max(range(len(sp['actions'])), key=lambda k: grading.reference_freq(sp, h)[k]) for h in prem]
+    other = [k for k in other if k != j]
+    if not prem or len(other) * 2 <= len(prem): return ''
+    k = max(set(other), key=other.count)
+    return f" Attention : les très grosses mains ({', '.join(prem[:3])}…) {POLAR_FR[sp['actions'][k]['type']]} plutôt."
 
 
 def _option(sp, labels, aid):
@@ -964,7 +980,8 @@ def correct(version, spot_id, hand, action_id):
     if len(good) > 1:
         names = [_low(labels[a]) for a in good]
         lines = [(f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)." if action_id in good else
-                  f"Les bons coups ici : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). Ton choix n'en fait pas partie.")]
+                  f"Les coups les plus rentables : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). "
+                  + ("Ton choix est aussi joué par la théorie : accepté." if g['verdict'] == 'correct' else "Ton choix n'en fait pas partie."))]   # test joueurs 7 (KJo)
         never = [_low(labels[a]) for a in good if not shown.get(a)]       # test joueurs 6 : « ALL-IN ou CALL » avec CALL à 0 %
         if never: lines.append(f"La théorie ne joue pas {' ni '.join(never)}, mais l'écart est trop petit pour compter.")
     elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Meilleur coup : {labels[best]}{played}.']

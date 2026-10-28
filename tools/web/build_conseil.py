@@ -14,7 +14,7 @@ from spinsacademy import grading, quiz
 from spinsacademy.cards import NAMES
 
 OUT = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web', 'conseil')
-REACH_MIN = 0.05                                           # même seuil que les questions du quiz (FORMAT_SPOT.md, règle 5)
+REACH_MIN = 0.02                                           # test joueurs 7 : les mains qui arrivent rarement restent visibles (note « n'arrive ici que x % »)
 
 
 def kind(sp, a):
@@ -31,7 +31,7 @@ def spot_entry(sp):
     hands = []
     for h in NAMES:
         x = sp['hands'][h]
-        if x.get('reach', 0) < REACH_MIN: hands.append(None); continue
+        if x.get('reach', 0) < REACH_MIN or not x.get('freq'): hands.append(None); continue
         f = grading.reference_freq(sp, h); ev = grading.reference_ev(sp, h)
         hands.append([round(100 * x['reach'])] + [round(100 * v) for v in f] + [round(100 * (v or 0)) for v in ev])
     tokens = [] if sp['node_key'] == 'root' else sp['node_key'].split('_')        # clé de nœud : une action par élément

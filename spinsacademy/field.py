@@ -524,7 +524,7 @@ RULE_BY_MOVE = {('R13', 'raise'): "Il se couche souvent : attaque plus large. Ic
 def shove_folds(f):
     """test joueurs 6 : le tapis passe parce qu'il se couche plus que la théorie face au tapis (et non parce que son limp est faible)"""
     t = f.get('theory') or {}
-    return t.get('kind') == 'shove' and t.get('fold_pct') is not None and t['fold_pct'] - (t.get('fold_gto_pct') or 0) >= SENSE_TOL
+    return t.get('kind') == 'shove' and t.get('fold_pct') is not None and t['fold_pct'] >= (t.get('fold_gto_pct') or 0)   # test joueurs 7 : dès qu'il se couche au moins autant que la théorie
 
 
 def everyone(sp, t):

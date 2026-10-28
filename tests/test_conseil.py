@@ -4,6 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 from spinsacademy import grading, quiz
 from spinsacademy.cards import NAMES
+import sys; sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools', 'web'))
+import build_conseil
 
 DIR = os.path.join(os.path.dirname(__file__), '..', 'spinsacademy', 'web', 'conseil')
 
@@ -30,7 +32,7 @@ def test_hands_follow_reference_strategy():
             assert e['hero'] == sp['hero'] and len(e['acts']) == n
             for i, h in enumerate(NAMES):
                 x = e['hands'][i]
-                if sp['hands'][h]['reach'] < 0.05: assert x is None; continue
+                if sp['hands'][h]['reach'] < build_conseil.REACH_MIN or not sp['hands'][h].get('freq'): assert x is None; continue
                 f = grading.reference_freq(sp, h); ev = grading.reference_ev(sp, h)
                 assert x[1:1 + n] == [round(100 * v) for v in f]
                 assert x[1 + n:] == [round(100 * v) for v in ev]

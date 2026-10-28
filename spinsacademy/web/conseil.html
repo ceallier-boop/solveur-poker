@@ -24,6 +24,9 @@
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
+.verdict.mixed { background: var(--surface) !important; color: var(--text) !important; border: 1px solid var(--line); }
+.verdict .strip { height: 10px; border-radius: 5px; margin-top: 4px; }
+.words summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .bar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px var(--gutter); padding-top: max(10px, env(safe-area-inset-top)); background: var(--felt-dark); color: #fff; }
@@ -60,7 +63,7 @@ main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom:
 .bar-row .fill { height: 100%; }
 .bar-row .ev { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .bar-row.best .ev { color: var(--text); font-weight: 650; }
-.grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; user-select: none; }
+.grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 1px; user-select: none; margin: 0 -6px; }   /* test joueurs 7 : cases plus grandes */
 .grid span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: clamp(8px, 2.5vw, 12px); border-radius: 3px;
   color: #fff; font-weight: 600; cursor: pointer; text-shadow: 0 0 2px rgba(0,0,0,.6); overflow: hidden; }
 .grid span.out { background: var(--line) !important; color: var(--muted); text-shadow: none; font-weight: 400; }
@@ -96,14 +99,20 @@ main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom:
 
     <section class="card" aria-labelledby="t-main">
       <h2 id="t-main">Ta main</h2>
+      <div class="verdict empty" id="verdict" aria-live="polite">Choisis une main.</div>
       <div class="hand-in">
         <label for="hand" hidden>Ta main</label>
-        <input id="hand" placeholder="ex. AKo, 76s, TT, Ah Kd" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text">
+        <input id="hand" placeholder="ex. AKo, 76s, TT, Ah Kd, as roi assortis" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text">
       </div>
       <p class="note" id="hand-note">Tape ta main ou touche une case de la grille.</p>
-      <div class="verdict empty" id="verdict" aria-live="polite">Choisis une main.</div>
       <div class="bars" id="bars"></div>
       <p class="note" id="poor" hidden></p>
+      <details class="words"><summary>Les mots</summary>
+        <p class="note"><b>Fold</b> : se coucher. <b>Check</b> : parler sans miser. <b>Call (limp)</b> : payer juste la grosse blinde, sans relancer.
+        <b>Call</b> : payer la relance ou le tapis. <b>Raise to</b> : relancer à ce montant. <b>All-in</b> : pousser tout son tapis.
+        <b>EV</b> : ce que le coup rapporte en moyenne, comparé au fold. <b>Tapis effectif</b> : ce que tu peux vraiment perdre (le plus petit tapis entre toi et l'adversaire).
+        <b>Jeu mixte</b> : plusieurs coups qui se valent ; on peut jouer l'un ou l'autre.</p>
+      </details>
     </section>
 
     <section class="card" aria-labelledby="t-grid">
@@ -129,20 +138,25 @@ const S = { index: null, table: '3-handed', stacks: { '3-handed': [20, 20, 20], 
 function actLabel(k, to, hero) {
   if (k === 'fold') return 'Fold';
   if (k === 'check') return 'Check';
-  if (k === 'limp') return hero === 'SB' ? 'Limp (compléter)' : 'Limp';
+  if (k === 'limp') return hero === 'SB' ? 'Call 0,5 BB (limp)' : 'Call 1 BB (limp)';
   if (k === 'call') return 'Call';
-  if (k === 'raise') return `Raise ${fmt(to)} BB`;
-  return 'Shove';
+  if (k === 'raise') return `Raise to ${fmt(to)} BB`;
+  return 'All-in';
 }
 function histLabel(action, to) {             // action déjà jouée par un joueur (historique)
-  return { fold: 'fold', check: 'check', limp: 'limp', call: 'call', call_allin: 'call (tapis)', raise: `raise ${fmt(to)}`, allin: 'shove' }[action] || action;
+  return { fold: 'fold', check: 'check', limp: 'limp', call: 'call', call_allin: 'call (tapis)', raise: `raise to ${fmt(to)}`, allin: 'all-in' }[action] || action;
 }
 const combos = (h) => (h.length === 2 ? 6 : h[2] === 's' ? 4 : 12);
 const gridName = (r, c) => (r === c ? RANKS[r] + RANKS[c] : r < c ? RANKS[r] + RANKS[c] + 's' : RANKS[c] + RANKS[r] + 'o');
 
 // ------------------------------------------------------------------ main tapée : AKs, 76o, TT, Ah Kd, 10s 9s...
+const WORDS = [[/\bAS\b/g, 'A'], [/\bROI\b/g, 'K'], [/\bDAME\b/g, 'Q'], [/\bVALET\b/g, 'J'], [/\bDIX\b/g, 'T'],
+  [/\bASSORTIE?S?\b/g, 'S'], [/\bD[EÉ]PAREILL[EÉ]E?S?(?=\s)/g, 'O'], [/\bPAIRE\s+D[E']\s*/g, 'PAIRE ']];
 function parseHand(txt) {
-  const t = txt.trim().toUpperCase().replace(/10/g, 'T').replace(/[^AKQJT2-9SHDCO♠♥♦♣]/g, '');
+  let u = ' ' + txt.toUpperCase().replace(/[’']/g, "'") + ' ';
+  for (const [re, r] of WORDS) u = u.replace(re, r);
+  const pair = u.match(/PAIRE\s+([AKQJT2-9])/); if (pair) u = pair[1] + pair[1];
+  const t = u.trim().replace(/10/g, 'T').replace(/[^AKQJT2-9SHDCO♠♥♦♣]/g, '');
   const m = t.match(/^([AKQJT2-9])([SHDC♠♥♦♣])?([AKQJT2-9])([SHDC♠♥♦♣])?([SO])?$/);
   if (!m) return { err: t ? 'Main non reconnue.' : null };
   let [, a, sa, b, sb, so] = m;
@@ -170,7 +184,7 @@ function nearest() {                         // jeu de tapis calculé le plus pr
   for (const c of S.index.configs) {
     if (c.table !== S.table) continue;
     const have = capped(c.stacks);
-    const d = have.reduce((s, x, i) => s + Math.abs(Math.log(x / Math.max(1, want[i] || 1))), 0);
+    const d = have.reduce((s, x, i) => s + Math.abs(Math.log(x / Math.max(1, want[i] || 1))), 0) - c.spots * 1e-6;   // à égalité : l'arbre le plus complet
     if (d < bestD) { bestD = d; best = c; }
   }
   return best;
@@ -180,14 +194,21 @@ async function pickConfig() {
   const c = nearest();
   const want = capped(S.stacks[S.table]), have = capped(c.stacks);
   const exact = have.every((x, i) => Math.abs(x - want[i]) < 1e-9);
-  const far = have.some((x, i) => Math.abs(x - want[i]) / Math.max(x, want[i]) > 0.25);
-  $('cfg-note').className = far ? 'warn' : 'note';
-  $('cfg-note').textContent = exact ? `Stratégie calculée pour ces tapis (${c.players.join(' / ')}).`
-    : `Tapis calculés les plus proches : ${c.stacks.map((x) => fmt(x)).join(' / ')} BB (${c.players.join(' / ')}).`
-      + (far ? ' Écart important : à prendre comme une indication.' : '');
+  const same = exact && c.stacks.every((x, i) => Math.abs(x - S.stacks[S.table][i]) < 1e-9);
+  const gap = Math.max(...have.map((x, i) => Math.abs(x - want[i]) / Math.min(x, want[i])));
+  S.far = gap > 0.5;                                                  // test joueurs 7 : trop loin, la réponse serait trompeuse
+  S.approx = !exact;
+  $('cfg-note').className = exact ? 'note' : 'warn';
+  $('cfg-note').textContent = same ? `Stratégie calculée pour ces tapis (${c.players.join(' / ')}).`
+    : exact ? `Stratégie calculée pour ${c.stacks.map((x) => fmt(x)).join(' / ')} BB : même tapis effectif que les tiens, même stratégie.`
+    : `Tes tapis ne sont pas calculés. Tapis calculés les plus proches : ${c.stacks.map((x) => fmt(x)).join(' / ')} BB (${c.players.join(' / ')}), au lieu de ${S.stacks[S.table].map((x) => fmt(x)).join(' / ')}.`
+      + (S.far ? ' Écart trop grand : pas de conseil, il serait trompeur.' : ' Réponse approchée.');
   if (S.cfg !== c) {
     S.cfg = c;
-    try { S.data = await getJSON(c.file); } catch (e) { $('cfg-note').className = 'error'; $('cfg-note').textContent = 'Données introuvables (connexion ?).'; return; }
+    let d;
+    try { d = await getJSON(c.file); } catch (e) { $('cfg-note').className = 'error'; $('cfg-note').textContent = 'Données introuvables (connexion ?).'; return; }
+    if (S.cfg !== c) return;                                           // une saisie plus récente a déjà choisi d'autres tapis
+    S.data = d;
     const key = S.path.join('_') || 'root';                          // on garde le coup s'il existe à ces tapis
     if (!Object.keys(S.data.spots).some((k) => k === key || k.startsWith(key + '_'))) S.path = [];
   }
@@ -214,7 +235,9 @@ function renderStacks() {
     + `<input id="st-${i}" type="number" inputmode="decimal" min="1" max="100" step="1" value="${S.stacks[S.table][i]}"></div>`).join('');
   pl.forEach((_, i) => $('st-' + i).addEventListener('input', (e) => {
     const v = parseFloat(e.target.value); if (!(v > 0)) return;
-    S.stacks[S.table][i] = v; store.set('stacks', S.stacks); pickConfig();
+    S.stacks[S.table][i] = v; store.set('stacks', S.stacks);
+    $('presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', S.stacks[S.table].every((y) => y === +b.dataset.v)));
+    pickConfig();
   }));
   const eq = [...new Set(S.index.configs.filter((c) => c.table === S.table && c.stacks.every((x) => x === c.stacks[0])).map((c) => c.stacks[0]))].sort((a, b) => a - b);
   const cur = S.stacks[S.table];
@@ -235,8 +258,9 @@ function render() {
   if (crumbs.length) { $('back').onclick = () => { S.path.pop(); render(); }; $('reset').onclick = () => { S.path = []; render(); }; }
   const opts = nextOptions();
   const actor = spot ? spot.hero : opts[0] && opts[0].pos;
-  $('turn').innerHTML = actor ? `Au <b>${actor}</b> de parler. C'est toi ? La réponse est ci-dessous. Sinon, touche ce que le ${actor} a fait :`
-    : 'Fin du coup préflop dans l\'arbre calculé.';
+  $('turn').innerHTML = !actor ? 'Fin du coup préflop dans l\'arbre calculé.'
+    : opts.length ? `Au <b>${actor}</b> de parler. C'est toi ? La réponse est ci-dessous. Sinon, touche ce que le ${actor} a fait (une action absente de la liste, par exemple une autre taille de relance, n'est pas calculée) :`
+    : `Au <b>${actor}</b> de parler : la réponse est ci-dessous. Le calcul s'arrête là : aucune suite n'est calculée après ce coup.`;
   $('next').innerHTML = opts.map((o, i) => `<button type="button" class="act-btn" data-i="${i}"><i style="background:${COLOR[kindOfHist(o)]}"></i>${o.pos} ${histLabel(o.action, o.to)}</button>`).join('');
   $('next').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.path.push(opts[+b.dataset.i].token); render(); }));
   renderGrid(spot); renderVerdict(spot);
@@ -252,7 +276,7 @@ function share(spot) {                       // part de la range (combinaisons �
 
 function renderGrid(spot) {
   const g = $('grid');
-  if (!spot) { g.innerHTML = ''; $('legend').innerHTML = ''; $('src').textContent = ''; return; }
+  if (!spot || S.far) { g.innerHTML = ''; $('legend').innerHTML = ''; $('src').textContent = ''; return; }
   const idx = Object.fromEntries(S.index.hands.map((h, i) => [h, i])); const cells = [];
   for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
     const h = gridName(r, c), x = spot.hands[idx[h]];
@@ -266,7 +290,7 @@ function renderGrid(spot) {
   const sh = share(spot);
   $('legend').innerHTML = spot.acts.map((a, j) => `<span><i style="background:${COLOR[a.k]}"></i>${actLabel(a.k, a.to, spot.hero)} ${Math.round(sh[j])} %</span>`).join('')
     + '<span><i style="background:var(--line)"></i>n\'arrive pas ici</span>';
-  $('src').textContent = `Tu es au ${spot.hero}. Stratégie de référence (chip EV), ${S.index.dataset}`
+  $('src').textContent = `Tu es au ${spot.hero}. Stratégie théorique de référence (chip EV, sans tenir compte du profil adverse), ${S.index.dataset}`
     + (spot.exact ? ' ; EV exactes (décision tout ou rien).' : '.');
 }
 
@@ -274,32 +298,43 @@ function renderVerdict(spot) {
   const v = $('verdict'), bars = $('bars'); $('poor').hidden = true; bars.innerHTML = '';
   v.className = 'verdict empty'; v.style.background = '';
   if (!spot) { v.textContent = 'Pas de stratégie calculée à ce point du coup.'; return; }
+  v.style.color = '';
+  if (S.far) { v.textContent = 'Pas de calcul assez proche de tes tapis : un conseil serait trompeur. Essaie des tapis proches des préréglages.'; return; }
   if (!S.hand) { v.textContent = `Tu es au ${spot.hero} : choisis ta main.`; return; }
   const x = spot.hands[S.index.hands.indexOf(S.hand)];
   if (!x) { v.innerHTML = `<b>${S.hand}</b> n'arrive pas à cette décision : avec la stratégie de référence, elle a été jouée autrement plus tôt dans le coup. Reviens en arrière pour voir comment la jouer.`; return; }
   const n = spot.acts.length, f = x.slice(1, 1 + n), ev = x.slice(1 + n, 1 + 2 * n).map((e) => e / 100);
-  const top = f.indexOf(Math.max(...f)), best = ev.indexOf(Math.max(...ev));
-  const a = spot.acts[top];
-  const played = spot.acts.map((b, j) => [b, f[j], j]).filter(([, p]) => p >= 10).sort((p, q) => q[1] - p[1]);
-  v.className = 'verdict'; v.style.background = played.length > 1 ? `linear-gradient(90deg, ${played.map(([b, p], i) => `${COLOR[b.k]} ${played.slice(0, i).reduce((s, q) => s + q[1], 0)}% ${played.slice(0, i + 1).reduce((s, q) => s + q[1], 0)}%`).join(', ')})` : COLOR[a.k];
+  const best = ev.indexOf(Math.max(...ev));
+  // test joueurs 7 : « mixte » seulement pour des coups joués (au moins 10 %, comme la correction des séries) qui se valent
+  // à moins de 0,1 BB ; un coup joué mais nettement moins rentable est signalé, pas présenté comme juste
+  const options = spot.acts.map((b, j) => [b, f[j], j]).filter(([, p]) => p >= 10);
+  let played = options.filter(([, , j]) => ev[best] - ev[j] <= 0.1).sort((p, q) => q[1] - p[1]);
+  if (!played.length) played = [[spot.acts[best], f[best], best]];
+  const top = played[0][2], a = spot.acts[top];
+  const weaker = options.filter(([, , j]) => !played.some((q) => q[2] === j));
+  v.className = 'verdict' + (played.length > 1 ? ' mixed' : ''); v.style.background = played.length > 1 ? '' : COLOR[a.k];
   if (a.k === 'fold' && played.length === 1) v.style.color = '#17201c';
-  const who = `${S.hand} au ${spot.hero}` + (spot.hist.some((h) => ['raise', 'allin'].includes(h[1])) ? ` · ${fmt(spot.call, 2)} BB à payer pour un pot de ${fmt(spot.pot + spot.call, 2)} BB` : '') + ` · ${fmt(spot.eff)} BB effectifs`;
+  const pl = S.cfg.players, st = S.stacks[S.table], hi = pl.indexOf(spot.hero);
+  const mine = Math.min(st[hi], Math.max(...st.filter((_, i) => i !== hi)));                // ton tapis effectif réel
+  const who = `${S.hand} au ${spot.hero}` + (spot.hist.some((h) => ['raise', 'allin'].includes(h[1])) ? ` · ${fmt(spot.call, 2)} BB à payer pour un pot de ${fmt(spot.pot + spot.call, 2)} BB${S.approx ? ' (tapis calculés)' : ''}` : '')
+    + (S.approx && Math.abs(mine - spot.eff) > 1e-9 ? ` · calcul à ${fmt(spot.eff)} BB effectifs, toi ${fmt(mine)} BB` : ` · ${fmt(spot.eff)} BB effectifs`);
   const head = played.length > 1 ? played.map(([b, p]) => `${actLabel(b.k, b.to, spot.hero).toUpperCase()} ${p} %`).join(' · ') : actLabel(a.k, a.to, spot.hero).toUpperCase();
   const low = (b) => { const l = actLabel(b.k, b.to, spot.hero); return l[0].toLowerCase() + l.slice(1); };
-  const sub = played.length > 1 ? `Jeu mixte : ${played.length > 2 ? 'ces options sont toutes justes' : 'les deux sont justes'}. La plus rentable : ${low(spot.acts[best])}.`
-    : (best !== top && ev[best] - ev[top] >= 0.06 ? `Attention : ${low(spot.acts[best])} rapporte ${fmt(ev[best] - ev[top], 2)} BB de plus selon l'EV.` : '');
-  v.innerHTML = `<span class="who">${who}</span><span class="big">${head}</span>${sub ? `<span class="sub">${sub}</span>` : ''}`;
+  const sub = (played.length > 1 ? `Jeu mixte : ces coups se valent à moins de 0,1 BB. Le plus rentable : ${low(spot.acts[best])}.` : '')
+    + weaker.map(([b, p, j]) => ` La référence joue aussi ${low(b)} ${p} % du temps, mais il rapporte ${fmt(ev[best] - ev[j], 2)} BB de moins.`).join('');
+  const strip = played.length > 1 ? `<span class="strip" style="background:linear-gradient(90deg, ${played.map(([b, p], i) => `${COLOR[b.k]} ${played.slice(0, i).reduce((s, q) => s + q[1], 0) * 100 / played.reduce((s, q) => s + q[1], 0)}% ${played.slice(0, i + 1).reduce((s, q) => s + q[1], 0) * 100 / played.reduce((s, q) => s + q[1], 0)}%`).join(', ')})"></span>` : '';
+  v.innerHTML = `<span class="who">${who}</span><span class="big">${head}</span>${strip}${sub ? `<span class="sub">${sub.trim()}</span>` : ''}`;
   bars.innerHTML = spot.acts.map((b, j) => `<div class="bar-row${j === best ? ' best' : ''}"><span>${actLabel(b.k, b.to, spot.hero)}</span>`
     + `<span class="track"><span class="fill" style="display:block;width:${f[j]}%;background:${COLOR[b.k]}"></span></span>`
     + `<span class="ev" title="EV par rapport au fold">${b.k === 'fold' ? '0' : (ev[j] >= 0 ? '+' : '') + fmt(ev[j], 2)} BB</span></div>`).join('')
-    + '<p class="note">Barre : fréquence de la stratégie de référence. Chiffre : EV par rapport au fold, en BB.</p>';
+    + '<p class="note">Barre : fréquence de la stratégie de référence. Chiffre : EV par rapport au fold, en BB. Conseil théorique : il ne tient pas compte du profil de ton adversaire.</p>';
   if (spot.poor) { $('poor').hidden = false; $('poor').className = 'warn'; $('poor').textContent = 'Situation mal résolue par la référence à ces tapis : fréquences approximatives.'; }
   if (x[0] < 100) { $('poor').hidden = false; $('poor').className = 'note'; $('poor').textContent = `${S.hand} n'arrive ici que ${x[0]} % du temps : le reste du temps, elle est jouée autrement plus tôt.` + (spot.poor ? ' Situation mal résolue par la référence : fréquences approximatives.' : ''); }
 }
 
 // ------------------------------------------------------------------ événements
 function setHand(h, fromGrid) {
-  S.hand = h; store.set('hand', h);
+  S.hand = h;
   if (fromGrid) $('hand').value = h;
   $('hand-note').textContent = 'Tape ta main ou touche une case de la grille.'; $('hand-note').className = 'note';
   render();
@@ -307,7 +342,7 @@ function setHand(h, fromGrid) {
 $('hand').addEventListener('input', (e) => {
   const p = parseHand(e.target.value);
   if (p.hand) setHand(p.hand, false);
-  else if (p.err) { $('hand-note').textContent = p.err; $('hand-note').className = 'note error'; }
+  else { S.hand = null; render(); if (p.err) { $('hand-note').textContent = p.err; $('hand-note').className = 'note error'; } }
 });
 $('grid').addEventListener('click', (e) => { const c = e.target.closest('[data-h]'); if (c) setHand(c.dataset.h, true); });
 $('fmt').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return;
@@ -316,7 +351,7 @@ $('presets').addEventListener('click', (e) => { const b = e.target.closest('butt
   S.stacks[S.table] = S.stacks[S.table].map(() => +b.dataset.v); store.set('stacks', S.stacks); renderStacks(); pickConfig(); });
 
 (async function init() {
-  const t = store.get('table'), st = store.get('stacks'), h = store.get('hand');
+  const t = store.get('table'), st = store.get('stacks'), h = null;     // test joueurs 7 : chaque visite repart sans main
   if (t === '3-handed' || t === 'heads-up') S.table = t;
   if (st && Array.isArray(st['3-handed']) && Array.isArray(st['heads-up'])) S.stacks = st;
   if (typeof h === 'string' && h.length <= 3) { S.hand = h; $('hand').value = h; }
