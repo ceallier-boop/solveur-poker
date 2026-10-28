@@ -101,6 +101,7 @@ html.touch .hint, html.touch .actions button .key { display: none; }   /* A' : t
 .loading { text-align: center; color: var(--muted); padding: 24px; }
 
 .secondary { background: var(--surface); color: var(--accent); border: 2px solid var(--accent); border-radius: var(--radius); padding: 12px 18px; font-weight: 650; min-height: 48px; }
+.conseil-link { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .link.danger { color: var(--bad); font-size: .9rem; }
 .note { font-size: .82rem; color: var(--muted); margin: 0; }
 .evolution { display: flex; align-items: flex-end; gap: 4px; height: 70px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }

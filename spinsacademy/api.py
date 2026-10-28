@@ -163,6 +163,12 @@ def service_worker():
     return FileResponse(os.path.join(WEB, 'sw.js'), media_type='application/javascript', headers={'Cache-Control': 'no-cache'})
 
 
+@app.get('/conseil', include_in_schema=False)
+def conseil_page():
+    """conseiller préflop : la stratégie de référence d'une main, à tapis et action donnés (données : tools/web/build_conseil.py)"""
+    return FileResponse(os.path.join(WEB, 'conseil.html'))
+
+
 @app.get('/admin', include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(WEB, 'admin.html'))

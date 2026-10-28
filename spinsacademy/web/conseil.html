@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b3f2d">
+  <title>Conseiller préflop</title>
+  <link rel="icon" href="static/icon.svg" type="image/svg+xml">
+  <style>
+:root {
+  --a-fold: #b9c1bd; --a-passive: #4a90d9; --a-call: #7b5cc4; --a-raise: #e08a2e; --a-allin: #1f3f73;
+  --bg: #f4f6f4; --surface: #ffffff; --text: #17201c; --muted: #5b6862; --line: #d9e0dc;
+  --felt-dark: #0b3f2d; --accent: #0f5a40; --accent-text: #ffffff; --warn: #8a5a00; --warn-bg: #fdf1d8;
+  --radius: 14px; --gutter: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0f1412; --surface: #18201c; --text: #e8eeea; --muted: #9aa8a1; --line: #2b3631;
+    --felt-dark: #0c4632; --accent: #2a9d6f; --accent-text: #06120d; --warn: #f1b43c; --warn-bg: #33270d; --a-allin: #3f6fb8; }
+}
+:root[data-theme="dark"] { --bg: #0f1412; --surface: #18201c; --text: #e8eeea; --muted: #9aa8a1; --line: #2b3631;
+  --felt-dark: #0c4632; --accent: #2a9d6f; --accent-text: #06120d; --warn: #f1b43c; --warn-bg: #33270d; --a-allin: #3f6fb8; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.bar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px var(--gutter); padding-top: max(10px, env(safe-area-inset-top)); background: var(--felt-dark); color: #fff; }
+.bar a { color: #9fe0c0; text-decoration: none; font-size: .9rem; }
+.bar h1 { font-size: 1.05rem; margin: 0; }
+main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom: calc(40px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.card h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips button, .act-btn { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 7px 13px; min-height: 38px; }
+.chips button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 650; }
+.stack { display: flex; flex-direction: column; gap: 2px; flex: 1 1 0; min-width: 0; }
+.stack label { font-size: .8rem; color: var(--muted); }
+.stack input { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 1.05rem; }
+.note { font-size: .85rem; color: var(--muted); margin: 0; }
+.warn { font-size: .85rem; color: var(--warn); background: var(--warn-bg); padding: 8px 10px; border-radius: 10px; margin: 0; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.crumb { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; font-size: .9rem; }
+.crumb b { font-weight: 650; }
+.link { background: none; border: 0; color: var(--accent); text-decoration: underline; padding: 4px; font-size: .9rem; }
+.act-btn { display: inline-flex; align-items: center; gap: 6px; }
+.act-btn i, .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.hand-in { display: flex; gap: 8px; }
+.hand-in input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 1.1rem; text-transform: none; }
+.verdict { border-radius: var(--radius); padding: 14px; color: #fff; display: flex; flex-direction: column; gap: 4px; }
+.verdict .who { font-size: .9rem; opacity: .9; }
+.verdict .big { font-size: 1.9rem; font-weight: 800; letter-spacing: .02em; line-height: 1.15; }
+.verdict .sub { font-size: .95rem; opacity: .95; }
+.verdict.empty { background: var(--surface); color: var(--muted); border: 1px dashed var(--line); }
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 7.5em 1fr 4.6em; gap: 8px; align-items: center; font-size: .92rem; }
+.bar-row .track { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.bar-row .fill { height: 100%; }
+.bar-row .ev { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.bar-row.best .ev { color: var(--text); font-weight: 650; }
+.grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; user-select: none; }
+.grid span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: clamp(8px, 2.5vw, 12px); border-radius: 3px;
+  color: #fff; font-weight: 600; cursor: pointer; text-shadow: 0 0 2px rgba(0,0,0,.6); overflow: hidden; }
+.grid span.out { background: var(--line) !important; color: var(--muted); text-shadow: none; font-weight: 400; }
+.grid span.me { outline: 3px solid var(--text); outline-offset: -1px; z-index: 1; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.error { color: #b42318; }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <h1>Comment jouer ma main ?</h1>
+    <a href="./">SpinsAcademy</a>
+  </header>
+  <main>
+    <section class="card" aria-labelledby="t-table">
+      <h2 id="t-table">Table et tapis (en BB)</h2>
+      <div class="chips" id="fmt" role="group" aria-label="Format">
+        <button type="button" data-v="3-handed" aria-pressed="true">3 joueurs</button>
+        <button type="button" data-v="heads-up" aria-pressed="false">Heads-up</button>
+      </div>
+      <div class="row" id="stacks"></div>
+      <div class="chips" id="presets" role="group" aria-label="Tapis égaux"></div>
+      <p class="note" id="cfg-note"></p>
+    </section>
+
+    <section class="card" aria-labelledby="t-coup">
+      <h2 id="t-coup">Le coup</h2>
+      <div class="crumbs" id="crumbs"></div>
+      <p class="note" id="turn"></p>
+      <div class="chips" id="next"></div>
+    </section>
+
+    <section class="card" aria-labelledby="t-main">
+      <h2 id="t-main">Ta main</h2>
+      <div class="hand-in">
+        <label for="hand" hidden>Ta main</label>
+        <input id="hand" placeholder="ex. AKo, 76s, TT, Ah Kd" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text">
+      </div>
+      <p class="note" id="hand-note">Tape ta main ou touche une case de la grille.</p>
+      <div class="verdict empty" id="verdict" aria-live="polite">Choisis une main.</div>
+      <div class="bars" id="bars"></div>
+      <p class="note" id="poor" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="t-grid">
+      <h2 id="t-grid">Stratégie sur toutes les mains</h2>
+      <div class="grid" id="grid" role="grid" aria-label="Grille des 169 mains"></div>
+      <div class="legend" id="legend"></div>
+      <p class="note" id="src"></p>
+    </section>
+  </main>
+<script>
+'use strict';
+const DATA = 'static/conseil/';
+const RANKS = 'AKQJT98765432';
+const COLOR = { fold: 'var(--a-fold)', check: 'var(--a-passive)', limp: 'var(--a-passive)', call: 'var(--a-call)', raise: 'var(--a-raise)', shove: 'var(--a-allin)' };
+const $ = (id) => document.getElementById(id);
+const fmt = (x, d = 1) => (Math.round(x * 10 ** d) / 10 ** d).toString().replace('.', ',');
+const store = { get(k) { try { return JSON.parse(localStorage.getItem('conseil.' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('conseil.' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } } };
+
+const S = { index: null, table: '3-handed', stacks: { '3-handed': [20, 20, 20], 'heads-up': [20, 20] }, cfg: null, data: null, path: [], hand: null, cache: {} };
+
+// ------------------------------------------------------------------ libellés
+function actLabel(k, to, hero) {
+  if (k === 'fold') return 'Fold';
+  if (k === 'check') return 'Check';
+  if (k === 'limp') return hero === 'SB' ? 'Limp (compléter)' : 'Limp';
+  if (k === 'call') return 'Call';
+  if (k === 'raise') return `Raise ${fmt(to)} BB`;
+  return 'Shove';
+}
+function histLabel(action, to) {             // action déjà jouée par un joueur (historique)
+  return { fold: 'fold', check: 'check', limp: 'limp', call: 'call', call_allin: 'call (tapis)', raise: `raise ${fmt(to)}`, allin: 'shove' }[action] || action;
+}
+const combos = (h) => (h.length === 2 ? 6 : h[2] === 's' ? 4 : 12);
+const gridName = (r, c) => (r === c ? RANKS[r] + RANKS[c] : r < c ? RANKS[r] + RANKS[c] + 's' : RANKS[c] + RANKS[r] + 'o');
+
+// ------------------------------------------------------------------ main tapée : AKs, 76o, TT, Ah Kd, 10s 9s...
+function parseHand(txt) {
+  const t = txt.trim().toUpperCase().replace(/10/g, 'T').replace(/[^AKQJT2-9SHDCO♠♥♦♣]/g, '');
+  const m = t.match(/^([AKQJT2-9])([SHDC♠♥♦♣])?([AKQJT2-9])([SHDC♠♥♦♣])?([SO])?$/);
+  if (!m) return { err: t ? 'Main non reconnue.' : null };
+  let [, a, sa, b, sb, so] = m;
+  if (sb && !sa && !so) { if (sb !== 'S') return { err: 'Donne la couleur des deux cartes, ou s / o.' }; so = 'S'; sb = undefined; }   // « A5s » : s = assortie
+  if (RANKS.indexOf(a) > RANKS.indexOf(b)) { [a, b] = [b, a]; [sa, sb] = [sb, sa]; }
+  if (a === b) return { hand: a + b };
+  let kind = so ? so.toLowerCase() : null;
+  if (!kind && sa && sb) kind = sa === sb ? 's' : 'o';
+  if (!kind) return { err: `Précise assortie ou dépareillée : ${a}${b}s ou ${a}${b}o.` };
+  return { hand: a + b + kind };
+}
+
+// ------------------------------------------------------------------ chargement
+async function getJSON(file) {
+  if (!S.cache[file]) S.cache[file] = fetch(DATA + file + '.json').then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  return S.cache[file];
+}
+
+// tapis utiles : aucun joueur ne peut perdre plus que le deuxième plus gros tapis (heads-up : le tapis effectif)
+const capped = (st) => { const second = [...st].sort((a, b) => b - a)[1]; return st.map((x) => Math.min(x, second)); };
+
+function nearest() {                         // jeu de tapis calculé le plus proche (écart relatif des tapis utiles, joueur par joueur)
+  const want = capped(S.stacks[S.table]);
+  let best = null, bestD = Infinity;
+  for (const c of S.index.configs) {
+    if (c.table !== S.table) continue;
+    const have = capped(c.stacks);
+    const d = have.reduce((s, x, i) => s + Math.abs(Math.log(x / Math.max(1, want[i] || 1))), 0);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best;
+}
+
+async function pickConfig() {
+  const c = nearest();
+  const want = capped(S.stacks[S.table]), have = capped(c.stacks);
+  const exact = have.every((x, i) => Math.abs(x - want[i]) < 1e-9);
+  const far = have.some((x, i) => Math.abs(x - want[i]) / Math.max(x, want[i]) > 0.25);
+  $('cfg-note').className = far ? 'warn' : 'note';
+  $('cfg-note').textContent = exact ? `Stratégie calculée pour ces tapis (${c.players.join(' / ')}).`
+    : `Tapis calculés les plus proches : ${c.stacks.map((x) => fmt(x)).join(' / ')} BB (${c.players.join(' / ')}).`
+      + (far ? ' Écart important : à prendre comme une indication.' : '');
+  if (S.cfg !== c) {
+    S.cfg = c;
+    try { S.data = await getJSON(c.file); } catch (e) { $('cfg-note').className = 'error'; $('cfg-note').textContent = 'Données introuvables (connexion ?).'; return; }
+    const key = S.path.join('_') || 'root';                          // on garde le coup s'il existe à ces tapis
+    if (!Object.keys(S.data.spots).some((k) => k === key || k.startsWith(key + '_'))) S.path = [];
+  }
+  render();
+}
+
+// ------------------------------------------------------------------ arbre : options suivantes à partir des clés de nœud
+function nextOptions() {
+  const keys = Object.keys(S.data.spots), n = S.path.length, opts = new Map();
+  for (const k of keys) {
+    if (k === 'root') continue;
+    const t = k.split('_');
+    if (t.length <= n || t.slice(0, n).join('_') !== S.path.join('_')) continue;
+    if (!opts.has(t[n])) { const h = S.data.spots[k].hist[n]; opts.set(t[n], { token: t[n], pos: t[n].split('-')[0], action: h[1], to: h[2] }); }
+  }
+  const order = { fold: 0, check: 1, limp: 2, call: 2, call_allin: 2, raise: 3, allin: 4 };
+  return [...opts.values()].sort((a, b) => order[a.action] - order[b.action] || (a.to || 0) - (b.to || 0));
+}
+
+// ------------------------------------------------------------------ rendu
+function renderStacks() {
+  const pl = S.table === '3-handed' ? ['BTN', 'SB', 'BB'] : ['SB', 'BB'];
+  $('stacks').innerHTML = pl.map((p, i) => `<div class="stack"><label for="st-${i}">${p}</label>`
+    + `<input id="st-${i}" type="number" inputmode="decimal" min="1" max="100" step="1" value="${S.stacks[S.table][i]}"></div>`).join('');
+  pl.forEach((_, i) => $('st-' + i).addEventListener('input', (e) => {
+    const v = parseFloat(e.target.value); if (!(v > 0)) return;
+    S.stacks[S.table][i] = v; store.set('stacks', S.stacks); pickConfig();
+  }));
+  const eq = [...new Set(S.index.configs.filter((c) => c.table === S.table && c.stacks.every((x) => x === c.stacks[0])).map((c) => c.stacks[0]))].sort((a, b) => a - b);
+  const cur = S.stacks[S.table];
+  $('presets').innerHTML = eq.map((x) => `<button type="button" data-v="${x}" aria-pressed="${cur.every((y) => y === x)}">${x}</button>`).join('');
+  $('fmt').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === S.table));
+}
+
+function render() {
+  const spot = S.data.spots[S.path.join('_') || 'root'];
+  // le coup
+  const crumbs = S.path.map((t, i) => {
+    const any = Object.entries(S.data.spots).find(([k]) => k.split('_').slice(0, i + 1).join('_') === S.path.slice(0, i + 1).join('_') && k !== 'root');
+    const h = any[1].hist[i];
+    return `<span class="crumb"><b>${t.split('-')[0]}</b> ${histLabel(h[1], h[2])}</span>`;
+  });
+  $('crumbs').innerHTML = (crumbs.length ? crumbs.join('') + ' <button class="link" id="back">← annuler</button> <button class="link" id="reset">recommencer</button>'
+    : '<span class="note">Personne n\'a encore parlé.</span>');
+  if (crumbs.length) { $('back').onclick = () => { S.path.pop(); render(); }; $('reset').onclick = () => { S.path = []; render(); }; }
+  const opts = nextOptions();
+  const actor = spot ? spot.hero : opts[0] && opts[0].pos;
+  $('turn').innerHTML = actor ? `Au <b>${actor}</b> de parler. C'est toi ? La réponse est ci-dessous. Sinon, touche ce que le ${actor} a fait :`
+    : 'Fin du coup préflop dans l\'arbre calculé.';
+  $('next').innerHTML = opts.map((o, i) => `<button type="button" class="act-btn" data-i="${i}"><i style="background:${COLOR[kindOfHist(o)]}"></i>${o.pos} ${histLabel(o.action, o.to)}</button>`).join('');
+  $('next').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.path.push(opts[+b.dataset.i].token); render(); }));
+  renderGrid(spot); renderVerdict(spot);
+}
+function kindOfHist(o) { return { fold: 'fold', check: 'check', limp: 'limp', call: 'call', call_allin: 'call', raise: 'raise', allin: 'shove' }[o.action]; }
+
+function share(spot) {                       // part de la range (combinaisons × atteinte) jouée par chaque action
+  const tot = spot.acts.map(() => 0); let w = 0;
+  S.index.hands.forEach((h, i) => { const x = spot.hands[i]; if (!x) return;
+    const ww = combos(h) * x[0]; w += ww; spot.acts.forEach((_, j) => (tot[j] += ww * x[1 + j])); });
+  return tot.map((t) => (w ? t / w : 0));
+}
+
+function renderGrid(spot) {
+  const g = $('grid');
+  if (!spot) { g.innerHTML = ''; $('legend').innerHTML = ''; $('src').textContent = ''; return; }
+  const idx = Object.fromEntries(S.index.hands.map((h, i) => [h, i])); const cells = [];
+  for (let r = 0; r < 13; r++) for (let c = 0; c < 13; c++) {
+    const h = gridName(r, c), x = spot.hands[idx[h]];
+    let bg = '';
+    if (x) { let at = 0; const stops = [];
+      spot.acts.forEach((a, j) => { const f = x[1 + j]; if (f > 0) { stops.push(`${COLOR[a.k]} ${at}% ${at + f}%`); at += f; } });
+      bg = stops.length ? `background:linear-gradient(90deg, ${stops.join(', ')})` : ''; }
+    cells.push(`<span role="gridcell" data-h="${h}" class="${x ? '' : 'out'}${h === S.hand ? ' me' : ''}" style="${bg}">${h}</span>`);
+  }
+  g.innerHTML = cells.join('');
+  const sh = share(spot);
+  $('legend').innerHTML = spot.acts.map((a, j) => `<span><i style="background:${COLOR[a.k]}"></i>${actLabel(a.k, a.to, spot.hero)} ${Math.round(sh[j])} %</span>`).join('')
+    + '<span><i style="background:var(--line)"></i>n\'arrive pas ici</span>';
+  $('src').textContent = `Tu es au ${spot.hero}. Stratégie de référence (chip EV), ${S.index.dataset}`
+    + (spot.exact ? ' ; EV exactes (décision tout ou rien).' : '.');
+}
+
+function renderVerdict(spot) {
+  const v = $('verdict'), bars = $('bars'); $('poor').hidden = true; bars.innerHTML = '';
+  v.className = 'verdict empty'; v.style.background = '';
+  if (!spot) { v.textContent = 'Pas de stratégie calculée à ce point du coup.'; return; }
+  if (!S.hand) { v.textContent = `Tu es au ${spot.hero} : choisis ta main.`; return; }
+  const x = spot.hands[S.index.hands.indexOf(S.hand)];
+  if (!x) { v.innerHTML = `<b>${S.hand}</b> n'arrive pas à cette décision : avec la stratégie de référence, elle a été jouée autrement plus tôt dans le coup. Reviens en arrière pour voir comment la jouer.`; return; }
+  const n = spot.acts.length, f = x.slice(1, 1 + n), ev = x.slice(1 + n, 1 + 2 * n).map((e) => e / 100);
+  const top = f.indexOf(Math.max(...f)), best = ev.indexOf(Math.max(...ev));
+  const a = spot.acts[top];
+  const played = spot.acts.map((b, j) => [b, f[j], j]).filter(([, p]) => p >= 10).sort((p, q) => q[1] - p[1]);
+  v.className = 'verdict'; v.style.background = played.length > 1 ? `linear-gradient(90deg, ${played.map(([b, p], i) => `${COLOR[b.k]} ${played.slice(0, i).reduce((s, q) => s + q[1], 0)}% ${played.slice(0, i + 1).reduce((s, q) => s + q[1], 0)}%`).join(', ')})` : COLOR[a.k];
+  if (a.k === 'fold' && played.length === 1) v.style.color = '#17201c';
+  const who = `${S.hand} au ${spot.hero}` + (spot.hist.some((h) => ['raise', 'allin'].includes(h[1])) ? ` · ${fmt(spot.call, 2)} BB à payer pour un pot de ${fmt(spot.pot + spot.call, 2)} BB` : '') + ` · ${fmt(spot.eff)} BB effectifs`;
+  const head = played.length > 1 ? played.map(([b, p]) => `${actLabel(b.k, b.to, spot.hero).toUpperCase()} ${p} %`).join(' · ') : actLabel(a.k, a.to, spot.hero).toUpperCase();
+  const low = (b) => { const l = actLabel(b.k, b.to, spot.hero); return l[0].toLowerCase() + l.slice(1); };
+  const sub = played.length > 1 ? `Jeu mixte : ${played.length > 2 ? 'ces options sont toutes justes' : 'les deux sont justes'}. La plus rentable : ${low(spot.acts[best])}.`
+    : (best !== top && ev[best] - ev[top] >= 0.06 ? `Attention : ${low(spot.acts[best])} rapporte ${fmt(ev[best] - ev[top], 2)} BB de plus selon l'EV.` : '');
+  v.innerHTML = `<span class="who">${who}</span><span class="big">${head}</span>${sub ? `<span class="sub">${sub}</span>` : ''}`;
+  bars.innerHTML = spot.acts.map((b, j) => `<div class="bar-row${j === best ? ' best' : ''}"><span>${actLabel(b.k, b.to, spot.hero)}</span>`
+    + `<span class="track"><span class="fill" style="display:block;width:${f[j]}%;background:${COLOR[b.k]}"></span></span>`
+    + `<span class="ev" title="EV par rapport au fold">${b.k === 'fold' ? '0' : (ev[j] >= 0 ? '+' : '') + fmt(ev[j], 2)} BB</span></div>`).join('')
+    + '<p class="note">Barre : fréquence de la stratégie de référence. Chiffre : EV par rapport au fold, en BB.</p>';
+  if (spot.poor) { $('poor').hidden = false; $('poor').className = 'warn'; $('poor').textContent = 'Situation mal résolue par la référence à ces tapis : fréquences approximatives.'; }
+  if (x[0] < 100) { $('poor').hidden = false; $('poor').className = 'note'; $('poor').textContent = `${S.hand} n'arrive ici que ${x[0]} % du temps : le reste du temps, elle est jouée autrement plus tôt.` + (spot.poor ? ' Situation mal résolue par la référence : fréquences approximatives.' : ''); }
+}
+
+// ------------------------------------------------------------------ événements
+function setHand(h, fromGrid) {
+  S.hand = h; store.set('hand', h);
+  if (fromGrid) $('hand').value = h;
+  $('hand-note').textContent = 'Tape ta main ou touche une case de la grille.'; $('hand-note').className = 'note';
+  render();
+}
+$('hand').addEventListener('input', (e) => {
+  const p = parseHand(e.target.value);
+  if (p.hand) setHand(p.hand, false);
+  else if (p.err) { $('hand-note').textContent = p.err; $('hand-note').className = 'note error'; }
+});
+$('grid').addEventListener('click', (e) => { const c = e.target.closest('[data-h]'); if (c) setHand(c.dataset.h, true); });
+$('fmt').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return;
+  S.table = b.dataset.v; S.path = []; store.set('table', S.table); renderStacks(); pickConfig(); });
+$('presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return;
+  S.stacks[S.table] = S.stacks[S.table].map(() => +b.dataset.v); store.set('stacks', S.stacks); renderStacks(); pickConfig(); });
+
+(async function init() {
+  const t = store.get('table'), st = store.get('stacks'), h = store.get('hand');
+  if (t === '3-handed' || t === 'heads-up') S.table = t;
+  if (st && Array.isArray(st['3-handed']) && Array.isArray(st['heads-up'])) S.stacks = st;
+  if (typeof h === 'string' && h.length <= 3) { S.hand = h; $('hand').value = h; }
+  try { S.index = await getJSON('index'); } catch (e) { $('cfg-note').className = 'error'; $('cfg-note').textContent = 'Données introuvables (connexion ?).'; return; }
+  if (S.hand && !S.index.hands.includes(S.hand)) { S.hand = null; $('hand').value = ''; }
+  renderStacks(); pickConfig();
+})();
+</script>
+</body>
+</html>
