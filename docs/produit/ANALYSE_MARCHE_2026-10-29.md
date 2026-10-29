@@ -70,9 +70,15 @@ Risque à lever : le mot est courant dans le café (Nespresso l'utilise comme no
 | SpinLab | Laboratoire du spin | `spinlab.poker` | Garde « Spin » (PokerStars) |
 | PushFold | Descriptif | `pushfold.app`, `pushfold.fr` | Réduit l'appli au push/fold, alors qu'elle va au-delà |
 
-### Décision attendue
+### Décision du porteur du projet (29/10) : **SpinLab**
 
-Choix du nom par le porteur du projet (débloque I7), puis : recherche de marque INPI / EUIPO, achat de `ristretto.poker` et `ristrettopoker.fr`, réservation des comptes réseaux sociaux.
+Le porteur du projet retient **SpinLab** (débloque I7).
+
+Disponibilité vérifiée le 29/10 (registre RDAP) : `spinlab.poker`, `spinlabpoker.com`, `spinlabpoker.fr`, `spinlab.gg` et `spinlab.io` sont libres ; `spinlab.com`, `spinlab.fr`, `spinlab.app` et `spinlab.academy` sont pris. Aucune appli de poker trouvée sous ce nom.
+
+**Risque à lever avant tout dépôt** : une société « Spinlab » (spinlab.studio, créée en 2025) fournit des logiciels de casino en marque blanche. Même secteur des jeux d'argent, donc risque de conflit de marque en classes 9 et 41. Recherche d'antériorité INPI / EUIPO à faire en priorité ; si elle bloque, variante de repli : « SpinLab Poker ».
+
+Suite : recherche de marque, achat de `spinlab.poker` et `spinlabpoker.fr`, réservation des comptes réseaux sociaux, puis renommage dans l'en-tête, le manifeste et les artéfacts (I7, interface « Interface »).
 
 ## 4. Prochaines étapes de l'analyse de marché
 
@@ -88,4 +94,5 @@ Choix du nom par le porteur du projet (débloque I7), puis : recherche de marque
 - [ICMIZER SNG Coach (App Store)](https://apps.apple.com/us/app/id1212375605)
 - [GTO Sensei (App Store)](https://apps.apple.com/us/app/id1523876570)
 - [Poker Coaching (App Store)](https://apps.apple.com/app/id1444569705), [Poker Flight Simulator](https://apps.apple.com/app/id6786825538), [Poker Preflop Trainer PRO](https://mwm.ai/apps/poker-preflop-trainer-pro/1624849305)
+- [Spinlab, logiciels de casino (Trustpilot)](https://ch.trustpilot.com/review/spinlab.studio), [SlotCatalog](https://slotcatalog.com/en/soft/spinlab)
 - [Historique Expresso et Spin & Go (PokerNews)](https://www.pokernews.com/strategy/spin-and-go-poker-36231.htm)
