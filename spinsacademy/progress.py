@@ -92,6 +92,10 @@ def compute(rows):
                 focus=focus(themes, weakest, n, depth_label, depth_filter, nearest(by)))
 
 
+DIM_NAME = {'family': 'Situation', 'hero': 'Position', 'table': 'Format', 'depth': 'Profondeur'}
+DIM_FILTER = {'family': ('family',), 'hero': ('hero',), 'table': ('table',), 'depth': ('min_stack', 'max_stack')}
+
+
 def nearest(by):
     """analyse des écrans (29/10) : sans thème fiable, le thème de jeu le plus avancé, pour proposer une action"""
     dim = {'family': 'Situation', 'hero': 'Position', 'table': 'Format', 'depth': 'Profondeur'}
@@ -112,7 +116,8 @@ def focus(themes, weakest, n, depth_label, depth_filter, near=None):
                                + ("c'est ton thème le plus fragile, les séries adaptées y reviennent." if weak else "à surveiller, sans être encore un point faible.")),
                     filters=dict(mode=m, hero=h, **depth_filter[dp], family=f), examples=t['examples'][:1])
     if weakest:
-        return dict(kind='dimension', label=weakest['label'], filters=weakest['filters'], examples=[],
+        dim = next((DIM_NAME[k] for k, v in DIM_FILTER.items() if set(v) <= set(weakest['filters'])), '')
+        return dict(kind='dimension', label=(f"{dim} : {weakest['label']}" if dim else weakest['label']), filters=weakest['filters'], examples=[],
                     reason_fr=f"Ton score le plus bas : {str(weakest['score_pct']).replace('.', ',')} % sur {weakest['questions']} questions.")
     need = max(MIN_SAMPLE - n, 0)
     if not need and near:                                  # assez de réponses, mais aucun thème fiable : le plus avancé

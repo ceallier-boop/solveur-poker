@@ -53,7 +53,9 @@ def theme_of_day(focus, nth, first_today):
     if first_today: return first_today
     if focus and focus.get('filters'):
         f = {k: v for k, v in focus['filters'].items() if k != 'mode'}
-        return focus.get('label') or 'Ton thème à travailler', f
+        label = focus.get('label') or 'Ton thème à travailler'
+        for m in ('GTO · ', 'Exploitant · '): label = label[len(m):] if label.startswith(m) else label   # le mode est déjà choisi
+        return label, f
     return THEMES[nth % len(THEMES)]
 
 

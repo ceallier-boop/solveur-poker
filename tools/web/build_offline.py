@@ -313,7 +313,7 @@ const DEMO = (() => {
     const firstTheme = ss.filter((s) => s.plan === 'theme' && dayOf(s.created_at) === td).sort((a, b) => (a.created_at < b.created_at ? -1 : 1))[0];
     const focus = stats().focus; let label, f;
     if (firstTheme) { f = firstTheme.filters || {}; label = (THEMES.find(([, x]) => JSON.stringify(x) === JSON.stringify(f)) || [focus && focus.label || 'Ton thème du jour'])[0]; }
-    else if (focus && focus.filters) { f = Object.fromEntries(Object.entries(focus.filters).filter(([k]) => k !== 'mode')); label = focus.label || 'Ton thème à travailler'; }
+    else if (focus && focus.filters) { f = Object.fromEntries(Object.entries(focus.filters).filter(([k]) => k !== 'mode')); label = (focus.label || 'Ton thème à travailler').replace(/^(GTO|Exploitant) · /, ''); }
     else [label, f] = THEMES[[...active].filter((d) => d !== td).length % THEMES.length];
     const due = reviews(mode).due, reviewed = doneToday.some((s) => s.plan === 'review'), themed = doneToday.filter((s) => s.plan === 'theme').length;
     const ranged = rgs.filter((r) => dayOf(r) === td).length;
