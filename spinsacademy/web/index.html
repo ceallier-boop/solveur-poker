@@ -42,6 +42,10 @@
         <p class="note" id="today-note" hidden></p>
         <button class="primary big" id="today-go">Commencer la séance</button>
       </section>
+      <section class="recs" id="recs" hidden aria-labelledby="recs-title">
+        <h2 class="free-title" id="recs-title">Recommandé pour toi</h2>
+        <ul id="recs-list"></ul>
+      </section>
       <h2 class="free-title" id="free-title" hidden>Jouer librement</h2>
       <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
         <button type="button" data-value="gto" aria-pressed="true">GTO</button>
@@ -151,6 +155,7 @@
       <p class="choice" id="a-choice"></p>
       <p class="essential" id="a-essential"></p>
       <p class="remember" id="a-remember" hidden></p>
+      <a class="link conseil-from" id="a-conseil" hidden>Voir cette situation dans le conseiller</a>
       <details class="reveal" id="a-more">
         <summary>Précisions</summary>
         <div class="details" id="a-details"></div>

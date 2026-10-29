@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, progress, quiz, ranges, ratelimit, review, today
+from . import adaptive, catalog, progress, quiz, ranges, ratelimit, recommend, review, today
 from .hrc import ROOT
 
 SCHEMA = """
@@ -353,13 +353,16 @@ def _range_stats(con, pid):
 
 @app.get('/ranges/next')
 def range_next(table: Optional[str] = None, hero: Optional[str] = None, family: Optional[str] = None, min_stack: Optional[float] = None,
-               max_stack: Optional[float] = None, seed: Optional[int] = None, exclude: str = ''):
+               max_stack: Optional[float] = None, seed: Optional[int] = None, exclude: str = '', spot: Optional[str] = None):
     """une situation à dessiner ; les fréquences de référence restent sur le serveur jusqu'à la réponse"""
     f = Filters(table=table, hero=hero, family=family, min_stack=min_stack, max_stack=max_stack).model_dump(exclude_none=True)
     with closing(connect()) as con:
         version = serving_version(con, 'gto')
         recent = {x for x in exclude.split(',') if x}                      # dernières situations vues : pas deux fois de suite
-        t = ranges.pick(version, f or None, seed, set(_excluded(con)) | recent)
+        t = None
+        if spot and spot in ranges.drawable(version) and spot not in _excluded(con):     # étape 2 : « Refaire cette range »
+            t = ranges.task(quiz.load(version)[1][spot])
+        t = t or ranges.pick(version, f or None, seed, set(_excluded(con)) | recent)
     if not t: raise HTTPException(422, 'pas de situation à dessiner pour ces filtres')
     return dict(dataset_version=version, **{k: v for k, v in t.items() if k not in ('hands', 'where_fr', 'verb_fr', 'polar_fr')},
                 hands=sorted(t['hands']), weights={h: x[3] for h, x in t['hands'].items()})      # poids : la part de range, sans la réponse
@@ -451,6 +454,20 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
               {k: v for k, v in rs['filters'].items() if k in ('family', 'table')}, {}):
         if ranges.pick(gto, f or None, seed=0): rs['filters'] = f; break
     return dict(out, mode=mode)
+
+
+@app.get('/users/me/recommendations')
+def my_recommendations(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """recommandations de l'accueil (programme de travail, étape 2) : au plus deux, chacune avec un constat chiffré et une action"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    t = my_today(mode, tz, x_player_id)                                  # pour ne pas recommander le thème déjà dans la séance
+    with closing(connect()) as con:
+        version = serving_version(con, mode); rows = _mode_rows(con, pid, mode, None)
+        last = con.execute('SELECT spot_id, hands, accuracy_pct, dataset_version FROM range_attempts WHERE player_id = ? ORDER BY id DESC LIMIT 1', (pid,)).fetchone()
+    stats = progress.compute(rows) if rows else {}
+    last = dict(last, hands=json.loads(last['hands'])) if last else None
+    return dict(mode=mode, items=recommend.build(stats, review.items(rows, version), last, rows, t['steps'][1]['filters']))
 
 
 @app.post('/users/me/adaptation/reset')

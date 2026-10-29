@@ -328,6 +328,30 @@ const DEMO = (() => {
       streak: streak(active), active_today: active.has(td), theme_fr: label, bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
   }
 
+  // recommandations : mêmes règles que spinsacademy.recommend (sans le sens des erreurs)
+  function recommendations(mode) {
+    const out = [], st = stats(), td = today(mode), tf = td.steps[1].filters || {};
+    const late = reviewItems(mode).filter((x) => x.due_at <= Date.now() - 2 * DAY).length;
+    if (late) out.push({ kind: 'review', text_fr: `${late} main${late > 1 ? 's' : ''} ratée${late > 1 ? 's' : ''} attend${late > 1 ? 'ent leur' : ' sa'} révision depuis plus de 2 jours.`, label_fr: 'Revoir mes mains', action: { type: 'review' } });
+    const fr = (st.recurring_errors || []).find((t) => { const f = Object.fromEntries(Object.entries(t.filters).filter(([k]) => k !== 'mode')); return !Object.entries(f).every(([k, v]) => tf[k] === v); });
+    if (fr) out.push({ kind: 'theme', text_fr: `${fr.label.replace(/^(GTO|Exploitant) · /, '')} : ${fr.errors} erreurs sur ${fr.questions}.`, label_fr: 'Une série ciblée',
+      action: { type: 'series', filters: Object.fromEntries(Object.entries(fr.filters).filter(([k]) => k !== 'mode')) } });
+    const lr = (load().ranges || []).slice(-1)[0];
+    if (lr && lr.ref) {
+      const ratio = lr.my / lr.ref, where = (lr.where || '').charAt(0).toUpperCase() + (lr.where || '').slice(1);
+      const msg = ratio < 0.75 ? `Ta dernière range était trop serrée : ${lr.my} % des mains au lieu de ${lr.ref} % (${where}).`
+        : ratio > 1.33 ? `Ta dernière range était trop large : ${lr.my} % des mains au lieu de ${lr.ref} % (${where}).`
+        : lr.accuracy_pct < 80 ? `Ta dernière range : ${String(lr.accuracy_pct).replace('.', ',')} % de mains bien classées (${where}).` : null;
+      if (msg) out.push({ kind: 'range', text_fr: msg, label_fr: 'Refaire cette range', action: { type: 'range', spot_id: lr.spot_id } });
+    }
+    let to = 0; for (const s of Object.values(load().sessions)) if (s.mode === mode && own(s)) for (const r of Object.values(s.answers)) if (r.timed_out && Date.parse(r.at) > Date.now() - 7 * DAY) to += 1;
+    if (to >= 2) out.push({ kind: 'chrono', text_fr: `${to} coups joués au temps cette semaine : une série au chrono 15 s pour prendre le rythme.`, label_fr: 'Série au chrono 15 s', action: { type: 'series', filters: {}, chrono: 15 } });
+    const played = new Set(((st.by || {}).family || []).map((r) => r.filters.family));
+    const disc = [['first_in', 'premier à parler'], ['vs_allin', 'face à un tapis'], ['vs_limp', 'face à un limp'], ['vs_raise', 'face à une relance']].find(([f]) => !played.has(f) && tf.family !== f);
+    if (disc) out.push({ kind: 'discover', text_fr: `Découvre une situation que tu n'as jamais jouée ici : ${disc[1]}.`, label_fr: 'Découvrir', action: { type: 'series', filters: { family: disc[0] } } });
+    return { mode, items: out.slice(0, 2) };
+  }
+
   // « Construis ta range » : même règle que spinsacademy.ranges.grade
   function rangeGrade(t, selected) {
     const sel = new Set(selected); const cells = {}; let wt = 0, good = 0, lost = 0, refw = 0, myw = 0; const errs = [];
@@ -395,7 +419,8 @@ const DEMO = (() => {
     if (p === '/reports' && method === 'POST') return report(body);
     if (p === '/ranges/next') {
       const q = url.searchParams, lo = Number(q.get('min_stack') || 0), hi = Number(q.get('max_stack') || 999);
-      const c = RTASKS.filter((t) => (!q.get('table') || t.table === q.get('table')) && (!q.get('hero') || t.hero === q.get('hero'))
+      const bySpot = q.get('spot') && RTASKS.find((t) => t.spot_id === q.get('spot'));        // « Refaire cette range »
+      const c = bySpot ? [bySpot] : RTASKS.filter((t) => (!q.get('table') || t.table === q.get('table')) && (!q.get('hero') || t.hero === q.get('hero'))
         && (!q.get('family') || t.family === q.get('family')) && t.effective_stack_bb >= lo && t.effective_stack_bb <= hi);
       if (!c.length) return [422, { detail: 'pas de situation à dessiner pour ces filtres' }];
       const recent = new Set((q.get('exclude') || '').split(',')); let pool = c.filter((t) => !recent.has(t.spot_id)); if (!pool.length) pool = c;
@@ -407,7 +432,7 @@ const DEMO = (() => {
     if (p === '/ranges/answer' && method === 'POST') {
       const t = RTASKS.find((x) => x.spot_id === body.spot_id); if (!t) return [404, { detail: 'situation inconnue' }];
       const g = rangeGrade(t, (body.hands || []).filter((h) => h in t.hands));
-      db.ranges = (db.ranges || []).concat([{ spot_id: t.spot_id, accuracy_pct: g.accuracy_pct, bb_per_100: g.bb_per_100, at: now() }]); save();
+      db.ranges = (db.ranges || []).concat([{ spot_id: t.spot_id, accuracy_pct: g.accuracy_pct, bb_per_100: g.bb_per_100, my: g.my_share_pct, ref: g.ref_share_pct, where: t.where_fr, at: now() }]); save();
       return [200, g];
     }
     if (p === '/users/me/stats') {
@@ -419,6 +444,7 @@ const DEMO = (() => {
     if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto')];
+    if (p === '/users/me/recommendations') return [200, recommendations(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
   }

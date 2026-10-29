@@ -386,6 +386,14 @@ $('presets').addEventListener('click', (e) => { const b = e.target.closest('butt
   const t = store.get('table'), st = store.get('stacks'), h = null;     // test joueurs 7 : chaque visite repart sans main
   if (t === '3-handed' || t === 'heads-up') S.table = t;
   if (st && Array.isArray(st['3-handed']) && Array.isArray(st['heads-up'])) S.stacks = st;
+  const u = new URLSearchParams(location.search);                    // ouvert depuis une correction : table, tapis, coup et main
+  if (['3-handed', 'heads-up'].includes(u.get('t'))) {
+    S.table = u.get('t');
+    const ss = (u.get('s') || '').split('-').map(Number);
+    if (ss.length === (S.table === '3-handed' ? 3 : 2) && ss.every((x) => x > 0)) S.stacks[S.table] = ss;
+    const k = u.get('k'); if (k) S.path = k === 'root' ? [] : k.split('_');
+    if (u.get('h')) { S.hand = u.get('h'); $('hand').value = S.hand; }
+  }
   if (typeof h === 'string' && h.length <= 3) { S.hand = h; $('hand').value = h; }
   try { S.index = await getJSON('index'); } catch (e) { $('cfg-note').className = 'error'; $('cfg-note').textContent = 'Données introuvables (connexion ?).'; return; }
   if (S.hand && !S.index.hands.includes(S.hand)) { S.hand = null; $('hand').value = ''; }

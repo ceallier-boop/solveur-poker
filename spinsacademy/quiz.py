@@ -476,6 +476,7 @@ def question(version, spot_id, hand):
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
                 players=sp['players'], stacks_bb=sp['stacks_bb'], hero=sp['hero'], history=sp['history'], history_fr=history_text(sp),
                 pot_bb=sp['pot_bb'], to_call_bb=sp['to_call_bb'], family=family(sp), difficulty=difficulty(lesson_gap(sp, hand)), mode='gto', villain=None, profile=None,
+                node_key=sp['node_key'],   # étape 2 : ouvrir le conseiller sur cette situation
                 options=[dict(id=a['id'], label_fr=action_label(sp, a)) for a in sp['actions']])
 
 

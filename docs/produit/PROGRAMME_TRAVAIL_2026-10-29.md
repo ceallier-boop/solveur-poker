@@ -188,3 +188,19 @@ Décision du porteur du projet : séance de 15 minutes.
 - Contrôles : `tests/test_today.py`, `tools/web/e2e_today.cjs` (application et démo).
 
 Hors étape 1, prévu ensuite : variantes 5 et 30 minutes, défi du jour dans la séance (étape 5), recommandations (étape 2).
+
+## 12. Étape 2 réalisée (29/10/2026) : recommandations et conseiller relié
+
+- **Accueil** : bloc « Recommandé pour toi » entre la séance du jour et « Jouer librement » ; au plus deux cartes, chacune avec un constat chiffré et un bouton qui lance l'action.
+- **Règles** (`spinsacademy/recommend.py`, `GET /users/me/recommendations?mode=&tz=`), par priorité :
+  1. révisions en retard de plus de 2 jours → « Revoir mes mains » ;
+  2. thème fragile (au moins 2 erreurs), autre que le thème de la séance, avec le sens des erreurs (« surtout en jouant trop serré : tu te couches ou tu paies quand il fallait engager plus » / « trop large ») → « Une série ciblée » ;
+  3. dernière range trop serrée, trop large ou sous 80 % → « Refaire cette range » (la même situation, `GET /ranges/next?spot=`) ;
+  4. au moins 2 coups joués au temps sur 7 jours → « Série au chrono 15 s » ;
+  5. découverte d'une situation jamais jouée dans le mode (jamais celle de la séance) → « Découvrir ».
+- **Conseiller relié** : chaque correction du mode GTO propose « Voir cette situation dans le conseiller », qui ouvre `/conseil` sur la même table, les mêmes tapis, le même coup et la même main. Pas dans la démo autonome (le conseiller n'y est pas).
+- Sens des erreurs : `progress.direction` compare le coup joué au meilleur coup (moins de jetons engagés : trop serré ; plus : trop large).
+- La démo refait les mêmes règles dans le navigateur, sans le sens des erreurs.
+- Contrôles : `tests/test_recommend.py`, `tools/web/e2e_recs.cjs` (application et démo).
+
+Pas encore : recommandation « niveau presque validé » (avec les niveaux, étape 4), mains réelles (avec « Mes mains »), situations consultées dans le conseiller (le conseiller ne garde pas d'historique côté serveur).

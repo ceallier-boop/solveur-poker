@@ -356,6 +356,9 @@ function renderAnswer(r) {
   // d'abord l'essentiel (une phrase, puis la règle à retenir), ensuite les précisions, repliées
   $('a-essential').textContent = r.essential_fr || '';
   const rem = (r.remember_fr || '').replace(/^À retenir : /, '');
+  const q = state.q, cl = $('a-conseil');                                // étape 2 : la même situation dans le conseiller
+  cl.hidden = !!(r.field || !q.node_key || typeof DEMO !== 'undefined');      // la démo autonome n'a pas le conseiller
+  if (!cl.hidden) cl.href = `conseil?t=${encodeURIComponent(q.table)}&s=${q.stacks_bb.join('-')}&k=${encodeURIComponent(q.node_key)}&h=${encodeURIComponent(q.hand)}`;
   $('a-remember').hidden = !rem; $('a-remember').innerHTML = rem ? `<b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span>` : '';
   const det = r.details_fr || []; $('a-more').open = false;
   const full = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
@@ -714,7 +717,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function home() {
-  progress(''); show('home'); homeSummary(); loadToday();
+  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs);
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -769,6 +772,22 @@ function showTodayDone(t) {
   show('today'); refreshStats();
 }
 $('today-go').addEventListener('click', todayGo);
+
+// recommandations (programme de travail, étape 2) : au plus deux, un constat chiffré et une action en un toucher
+async function loadRecs() {
+  let r; try { r = await api(`/users/me/recommendations?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('recs').hidden = true; return; }
+  state.recs = r.items || [];
+  $('recs').hidden = !state.recs.length;
+  $('recs-list').innerHTML = state.recs.map((x, i) => `<li class="rec rec-${x.kind}"><p>${escT(x.text_fr)}</p><button class="secondary small" data-i="${i}">${escT(x.label_fr)}</button></li>`).join('');
+}
+$('recs-list').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const a = state.recs[+b.dataset.i].action; state.inToday = false;
+  if (a.chrono) { store.set('chrono', String(a.chrono)); for (const x of document.querySelectorAll('.chips[data-name="chrono"] button')) x.setAttribute('aria-pressed', String(x.dataset.value === String(a.chrono))); }
+  if (a.type === 'review') start({}, true);
+  else if (a.type === 'range') rangeStart({ spot: a.spot_id });
+  else start(a.filters || {});
+});
 $('td-more').addEventListener('click', () => start((state.today && state.today.steps[1].filters) || {}));
 $('td-home').addEventListener('click', home);
 
