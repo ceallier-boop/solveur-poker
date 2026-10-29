@@ -18,7 +18,7 @@ const { chromium } = require('playwright');
   res.count = await p.textContent('#rg-count');
   if (process.argv[2]) await p.screenshot({ path: `${out}/range_edit.png` });
   await p.tap('#rg-submit'); await p.waitForSelector('#rg-result:not([hidden])');
-  res.score = (await p.textContent('.rg-score')).trim();
+  res.score = (await p.textContent('.rg-diag')).trim() + ' | ' + (await p.textContent('.rg-score2')).trim();
   if (process.argv[2]) await p.screenshot({ path: `${out}/range_result.png` });
   // chrono 8 s
   await p.tap('#rg-home'); await p.click('.chips[data-name="chrono"] [data-value="8"]'); await p.tap('#quick-start');

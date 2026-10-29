@@ -25,8 +25,14 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
 .verdict.mixed { background: var(--surface) !important; color: var(--text) !important; border: 1px solid var(--line); }
+.verdict.mixed .big { font-size: 1.45rem; }
 .verdict .strip { height: 10px; border-radius: 5px; margin-top: 4px; }
 .words summary { cursor: pointer; color: var(--accent); font-size: .9rem; }
+.settings > summary { cursor: pointer; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; list-style: none; }
+.settings > summary::-webkit-details-marker { display: none; }
+.settings > summary::after { content: 'modifier'; margin-left: auto; color: var(--accent); font-size: .9rem; text-decoration: underline; }
+.settings[open] > summary::after { content: 'fermer'; }
+#table-sum { font-weight: 650; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .bar { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px var(--gutter); padding-top: max(10px, env(safe-area-inset-top)); background: var(--felt-dark); color: #fff; }
@@ -75,36 +81,20 @@ main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom:
 </head>
 <body>
   <header class="bar">
+    <a href="./">← Entraînement</a>
     <h1>Comment jouer ma main ?</h1>
-    <a href="./">SpinsAcademy</a>
   </header>
   <main>
-    <section class="card" aria-labelledby="t-table">
-      <h2 id="t-table">Table et tapis (en BB)</h2>
-      <div class="chips" id="fmt" role="group" aria-label="Format">
-        <button type="button" data-v="3-handed" aria-pressed="true">3 joueurs</button>
-        <button type="button" data-v="heads-up" aria-pressed="false">Heads-up</button>
-      </div>
-      <div class="row" id="stacks"></div>
-      <div class="chips" id="presets" role="group" aria-label="Tapis égaux"></div>
-      <p class="note" id="cfg-note"></p>
-    </section>
-
-    <section class="card" aria-labelledby="t-coup">
-      <h2 id="t-coup">Le coup</h2>
-      <div class="crumbs" id="crumbs"></div>
-      <p class="note" id="turn"></p>
-      <div class="chips" id="next"></div>
-    </section>
-
     <section class="card" aria-labelledby="t-main">
-      <h2 id="t-main">Ta main</h2>
+      <h2 id="t-main">Ta position et ta main</h2>
+      <div class="chips" id="pos" role="group" aria-label="Ta position"></div>
       <div class="verdict empty" id="verdict" aria-live="polite">Choisis une main.</div>
       <div class="hand-in">
         <label for="hand" hidden>Ta main</label>
         <input id="hand" placeholder="ex. AKo, 76s, TT, Ah Kd, as roi assortis" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text">
       </div>
       <p class="note" id="hand-note">Tape ta main ou touche une case de la grille.</p>
+      <p class="note" id="cfg-note"></p>
       <div class="bars" id="bars"></div>
       <p class="note" id="poor" hidden></p>
       <details class="words"><summary>Les mots</summary>
@@ -114,6 +104,23 @@ main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom:
         <b>Jeu mixte</b> : plusieurs coups qui se valent ; on peut jouer l'un ou l'autre.</p>
       </details>
     </section>
+
+    <section class="card" aria-labelledby="t-coup">
+      <h2 id="t-coup">Ce qui s'est passé avant toi</h2>
+      <div class="crumbs" id="crumbs"></div>
+      <p class="note" id="turn"></p>
+      <div class="chips" id="next"></div>
+    </section>
+
+    <details class="card settings" id="table-box">
+      <summary><h2 id="t-table">Table et tapis</h2> <span id="table-sum"></span></summary>
+      <div class="chips" id="fmt" role="group" aria-label="Format">
+        <button type="button" data-v="3-handed" aria-pressed="true">3 joueurs</button>
+        <button type="button" data-v="heads-up" aria-pressed="false">Heads-up</button>
+      </div>
+      <div class="row" id="stacks"></div>
+      <div class="chips" id="presets" role="group" aria-label="Tapis égaux"></div>
+    </details>
 
     <section class="card" aria-labelledby="t-grid">
       <h2 id="t-grid">Stratégie sur toutes les mains</h2>
@@ -228,6 +235,27 @@ function nextOptions() {
   return [...opts.values()].sort((a, b) => order[a.action] - order[b.action] || (a.to || 0) - (b.to || 0));
 }
 
+// ------------------------------------------------------------------ position : la première décision du joueur, par le chemin le plus simple
+const COST = { fold: 0, check: 0, limp: 1, call: 1, call_allin: 2, raise: 3, allin: 4 };
+function pathTo(pos) {                       // test joueurs 7 / analyse des écrans : on choisit sa place, le coup se remplit tout seul
+  let best = null, bestC = null;
+  for (const [k, sp] of Object.entries(S.data.spots)) {
+    if (sp.hero !== pos) continue;
+    const costs = sp.hist.map((h) => COST[h[1]] ?? 5);
+    const c = [sp.hist.length, costs.reduce((a, x) => a + x, 0), ...costs];         // à égalité : les folds d'abord (BTN fold, SB limp)
+    const less = !bestC || c.findIndex((x, i) => x !== bestC[i]) >= 0 && c[c.findIndex((x, i) => x !== bestC[i])] < bestC[c.findIndex((x, i) => x !== bestC[i])];
+    if (less) { best = k; bestC = c; }
+  }
+  return best === null ? null : (best === 'root' ? [] : best.split('_'));
+}
+function renderPos() {
+  const pl = S.table === '3-handed' ? ['BTN', 'SB', 'BB'] : ['SB', 'BB'];
+  const cur = S.data && S.data.spots[S.path.join('_') || 'root'];
+  $('pos').innerHTML = pl.map((p) => `<button type="button" data-v="${p}" aria-pressed="${!!cur && cur.hero === p}">${p}</button>`).join('');
+}
+$('pos').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || !S.data) return;
+  const path = pathTo(b.dataset.v); if (path) { S.path = path; render(); } });
+
 // ------------------------------------------------------------------ rendu
 function renderStacks() {
   const pl = S.table === '3-handed' ? ['BTN', 'SB', 'BB'] : ['SB', 'BB'];
@@ -236,6 +264,7 @@ function renderStacks() {
   pl.forEach((_, i) => $('st-' + i).addEventListener('input', (e) => {
     const v = parseFloat(e.target.value); if (!(v > 0)) return;
     S.stacks[S.table][i] = v; store.set('stacks', S.stacks);
+    $('table-sum').textContent = `${S.table === '3-handed' ? '3 joueurs' : 'Heads-up'} · ${S.stacks[S.table].map((x) => fmt(x)).join(' / ')} BB`;
     $('presets').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', S.stacks[S.table].every((y) => y === +b.dataset.v)));
     pickConfig();
   }));
@@ -243,10 +272,12 @@ function renderStacks() {
   const cur = S.stacks[S.table];
   $('presets').innerHTML = eq.map((x) => `<button type="button" data-v="${x}" aria-pressed="${cur.every((y) => y === x)}">${x}</button>`).join('');
   $('fmt').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === S.table));
+  $('table-sum').textContent = `${S.table === '3-handed' ? '3 joueurs' : 'Heads-up'} · ${cur.map((x) => fmt(x)).join(' / ')} BB`;
 }
 
 function render() {
   const spot = S.data.spots[S.path.join('_') || 'root'];
+  renderPos();
   // le coup
   const crumbs = S.path.map((t, i) => {
     const any = Object.entries(S.data.spots).find(([k]) => k.split('_').slice(0, i + 1).join('_') === S.path.slice(0, i + 1).join('_') && k !== 'root');
@@ -254,12 +285,12 @@ function render() {
     return `<span class="crumb"><b>${t.split('-')[0]}</b> ${histLabel(h[1], h[2])}</span>`;
   });
   $('crumbs').innerHTML = (crumbs.length ? crumbs.join('') + ' <button class="link" id="back">← annuler</button> <button class="link" id="reset">recommencer</button>'
-    : '<span class="note">Personne n\'a encore parlé.</span>');
+    : '<span class="note">Personne n\'a encore parlé : tu es le premier à parler.</span>');
   if (crumbs.length) { $('back').onclick = () => { S.path.pop(); render(); }; $('reset').onclick = () => { S.path = []; render(); }; }
   const opts = nextOptions();
   const actor = spot ? spot.hero : opts[0] && opts[0].pos;
   $('turn').innerHTML = !actor ? 'Fin du coup préflop dans l\'arbre calculé.'
-    : opts.length ? `Au <b>${actor}</b> de parler. C'est toi ? La réponse est ci-dessous. Sinon, touche ce que le ${actor} a fait (une action absente de la liste, par exemple une autre taille de relance, n'est pas calculée) :`
+    : opts.length ? `Tu n'es pas le ${actor} ? Touche ce qu'il a fait (une action absente de la liste n'est pas calculée) :`
     : `Au <b>${actor}</b> de parler : la réponse est ci-dessous. Le calcul s'arrête là : aucune suite n'est calculée après ce coup.`;
   $('next').innerHTML = opts.map((o, i) => `<button type="button" class="act-btn" data-i="${i}"><i style="background:${COLOR[kindOfHist(o)]}"></i>${o.pos} ${histLabel(o.action, o.to)}</button>`).join('');
   $('next').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.path.push(opts[+b.dataset.i].token); render(); }));
@@ -316,7 +347,8 @@ function renderVerdict(spot) {
   if (a.k === 'fold' && played.length === 1) v.style.color = '#17201c';
   const pl = S.cfg.players, st = S.stacks[S.table], hi = pl.indexOf(spot.hero);
   const mine = Math.min(st[hi], Math.max(...st.filter((_, i) => i !== hi)));                // ton tapis effectif réel
-  const who = `${S.hand} au ${spot.hero}` + (spot.hist.some((h) => ['raise', 'allin'].includes(h[1])) ? ` · ${fmt(spot.call, 2)} BB à payer pour un pot de ${fmt(spot.pot + spot.call, 2)} BB${S.approx ? ' (tapis calculés)' : ''}` : '')
+  const before = spot.hist.length ? ` · après ${spot.hist.map((h) => `${h[0].split('-')[0]} ${histLabel(h[1], h[2])}`).join(', ')}` : ' · premier à parler';
+  const who = `${S.hand} au ${spot.hero}${before}` + (spot.hist.some((h) => ['raise', 'allin'].includes(h[1])) ? ` · ${fmt(spot.call, 2)} BB à payer pour un pot de ${fmt(spot.pot + spot.call, 2)} BB${S.approx ? ' (tapis calculés)' : ''}` : '')
     + (S.approx && Math.abs(mine - spot.eff) > 1e-9 ? ` · calcul à ${fmt(spot.eff)} BB effectifs, toi ${fmt(mine)} BB` : ` · ${fmt(spot.eff)} BB effectifs`);
   const head = played.length > 1 ? played.map(([b, p]) => `${actLabel(b.k, b.to, spot.hero).toUpperCase()} ${p} %`).join(' · ') : actLabel(a.k, a.to, spot.hero).toUpperCase();
   const low = (b) => { const l = actLabel(b.k, b.to, spot.hero); return l[0].toLowerCase() + l.slice(1); };

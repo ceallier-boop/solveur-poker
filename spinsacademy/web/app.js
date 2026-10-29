@@ -22,7 +22,7 @@ const PROFILES = ['Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'];
 const PAST_LETTER = { 'Rec passif': 'P', 'Calling station': 'S', 'Dégène': '!', 'Nit': 'N', 'Reg': 'R' };   // pas de « D » : c'est le bouton
 const PALETTE = ['#e5484d', '#f76b15', '#f5c518', '#30a46c', '#0091ff', '#8e4ec6', '#e93d82', '#8b8d98'];
 const PALETTE_FR = { '#e5484d': 'rouge', '#f76b15': 'orange', '#f5c518': 'jaune', '#30a46c': 'vert', '#0091ff': 'bleu', '#8e4ec6': 'violet', '#e93d82': 'rose', '#8b8d98': 'gris' };
-const PAST_DEFAULT = { 'Rec passif': '#f5c518', 'Calling station': '#e5484d', 'Dégène': '#f76b15', 'Nit': '#0091ff', 'Reg': '#8b8d98' };
+const PAST_DEFAULT = { 'Rec passif': '#f5c518', 'Calling station': '#e5484d', 'Dégène': '#f76b15', 'Nit': '#0091ff', 'Reg': '#8e4ec6' };   // analyse des écrans : plus de gris, réservé à « pas de pastille »
 function pastilles() { try { return { ...PAST_DEFAULT, ...JSON.parse(store.get('pastilles') || '{}') }; } catch (e) { return { ...PAST_DEFAULT }; } }
 const inkOn = (hex) => { const v = parseInt(hex.slice(1), 16), l = 0.299 * (v >> 16) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255); return l > 150 ? '#111' : '#fff'; };
 function pastilleDot(label) {
@@ -140,7 +140,7 @@ function contributions(q) {
 
 // lot 1 (table du client) : l'action sous le joueur, la mise en chiffres devant lui, le tapis restant, le bouton D
 const ACT_TAG = { fold: 'FOLD', check: 'CHECK', limp: 'CALL', call: 'CALL', call_allin: 'CALL', raise: 'RAISE', allin: 'ALL-IN' };
-const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call', call_pct_bb_sb_fold: 'Call', limp_pct: 'Limp', call_after_limp_pct: 'Call/limp',
+const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call', call_pct_bb_sb_fold: 'Call', limp_pct: 'Limp', call_after_limp_pct: 'Call après limp',
   jam_over_limp_pct: 'Tapis/limp', open_pct: 'Open', defend_pct: 'Déf.' };
 function lastActions(q) {
   const last = {};
@@ -171,13 +171,15 @@ function renderTable(q) {
       seat.className = 'seat' + (folded[i] ? ' folded' : '');
       seat.style.left = seats[k][0] + '%'; seat.style.top = seats[k][1] + '%';
       const backs = !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';           // cartes cachées des adversaires encore dans le coup
-      const tag = q.field ? (q.field.pastille && (q.field.villains || []).includes(pos) ? pastilleDot(q.field.pastille) : '<i class="pastille none" title="Pas de pastille">?</i>') : '';
-      seat.innerHTML = backs + `<b>${tag}${pos}</b><span class="stack">${stack}${covers ? ' <small>te couvre</small>' : ''}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '')
-        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}</span>` : '');   // sa mise, devant lui
+      const marked = q.field && q.field.pastille && (q.field.villains || []).includes(pos);
+      const tag = q.field ? (marked ? pastilleDot(q.field.pastille) : '<i class="pastille none" title="Pas de pastille">?</i>') : '';
+      const pname = marked ? `<span class="pname" style="--p:${pastilles()[q.field.pastille]};--pi:${inkOn(pastilles()[q.field.pastille])}">${q.field.pastille}</span>` : '';   // analyse des écrans : le nom de la pastille sous le siège
+      seat.innerHTML = backs + `<b>${tag}${pos}</b><span class="stack">${stack}${covers ? ' <small>te couvre</small>' : ''}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '') + pname
+        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}<small> BB</small></span>` : '');   // sa mise, devant lui (en BB)
       view.appendChild(seat);
     }
     if (k === 0 && c[i] > 0) {
-      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.textContent = bb(c[i]); view.appendChild(b);
+      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.innerHTML = `${bb(c[i])}<small> BB</small>`; view.appendChild(b);
     }
     if (pos === button) {
       const d = document.createElement('span'); d.className = 'dealer'; d.textContent = 'D'; d.title = 'Bouton';
@@ -294,7 +296,7 @@ function renderFieldStats(q, noHand) {
       : `<p class="fnone">Aucune information sur ce vilain : compte sur le profil le plus fréquent du field (rec passif).</p>`);
   box.className = 'fstats';
   box.innerHTML = noHand ? `<span class="ftype">${f.type_fr}</span>` + body
-    : `<details class="vdetails"><summary><span class="ftype">${f.type_fr}</span> ${f.observations ? `Stats du vilain · ${f.observations} mains` : 'Aucune information'}</summary>${body}</details>`;
+    : `<details class="vdetails"><summary><span class="ftype">${f.type_fr}</span> ${f.pastille ? `${pastilleDot(f.pastille)}<b>${f.pastille}</b> <small>voir ses stats (${f.observations} mains)</small>` : f.observations ? `Stats du vilain · ${f.observations} mains` : 'Aucune information'}</summary>${body}</details>`;   // analyse des écrans : la pastille nommée
 }
 
 async function next() {
@@ -318,6 +320,11 @@ async function answer(id, timedOut = false) {
   } finally { state.busy = false; }
 }
 
+function recapLine(q) {
+  const i = q.players.indexOf(q.hero), st = q.stacks_bb, eff = Math.min(st[i], Math.max(...st.filter((_, k) => k !== i)));
+  const hist = (q.history_fr || []).map((t) => t.replace(/^Le /, '')).join(' · ') || 'premier à parler';
+  return `<b>${q.hero}</b> · ${q.table === 'heads-up' ? 'heads-up' : '3 joueurs'} · ${bb(eff)} BB effectifs<br><span>${escT(hist)}</span>`;
+}
 function renderAnswer(r) {
   const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
@@ -329,6 +336,7 @@ function renderAnswer(r) {
     : r.chosen_label === r.best_label ? `Le bon coup : ${r.best_label}.`
     : r.verdict === 'correct' && !r.field && mixPct > 0 ? `La théorie joue aussi ce coup (${mixPct} % du temps).`   // A5 : stratégie mixte
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
+    : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
   v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n` : ''}${sub}</small>`;
   stopTimer();
@@ -350,8 +358,9 @@ function renderAnswer(r) {
   const rem = (r.remember_fr || '').replace(/^À retenir : /, '');
   $('a-remember').hidden = !rem; $('a-remember').innerHTML = rem ? `<b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span>` : '';
   const det = r.details_fr || []; $('a-more').open = false;
-  $('a-details').innerHTML = det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
-  $('a-recap').textContent = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
+  const full = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
+  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(full)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
+  $('a-recap').innerHTML = recapLine(state.q);                       // analyse des écrans : rappel en une ligne, l'énoncé complet dans les précisions
   renderNext(r.next);
   $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, false);
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
@@ -463,7 +472,13 @@ function themeRow(x, min) {
 // progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
 // ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
 const STATS_KEY = 'stats_cache';
-function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); }
+function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); }
+function homeSummary() {                                            // analyse des écrans (29/10) : où tu en es, dès l'accueil
+  const c = cachedStats(), s = c && c.s, b = $('stats-btn');
+  if (!s || !s.questions) { b.textContent = 'Ma progression'; return; }
+  const f = s.focus && s.focus.label ? ` · à travailler : ${s.focus.label.split(' · ').slice(1).join(' · ') || s.focus.label}` : '';
+  b.innerHTML = `Ma progression<small>${pc(s.score_pct)} de réussite${s.bb_per_100 != null ? ` · ${bb(s.bb_per_100)} BB perdus / 100` : ''}${escT(f)}</small>`;
+}
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
 function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
 
@@ -492,13 +507,15 @@ async function stats() {
     $('st-focus').className = 'focus none'; $('st-focus').innerHTML = '<p class="focus-title">À travailler maintenant</p><p>Joue une première série pour un diagnostic.</p>';
     $('st-note').textContent = ''; show('stats'); return;
   }
+  // analyse des écrans (29/10) : le score en grand, puis deux ou trois tuiles au lieu d'un paragraphe
   $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`
-    + (s.bb_per_100 != null ? `<small class="bblost"><b>${bb(s.bb_per_100)} BB</b> perdus pour 100 décisions (plus c'est bas, mieux c'est)`
-      + (s.ev_questions < 100 ? ` · échantillon faible : ${s.ev_questions} décisions, le chiffre se stabilise vers 100` : '') + '</small>' : '')   // chantier 5
-    + (s.timeouts ? `<small class="bblost">Dont ${s.timeouts} coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps.</small>` : '')
-    + (s.ranges && s.ranges.count ? `<small class="bblost">Ranges construites : ${s.ranges.count} · ${pc(s.ranges.accuracy_pct)} de mains bien classées en moyenne${s.ranges.count > s.ranges.recent ? ` (${s.ranges.recent} dernières)` : ''}</small>` : '');
+    + '<div class="st-tiles">'
+    + (s.bb_per_100 != null ? `<div><b>${bb(s.bb_per_100)} BB</b><span>perdus pour 100 décisions</span><small>${s.ev_questions < 100 ? `échantillon faible (${s.ev_questions})` : 'plus c\'est bas, mieux c\'est'}</small></div>` : '')   // chantier 5
+    + (s.ranges && s.ranges.count ? `<div><b>${pc(s.ranges.accuracy_pct)}</b><span>ranges bien classées</span><small>${s.ranges.count} range${s.ranges.count > 1 ? 's' : ''}${s.ranges.count > s.ranges.recent ? ` (${s.ranges.recent} dernières)` : ''}</small></div>` : '')
+    + (s.timeouts ? `<div><b>${s.timeouts}</b><span>coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps</span></div>` : '')
+    + '</div>';
   $('st-evolution').innerHTML = s.evolution.length > 1
-    ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}"></i>`).join('')
+    ? s.evolution.map((e) => `<i style="height:${Math.max(4, e.score_pct)}%" title="${pc(e.score_pct)}${e.date ? ` · ${new Date(e.date).toLocaleDateString('fr-FR')}` : ''}"><span>${Math.round(e.score_pct)}</span></i>`).join('')
     : '<span>L\'évolution s\'affiche après deux séries.</span>';
   const f = s.focus || { kind: 'none', reason_fr: '' };                // un seul diagnostic (même règle que les séries adaptées)
   $('st-focus').className = `focus ${f.kind}`;
@@ -509,8 +526,10 @@ async function stats() {
   if (f.filters && !offline) $('train-focus').addEventListener('click', () => start(f.filters));
   const groups = Object.entries(s.by).filter(([, rows]) => rows.length);          // pas de carte vide
   const old = s.untracked_questions || 0;                                         // démo : réponses d'une version précédente, sans description
-  $('st-themes').innerHTML = groups.map(([k, rows]) =>
-    `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('')
+  const cards = groups.map(([k, rows]) => `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
+  const anyScore = groups.some(([k, rows]) => k !== 'mode' && rows.some((x) => x.reliable));
+  $('st-themes').innerHTML = (anyScore || !cards ? cards                        // analyse des écrans : pas de mur de « encore N questions »
+    : `<details class="themes-wait"><summary>Aucun thème n'a encore ${s.min_sample} questions : voir l'avancement</summary>${cards}</details>`)
     + (old ? `<p class="note">${old} réponse${old > 1 ? 's' : ''} d'une version précédente de la démo compte${old > 1 ? 'nt' : ''} dans ton score, mais pas par thème : `
       + `elles ont été enregistrées sans leur situation. ${groups.length ? 'Les thèmes ci-dessus viennent de tes séries récentes.' : 'Le détail par thème commence avec ta prochaine série.'}</p>` : '')
     + (!groups.length && !old ? '<p class="note">Le détail par thème s\'affiche après ta première série.</p>' : '');
@@ -693,7 +712,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function home() {
-  progress(''); show('home');
+  progress(''); show('home'); homeSummary();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -777,8 +796,12 @@ async function rangeSubmit() {
   loading(false); r.done = true; r.result = g; renderRangeGrid(g);
   const worst = g.worst.length ? `<ul class="rg-worst">${g.worst.map((w) => `<li><b>${w.hand}</b> ${w.kind === 'extra' ? 'jouée à tort' : 'oubliée'} : la référence ${w.ref_fr}, ${bb(w.cost_bb)} BB perdus à chaque fois</li>`).join('')}</ul>` : '';
   const rem = (g.rule_fr || '').replace(/^À retenir : /, '');
-  $('rg-result').innerHTML = `<p class="rg-score"><b>${pc(g.accuracy_pct)}</b> des mains bien classées<small>${bb(g.bb_per_100)} BB perdus pour 100 mains jouées dans cette situation</small></p>`
-    + `<p>Ta range : ${g.my_share_pct} % des mains · référence : ${g.ref_share_pct} %. ${g.extra} main${g.extra > 1 ? 's' : ''} en trop, ${g.missing} oubliée${g.missing > 1 ? 's' : ''}.</p>`
+  // analyse des écrans : le diagnostic (trop serrée, trop large) d'abord, le score ensuite
+  const ratio = g.ref_share_pct ? g.my_share_pct / g.ref_share_pct : 1;
+  const diag = ratio < 0.75 ? ['bad', 'Trop serrée'] : ratio > 1.33 ? ['bad', 'Trop large'] : g.extra + g.missing > 0 ? ['ok', 'Bonne taille, quelques mains à revoir'] : ['ok', 'Bien vu'];
+  $('rg-result').innerHTML = `<p class="rg-diag ${diag[0]}"><b>${diag[1]}</b><span>Ta range fait ${g.my_share_pct} % des mains, la référence ${g.ref_share_pct} %.</span>`
+    + `<small>${g.missing} main${g.missing > 1 ? 's' : ''} oubliée${g.missing > 1 ? 's' : ''}, ${g.extra} en trop.</small></p>`
+    + `<p class="rg-score2">${pc(g.accuracy_pct)} des mains bien classées · ${bb(g.bb_per_100)} BB perdus pour 100 mains jouées ici</p>`
     + (g.worst.length ? `<p class="rg-worst-title">${g.worst.length < g.extra + g.missing ? `Les ${g.worst.length} erreurs les plus coûteuses :` : 'Tes erreurs :'}</p>` : '') + worst
     + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte (les deux acceptés)</span><span class="st-close">écart négligeable</span><span class="st-chosen">ton choix</span></p><p class="note">Touche une case pour voir ce que fait la référence.</p>`
     + (rem ? `<p class="remember"><b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span></p>` : '');

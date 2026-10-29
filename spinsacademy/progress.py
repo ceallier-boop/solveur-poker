@@ -89,10 +89,17 @@ def compute(rows):
                 ev_questions=total['ev_questions'],
                 verdicts={v: verdicts.get(v, 0) for v in ('correct', 'imprécision', 'erreur')},
                 min_sample=MIN_SAMPLE, by=by, evolution=evolution[-20:], recurring_errors=recurring, weakest=weakest,
-                focus=focus(themes, weakest, n, depth_label, depth_filter))
+                focus=focus(themes, weakest, n, depth_label, depth_filter, nearest(by)))
 
 
-def focus(themes, weakest, n, depth_label, depth_filter):
+def nearest(by):
+    """analyse des écrans (29/10) : sans thème fiable, le thème de jeu le plus avancé, pour proposer une action"""
+    dim = {'family': 'Situation', 'hero': 'Position', 'table': 'Format', 'depth': 'Profondeur'}
+    rows = [dict(x, label=f"{dim[k]} : {x['label']}") for k, v in by.items() if k != 'mode' for x in v if not x['reliable']]
+    return max(rows, key=lambda x: x['questions']) if rows else None
+
+
+def focus(themes, weakest, n, depth_label, depth_filter, near=None):
     """un seul diagnostic : dict(kind, label, reason_fr, filters, examples) ; kind = weak | watch | dimension | none"""
     from . import adaptive
     cand = [(adaptive.difficulty(dict(errors=t['errors'], imprecisions=t['imprecisions'], answers=t['questions'])), k, t)
@@ -108,6 +115,10 @@ def focus(themes, weakest, n, depth_label, depth_filter):
         return dict(kind='dimension', label=weakest['label'], filters=weakest['filters'], examples=[],
                     reason_fr=f"Ton score le plus bas : {str(weakest['score_pct']).replace('.', ',')} % sur {weakest['questions']} questions.")
     need = max(MIN_SAMPLE - n, 0)
+    if not need and near:                                  # assez de réponses, mais aucun thème fiable : le plus avancé
+        return dict(kind='none', label=near['label'], filters=near['filters'], examples=[],
+                    reason_fr=(f"Pas encore de diagnostic : un thème compte à partir de {MIN_SAMPLE} questions. Le plus avancé : "
+                               f"{near['questions']} sur {MIN_SAMPLE}. Joue-le pour un premier diagnostic."))
     return dict(kind='none', label=None, filters=None, examples=[],
                 reason_fr=(f"Pas encore assez de réponses pour un diagnostic : encore {need} question{'s' if need > 1 else ''}." if need
                            else "Rien à retravailler pour l'instant : continue avec des séries recommandées."))

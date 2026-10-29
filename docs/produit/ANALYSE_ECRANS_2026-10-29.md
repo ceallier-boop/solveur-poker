@@ -101,3 +101,17 @@ Les écrans de jeu (accueil, question, correction, bilan) sont bons. Les trois �
 5. **Question** : unité sur les mises, pastille plus visible (couleur et nom), « Reg » dans une autre couleur que le gris, ligne de stats lisible et contenue dans son cadre.
 6. **Accueil** : résumé de progression à la place du bouton, actions secondaires regroupées.
 7. **Mes mains** : mode d'emploi pas à pas sans jargon, exemple d'analyse avant l'import.
+
+## 13. Corrections faites (29/10/2026)
+
+| Priorité | Fait |
+|---|---|
+| 1. Conseiller | Premier bloc « Ta position et ta main » : on touche BTN, SB ou BB, le coup se remplit avec le chemin le plus simple (tout le monde se couche avant toi ; au BB, le SB limpe), et la réponse s'affiche juste sous la position, sans défiler. Le verdict rappelle le coup supposé (« K9o au BB · après BTN fold, SB limp »). « Ce qui s'est passé avant toi » permet de le modifier. Table et tapis repliés, résumés en une ligne (« 3 joueurs · 20 / 20 / 20 BB · modifier »). Lien « ← Entraînement » en haut à gauche. |
+| 2. Range corrigée | En tête, le diagnostic : « Trop serrée » ou « Trop large » (moins de 75 % ou plus de 133 % de la référence), sinon « Bonne taille » ; puis les mains oubliées et en trop ; le pourcentage bien classé et les BB perdus passent en second, en petit. |
+| 3. Progression | Score en grand, puis des tuiles (BB perdus pour 100 décisions, ranges bien classées, coups au temps). Sans thème fiable, « À travailler maintenant » propose le thème le plus avancé avec un bouton (« Position : BB, 6 sur 10. Joue-le pour un premier diagnostic »). Thèmes repliés tant qu'aucun n'a de score. Valeurs et dates sur le graphique. |
+| 4. Correction | Rappel de la situation en une ligne (« SB · heads-up · 20 BB effectifs / premier à parler »), énoncé complet en tête des précisions. Une seule formulation : la bande dit « Les bons coups : A ou B » quand plusieurs coups se valent, et les précisions ne répètent plus le verdict ni les bons coups. Marge sous le bouton flottant. |
+| 5. Question | Mises en BB (« 1 BB », « 0,5 BB ») ; nom de la pastille sous le siège, dans sa couleur ; « Reg » violet par défaut (le gris reste « pas de pastille ») ; bande « Pastille posée · Reg · voir ses stats (40 mains) » ; ligne de stats qui revient à la ligne dans son cadre, « Call après limp » au lieu de « Call/limp ». |
+| 6. Accueil | Le bouton « Ma progression » affiche le score, les BB perdus pour 100 décisions et le thème à travailler ; cadres « Choisir le thème » et « Mes pastilles » sans espace vide. |
+| 7. Mes mains | **Non fait** : son code n'est dans aucune branche du dépôt (seulement dans la démo publiée par une autre session). |
+
+Reste : raccourcis clavier affichés sur téléphone simulé (à vérifier sur un vrai appareil) ; accueil pour un nouveau joueur (lot B5).

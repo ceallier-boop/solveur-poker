@@ -8,7 +8,7 @@ Tirage (reproductible avec une graine) :
   - pas deux fois le même spot dans une série.
 La question envoyée au joueur ne contient jamais la solution.
 """
-import json, os, random
+import json, os, random, re
 from functools import lru_cache
 import threading
 from . import field, grading
@@ -959,6 +959,10 @@ def verdict_line(verdict, regret_mbb, limit_mbb=3 * grading.TOLERANCE_MBB):
     return None
 
 
+REDUNDANT = re.compile(r"^(Moins de [\d,]+ BB d'écart : |Petit écart \(moins de |Plus de [\d,]+ BB d'écart : |Les coups les plus rentables : |Plusieurs bonnes décisions : |Les bons coups ici : )")
+# analyse des écrans (29/10) : lignes que le bandeau de verdict dit déjà (verdict, bons coups), retirées des précisions
+
+
 def correct(version, spot_id, hand, action_id):
     """correction et explication structurée (données du dataset uniquement)"""
     _, spots = load(version); sp = spots[spot_id]
@@ -1025,7 +1029,7 @@ def correct(version, spot_id, hand, action_id):
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
                 loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else gain_bb(loss)),
                 ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
-                core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.'] + because)   # le bandeau dit déjà le bon coup et le coût
+                core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.' and not REDUNDANT.match(l)] + because)   # le bandeau dit déjà le bon coup et le coût
 
 
 def call_equity(sp, hand):

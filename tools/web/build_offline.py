@@ -223,7 +223,11 @@ const DEMO = (() => {
         reason_fr: `Ton score le plus bas : ${String(weakest.score_pct).replace('.', ',')} % sur ${weakest.questions} questions.` };
     } else {
       const need = Math.max(MIN_SAMPLE - n, 0);
-      focus = { kind: 'none', label: null, filters: null, examples: [], reason_fr: need
+      const DIMN = { family: 'Situation', hero: 'Position', table: 'Format', depth: 'Profondeur' };
+      const near = Object.entries(by).filter(([k]) => k !== 'mode').flatMap(([k, v]) => v.map((x) => ({ ...x, label: `${DIMN[k]} : ${x.label}` }))).filter((x) => !x.reliable).sort((x, y) => y.questions - x.questions)[0];
+      if (!need && near) focus = { kind: 'none', label: near.label, filters: near.filters, examples: [],
+        reason_fr: `Pas encore de diagnostic : un thème compte à partir de ${MIN_SAMPLE} questions. Le plus avancé : ${near.questions} sur ${MIN_SAMPLE}. Joue-le pour un premier diagnostic.` };
+      else focus = { kind: 'none', label: null, filters: null, examples: [], reason_fr: need
         ? `Pas encore assez de réponses pour un diagnostic : encore ${need} question${need > 1 ? 's' : ''}.` : "Rien à retravailler pour l'instant : continue avec des séries rapides." };
     }
     return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null, bb_per_100: per100(total),
