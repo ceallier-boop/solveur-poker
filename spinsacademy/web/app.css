@@ -489,3 +489,12 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .my-level h3 { margin: 0 0 6px; } .level-crit { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
 .level-crit li.ok { color: var(--ok); } .level-crit small { color: var(--muted); }
 #st-level-pick { flex-wrap: wrap; }
+/* défis (programme de travail, étape 5) */
+.challenges ul, .my-challenges ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.ch-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; } .ch-top span { display: flex; flex-direction: column; }
+.ch-top small { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; } .ch p { margin: 0; font-size: .88rem; color: var(--muted); }
+.ch > small { font-size: .82rem; } .ch-won { border-color: var(--ok); } .ch-won b { color: var(--ok); }
+.ch .small { min-height: 40px; padding: 6px 14px; }
+.ch-result { display: block; margin-top: 8px; font-weight: 700; } .ch-result.won { color: var(--ok); }
+.my-challenges { margin: 12px 0; } .my-challenges li { font-size: .92rem; } .my-challenges small { color: var(--muted); }

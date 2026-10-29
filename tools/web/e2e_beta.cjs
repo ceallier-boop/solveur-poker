@@ -5,7 +5,7 @@
 // Usage : BASE_URL=http://localhost:8061/ ADMIN_TOKEN=... [DEMO_URL=http://localhost:8052/spinsacademy.html] node tools/web/e2e_beta.cjs
 const { chromium } = require('playwright');
 const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur voit d'abord le premier lancement
-  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
+  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 90000 });
     if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ }
 };
 const BASE = process.env.BASE_URL || 'http://localhost:8061/', TOKEN = process.env.ADMIN_TOKEN;

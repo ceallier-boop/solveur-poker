@@ -235,3 +235,20 @@ Pas encore : objectif « vitesse » au chrono (avec les niveaux 3 et 4), bilan d
 - Contrôles : `tests/test_levels.py`, `tools/web/e2e_onboard.cjs` ; les autres parcours passent le premier lancement par « Passer ».
 
 Pas encore : test de placement de 10 décisions, choix du temps par jour (5 / 15 / 30 minutes), objectif « vitesse » des niveaux 3 et 4.
+
+## 15. Étape 5 réalisée (29/10/2026) : défis
+
+- **Accueil** : bloc « Défis » sous les objectifs ; chaque défi a sa période (aujourd'hui, cette semaine, ce mois-ci), sa règle, ton résultat et un bouton « Relever ».
+- **Défis** (`spinsacademy/challenges.py`, `GET /users/me/challenges`, `POST /sessions` avec `challenge`) :
+  - défi du jour : les mêmes 5 mains pour tous les joueurs du jour (tirage fixé par la date UTC), au chrono 15 s imposé ; réussi à 4 sur 5 ; seule la première tentative compte (le bouton disparaît ensuite) ;
+  - série parfaite : 5 sur 5 sur le thème du jour, le même pour tous ;
+  - sous pression (semaine) : une série au chrono 8 s imposé, sans coup joué au temps, à 3 sur 5 ou plus ;
+  - range au cordeau (semaine) : une range à moins de 2 BB perdus pour 100 mains ;
+  - lecteur de vilain (semaine, mode exploitant) : 5 lectures justes sur 5 ;
+  - semaine pleine (mois) : 7 jours de suite d'entraînement dans le mois.
+- Le bilan de série dit si le défi est réussi ; la progression a une section « Mes défis » (réussites des 60 derniers jours).
+- Les défis ne changent ni la correction ni la progression ; pas de classement entre joueurs (après les comptes, B3).
+- La démo refait les mêmes règles ; son défi du jour donne aussi les mêmes mains à tous les joueurs de la démo (tirage à graine fixe).
+- Contrôles : `tests/test_challenges.py`, `tools/web/e2e_challenges.cjs` (application et démo).
+
+Le programme de travail (étapes 1 à 5) est en place. Restent : variantes de séance de 5 et 30 minutes, test de placement, objectif « vitesse », bilan détaillé par thème, mains réelles (« Mes mains »), classements (avec les comptes).

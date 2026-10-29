@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, field, goals, levels, quiz, ranges, review, today
+from spinsacademy import adaptive, challenges, field, goals, levels, quiz, ranges, review, today
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -302,6 +302,38 @@ const DEMO = (() => {
     }
     return n ? Math.round(lost / 1000 * 100 / n * 100) / 100 : null;
   }
+  // défis : mêmes règles que spinsacademy.challenges (jour, semaine et mois dans l'heure du navigateur)
+  const CH = __CHALLENGES__;
+  function challengesOf(mode) {
+    const db = load(), td0 = dayBack(0), mon = iso(mondayOf(Date.now()));
+    const done = Object.values(db.sessions).filter((s) => s.mode === mode && own(s) && Object.keys(s.answers).length >= s.items.length)
+      .map((s) => ({ s, day: dayOf(s.created_at), correct: Object.values(s.answers).filter((r) => r.verdict === 'correct').length, timeouts: Object.values(s.answers).filter((r) => r.timed_out).length, size: s.items.length }))
+      .sort((a, b) => (a.s.created_at < b.s.created_at ? -1 : 1));
+    const won = (k, x) => (k === 'daily' ? x.correct >= CH.daily_win : k === 'pressure' ? x.timeouts === 0 && x.correct >= CH.pressure_win : x.correct === x.size);
+    const res = (x) => `${x.correct}/${x.size}` + (x.timeouts ? `, ${x.timeouts} au temps` : '');
+    const card = (k, xs, window, action) => {
+      const first = xs[0], win = k === 'daily' ? !!first && won(k, first) : xs.some((x) => won(k, x));
+      const best = xs.slice().sort((a, b) => (won(k, b) - won(k, a)) || (b.correct - a.correct))[0];
+      return { kind: k, window, title_fr: CH.info[k][0], rule_fr: CH.info[k][1], status: win ? 'won' : xs.length ? 'tried' : 'todo', result_fr: xs.length ? res(k === 'daily' ? first : best) : null, action: k === 'daily' && xs.length ? null : action };
+    };
+    const of = (k) => done.filter((x) => x.s.plan === `challenge_${k}`), today_ = (xs) => xs.filter((x) => x.day === td0), week_ = (xs) => xs.filter((x) => x.day >= mon);
+    const ud = new Date(), th = THEMES[Math.floor(Date.UTC(ud.getUTCFullYear(), ud.getUTCMonth(), ud.getUTCDate()) / DAY + 719163) % THEMES.length];
+    const daily = [card('daily', today_(of('daily')), 'jour', { type: 'challenge', challenge: 'daily', chrono: 15 }), Object.assign(card('perfect', today_(of('perfect')), 'jour', { type: 'challenge', challenge: 'perfect' }), { theme_fr: th[0] })];
+    const weekly = [card('pressure', week_(of('pressure')), 'semaine', { type: 'challenge', challenge: 'pressure', chrono: 8 })];
+    const rw = (db.ranges || []).filter((r) => dayOf(r.at) >= mon), bestR = rw.length ? Math.min(...rw.map((r) => r.bb_per_100)) : null;
+    weekly.push({ kind: 'range', window: 'semaine', title_fr: CH.info.range[0], rule_fr: CH.info.range[1], status: bestR != null && bestR < CH.range_bb ? 'won' : rw.length ? 'tried' : 'todo',
+      result_fr: bestR != null ? `meilleure : ${nfr(bestR)} BB pour 100` : null, action: { type: 'range' } });
+    if (mode === 'exploit') weekly.push(card('reader', week_(of('reader')), 'semaine', { type: 'challenge', challenge: 'reader' }));
+    const active = new Set([...Object.values(db.sessions).filter((s) => own(s) && Object.keys(s.answers).length >= s.items.length).map((s) => dayOf(s.created_at)), ...(db.ranges || []).map((r) => dayOf(r.at))]);
+    let run = 0, best = 0; const first = new Date(); first.setDate(1);
+    for (const d = new Date(first); dayOf(d.toISOString()) <= td0; d.setDate(d.getDate() + 1)) { run = active.has(dayOf(d.toISOString())) ? run + 1 : 0; best = Math.max(best, run); }
+    const monthly = [{ kind: 'full_week', window: 'mois', title_fr: CH.info.full_week[0], rule_fr: CH.info.full_week[1], status: best >= 7 ? 'won' : best ? 'tried' : 'todo', result_fr: `meilleure suite du mois : ${best} jour${best > 1 ? 's' : ''}`, action: null }];
+    const hist = [];
+    for (const k of ['daily', 'perfect', 'pressure', 'reader']) { const seen = new Set(); for (const x of of(k)) { if (k === 'daily' && seen.has(x.day)) continue; seen.add(x.day); if (won(k, x)) hist.push({ kind: k, title_fr: CH.info[k][0], date: x.day, result_fr: res(x) }); } }
+    for (const r of db.ranges || []) if (r.bb_per_100 < CH.range_bb) hist.push({ kind: 'range', title_fr: CH.info.range[0], date: dayOf(r.at), result_fr: `${nfr(r.bb_per_100)} BB pour 100` });
+    return { mode, daily, weekly, monthly, history: hist.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 30) };
+  }
+
   // niveaux et premier lancement : mêmes règles que spinsacademy.levels
   const LV = __LEVELS__;
   function levelRow() {
@@ -465,14 +497,28 @@ const DEMO = (() => {
     const body = opts && opts.body ? JSON.parse(opts.body) : {};
     const db = load();
     if (p === '/sessions' && method === 'POST') {
-      const f = Object.assign({}, body.filters || {}); const mode = f.mode || body.mode || 'gto'; delete f.mode;
-      const size = body.size || 5; const purposes = {};
+      let f = Object.assign({}, body.filters || {}); const mode = f.mode || body.mode || 'gto'; delete f.mode;
+      const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null;
+      if (body.challenge) {                                            // défis : mêmes règles que le serveur
+        plan = `challenge_${body.challenge}`; const ud = new Date(); const utc = `${ud.getUTCFullYear()}${pad(ud.getUTCMonth() + 1)}${pad(ud.getUTCDate())}`;
+        if (body.challenge === 'daily') { f = {}; seeded = Number(utc); }
+        else if (body.challenge === 'perfect') f = Object.assign({}, THEMES[Math.floor(Date.UTC(ud.getUTCFullYear(), ud.getUTCMonth(), ud.getUTCDate()) / DAY + 719163) % THEMES.length][1]);
+        else if (body.challenge === 'reader') { if (mode !== 'exploit') return [422, { detail: 'le défi « Lecteur de vilain » se joue en mode exploitant' }]; f = { family: 'read' }; }
+        else f = {};
+      }
       const last = Object.values(db.sessions).filter((x) => x.build === BUILD).sort((x, y) => (x.created_at < y.created_at ? 1 : -1)).slice(0, 6);
       const rSpots = new Set(last.flatMap((x) => x.items.map((i) => ITEMS[i] && ITEMS[i].q.spot_id))), rHands = new Set(last.flatMap((x) => x.items.map((i) => ITEMS[i] && ITEMS[i].q.hand)));
       const first = last.length && ITEMS[last[0].items[0]] ? ITEMS[last[0].items[0]].q.hand : null;
       const score = (xs) => xs.reduce((a, i) => a + 2 * rSpots.has(ITEMS[i].q.spot_id) + rHands.has(ITEMS[i].q.hand), 0) + (xs.length && ITEMS[xs[0]].q.hand === first ? 3 : 0);
-      let picked = draw(mode, f, size);                                // test joueurs 6 : la série qui répète le moins les dernières
-      for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
+      let picked;
+      if (seeded !== null) {                                           // défi du jour : tirage fixé par la date, le même pour tous
+        const rnd0 = Math.random; let t = seeded >>> 0;
+        Math.random = () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
+        try { picked = draw(mode, f, size); } finally { Math.random = rnd0; }
+      } else {
+        picked = draw(mode, f, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
+        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
+      }
       if (body.review) {
         const due = reviewItems(mode).filter((x) => x.due_at <= Date.now()).slice(0, size);
         const rest = (picked || []).filter((i) => !due.some((x) => x.i === i));
@@ -481,7 +527,7 @@ const DEMO = (() => {
       }
       if (!picked || !picked.length) return [422, { detail: 'pas assez de situations pour ces filtres' }];
       const id = Math.random().toString(16).slice(2) + Date.now().toString(16);
-      db.sessions[id] = { id, build: BUILD, created_at: now(), mode, items: picked, answers: {}, purposes, plan: body.plan || null, filters: f }; save();
+      db.sessions[id] = { id, build: BUILD, created_at: now(), mode, items: picked, answers: {}, purposes, plan, filters: f }; save();
       return [201, { session_id: id, mode, size: picked.length, adaptive: null }];
     }
     const sm = p.match(/^\/sessions\/([^/]+)\/summary$/);
@@ -537,6 +583,7 @@ const DEMO = (() => {
     if (p === '/users/me/level' && method === 'PUT') return setLevel(body, false);
     if (p === '/users/me/onboarding' && method === 'POST') return setLevel(body, true);
     if (p === '/users/me/level') return [200, levelInfo()];
+    if (p === '/users/me/challenges') return [200, challengesOf(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/goals') return [200, goals(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
@@ -584,7 +631,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB), ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

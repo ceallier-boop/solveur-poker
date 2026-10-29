@@ -108,11 +108,12 @@ for (const group of document.querySelectorAll('.chips')) {
   });
 }
 
-async function start(f, review = false, plan = null) {
+async function start(f, review = false, plan = null, challenge = null) {
+  if (!challenge) { state.challenge = null; state.forceChrono = null; }
   if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -227,7 +228,8 @@ function actionHTML(label) {
 }
 
 // mode chrono (chantier 5) : comme au client, le temps est compté ; à zéro, fold automatique (check s'il n'y a rien à payer)
-const chrono = () => { const v = Number(store.get('chrono') ?? 15); return [0, 8, 15].includes(v) ? v : 15; };   // 15 s par défaut
+const chrono = () => { if (state.forceChrono) return state.forceChrono;   // défi au chrono imposé
+  const v = Number(store.get('chrono') ?? 15); return [0, 8, 15].includes(v) ? v : 15; };   // 15 s par défaut
 function stopTimer() { clearInterval(state.timer); state.timer = null; $('q-timer').hidden = true; }
 function startTimer(q) {
   stopTimer(); state.timedOut = false;
@@ -459,6 +461,11 @@ async function summary() {
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   $('again-btn').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle série';
+  if (state.challenge) {                                               // étape 5 : résultat du défi
+    const kind = state.challenge; state.challenge = null; state.forceChrono = null;
+    loadChallenges().then((c) => { const x = c && [...c.daily, ...c.weekly].find((y) => y.kind === kind); if (!x) return;
+      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${x.status === 'won' ? `${escT(x.title_fr)} : réussi !` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi.`}</small>`); });
+  }
   show('summary');
   refreshStats();                                                    // la progression hors connexion suit la dernière série
 }
@@ -505,6 +512,12 @@ async function stats() {
   for (const id of ['st-export', 'st-delete']) $(id).hidden = !!offline;   // ces actions demandent le serveur
   if (offline) $('st-adapt').hidden = true; else await adaptation();
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
+  if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
+    $('st-challenges').hidden = false;
+    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li>✓ <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}</small></li>`).join('')
+      : '<li class="note">Pas encore de défi réussi : relève le défi du jour depuis l\'accueil.</li>';
+  }).catch(() => { $('st-challenges').hidden = true; });
+  else $('st-challenges').hidden = true;
   if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
   else api('/users/me/level').then((lv) => { renderLevel(lv); if (state.scrollLevel) { state.scrollLevel = false; $('st-level').scrollIntoView({ block: 'start' }); } }).catch(() => renderLevel(null));
   if (!s.questions) {
@@ -688,7 +701,7 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode() {
   store.set('mode', mode());                                         // gardé après un rechargement
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); }   // séance, recommandations et objectifs suivent le mode
+  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); }   // séance, recommandations et objectifs suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -723,7 +736,7 @@ async function home() {
     state.levelChecked = true;
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
-  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals(); loadLevel();
+  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -875,6 +888,23 @@ $('goals-list').addEventListener('click', async (e) => {
   const t = Math.min(x.max, Math.max(x.min, x.target + step * +b.dataset.d)); if (t === x.target) return;
   try { renderGoals(await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: mode(), kind: x.kind, target: t, tz: tzOffset() }) })); }
   catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
+});
+// défis (programme de travail, étape 5)
+async function loadChallenges() {
+  let c; try { c = await api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('challenges').hidden = true; return null; }
+  state.ch = c; const all = [...c.daily, ...c.weekly, ...c.monthly];
+  $('challenges').hidden = false;
+  $('ch-list').innerHTML = all.map((x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
+    + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">Relever</button>` : '') + `</div>`
+    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}</li>`).join('');
+  return c;
+}
+$('ch-list').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const x = [...state.ch.daily, ...state.ch.weekly, ...state.ch.monthly][+b.dataset.i], a = x.action; state.inToday = false;
+  if (a.type === 'range') { rangeStart(); return; }
+  state.challenge = a.challenge; state.forceChrono = a.chrono || null;
+  start({}, false, null, a.challenge);
 });
 $('recs-list').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-i]'); if (!b) return;
