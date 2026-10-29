@@ -1,4 +1,5 @@
 // Défis (programme de travail, étape 5) : accueil, défi du jour au chrono 15 s, résultat, une seule tentative, « Mes défis ».
+// Test joueurs 9 : une tentative abandonnée compte aussi (le bouton « Relever » ne revient pas), bilan « Nouveau défi demain ».
 // Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_challenges.cjs [dossier]
 const { chromium } = require('playwright');
 const skipOnboarding = async (pg) => { try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
@@ -17,5 +18,12 @@ const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = proce
   await p.click('#back-home'); await p.waitForTimeout(1500); res.after = await list(); res.dailyButton = await p.isVisible('#ch-list li:first-child button');
   await p.screenshot({ path: `${OUT}/ch_home.png`, fullPage: true });
   await p.click('#stats-btn'); await p.waitForSelector('#st-challenges:not([hidden])', { timeout: 10000 }); res.mine = (await p.innerText('#st-challenges')).replace(/\n+/g, ' | ');
+  const q = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();   // tentative abandonnée
+  q.on('pageerror', (e) => errs.push(String(e)));
+  await q.goto(BASE); await skipOnboarding(q); await q.waitForSelector('#challenges:not([hidden])', { timeout: 15000 });
+  await q.click('#ch-list li:first-child button'); await q.waitForSelector('#screen-question:not([hidden])');
+  await q.click('#actions button >> nth=-1'); await q.waitForSelector('#screen-answer:not([hidden])');
+  await q.click('#home-btn'); await q.waitForSelector('#screen-home:not([hidden])'); await q.waitForTimeout(1500);
+  res.abandoned = { card: (await q.innerText('#ch-list li:first-child')).replace(/\n+/g, ' | '), button: await q.isVisible('#ch-list li:first-child button') };
   res.errs = errs; console.log(JSON.stringify(res, null, 1)); await b.close();
 })();

@@ -497,4 +497,4 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ch > small { font-size: .82rem; } .ch-won { border-color: var(--ok); } .ch-won b { color: var(--ok); }
 .ch .small { min-height: 40px; padding: 6px 14px; }
 .ch-result { display: block; margin-top: 8px; font-weight: 700; } .ch-result.won { color: var(--ok); }
-.my-challenges { margin: 12px 0; } .my-challenges li { font-size: .92rem; } .my-challenges small { color: var(--muted); }
+.my-challenges { margin: 12px 0; } .my-challenges li { font-size: .92rem; } .my-challenges small { color: var(--muted); } .my-challenges li.won b { color: var(--ok); } .my-challenges li.tried { color: var(--muted); }   /* test joueurs 9 : tentatives visibles */

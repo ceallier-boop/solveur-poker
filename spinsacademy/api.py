@@ -118,6 +118,7 @@ class NewSession(BaseModel):
     review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
     plan: Optional[str] = Field(None, pattern='^(review|theme)$')   # étape de la séance du jour (spinsacademy.today)
     challenge: Optional[str] = Field(None, pattern='^(daily|perfect|pressure|reader)$')   # défi (spinsacademy.challenges)
+    tz: int = Field(0, ge=-840, le=840)  # décalage de l'appareil en minutes (thème de la séance du jour, pour la série parfaite)
 
 
 class Attempt(BaseModel):
@@ -245,15 +246,17 @@ def _least_repeated(draw, seed, recent):
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=body.review or bool(body.challenge)); filters = body.filters.model_dump(exclude_none=True); info = None
-    plan = body.plan; fixed_seed = None
+    plan = body.plan; fixed_seed = None; min_profil = 0; utc_day = None
     if body.challenge:                                                     # étape 5 : la série du défi
         plan = challenges.SERIES[body.challenge]; utc_day = datetime.datetime.now(datetime.timezone.utc).date()
-        if body.challenge == 'daily': filters, fixed_seed = {}, challenges.daily_seed(utc_day)      # les mêmes mains pour tous
-        elif body.challenge == 'perfect': filters = dict(challenges.perfect_theme(utc_day)[1])
+        if body.challenge == 'daily':
+            with closing(connect()) as con: _daily_free(con, pid, utc_day)
+            filters, fixed_seed = {}, challenges.daily_seed(utc_day)     # les mêmes mains pour tous
+        elif body.challenge == 'perfect': filters = dict(my_today(body.mode, body.tz, x_player_id)['steps'][1]['filters'])   # thème de la séance
         elif body.challenge == 'pressure': filters = {}
         elif body.challenge == 'reader':
             if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
-            filters = dict(family='read')
+            filters, min_profil = dict(family='read'), challenges.READER_PROFILES
         body.filters = Filters(**filters); body.size = quiz.SERIES_SIZE
     try:
         with closing(connect()) as con:
@@ -276,17 +279,27 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         elif fixed_seed is not None:
             series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, fixed_seed, excluded)]
         else:
-            series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded), body.seed, recent)]
+            series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded, min_profil), body.seed, recent)]
     except ValueError as e:
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
+        if body.challenge == 'daily':                                      # deux lancements simultanés : un seul passe
+            if not con.in_transaction: con.execute('BEGIN IMMEDIATE')       # verrou d'écriture avant la vérification
+            _daily_free(con, pid, utc_day)
         con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed if fixed_seed is None else fixed_seed, len(series), pid, plan))
         con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand, purpose, purpose_fr) VALUES (?, ?, ?, ?, ?, ?)',
                         [(sid, i, s, h, k, t) for i, (s, h, k, t) in enumerate(series)])
     adapt = None if info is None else dict(active=info['active'], reason_fr=info['reason_fr'], rule_fr=info['rule_fr'])
     return dict(session_id=sid, dataset_version=version, mode=body.mode, size=len(series), adaptive=adapt)
+
+
+def _daily_free(con, pid, utc_day):
+    """une seule tentative du défi du jour par jour UTC, tous modes confondus, comptée dès la création (test joueurs 9)"""
+    if con.execute('SELECT 1 FROM sessions WHERE player_id = ? AND plan = ? AND substr(created_at, 1, 10) = ?',
+                   (pid, challenges.SERIES['daily'], utc_day.isoformat())).fetchone():
+        raise HTTPException(409, f"Tu as déjà relevé le défi du jour. {challenges.NEXT_DAILY_FR}")
 
 
 def _session(con, sid):
@@ -637,10 +650,11 @@ def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = H
             "(SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id AND a.verdict = 'correct') AS correct, "
             '(SELECT COALESCE(SUM(a.timed_out), 0) FROM attempts a WHERE a.session_id = s.id) AS timeouts '
             'FROM sessions s WHERE s.player_id = ?', (pid,))]
-        rgs = [dict(r) for r in con.execute('SELECT answered_at, bb_per_100 FROM range_attempts WHERE player_id = ?', (pid,))]
+        rgs = [dict(r) for r in con.execute('SELECT answered_at, accuracy_pct, bb_per_100 FROM range_attempts WHERE player_id = ?', (pid,))]
     mine = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
     active = {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r['answered_at'], tz) for r in rgs}
-    return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date()))
+    t = my_today(mode, tz, x_player_id)                                   # série parfaite : le thème de la séance du jour
+    return dict(mode=mode, **challenges.build(mine, sess, rgs, active, day, tz, mode, now.date(), (t['theme_fr'], t['steps'][1]['filters'])))
 
 
 @app.post('/users/me/adaptation/reset')

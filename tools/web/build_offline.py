@@ -104,12 +104,12 @@ const DEMO = (() => {
   const HU_SHARE = __HU_SHARE__, EASY_SHARE = __EASY_SHARE__, FAMILY_SHARE = __FAMILY_SHARE__, MAX_TRAPS = __MAX_TRAPS__, MAX_READ = __MAX_READ__;
   const wpick = (xs, w) => { let t = xs.reduce((a, x) => a + w(x), 0) * Math.random(); for (const x of xs) { t -= w(x); if (t <= 0) return x; } return xs[xs.length - 1]; };
   const uniq = (xs) => [...new Set(xs)];
-  function draw(mode, f, size) {
+  function draw(mode, f, size, minProfil = 0) {
     const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === mode
       && (!f.table || it.q.table === f.table) && (!f.hero || it.q.hero === f.hero) && (!f.family || (it.g === 'read' ? 'read' : it.q.family) === f.family)
       && (f.min_stack == null || it.eff >= f.min_stack) && (f.max_stack == null || it.eff <= f.max_stack)).map(([, i]) => i);
     if (uniq(pool.map((i) => ITEMS[i].q.spot_id)).length < size) return null;
-    const used = new Set(), seen = new Set(), out = []; let traps = 0, reads = 0;
+    const used = new Set(), seen = new Set(), out = []; let traps = 0, reads = 0, profils = 0;
     const maxRead = pool.some((i) => !ITEMS[i].rd) ? MAX_READ : size, maxTraps = pool.some((i) => !ITEMS[i].tr) ? MAX_TRAPS : size;
     while (out.length < size) {
       const tables = uniq(pool.map((i) => ITEMS[i].q.table));
@@ -126,11 +126,13 @@ const DEMO = (() => {
         const fam = wpick(uniq(cand.map((x) => ITEMS[x].g)).sort(), (g) => FAMILY_SHARE[g] || 0.1); cand = cand.filter((x) => ITEMS[x].g === fam);
         if (fam === 'read') {                                       // « Quelle pastille ? » autant que « Défaut du vilain », sur les deux tables
           cand = pool.filter((x) => ITEMS[x].rd && !used.has(ITEMS[x].q.spot_id));
-          const ty = rnd(uniq(cand.map((x) => ITEMS[x].q.field.type)).sort()); cand = cand.filter((x) => ITEMS[x].q.field.type === ty);
+          let ty = rnd(uniq(cand.map((x) => ITEMS[x].q.field.type)).sort());
+          if (profils < minProfil && size - out.length <= minProfil - profils && cand.some((x) => ITEMS[x].q.field.type === 'profil')) ty = 'profil';   // lecteur de vilain
+          cand = cand.filter((x) => ITEMS[x].q.field.type === ty);
         }
         const st = rnd(uniq(cand.map((x) => ITEMS[x].eff))); cand = cand.filter((x) => ITEMS[x].eff === st);
         const a = rnd(uniq(cand.map((x) => ITEMS[x].a))); cand = cand.filter((x) => ITEMS[x].a === a);
-        i = wpick(cand, (x) => ITEMS[x].w); traps += ITEMS[i].tr ? 1 : 0; reads += ITEMS[i].rd ? 1 : 0;
+        i = wpick(cand, (x) => ITEMS[x].w); traps += ITEMS[i].tr ? 1 : 0; reads += ITEMS[i].rd ? 1 : 0; profils += ITEMS[i].q.field && ITEMS[i].q.field.type === 'profil' ? 1 : 0;
       } else {
         const band = rnd(uniq(cand.map((x) => ITEMS[x].b))); cand = cand.filter((x) => ITEMS[x].b === band);
         const g = wpick(uniq(cand.map((x) => ITEMS[x].g)).sort(), (k) => ITEMS[cand.find((x) => ITEMS[x].g === k)].w); cand = cand.filter((x) => ITEMS[x].g === g);
@@ -286,10 +288,11 @@ const DEMO = (() => {
   const pad = (x) => String(x).padStart(2, '0');
   const dayOf = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const dayBack = (k) => dayOf(new Date(Date.now() - k * DAY).toISOString());
-  function streak(days) {                                          // un jour manqué par période de 7 jours est pardonné
+  function streak(days, end = null) {                             // un jour manqué par période de 7 jours est pardonné ; end : jour de fin (Date, midi)
     let n = 0, miss = null; const oldest = [...days].sort()[0];
-    for (let k = days.has(dayBack(0)) ? 0 : 1; k < 800; k++) {
-      const d = dayBack(k);
+    const back = (k) => (end ? dayOf(new Date(end.getFullYear(), end.getMonth(), end.getDate() - k, 12).toISOString()) : dayBack(k));
+    for (let k = days.has(back(0)) ? 0 : 1; k < 800; k++) {
+      const d = back(k);
       if (days.has(d)) n += 1;
       else if (miss === null || k - miss >= 7) { if (!oldest || d < oldest) break; miss = k; } else break;
     }
@@ -304,33 +307,45 @@ const DEMO = (() => {
   }
   // défis : mêmes règles que spinsacademy.challenges (jour, semaine et mois dans l'heure du navigateur)
   const CH = __CHALLENGES__;
+  const utcDay = (iso_) => iso_.slice(0, 10), utcToday = () => new Date().toISOString().slice(0, 10);
+  const dailyTaken = () => Object.values(load().sessions).some((s) => own(s) && s.plan === 'challenge_daily' && utcDay(s.created_at) === utcToday());
   function challengesOf(mode) {
     const db = load(), td0 = dayBack(0), mon = iso(mondayOf(Date.now()));
-    const done = Object.values(db.sessions).filter((s) => s.mode === mode && own(s) && Object.keys(s.answers).length >= s.items.length)
-      .map((s) => ({ s, day: dayOf(s.created_at), correct: Object.values(s.answers).filter((r) => r.verdict === 'correct').length, timeouts: Object.values(s.answers).filter((r) => r.timed_out).length, size: s.items.length }))
-      .sort((a, b) => (a.s.created_at < b.s.created_at ? -1 : 1));
+    const tally = (s) => ({ s, day: dayOf(s.created_at), answered: Object.keys(s.answers).length, correct: Object.values(s.answers).filter((r) => r.verdict === 'correct').length, timeouts: Object.values(s.answers).filter((r) => r.timed_out).length, size: s.items.length });
+    const byDate = (a, b) => (a.s.created_at < b.s.created_at ? -1 : 1);
+    const done = Object.values(db.sessions).filter((s) => s.mode === mode && own(s) && Object.keys(s.answers).length >= s.items.length).map(tally).sort(byDate);
+    const dailies = Object.values(db.sessions).filter((s) => own(s) && s.plan === 'challenge_daily').map(tally).sort(byDate);   // tous modes, finies ou non
     const won = (k, x) => (k === 'daily' ? x.correct >= CH.daily_win : k === 'pressure' ? x.timeouts === 0 && x.correct >= CH.pressure_win : x.correct === x.size);
-    const res = (x) => `${x.correct}/${x.size}` + (x.timeouts ? `, ${x.timeouts} au temps` : '');
+    const rangeWon = (r) => r.bb_per_100 < CH.range_bb && r.accuracy_pct >= CH.range_acc;
+    const res = (x) => `${x.correct}/${x.size}` + (x.timeouts ? `, ${x.timeouts} au temps` : '') + (x.size - x.answered > 0 ? `, ${x.size - x.answered} sans réponse` : '');
+    const bestOf = (k, xs) => xs.slice().sort((a, b) => (won(k, b) - won(k, a)) || (b.correct - a.correct))[0];
     const card = (k, xs, window, action) => {
-      const first = xs[0], win = k === 'daily' ? !!first && won(k, first) : xs.some((x) => won(k, x));
-      const best = xs.slice().sort((a, b) => (won(k, b) - won(k, a)) || (b.correct - a.correct))[0];
-      return { kind: k, window, title_fr: CH.info[k][0], rule_fr: CH.info[k][1], status: win ? 'won' : xs.length ? 'tried' : 'todo', result_fr: xs.length ? res(k === 'daily' ? first : best) : null, action: k === 'daily' && xs.length ? null : action };
+      const best = bestOf(k, xs);
+      return { kind: k, window, title_fr: CH.info[k][0], rule_fr: CH.info[k][1], status: best && won(k, best) ? 'won' : xs.length ? 'tried' : 'todo', result_fr: best ? res(best) : null, action };
     };
     const of = (k) => done.filter((x) => x.s.plan === `challenge_${k}`), today_ = (xs) => xs.filter((x) => x.day === td0), week_ = (xs) => xs.filter((x) => x.day >= mon);
-    const ud = new Date(), th = THEMES[Math.floor(Date.UTC(ud.getUTCFullYear(), ud.getUTCMonth(), ud.getUTCDate()) / DAY + 719163) % THEMES.length];
-    const daily = [card('daily', today_(of('daily')), 'jour', { type: 'challenge', challenge: 'daily', chrono: 15 }), Object.assign(card('perfect', today_(of('perfect')), 'jour', { type: 'challenge', challenge: 'perfect' }), { theme_fr: th[0] })];
+    const first = dailies.find((x) => utcDay(x.s.created_at) === utcToday());          // la tentative du jour, même abandonnée
+    const dCard = card('daily', first ? [first] : [], 'jour', first ? null : { type: 'challenge', challenge: 'daily', chrono: 15 });
+    if (first) dCard.next_fr = CH.next_daily;
+    const daily = [dCard, Object.assign(card('perfect', today_(of('perfect')), 'jour', { type: 'challenge', challenge: 'perfect' }), { theme_fr: today(mode).theme_fr })];
     const weekly = [card('pressure', week_(of('pressure')), 'semaine', { type: 'challenge', challenge: 'pressure', chrono: 8 })];
-    const rw = (db.ranges || []).filter((r) => dayOf(r.at) >= mon), bestR = rw.length ? Math.min(...rw.map((r) => r.bb_per_100)) : null;
-    weekly.push({ kind: 'range', window: 'semaine', title_fr: CH.info.range[0], rule_fr: CH.info.range[1], status: bestR != null && bestR < CH.range_bb ? 'won' : rw.length ? 'tried' : 'todo',
-      result_fr: bestR != null ? `meilleure : ${nfr(bestR)} BB pour 100` : null, action: { type: 'range' } });
+    const rw = (db.ranges || []).filter((r) => dayOf(r.at) >= mon);
+    const bestR = rw.slice().sort((a, b) => (rangeWon(b) - rangeWon(a)) || (a.bb_per_100 - b.bb_per_100) || (b.accuracy_pct - a.accuracy_pct))[0];
+    weekly.push({ kind: 'range', window: 'semaine', title_fr: CH.info.range[0], rule_fr: CH.info.range[1], status: bestR && rangeWon(bestR) ? 'won' : rw.length ? 'tried' : 'todo',
+      result_fr: bestR ? `meilleure : ${nfr(bestR.bb_per_100)} BB pour 100, ${nfr(bestR.accuracy_pct)} % de justesse` : null, action: { type: 'range' } });
     if (mode === 'exploit') weekly.push(card('reader', week_(of('reader')), 'semaine', { type: 'challenge', challenge: 'reader' }));
-    const active = new Set([...Object.values(db.sessions).filter((s) => own(s) && Object.keys(s.answers).length >= s.items.length).map((s) => dayOf(s.created_at)), ...(db.ranges || []).map((r) => dayOf(r.at))]);
-    let run = 0, best = 0; const first = new Date(); first.setDate(1);
-    for (const d = new Date(first); dayOf(d.toISOString()) <= td0; d.setDate(d.getDate() + 1)) { run = active.has(dayOf(d.toISOString())) ? run + 1 : 0; best = Math.max(best, run); }
-    const monthly = [{ kind: 'full_week', window: 'mois', title_fr: CH.info.full_week[0], rule_fr: CH.info.full_week[1], status: best >= 7 ? 'won' : best ? 'tried' : 'todo', result_fr: `meilleure suite du mois : ${best} jour${best > 1 ? 's' : ''}`, action: null }];
-    const hist = [];
-    for (const k of ['daily', 'perfect', 'pressure', 'reader']) { const seen = new Set(); for (const x of of(k)) { if (k === 'daily' && seen.has(x.day)) continue; seen.add(x.day); if (won(k, x)) hist.push({ kind: k, title_fr: CH.info[k][0], date: x.day, result_fr: res(x) }); } }
-    for (const r of db.ranges || []) if (r.bb_per_100 < CH.range_bb) hist.push({ kind: 'range', title_fr: CH.info.range[0], date: dayOf(r.at), result_fr: `${nfr(r.bb_per_100)} BB pour 100` });
+    const firstDay = new Date(); firstDay.setDate(1); const m0 = dayOf(new Date(firstDay.getFullYear(), firstDay.getMonth(), 1, 12).toISOString());
+    const active = new Set([...Object.values(db.sessions).filter((s) => own(s) && Object.keys(s.answers).length >= s.items.length).map((s) => dayOf(s.created_at)), ...(db.ranges || []).map((r) => dayOf(r.at))].filter((d) => d >= m0 && d <= td0));
+    let best = 0;                                                    // semaine pleine : comptée comme la série de jours, dans le mois
+    for (let d = new Date(firstDay.getFullYear(), firstDay.getMonth(), 1, 12); dayOf(d.toISOString()) <= td0; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 12)) best = Math.max(best, streak(active, d));
+    const monthly = [{ kind: 'full_week', window: 'mois', title_fr: CH.info.full_week[0], rule_fr: CH.info.full_week[1], status: best >= 7 ? 'won' : best ? 'tried' : 'todo', result_fr: `meilleure série du mois : ${best} jour${best > 1 ? 's' : ''}`, action: null }];
+    const hist = [], seenD = new Set();
+    for (const x of dailies) { const d = utcDay(x.s.created_at); if (seenD.has(d)) continue; seenD.add(d); hist.push({ kind: 'daily', title_fr: CH.info.daily[0], date: d, result_fr: res(x), won: won('daily', x) }); }
+    for (const k of ['perfect', 'pressure', 'reader']) {
+      const by = {}; for (const x of of(k)) (by[x.day] = by[x.day] || []).push(x);
+      for (const [d, xs] of Object.entries(by)) { const b = bestOf(k, xs); hist.push({ kind: k, title_fr: CH.info[k][0], date: d, result_fr: res(b), won: won(k, b) }); }
+    }
+    for (const r of db.ranges || []) if (rangeWon(r)) hist.push({ kind: 'range', title_fr: CH.info.range[0], date: dayOf(r.at), result_fr: `${nfr(r.bb_per_100)} BB pour 100, ${nfr(r.accuracy_pct)} % de justesse`, won: true });
     return { mode, daily, weekly, monthly, history: hist.sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 30) };
   }
 
@@ -498,12 +513,12 @@ const DEMO = (() => {
     const db = load();
     if (p === '/sessions' && method === 'POST') {
       let f = Object.assign({}, body.filters || {}); const mode = f.mode || body.mode || 'gto'; delete f.mode;
-      const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null;
+      const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null, minProfil = 0;
       if (body.challenge) {                                            // défis : mêmes règles que le serveur
         plan = `challenge_${body.challenge}`; const ud = new Date(); const utc = `${ud.getUTCFullYear()}${pad(ud.getUTCMonth() + 1)}${pad(ud.getUTCDate())}`;
-        if (body.challenge === 'daily') { f = {}; seeded = Number(utc); }
-        else if (body.challenge === 'perfect') f = Object.assign({}, THEMES[Math.floor(Date.UTC(ud.getUTCFullYear(), ud.getUTCMonth(), ud.getUTCDate()) / DAY + 719163) % THEMES.length][1]);
-        else if (body.challenge === 'reader') { if (mode !== 'exploit') return [422, { detail: 'le défi « Lecteur de vilain » se joue en mode exploitant' }]; f = { family: 'read' }; }
+        if (body.challenge === 'daily') { if (dailyTaken()) return [409, { detail: `Tu as déjà relevé le défi du jour. ${CH.next_daily}` }]; f = {}; seeded = Number(utc); }
+        else if (body.challenge === 'perfect') f = Object.assign({}, today(mode).steps[1].filters);      // thème de la séance du jour
+        else if (body.challenge === 'reader') { if (mode !== 'exploit') return [422, { detail: 'le défi « Lecteur de vilain » se joue en mode exploitant' }]; f = { family: 'read' }; minProfil = CH.reader_profiles; }
         else f = {};
       }
       const last = Object.values(db.sessions).filter((x) => x.build === BUILD).sort((x, y) => (x.created_at < y.created_at ? 1 : -1)).slice(0, 6);
@@ -516,8 +531,8 @@ const DEMO = (() => {
         Math.random = () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
         try { picked = draw(mode, f, size); } finally { Math.random = rnd0; }
       } else {
-        picked = draw(mode, f, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
-        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
+        picked = draw(mode, f, size, minProfil);                       // test joueurs 6 : la série qui répète le moins les dernières
+        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size, minProfil); if (o && score(o) < score(picked)) picked = o; }
       }
       if (body.review) {
         const due = reviewItems(mode).filter((x) => x.due_at <= Date.now()).slice(0, size);
@@ -631,7 +646,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB), ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES, next_daily=challenges.NEXT_DAILY_FR), ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

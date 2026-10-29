@@ -252,3 +252,19 @@ Pas encore : test de placement de 10 décisions, choix du temps par jour (5 / 15
 - Contrôles : `tests/test_challenges.py`, `tools/web/e2e_challenges.cjs` (application et démo).
 
 Le programme de travail (étapes 1 à 5) est en place. Restent : variantes de séance de 5 et 30 minutes, test de placement, objectif « vitesse », bilan détaillé par thème, mains réelles (« Mes mains »), classements (avec les comptes).
+
+## 16. Corrections des défis après le neuvième test joueurs (29/10/2026)
+
+Problèmes 1 à 7 de `RETEST9_JOUEURS_2026-10-29.md` :
+
+1. **Défi du jour, une seule tentative** : la tentative compte dès la création de la série, même abandonnée (une question sans réponse compte comme fausse : « 0/5, 4 sans réponse ») ; une par jour UTC, tous modes confondus ; le serveur refuse la suivante (409 « Tu as déjà relevé le défi du jour. Nouveau défi demain. »), y compris pour deux lancements simultanés. Finir plus tard la série commencée complète la même tentative, sans en créer une autre.
+2. **Bilan** : « Défi du jour : 3/5. Nouveau défi demain. » ; la carte de l'accueil le rappelle. Les défis qu'on peut retenter disent « pas encore réussi. Tu peux le retenter. ».
+3. **Série parfaite** sur le thème de la séance du jour du joueur (donc dans son niveau), et non plus sur un thème commun à tous ; `POST /sessions` reçoit le fuseau (`tz`) pour retrouver ce thème.
+4. **Semaine pleine** comptée comme la série de jours (un jour manqué par période de 7 jours pardonné), dans le mois ; la règle le dit.
+5. **Range au cordeau** : moins de 2 BB perdus pour 100 mains **et** au moins 85 % de justesse.
+6. **Seuils** : Sous pression à 4 sur 5 ; Lecteur de vilain avec au moins 2 « Quelle pastille ? » par série (imposées en fin de série si le tirage ne les a pas données : avant, une série sur cinq en avait moins de 2).
+7. **« Mes défis »** montre les tentatives (« · … tenté ») à côté des réussites (« ✓ »), une ligne par défi et par jour ; pour la range au cordeau, seules les réussites (toute range n'est pas une tentative).
+
+La démo autonome applique les mêmes règles. Contrôles : `tests/test_challenges.py` (tentative abandonnée, refus tous modes, thème de la séance, justesse de la range, semaine pleine avec un jour pardonné, « Quelle pastille ? » sur 40 tirages), `tools/web/e2e_challenges.cjs` (application et démo, avec une tentative abandonnée).
+
+Restent pour les défis : classement et partage du résultat (demandés par Léa et Sofiane). La série parfaite suit le thème de la séance, qui peut encore changer dans la journée tant que le problème 8 (thème figé) n'est pas corrigé.

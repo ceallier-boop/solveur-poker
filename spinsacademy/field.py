@@ -685,12 +685,14 @@ def correct(sp, action_id):
 FAMILY_SHARE = {'first_in': 0.31, 'vs_allin': 0.33, 'vs_limp': 0.21, 'vs_raise': 0.10, 'read': 0.05}   # v4.4 (audit), v4.5 : face à l'open
 
 
-def draw(spots, size, seed=None, filters=None):
+def draw(spots, size, seed=None, filters=None, min_profil=0):
     """série : rotation heads-up / 3 joueurs (HU_SHARE), puis famille de décision selon FAMILY_SHARE, tapis tiré à parts égales,
     bonne réponse tirée à parts égales (on ne peut pas répondre « tapis » sans réfléchir), enfin question pondérée par la
     fréquence du profil dans le field. Au plus MAX_TRAPS pièges et MAX_READ question de lecture (sans limite si les filtres ne
-    laissent que de la lecture), jamais deux fois la même main ni la même question"""
-    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0; used = set(); shown_p = shown_o = 0
+    laissent que de la lecture), jamais deux fois la même main ni la même question. min_profil : au moins autant de « Quelle
+    pastille ? » dans une série de lecture (défi « Lecteur de vilain », test joueurs 9), imposées en fin de série si le hasard
+    ne les a pas données"""
+    rnd = random.Random(seed); out = []; seen = set(); traps = reads = 0; used = set(); shown_p = shown_o = 0; profils = 0
     max_read = MAX_READ if any(s['field']['type'] not in READ for s in spots) else size
     max_traps = MAX_TRAPS if any(s['field']['type'] not in ('piège', 'échantillon') for s in spots) else size
     by_table = {t: [s for s in spots if s['table'] == t] for t in ('heads-up', '3-handed')}
@@ -709,7 +711,9 @@ def draw(spots, size, seed=None, filters=None):
         cand = [s for s in cand if fam(s) == f0]
         if f0 == 'read':                                           # test joueurs du 24/10 : « Quelle pastille ? » autant que « Défaut du vilain »,
             cand = [s for s in spots if s['spot_id'] not in used and s['field']['type'] in READ]   # sur les deux tables (pastille : heads-up)
-            ty = pick(cand, lambda s: s['field']['type']); cand = [s for s in cand if s['field']['type'] == ty]
+            ty = pick(cand, lambda s: s['field']['type'])
+            if profils < min_profil and size - k <= min_profil - profils and any(s['field']['type'] == 'profil' for s in cand): ty = 'profil'
+            cand = [s for s in cand if s['field']['type'] == ty]
         st = pick(cand, lambda s: s['effective_stack_bb']); cand = [s for s in cand if s['effective_stack_bb'] == st]
         ans = pick(cand, lambda s: s['field']['correct']); cand = [s for s in cand if s['field']['correct'] == ans]
         both = [s for s in cand if s['field']['type'] in ('adaptation', 'piège') and s['field']['observations']]
@@ -720,7 +724,7 @@ def draw(spots, size, seed=None, filters=None):
         sp = rnd.choices(cand, [max(s['field']['weight'], 1e-3) for s in cand])[0]
         h = next(iter(sp['hands'])); out.append(sp); used.add(sp['spot_id'])
         if h and sp['field']['type'] not in READ: seen.add(h)
-        traps += sp['field']['type'] in ('piège', 'échantillon'); reads += sp['field']['type'] in READ
+        traps += sp['field']['type'] in ('piège', 'échantillon'); reads += sp['field']['type'] in READ; profils += sp['field']['type'] == 'profil'
         if sp['field']['type'] in ('adaptation', 'piège') and sp['field']['observations']:
             if pastille(sp['field'], sp['spot_id']): shown_p += 1
             else: shown_o += 1

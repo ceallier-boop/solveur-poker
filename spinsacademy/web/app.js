@@ -113,7 +113,7 @@ async function start(f, review = false, plan = null, challenge = null) {
   if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -121,7 +121,9 @@ async function start(f, review = false, plan = null, challenge = null) {
   } catch (e) {
     loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
       : e.status && e.status < 500 ? e.message : netMsg(e, "la série n'a pas pu démarrer");            // jamais « Failed to fetch »
-    $('filters').open = true; $('home-error').hidden = false;
+    if (e.status === 409 && challenge) { state.challenge = null; state.forceChrono = null; loadChallenges(); }   // défi du jour déjà relevé
+    else $('filters').open = true;
+    $('home-error').hidden = false;
     $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
   } finally { state.starting = false; }
 }
@@ -464,7 +466,9 @@ async function summary() {
   if (state.challenge) {                                               // étape 5 : résultat du défi
     const kind = state.challenge; state.challenge = null; state.forceChrono = null;
     loadChallenges().then((c) => { const x = c && [...c.daily, ...c.weekly].find((y) => y.kind === kind); if (!x) return;
-      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${x.status === 'won' ? `${escT(x.title_fr)} : réussi !` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi.`}</small>`); });
+      const msg = x.status === 'won' ? `${escT(x.title_fr)} : réussi !${x.next_fr ? ` ${escT(x.next_fr)}` : ''}`   // test joueurs 9 : le défi du jour ne se retente pas
+        : x.next_fr ? `${escT(x.title_fr)} : ${escT(x.result_fr || '')}. ${escT(x.next_fr)}` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi. Tu peux le retenter.`;
+      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${msg}</small>`); });
   }
   show('summary');
   refreshStats();                                                    // la progression hors connexion suit la dernière série
@@ -514,8 +518,8 @@ async function stats() {
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
   if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
     $('st-challenges').hidden = false;
-    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li>✓ <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}</small></li>`).join('')
-      : '<li class="note">Pas encore de défi réussi : relève le défi du jour depuis l\'accueil.</li>';
+    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li class="${h.won ? 'won' : 'tried'}">${h.won ? '✓' : '·'} <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}${h.won ? '' : ' · tenté'}</small></li>`).join('')
+      : '<li class="note">Pas encore de défi relevé : commence par le défi du jour depuis l\'accueil.</li>';
   }).catch(() => { $('st-challenges').hidden = true; });
   else $('st-challenges').hidden = true;
   if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
@@ -896,7 +900,7 @@ async function loadChallenges() {
   $('challenges').hidden = false;
   $('ch-list').innerHTML = all.map((x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
     + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">Relever</button>` : '') + `</div>`
-    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}</li>`).join('');
+    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}${x.next_fr ? ` · ${escT(x.next_fr)}` : ''}</small>` : ''}</li>`).join('');
   return c;
 }
 $('ch-list').addEventListener('click', (e) => {
