@@ -13,6 +13,7 @@ def rows_for(theme, verdicts):
             for i, v in enumerate(verdicts)]
 
 
+@pytest.mark.slow
 def test_thresholds_do_not_conclude_on_few_answers():
     avail = {adaptive.theme_of(sp) for sp in quiz.pool(quiz.DEFAULT_VERSION)}
     assert not adaptive.plan(rows_for(THEME, ['erreur', 'erreur']), avail, 5, 1)['active']                 # 2 réponses : pas de conclusion

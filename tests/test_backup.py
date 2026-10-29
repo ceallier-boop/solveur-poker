@@ -1,3 +1,4 @@
+import pytest
 import glob, gzip, os, sqlite3, subprocess, sys, threading
 from fastapi.testclient import TestClient
 
@@ -20,6 +21,7 @@ def play(c, n):
 def count(db): return sqlite3.connect(db).execute('SELECT COUNT(*) FROM attempts').fetchone()[0]
 
 
+@pytest.mark.slow
 def test_hot_backup_verify_restore(tmp_path, monkeypatch):
     db = str(tmp_path / 'app.sqlite'); bdir = str(tmp_path / 'sauvegardes')
     monkeypatch.setenv('SPINSACADEMY_DB', db)

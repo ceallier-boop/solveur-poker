@@ -20,6 +20,7 @@ def client(tmp_path, monkeypatch):
 def post(c, path, **body): return c.post(path, json=dict(actor='Expert test', **body), headers=ADMIN)
 
 
+@pytest.mark.slow
 def test_reports_on_real_datasets():
     assert catalog.validate(GTO)['ok'] and catalog.validate(EXP)['ok']
     old = catalog.validate(OLD)
@@ -39,6 +40,7 @@ def copy(tmp_path, monkeypatch):
 from conftest import needs_raw
 
 
+@pytest.mark.slow
 @needs_raw
 def test_tampered_file_is_rejected(copy):
     lines = open(copy / 'spots.jsonl').read().splitlines()
@@ -60,6 +62,7 @@ def test_nothing_is_served_before_publication(client):
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='trop tôt').status_code == 409     # pas encore contrôlé
 
 
+@pytest.mark.slow
 def test_full_lifecycle(client):
     assert post(client, f'/admin/datasets/{OLD}/validate').json()['status'] == 'rejected'
     assert post(client, f'/admin/datasets/{OLD}/publish', reason='forcer').status_code == 409
@@ -82,6 +85,7 @@ def test_full_lifecycle(client):
     assert client.get('/admin/datasets').status_code == 403
 
 
+@pytest.mark.slow
 def test_new_publication_retires_previous_and_rollback(tmp_path, monkeypatch, client):
     root = tmp_path / 'datasets'; new = 'gto_preflop/2026.10.13-9'
     shutil.copytree(quiz.ref_path(GTO), root / GTO); shutil.copytree(quiz.ref_path(GTO), root / new)
