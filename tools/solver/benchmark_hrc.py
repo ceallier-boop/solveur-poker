@@ -8,11 +8,10 @@ Pour chaque nœud exporté par HRC qui existe dans l'arbre maison :
 Usage : python tools/solver/benchmark_hrc.py --stacks 10,10 [--iters 1500] [--postflop showdown]
 """
 import argparse, os, sys, time
-import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from spinsacademy.cards import NAMES, W
-from spinsacademy.hrc import exports, labels, load, preflop_hash
+from spinsacademy.hrc import exports, load, preflop_hash
 from spinsacademy.solver import postflop as pf
+from spinsacademy.solver.calibration import compare
 from spinsacademy.solver.cfr import Solver
 
 REF = 'daa9aaa0'
@@ -24,29 +23,6 @@ def find_export(stacks):
         s, st, nodes = load(d)
         if preflop_hash(s) == REF and [float(x) for x in st] == [float(x) for x in stacks]: return d, st, nodes
     return None
-
-
-def compare(strategy, st, nodes):
-    rows = []
-    for key, n in nodes.items():
-        if key not in strategy: continue
-        hl = labels(n, st); ours = strategy[key]
-        P = np.array([n['hands'][h]['played'] for h in NAMES]); EV = np.array([n['hands'][h]['evs'] for h in NAMES])
-        w = W * np.array([n['hands'][h]['weight'] for h in NAMES])
-        if w.sum() <= 0: continue
-        M = np.zeros_like(P); outside = np.zeros(169)
-        for j, a in enumerate(ours['actions']):
-            if a in hl: M[:, hl.index(a)] += ours['freq'][:, j]
-            else: outside += ours['freq'][:, j]
-        Mn = M / np.maximum(M.sum(1, keepdims=True), 1e-12)
-        tv = 0.5 * np.abs(Mn - P).sum(1)
-        agree = Mn.argmax(1) == P.argmax(1)
-        best = EV.max(1); loss = best - (Mn * EV).sum(1); floor = best - (P * EV).sum(1)
-        avg = lambda x: float((w * x).sum() / w.sum())
-        glob = lambda F: [round(100 * float((w * F[:, j]).sum() / w.sum()), 1) for j in range(F.shape[1])]
-        rows.append(dict(node=key, actions=hl, hrc=glob(P), ours=glob(Mn), tv=100 * avg(tv), agree=100 * avg(agree),
-                         loss=1000 * avg(loss), floor=1000 * avg(floor), outside=100 * avg(outside), share=float(w.sum() / W.sum())))
-    return rows
 
 
 def run(stacks, iters, model):

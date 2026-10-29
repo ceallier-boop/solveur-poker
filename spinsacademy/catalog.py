@@ -102,7 +102,14 @@ def _rebuild(ref, manifest, spots):
     """test de référence : les spots publiés sont reproduits à l'identique depuis leurs sources ; (ok, bloquant, détail)"""
     ds = ref.split('/')[0]
     try:
-        if ds == 'gto_preflop':
+        if ds == 'gto_preflop' and manifest.get('source') == 'solveur':
+            from .solver import dataset as solver_dataset
+            if manifest.get('solver') != solver_dataset.SOLVER_VERSION:
+                return None, f"solveur {manifest.get('solver')} ≠ version actuelle {solver_dataset.SOLVER_VERSION} : reconstruction non comparable"
+            missing = [s for s in manifest.get('sources', []) if not os.path.isfile(os.path.join(quiz.ROOT, s))]
+            if missing: return None, f'{len(missing)} résultats du solveur absents de ce poste : reconstruction non exécutée'
+            rebuilt = solver_dataset.rebuild(manifest, quiz.ROOT)   # depuis les résultats enregistrés ; recalcul complet : python -m spinsacademy.solver.dataset --check
+        elif ds == 'gto_preflop':
             from . import importer
             if manifest.get('importer') != importer.IMPORTER_VERSION:
                 return None, f"importeur {manifest.get('importer')} ≠ version actuelle {importer.IMPORTER_VERSION} : reconstruction non comparable"
@@ -169,6 +176,11 @@ def validate(ref, statuses=None):
                          count=len(problems)))
     elig = sum(sp.get('eligible_hands', 0) for sp in rows)
     checks.append(_check('questions', 'Questions proposables conformes au manifeste', elig == manifest.get('questions_eligible'), f'{elig} questions', count=elig))
+    if manifest.get('source') == 'solveur':                # contrôles propres au solveur maison, enregistrés par configuration
+        bad = [f"{c['config']} : {x['label_fr']} ({x['details_fr']})" for c in manifest.get('configs', []) for x in c.get('controls', []) if not x['ok']]
+        n = len(manifest.get('configs', []))
+        checks.append(_check('solver', 'Solveur : convergence et stabilité de chaque configuration', n > 0 and not bad,
+                             f'{len(bad)} contrôle(s) en échec ; premier : {bad[0]}' if bad else f'{n} configurations conformes', count=len(bad)))
     ok, detail = _rebuild(ref, manifest, spots)
     checks.append(_check('rebuild', 'Test de référence : reconstruction depuis les sources', ok is True, detail, blocking=ok is not None))
     return _report(ref, checks, sha)

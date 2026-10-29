@@ -8,6 +8,7 @@ Application d'entraînement au Spin & Go / Expresso. Cahier des charges : `docs/
 |---|---|
 | `spinsacademy/` | moteur : lecture de référence, EV exactes des all-in, import des spots, correction |
 | `data/hrc/raw/` | exports de référence (**jamais embarqués dans l'application**) |
+| `data/solver/runs/` | résultats enregistrés du solveur maison, sources des banques qu'il produit |
 | `data/hrc/locks/` | stratégies à verrouiller dans la référence pour le mode exploitant |
 | `data/datasets/` | datasets publiés, versionnés et immuables |
 | `tools/hrc/` | validation des exports, génération des verrouillages |
@@ -21,6 +22,7 @@ python -m pytest -q                                   # tests
 python tools/hrc/validate.py                          # rapport docs/reference/VALIDATION_REFERENCE.md
 python -m spinsacademy.importer --version AAAA.MM.JJ-N  # produit un dataset en staging (à contrôler puis publier dans /admin)
 python -m spinsacademy.catalog gto_preflop/AAAA.MM.JJ-N  # contrôles de publication, hors application
+python -m spinsacademy.solver.dataset --version AAAA.MM.JJ-sN --configs hu:12-12,3w:12-12-12   # banque GTO calculée par le solveur maison (docs/solver/BANQUE_SOLVEUR.md)
 python tools/hrc/make_locks.py                        # régénère data/hrc/locks/
 python tools/web/build_conseil.py                     # données du conseiller préflop (/conseil : comment jouer ma main), à relancer après tout changement de dataset GTO
 SPINSACADEMY_ADMIN_TOKEN=... python -m uvicorn spinsacademy.api:app --port 8000   # API + interface mobile sur http://localhost:8000/, administration sur /admin (docs/api/API_QUIZ.md)

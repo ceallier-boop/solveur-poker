@@ -132,8 +132,20 @@ def _vec_weight(node):
 
 
 def build_spot(export_dir, st, nodes, key, settings, source_sha):
-    """export_dir : un dossier d'export, ou la liste des répétitions moyennées dans `nodes` (la première sert d'origine)"""
+    """spot d'un export de référence. export_dir : un dossier d'export, ou la liste des répétitions moyennées dans `nodes`
+    (la première sert d'origine)"""
     dirs = [export_dir] if isinstance(export_dir, str) else list(export_dir)
+    pre = settings['treeconfig']['preflop']['settings']
+    prov = dict(export=os.path.relpath(dirs[0], ROOT), exports=[os.path.relpath(d, ROOT) for d in dirs], repetitions=nodes[key].get('repetitions', 1),
+                export_sha256=source_sha, hrc_tree=tree_hash(settings), hrc_preflop_tree=preflop_hash(settings),
+                postflop_mode=settings['treeconfig']['postflop']['id'].split('.')[-1], importer=IMPORTER_VERSION,
+                equity_matrix=os.path.basename(allin.EQUITY_FILE))
+    return make_spot(st, nodes, key, preflop_hash(settings), dict(BTN=pre.get('SIZES_OPEN_BU'), SB=pre.get('SIZES_OPEN_SB'), BB_iso=pre.get('SIZES_OPEN_BB')), prov)
+
+
+def make_spot(st, nodes, key, tree, open_sizes, provenance):
+    """cœur commun aux exports de référence et au solveur maison (spinsacademy.solver.dataset) : `nodes` au format des
+    exports (séquence, actions, et par main weight / played / evs, evs_se en option), `tree` l'empreinte de l'arbre préflop"""
     node = nodes[key]; names = positions(st); labs = labels(node, st)
     if len(labs) < 2: return None
     if len(node['hands']) != 169 or set(node['hands']) != set(NAMES): raise InvalidSpot('169 classes attendues')
@@ -170,23 +182,20 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
                         quiz_eligible=bool(r >= MIN_REACH and self_regret <= MAX_SELF_REGRET_MBB and mixed_ok))   # décidé sur les valeurs publiées
         if ev_se is not None: hands[h]['ev_hrc_se'] = [round(float(x), 5) for x in ev_se[i]]
     table = '3-handed' if len(st) == 3 else 'heads-up'
-    tree = preflop_hash(settings); pre = settings['treeconfig']['preflop']['settings']
     sid = hashlib.sha256(json.dumps([tree, table, st, key]).encode()).hexdigest()[:12]      # même identifiant qu'en 1.3.0 pour l'arbre de référence
     mass = W * reach
     return dict(
         spot_id=f"{'3w' if len(st) == 3 else 'hu'}-{'-'.join(f'{x:g}' for x in st)}-{key}-{sid[:6]}",
         table=table, players=names, stacks_bb=st, blinds_bb=dict(sb=0.5, bb=1.0), ante_bb=0.0, model='chip_ev',
         hero=names[hero], node_key=key, history=hist, preflop_tree=tree,
-        open_sizes=dict(BTN=pre.get('SIZES_OPEN_BU'), SB=pre.get('SIZES_OPEN_SB'), BB_iso=pre.get('SIZES_OPEN_BB')),
+        open_sizes=open_sizes,
         pot_bb=round(sum(commit), 4), to_call_bb=round(to_call, 4), hero_committed_bb=round(commit[hero], 4),
         effective_stack_bb=round(min(st[q] for q in range(len(st)) if not folded[q]), 4),
         actions=acts, ev_reference=ev_ref_source, ev_exact_approximate=bool(len(st) == 3 and allin.APPROXIMATE_3WAY and any(e is not None for e, l in zip(exact, labs) if l != 'F')),
         reach_share=round(float(mass.sum() / W.sum()), 4),
         eligible_hands=sum(1 for x in hands.values() if x['quiz_eligible']),
         hands=hands,
-        provenance=dict(export=os.path.relpath(dirs[0], ROOT), exports=[os.path.relpath(d, ROOT) for d in dirs], repetitions=reps, export_sha256=source_sha, hrc_tree=tree_hash(settings), hrc_preflop_tree=preflop_hash(settings),
-                        postflop_mode=settings['treeconfig']['postflop']['id'].split('.')[-1], importer=IMPORTER_VERSION,
-                        equity_matrix=os.path.basename(allin.EQUITY_FILE)))
+        provenance=provenance)
 
 
 def build_dataset(raw=None):
