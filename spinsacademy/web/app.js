@@ -938,6 +938,7 @@ async function rangeStart(forced) {
   store.set('ranges_recent', JSON.stringify([t.spot_id, ...recent.filter((x) => x !== t.spot_id)].slice(0, 15)));
   $('rg-situation').textContent = t.situation_fr; $('rg-question').innerHTML = `${escT(t.question_fr)}<small>${escT(t.others_fr || '')}</small>`;
   $('rg-cellinfo').hidden = true;
+  $('rg-mode').hidden = mode() === 'gto';                               // test 9 : en Exploitant, dire que la range est corrigée sur la théorie
   $('rg-result').hidden = true; $('rg-edit').hidden = false; $('rg-after').hidden = true; $('rg-help').hidden = false;
   renderRangeGrid(); show('range'); progress('Construis ta range');
 }

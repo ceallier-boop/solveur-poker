@@ -25,6 +25,8 @@ THEMES = (       # cycle par défaut quand aucun thème n'est à travailler : du
     ('Face à une relance, 17 à 25 BB', dict(family='vs_raise', min_stack=16.5, max_stack=99)),
 )
 RANGE_KEYS = ('table', 'hero', 'family', 'min_stack', 'max_stack')
+RANGE_FR = 'Range : la situation du thème'
+RANGE_EXPLOIT_FR = RANGE_FR + ', corrigée sur la théorie'   # l'exercice de range est toujours corrigé sur la référence GTO (test 9)
 
 
 def local_day(iso, tz):
@@ -66,7 +68,7 @@ def range_filters(f):
     return out
 
 
-def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None):
+def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None, mode='gto'):
     """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
     due : mains à réviser aujourd'hui ; focus : diagnostic de progress.compute. Renvoie le plan du jour"""
     done_s = [s for s in sessions if s['answered'] >= s['size']]
@@ -87,7 +89,7 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
              label_fr=(f"Révision : {due} main{'s' if due > 1 else ''} à revoir" if due else "Révision : rien à revoir aujourd'hui")),
         dict(kind='theme', done=themed >= SERIES_PER_THEME, count=min(themed, SERIES_PER_THEME), total=SERIES_PER_THEME,
              label_fr=f"Thème : {label}", filters=f),
-        dict(kind='range', done=ranged >= 1, label_fr="Range : la situation du thème", filters=range_filters(f)),
+        dict(kind='range', done=ranged >= 1, label_fr=RANGE_FR if mode == 'gto' else RANGE_EXPLOIT_FR, filters=range_filters(f)),
     ]
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
     return dict(minutes=MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,

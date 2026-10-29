@@ -469,7 +469,7 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
     out = today.build(sess, rngs, due, focus, day, tz,
                       progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
                       progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None,
-                      themes=levels.LEVELS[lv]['themes'], level=dict(number=lv, name=levels.LEVELS[lv]['name']))
+                      themes=levels.LEVELS[lv]['themes'], level=dict(number=lv, name=levels.LEVELS[lv]['name']), mode=mode)
     rs = out['steps'][2]
     for f in (rs['filters'], {k: v for k, v in rs['filters'].items() if k != 'hero'},          # range du thème, sinon la plus proche
               {k: v for k, v in rs['filters'].items() if k in ('family', 'table')}, {}):
