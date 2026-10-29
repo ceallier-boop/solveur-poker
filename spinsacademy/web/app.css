@@ -498,3 +498,13 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ch .small { min-height: 40px; padding: 6px 14px; }
 .ch-result { display: block; margin-top: 8px; font-weight: 700; } .ch-result.won { color: var(--ok); }
 .my-challenges { margin: 12px 0; } .my-challenges li { font-size: .92rem; } .my-challenges small { color: var(--muted); }
+/* test joueurs 9 : accueil plus court (mode en haut, défis repliés), messages dans les blocs vides */
+.mode-top { margin-top: 4px; }
+.block-error { margin: 6px 0 0; font-size: .88rem; color: var(--muted); }
+.block-error .link { padding: 0 4px; }
+.ch-box > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; min-height: 44px; }
+.ch-box > summary::-webkit-details-marker { display: none; }
+.ch-box > summary::before { content: '▸'; color: var(--accent); } .ch-box[open] > summary::before { content: '▾'; }
+.ch-box > summary h2 { margin: 0; } .ch-box > summary span { font-size: .9rem; color: var(--text); }
+.ch-next { display: block; color: var(--muted); font-size: .82rem; }
+.my-challenges li.lost { color: var(--muted); }

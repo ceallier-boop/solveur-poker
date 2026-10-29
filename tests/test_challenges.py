@@ -19,7 +19,7 @@ def test_rules():
     s = lambda c, t=0: dict(correct=c, size=5, timeouts=t)
     assert challenges.won('daily', s(4)) and not challenges.won('daily', s(3))
     assert challenges.won('perfect', s(5)) and not challenges.won('perfect', s(4))
-    assert challenges.won('pressure', s(3)) and not challenges.won('pressure', s(5, 1))
+    assert challenges.won('pressure', s(4)) and not challenges.won('pressure', s(3)) and not challenges.won('pressure', s(5, 1))   # test joueurs 9 : 4/5
     days = {D.replace(day=k) for k in range(10, 17)}
     assert challenges.full_week(days, D) == 7 and challenges.full_week({D}, D) == 1
     assert challenges.daily_seed(D) == 20261029

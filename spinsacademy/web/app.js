@@ -66,11 +66,11 @@ function show(name) {
 function loading(on) { $('loading').hidden = !on; }
 
 // messages dans l'écran (pas de boîte de dialogue du navigateur) : erreur avec « Réessayer », confirmation en deux temps
-function notify(msg, retry) {
-  const n = $('notice'); $('notice-text').textContent = msg; n.hidden = false;
+function notify(msg, retry) {                                       // test joueurs 9 : le chrono s'arrête tant que le message est affiché
+  const n = $('notice'); $('notice-text').textContent = msg; n.hidden = false; pauseTimer();
   $('notice-retry').hidden = !retry;
   $('notice-retry').onclick = () => { n.hidden = true; retry(); };
-  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; }, 6000);
+  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; resumeTimer(); }, 6000);
 }
 const closed = (e) => !!(e && e.status === 503 && /aucun dataset publié/.test(e.message));   // test joueurs 6 : rien en ligne, réessayer ne sert à rien
 const netMsg = (e, what) => (closed(e) ? `L'entraînement n'est pas ouvert sur ce serveur : ${what}, aucune banque de questions n'est en ligne. Réessayer ne changera rien : préviens l'équipe.`
@@ -113,7 +113,7 @@ async function start(f, review = false, plan = null, challenge = null) {
   if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -230,11 +230,17 @@ function actionHTML(label) {
 // mode chrono (chantier 5) : comme au client, le temps est compté ; à zéro, fold automatique (check s'il n'y a rien à payer)
 const chrono = () => { if (state.forceChrono) return state.forceChrono;   // défi au chrono imposé
   const v = Number(store.get('chrono') ?? 15); return [0, 8, 15].includes(v) ? v : 15; };   // 15 s par défaut
-function stopTimer() { clearInterval(state.timer); state.timer = null; $('q-timer').hidden = true; }
-function startTimer(q) {
-  stopTimer(); state.timedOut = false;
+function stopTimer() { clearInterval(state.timer); state.timer = null; state.paused = null; $('q-timer').hidden = true; }
+function pauseTimer() { if (!state.timer) return; clearInterval(state.timer); state.timer = null; state.paused = Math.max(0, state.timerEnd - Date.now()); }
+function resumeTimer() {                                             // reprise du temps qui restait, si la question est toujours à l'écran
+  const left = state.paused; state.paused = null;
+  if (left == null || $('screen-question').hidden || state.busy) return;
+  startTimer(state.q, left);
+}
+function startTimer(q, leftMs) {
+  stopTimer(); if (leftMs == null) state.timedOut = false;
   const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr)) return;   // pas de chrono pour la lecture du vilain
-  const end = Date.now() + secs * 1000, box = $('q-timer'); box.hidden = false;
+  const end = Date.now() + (leftMs == null ? secs * 1000 : leftMs), box = $('q-timer'); box.hidden = false; state.timerEnd = end;
   const tick = () => {
     const left = Math.max(0, end - Date.now());
     box.querySelector('i').style.width = `${100 * left / (secs * 1000)}%`; box.querySelector('span').textContent = `${Math.ceil(left / 1000)} s`;
@@ -301,16 +307,18 @@ function renderFieldStats(q, noHand) {
     : `<details class="vdetails"><summary><span class="ftype">${f.type_fr}</span> ${f.pastille ? `${pastilleDot(f.pastille)}<b>${f.pastille}</b> <small>voir ses stats (${f.observations} mains)</small>` : f.observations ? `Stats du vilain · ${f.observations} mains` : 'Aucune information'}</summary>${body}</details>`;   // analyse des écrans : la pastille nommée
 }
 
+const PLAN_CHRONO = { challenge_daily: 15, challenge_pressure: 8 };   // série de défi reprise : son chrono imposé revient
 async function next() {
   loading(true);
   const data = await api(`/quiz/next?session_id=${encodeURIComponent(state.sid)}`);
+  if (data.plan && data.plan.startsWith('challenge_')) { state.challenge = data.plan.slice(10); state.forceChrono = PLAN_CHRONO[data.plan] || null; }
   if (data.done) return summary();
   renderQuestion(data);
 }
 
 // ------------------------------------------------------------------ correction
 async function answer(id, timedOut = false) {
-  if (state.busy) return; state.busy = true; clearInterval(state.timer); state.timer = null;
+  if (state.busy) return; state.busy = true; pauseTimer();        // le temps restant revient si l'envoi échoue
   for (const b of $('actions').querySelectorAll('button')) b.disabled = true;
   try {
     const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id, timed_out: timedOut }) });
@@ -318,7 +326,8 @@ async function answer(id, timedOut = false) {
   } catch (e) {
     if (!e.status) console.error(e);                              // erreur d'affichage : visible dans la console
     for (const b of $('actions').querySelectorAll('button')) b.disabled = false;
-    notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id) : null);
+    state.busy = false;
+    notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id, timedOut) : null);   // test joueurs 9 : le coup au temps reste au temps
   } finally { state.busy = false; }
 }
 
@@ -340,7 +349,9 @@ function renderAnswer(r) {
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
-  v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n` : ''}${sub}</small>`;
+  const lucky = state.timedOut && r.chosen_label === r.best_label;     // test joueurs 9 : le coup au temps tombait sur le bon coup
+  v.innerHTML = title + `<small>${state.timedOut ? (lucky ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
+    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${lucky ? '' : sub}</small>`;
   stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -464,7 +475,9 @@ async function summary() {
   if (state.challenge) {                                               // étape 5 : résultat du défi
     const kind = state.challenge; state.challenge = null; state.forceChrono = null;
     loadChallenges().then((c) => { const x = c && [...c.daily, ...c.weekly].find((y) => y.kind === kind); if (!x) return;
-      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${x.status === 'won' ? `${escT(x.title_fr)} : réussi !` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi.`}</small>`); });
+      const txt = kind === 'daily' ? `${escT(x.title_fr)} : ${escT(x.result_fr || '')}${x.status === 'won' ? ', réussi !' : '.'} Nouveau défi demain.`   // test joueurs 9 : pas de « pas encore »
+        : x.status === 'won' ? `${escT(x.title_fr)} : réussi !` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi. Tu peux le retenter.`;
+      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${txt}</small>`); });
   }
   show('summary');
   refreshStats();                                                    // la progression hors connexion suit la dernière série
@@ -488,7 +501,7 @@ function homeSummary() {                                            // analyse d
   const c = cachedStats(), s = c && c.s, b = $('stats-btn');
   if (!s || !s.questions) { b.textContent = 'Ma progression'; return; }
   const f = s.focus && s.focus.label ? ` · à travailler : ${s.focus.label.split(' · ').slice(1).join(' · ') || s.focus.label}` : '';
-  b.innerHTML = `Ma progression<small>${pc(s.score_pct)} de réussite${s.bb_per_100 != null ? ` · ${bb(s.bb_per_100)} BB perdus / 100` : ''}${escT(f)}</small>`;
+  b.innerHTML = `Ma progression<small>${pc(s.score_pct)} de réussite${escT(f)}</small>`;   // test joueurs 9 : un seul chiffre BB sur l'accueil
 }
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
 function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
@@ -514,8 +527,8 @@ async function stats() {
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
   if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
     $('st-challenges').hidden = false;
-    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li>✓ <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}</small></li>`).join('')
-      : '<li class="note">Pas encore de défi réussi : relève le défi du jour depuis l\'accueil.</li>';
+    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li class="${h.won ? 'won' : 'lost'}">${h.won ? '✓' : '✗'} <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}${h.won ? '' : ' · pas réussi'}</small></li>`).join('')
+      : '<li class="note">Pas encore de défi tenté : relève le défi du jour depuis l\'accueil.</li>';   // test joueurs 9 : les tentatives aussi
   }).catch(() => { $('st-challenges').hidden = true; });
   else $('st-challenges').hidden = true;
   if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
@@ -614,7 +627,8 @@ let lexReturn = null;
 // A7 : dans la correction, les mots techniques s'expliquent au toucher (première occurrence de chaque terme)
 const GLOSS = { 'Range': ['range'], 'Équité': ['équité'], 'Cote du pot': ['cote du pot', 'la cote'], 'SPR (rapport tapis / pot)': ['SPR'],
   'Fold equity': ['fold equity'], 'Limp (compléter)': ['limp', 'limps'], 'Isoler (iso)': ['iso'], 'Rec passif': ['rec passif'],
-  'Tapis effectif': ['tapis effectif'], 'Stratégie mixte': ['stratégie mixte'], 'Paire max (top pair)': ['paire max'], 'Kicker': ['kicker'], 'Read': ['read'] };
+  'Tapis effectif': ['tapis effectif'], 'Stratégie mixte': ['stratégie mixte'], 'Paire max (top pair)': ['paire max'], 'Kicker': ['kicker'], 'Read': ['read'],
+  'BB perdus pour 100 décisions': ['BB perdus pour 100 décisions'] };   // test joueurs 9 : l'aide au toucher sur l'objectif de précision
 async function glossify(root) {
   let L; try { L = await lexique(); } catch (e) { return; }                 // lexique indisponible : texte brut
   const terms = L.terms.filter((t) => GLOSS[t.term]).map((t) => ({ ...t, re: new RegExp(`(?<![\\p{L}\\d])(?:${GLOSS[t.term].join('|')})(?![\\p{L}\\d])`, 'iu') }));
@@ -665,7 +679,7 @@ document.addEventListener('keydown', (e) => {
 const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
 $('stats-btn').addEventListener('click', openStats);
 $('st-back').addEventListener('click', home);
-$('notice-close').addEventListener('click', () => { $('notice').hidden = true; });
+$('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
   try {
     const data = await api('/users/me/export');
@@ -698,10 +712,11 @@ const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouen
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
 const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin', 'read'] };
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
-function onMode() {
+function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
+  if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); }   // séance, recommandations et objectifs suivent le mode
+  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -712,7 +727,7 @@ function onMode() {
     }
   }
 }
-document.querySelector('.mode-switch').addEventListener('click', onMode);
+document.querySelector('.mode-switch').addEventListener('click', (e) => { if (e.target.closest('button')) onMode(e); });
 $('custom-start').addEventListener('click', () => { state.inToday = false; start(filters()); });
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });
@@ -731,11 +746,20 @@ document.addEventListener('keydown', (e) => {
   if (b) b.click();
 });
 
+function setMode(m) {                                                // choisir le mode par programme (niveau 4, préférence du serveur)
+  const btn = document.querySelector(`.mode-switch [data-value="${m}"]`); if (!btn || mode() === m) return false;
+  for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn));
+  return true;
+}
 async function home() {
   if (!state.levelChecked) {                                          // étape 4 : premier lancement en trois écrans
-    state.levelChecked = true;
+    state.levelChecked = true; $('screen-home').hidden = true; loading(true);   // pas d'accueil affiché avant de savoir s'il faut le premier lancement
+    if (!store.get('mode')) {                                         // test joueurs 9 : nouvel appareil, le mode gardé sur le serveur
+      try { const p = await api('/users/me/preferences'); if (p.mode && setMode(p.mode)) onMode(); } catch (e) { /* hors ligne */ }
+    }
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
+  state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
   progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
@@ -760,9 +784,8 @@ async function loadToday() {
 function renderToday(t) {
   $('today').hidden = false; $('free-title').hidden = false; $('home-lead').hidden = true;
   $('quick-start').className = 'secondary';                          // un seul bouton plein sur l'accueil : la séance
-  $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : 'Première séance : c\'est parti';
-  const d = t.bb7 != null && t.bb7_prev != null ? t.bb7 - t.bb7_prev : null;
-  $('today-bb').innerHTML = t.bb7 != null ? `BB perdus / 100 sur 7 jours : <b>${bb(t.bb7)}</b>${d != null && Math.abs(d) >= 0.05 ? ` <span class="${d < 0 ? 'up' : 'down'}">${d < 0 ? '▼' : '▲'} ${bb(Math.abs(d))}</span>` : ''}` : '';
+  $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : t.played_before ? 'Pas encore de série aujourd\'hui : c\'est parti' : 'Première séance : c\'est parti';
+  $('today-bb').innerHTML = '';                                      // test joueurs 9 : un seul chiffre BB sur l'accueil (objectif de précision)
   $('today-steps').innerHTML = t.steps.map((x, i) => `<li class="${x.done ? 'done' : i === t.next ? 'now' : ''}"><span class="tick" aria-hidden="true">${x.done ? '✓' : ''}</span>`
     + `<span>${escT(x.label_fr)}${x.total ? ` <small>${x.count}/${x.total} séries</small>` : ''}</span></li>`).join('');
   $('today-note').hidden = !t.done;
@@ -774,9 +797,9 @@ function todayGo() {
   const t = state.today; if (!t) return;
   if (t.done) { state.inToday = false; start(t.steps[1].filters); return; }
   const st = t.steps[t.next]; state.inToday = true;
-  if (st.kind === 'review') start({}, true, 'review');
+  if (st.kind === 'review') start(st.filters || {}, true, 'review');   // complément dans la profondeur du niveau
   else if (st.kind === 'theme') start(st.filters, false, 'theme');
-  else rangeStart(st.filters);
+  else rangeStart(st.spot_id ? { spot: st.spot_id } : st.filters);   // test joueurs 9 : la même situation toute la journée
 }
 async function todayContinue() {
   const t = await loadToday(); if (!t) { home(); return; }
@@ -790,7 +813,7 @@ function showTodayDone(t) {
     'Demain : tes mains ratées reviennent en révision, et la séance choisit ton thème le plus fragile.'].filter(Boolean).map((l) => `<li>${l}</li>`).join('');
   show('today'); refreshStats();
   loadGoals().then((g) => { if (!g) return;                          // étape 3 : où en sont les objectifs de la semaine
-    $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.map((x) => `${escT(x.label_fr.toLowerCase())} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
+    $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.map((x) => `${escT(x.label_fr.charAt(0).toLowerCase() + x.label_fr.slice(1))} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
 }
 $('today-go').addEventListener('click', todayGo);
 
@@ -810,7 +833,7 @@ function obShow() {
   $('ob-next').textContent = ob.step === 3 ? "C'est parti" : 'Suivant';
   if (ob.step === 2) {
     ob.level = ob.level || ({ debut: 1, confirme: 2, gros_volume: 2 })[ob.exp] || 1;
-    $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}</button>`).join('');
+    $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}${l.depth_fr ? ` · ${escT(l.depth_fr)}` : ''}</button>`).join('');   // test joueurs 9 : la profondeur dite
     $('ob-levels').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; ob.level = +b.dataset.v; for (const x of $('ob-levels').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b)); };
   }
   obButton();
@@ -829,13 +852,13 @@ async function loadLevel() {
   state.level = lv;
   if (lv.promoted_to || state.promo) { state.promo = null; notify(`Bravo : tu passes au niveau ${lv.level}, « ${lv.name} ». Ta séance du jour suit ce nouveau niveau.`); }
   const b = $('today-level'), m = mode() === 'gto';
-  b.hidden = false;
-  b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
+  b.hidden = false;                                                  // test joueurs 9 : pas de chiffre BB ici (celui de l'accueil est l'objectif)
+  b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.filter((c) => c.kind !== 'bb').map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
     : '<b>Niveau 4 · Exploiter le field</b><small>mode exploitant, ouvert en continu</small>';
   return lv;
 }
 function critText(c) {
-  if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.target} décisions`;
+  if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.target} décisions à ${c.depth_fr || 'ce niveau'}`;   // test joueurs 9 : seules les mains du palier comptent
   if (c.kind === 'bb') return `${c.value == null ? '—' : bb(c.value)} BB/100 (cible < ${bb(c.target)})`;
   if (c.kind === 'ranges') return `${c.value}/${c.target} ranges à 85 %`;
   return c.ok ? 'aucun thème fragile' : c.value ? `thème fragile : ${c.value}` : 'pas encore de décision';
@@ -843,13 +866,18 @@ function critText(c) {
 function renderLevel(lv) {
   $('st-level').hidden = !lv;
   if (!lv) return;
-  $('st-level-name').innerHTML = `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
-  $('st-level-crit').innerHTML = lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(c.label_fr)} <small>${escT(critText(c))}</small></li>`).join('');
-  $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
+  const ex = mode() === 'exploit', cur = ex ? 4 : lv.level;          // test joueurs 9 : le niveau suit le mode
+  $('st-level-name').innerHTML = ex ? '<b>Niveau 4 · Exploiter le field</b> : mode exploitant, ouvert en continu. Ton niveau GTO : ' + `${lv.level} · ${escT(lv.name)}.`
+    : `<b>Niveau ${lv.level} · ${escT(lv.name)}</b> (${escT(lv.depth_fr || '')})` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
+  $('st-level-crit').innerHTML = ex || lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(c.label_fr)} <small>${escT(critText(c))}</small></li>`).join('');
+  $('st-level-pick').innerHTML = lv.levels.map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === cur}">${l.number} · ${escT(l.name)}</button>`).join('');
 }
 $('st-level-pick').addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: +b.dataset.v }) }); renderLevel(state.level); }
+  const v = +b.dataset.v;
+  if (v === 4) { if (setMode('exploit')) onMode(true); renderLevel(state.level); return; }      // le niveau 4 est le mode exploitant
+  if (setMode('gto')) onMode(true);
+  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: v }) }); renderLevel(state.level); }
   catch (err) { notify(netMsg(err, "le niveau n'a pas été changé")); }
 });
 $('today-level').addEventListener('click', () => { state.scrollLevel = true; $('stats-btn').click(); });
@@ -863,11 +891,16 @@ async function loadRecs() {
 }
 // objectifs de la semaine (programme de travail, étape 3) : trois cibles, modifiables, et le bilan de la semaine passée
 async function loadGoals() {
-  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('goals').hidden = true; return null; }
-  renderGoals(g); return g;
+  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); }
+  catch (e) {                                                        // test joueurs 9 : un message plutôt qu'un bloc vide
+    if (e && e.status && e.status < 500 && e.status !== 429) { $('goals').hidden = true; return null; }
+    $('goals').hidden = false; $('goals-list').innerHTML = ''; $('goals-note').textContent = ''; $('last-week').hidden = true; $('goals-error').hidden = false; return null;
+  }
+  $('goals-error').hidden = true; renderGoals(g); return g;
 }
 function renderGoals(g) {
   state.goals = g; $('goals').hidden = false;
+  $('goals-mode').textContent = `· ${g.mode === 'exploit' ? 'Exploitant' : 'GTO'}`;   // test joueurs 9 : les objectifs sont propres à chaque mode
   const edit = !!state.goalsEdit;
   $('goals-edit').textContent = edit ? 'terminé' : 'modifier';
   $('goals-list').innerHTML = g.items.map((x) => `<li class="goal${x.done ? ' done' : ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(x.label_fr)}</span>`
@@ -880,7 +913,9 @@ function renderGoals(g) {
     + `${lw.days} séance${lw.days > 1 ? 's' : ''}${lw.bb != null ? ` · ${bb(lw.bb)} BB perdus pour 100 décisions${lw.bb_before != null ? ` (la semaine d'avant : ${bb(lw.bb_before)})` : ''}` : ''}.`
     + (lw.done < lw.total ? ' Les objectifs manqués sont reconduits un peu plus faciles.' : '') + ' <button class="link" id="lw-ok">OK</button>';
   if (lw && !seen) $('lw-ok').addEventListener('click', () => { store.set('goals_seen', g.week); $('last-week').hidden = true; });
+  glossify($('goals-list'));
 }
+$('goals-retry').addEventListener('click', () => loadGoals());
 $('goals-edit').addEventListener('click', () => { state.goalsEdit = !state.goalsEdit; if (state.goals) renderGoals(state.goals); });
 $('goals-list').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-k]'); if (!b) return;
@@ -891,12 +926,19 @@ $('goals-list').addEventListener('click', async (e) => {
 });
 // défis (programme de travail, étape 5)
 async function loadChallenges() {
-  let c; try { c = await api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('challenges').hidden = true; return null; }
+  let c; try { c = await api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`); }
+  catch (e) {
+    if (e && e.status && e.status < 500 && e.status !== 429) { $('challenges').hidden = true; return null; }
+    $('challenges').hidden = false; $('ch-box').hidden = true; $('ch-error').hidden = false; return null;
+  }
   state.ch = c; const all = [...c.daily, ...c.weekly, ...c.monthly];
-  $('challenges').hidden = false;
+  $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
+  const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
+  $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
   $('ch-list').innerHTML = all.map((x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
-    + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">Relever</button>` : '') + `</div>`
-    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}</li>`).join('');
+    + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">${x.action.type === 'resume' ? 'Reprendre' : 'Relever'}</button>` : '') + `</div>`
+    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}`
+    + (x.next_fr ? `<small class="ch-next">${escT(x.next_fr)}</small>` : '') + '</li>').join('');
   return c;
 }
 $('ch-list').addEventListener('click', (e) => {
@@ -904,8 +946,10 @@ $('ch-list').addEventListener('click', (e) => {
   const x = [...state.ch.daily, ...state.ch.weekly, ...state.ch.monthly][+b.dataset.i], a = x.action; state.inToday = false;
   if (a.type === 'range') { rangeStart(); return; }
   state.challenge = a.challenge; state.forceChrono = a.chrono || null;
+  if (a.type === 'resume') { state.sid = a.session_id; store.set('sid', a.session_id); next().catch((err) => { loading(false); notify(netMsg(err, "le défi n'a pas pu reprendre")); }); return; }
   start({}, false, null, a.challenge);
 });
+$('ch-retry').addEventListener('click', () => loadChallenges());
 $('recs-list').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-i]'); if (!b) return;
   const a = state.recs[+b.dataset.i].action; state.inToday = false;
@@ -935,6 +979,7 @@ async function rangeStart(forced) {
   try { t = await api('/ranges/next' + (qs ? `?${qs}` : '')); }
   catch (e) { loading(false); notify(e.status === 422 ? 'Pas de range à construire pour ce thème : élargis les filtres.' : netMsg(e, "l'exercice n'a pas pu démarrer"), retryable(e) ? rangeStart : null); return; }
   state.range = { t, sel: new Set(), done: false };
+  $('rg-theory').hidden = mode() !== 'exploit';                       // test joueurs 9 : corrigée sur la théorie, et l'écran le dit
   store.set('ranges_recent', JSON.stringify([t.spot_id, ...recent.filter((x) => x !== t.spot_id)].slice(0, 15)));
   $('rg-situation').textContent = t.situation_fr; $('rg-question').innerHTML = `${escT(t.question_fr)}<small>${escT(t.others_fr || '')}</small>`;
   $('rg-cellinfo').hidden = true;

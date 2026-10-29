@@ -1,6 +1,6 @@
 {
- "version": "1.12.1",
- "date": "2026-10-23",
+ "version": "1.12.2",
+ "date": "2026-10-29",
  "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
  "categories": {
   "jeu": "Table et format",
@@ -394,6 +394,14 @@
     "showdown"
    ],
    "def": "Moment où les joueurs encore en jeu montrent leurs cartes pour désigner le gagnant."
+  },
+  {
+   "term": "Field",
+   "cat": "profils",
+   "match": [
+    "field"
+   ],
+   "def": "L'ensemble des joueurs que tu croises aux tables d'Expresso, surtout des joueurs récréatifs. « Exploiter le field », c'est adapter ton jeu à leurs défauts habituels plutôt que jouer la stratégie théorique."
   },
   {
    "term": "Mode exploitant",

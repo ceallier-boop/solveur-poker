@@ -7,13 +7,18 @@ Une séance de 15 minutes, construite à partir de ce que l'application sait dé
      thème du cycle THEMES selon le jour ; le thème choisi reste le même toute la journée (celui de la première série du jour) ;
   3. range du jour : un exercice « Construis ta range » sur la situation du thème.
 La journée se compte dans le fuseau du joueur (décalage `tz` en minutes, envoyé par l'appareil). Série de jours : jours avec au
-moins une série finie ou une range ; un jour manqué par période de 7 jours est pardonné, aujourd'hui sans activité ne casse rien.
+moins une série finie ou une range, tous modes confondus ; un jour manqué par période de 7 jours est pardonné, aujourd'hui sans
+activité ne casse rien.
+Neuvième test joueurs (29/10/2026) : le thème et la situation de la range sont fixés au premier affichage de la journée (table
+daily_plan, `plan`) et ne changent plus ; un thème tiré du diagnostic doit avoir une situation et une profondeur ; la révision n'est
+cochée que quand plus aucune main n'est due (ou après REVIEW_CAP séries de révision dans la journée).
 """
 import datetime
 import json
 
 MINUTES = 15
 SERIES_PER_THEME = 2
+REVIEW_CAP = 4            # séries de révision dans la journée au-delà desquelles l'étape est cochée (mains qu'on ne peut plus servir)
 THEMES = (       # cycle par défaut quand aucun thème n'est à travailler : du plus simple au plus fin
     ('Premier à parler, moins de 10 BB', dict(family='first_in', min_stack=0, max_stack=9.5)),
     ('Face à un tapis, moins de 10 BB', dict(family='vs_allin', min_stack=0, max_stack=9.5)),
@@ -51,8 +56,9 @@ def theme_of_day(focus, nth, first_today, themes=THEMES):
     """(libellé, filtres) du thème du jour : celui de la première série du jour, sinon le diagnostic, sinon le cycle, pris dans
     l'ordre des jours de travail (un nouveau joueur commence par les tapis courts)"""
     if first_today: return first_today
-    if focus and focus.get('filters'):
-        f = {k: v for k, v in focus['filters'].items() if k != 'mode'}
+    f = (focus or {}).get('filters') or {}
+    if f.get('family') and f.get('max_stack') is not None:                 # un vrai thème : une situation et une tranche de tapis
+        f = {k: v for k, v in f.items() if k != 'mode'}
         label = focus.get('label') or 'Ton thème à travailler'
         for m in ('GTO · ', 'Exploitant · '): label = label[len(m):] if label.startswith(m) else label   # le mode est déjà choisi
         return label, f
@@ -66,11 +72,9 @@ def range_filters(f):
     return out
 
 
-def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None):
-    """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
-    due : mains à réviser aujourd'hui ; focus : diagnostic de progress.compute. Renvoie le plan du jour"""
+def choose(sessions, ranges, focus, today, tz, themes=THEMES):
+    """(libellé, filtres) du thème du jour, tel qu'il est fixé au premier affichage de la journée"""
     done_s = [s for s in sessions if s['answered'] >= s['size']]
-    today_s = [s for s in done_s if local_day(s['created_at'], tz) == today]
     first_theme = next((s for s in sorted(sessions, key=lambda s: s['created_at'])
                         if s['plan'] == 'theme' and local_day(s['created_at'], tz) == today), None)
     first = None
@@ -78,18 +82,42 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
         f = json.loads(first_theme['filters'] or '{}')
         first = (next((l for l, x in tuple(themes) + THEMES if x == f), None) or (focus or {}).get('label') or 'Ton thème du jour', f)
     active = {local_day(s['created_at'], tz) for s in done_s} | {local_day(r, tz) for r in ranges}
-    label, f = theme_of_day(focus, sum(1 for d in active if d < today), first, themes)
-    reviewed = any(s['plan'] == 'review' for s in today_s)
+    return theme_of_day(focus, sum(1 for d in active if d < today), first, themes)
+
+
+def _hour(iso, tz):
+    t = datetime.datetime.fromisoformat(iso)
+    t = (t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)).astimezone(datetime.timezone.utc) + datetime.timedelta(minutes=tz)
+    return t.date(), f"{t.hour} h {t.minute:02d}" if t.minute else f"{t.hour} h"
+
+
+def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None, plan=None, active=None,
+          next_due=None, review_filters=None, played_before=None):
+    """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
+    due : mains à réviser maintenant ; focus : diagnostic de progress.compute ; plan : thème fixé pour la journée
+    dict(theme_fr, filters, range_filters, range_spot) ; active : jours d'activité tous modes (série de jours) ;
+    next_due : (horodatage, nombre) de la prochaine révision ; review_filters : profondeur du niveau pour compléter la révision"""
+    done_s = [s for s in sessions if s['answered'] >= s['size']]
+    today_s = [s for s in done_s if local_day(s['created_at'], tz) == today]
+    if plan: label, f = plan['theme_fr'], plan['filters']
+    else: label, f = choose(sessions, ranges, focus, today, tz, themes)
+    if active is None: active = {local_day(s['created_at'], tz) for s in done_s} | {local_day(r, tz) for r in ranges}
+    reviews = sum(1 for s in today_s if s['plan'] == 'review')
     themed = sum(1 for s in today_s if s['plan'] == 'theme')
     ranged = sum(1 for r in ranges if local_day(r, tz) == today)
+    if due: rlabel = f"Révision : {due} main{'s' if due > 1 else ''} à revoir"
+    elif next_due and next_due[0] and _hour(next_due[0], tz)[0] == today:
+        n = next_due[1]; rlabel = f"Révision : rien à revoir pour l'instant ({n} main{'s' if n > 1 else ''} à partir de {_hour(next_due[0], tz)[1]})"
+    else: rlabel = "Révision : rien à revoir aujourd'hui"
+    rs = (plan or {}).get('range_filters', range_filters(f))
     steps = [
-        dict(kind='review', done=reviewed or due == 0, count=due,
-             label_fr=(f"Révision : {due} main{'s' if due > 1 else ''} à revoir" if due else "Révision : rien à revoir aujourd'hui")),
+        dict(kind='review', done=due == 0 or reviews >= REVIEW_CAP, count=due, label_fr=rlabel, filters=review_filters or {}),
         dict(kind='theme', done=themed >= SERIES_PER_THEME, count=min(themed, SERIES_PER_THEME), total=SERIES_PER_THEME,
              label_fr=f"Thème : {label}", filters=f),
-        dict(kind='range', done=ranged >= 1, label_fr="Range : la situation du thème", filters=range_filters(f)),
+        dict(kind='range', done=ranged >= 1, label_fr="Range : la situation du thème", filters=rs, spot_id=(plan or {}).get('range_spot')),
     ]
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
     return dict(minutes=MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
-                started=(reviewed or themed > 0 or ranged > 0) and nxt is not None,
-                streak=streak(active, today), active_today=today in active, theme_fr=label, bb7=bb7, bb7_prev=bb7_prev, level=level)
+                started=(reviews > 0 or themed > 0 or ranged > 0) and nxt is not None,
+                streak=streak(active, today), active_today=today in active, theme_fr=label, bb7=bb7, bb7_prev=bb7_prev, level=level,
+                played_before=bool(done_s or ranges) if played_before is None else played_before)

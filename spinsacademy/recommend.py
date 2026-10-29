@@ -16,8 +16,10 @@ MAX_RECS = 2
 LATE_DAYS = 2
 RANGE_MIN = 80
 TIMEOUTS_MIN = 2
-SIDE = {'tight': ("surtout en jouant trop serré : tu te couches ou tu paies quand il fallait engager plus",),
-        'loose': ("surtout en jouant trop large : tu engages plus de jetons qu'il ne faut",)}
+SIDE = {'tight': ("surtout en te couchant ou en payant quand il fallait engager plus de jetons",),       # test joueurs 9 : sans « trop large »
+        'loose': ("surtout en engageant plus de jetons qu'il ne faut : tu paies ou tu relances quand il fallait faire moins",),
+        'small': ("surtout sur la taille : tu relances petit quand il fallait aller à tapis",),
+        'big': ("surtout sur la taille : tu vas à tapis quand une relance plus petite suffisait",)}
 DISCOVER = (     # situations proposées à la découverte, de la plus simple à la plus fine
     ('first_in', 'Premier à parler'), ('vs_allin', 'Face à un tapis'), ('vs_limp', 'Face à un limp'), ('vs_raise', 'Face à une relance'))
 
@@ -39,7 +41,8 @@ def fragile(stats, today_filters):
     for t in stats.get('recurring_errors') or []:
         f = {k: v for k, v in t['filters'].items() if k != 'mode'}
         if today_filters and all(today_filters.get(k) == v for k, v in f.items()): continue      # déjà le thème de la séance
-        side = 'tight' if t.get('tight', 0) > t.get('loose', 0) else 'loose' if t.get('loose', 0) > t.get('tight', 0) else None
+        n = {k: t.get(k, 0) for k in SIDE}; top = max(n.values())
+        side = next((k for k, v in n.items() if v == top), None) if top and list(n.values()).count(top) == 1 and 2 * top >= t['errors'] else None   # un sens net : au moins la moitié des erreurs
         return dict(kind='theme', text_fr=f"{_strip(t['label'])} : {t['errors']} erreurs sur {t['questions']}" + (f", {SIDE[side][0]}." if side else '.'),
                     label_fr='Une série ciblée', action=dict(type='series', filters=f))
     return None

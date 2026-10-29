@@ -21,7 +21,7 @@ def test_priorities_and_two_at_most():
                                         filters=dict(mode='gto', family='vs_allin', hero='BB', min_stack=0, max_stack=9.5))], by={})
     recs = recommend.build(stats, late, None, [], {}, NOW)
     assert [r['kind'] for r in recs] == ['review', 'theme'] and len(recs) == 2
-    assert recs[1]['text_fr'].startswith('Face à un tapis · BB · Moins de 10 BB : 5 erreurs sur 8, surtout en jouant trop serré')
+    assert recs[1]['text_fr'].startswith('Face à un tapis · BB · Moins de 10 BB : 5 erreurs sur 8, surtout en te couchant ou en payant')
     assert recs[1]['action'] == dict(type='series', filters=dict(family='vs_allin', hero='BB', min_stack=0, max_stack=9.5))
     # le thème déjà dans la séance n'est pas recommandé une deuxième fois
     assert [r['kind'] for r in recommend.build(stats, [], None, [], dict(family='vs_allin', hero='BB', min_stack=0, max_stack=9.5), NOW)] == ['discover']
