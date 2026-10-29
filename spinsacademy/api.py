@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, progress, quiz, ranges, ratelimit, review
+from . import adaptive, catalog, progress, quiz, ranges, ratelimit, review, today
 from .hrc import ROOT
 
 SCHEMA = """
@@ -67,6 +67,8 @@ def connect():
         con.execute('ALTER TABLE questions ADD COLUMN purpose TEXT'); con.execute('ALTER TABLE questions ADD COLUMN purpose_fr TEXT')
     if 'timed_out' not in {r[1] for r in con.execute('PRAGMA table_info(attempts)')}:      # migration : coup joué au temps (chrono)
         con.execute('ALTER TABLE attempts ADD COLUMN timed_out INTEGER NOT NULL DEFAULT 0')
+    if 'plan' not in {r[1] for r in con.execute('PRAGMA table_info(sessions)')}:           # migration : étape de la séance du jour
+        con.execute('ALTER TABLE sessions ADD COLUMN plan TEXT')
     con.execute('CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id)')
     catalog.sync(con); con.commit()
     return con
@@ -110,6 +112,7 @@ class NewSession(BaseModel):
     seed: Optional[int] = None
     adaptive: Optional[bool] = None       # None : préférence du joueur ; ignoré si des filtres sont choisis
     review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
+    plan: Optional[str] = Field(None, pattern='^(review|theme)$')   # étape de la séance du jour (spinsacademy.today)
 
 
 class Attempt(BaseModel):
@@ -261,8 +264,8 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
-        con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                    (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed, len(series), pid))
+        con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed, len(series), pid, body.plan))
         con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand, purpose, purpose_fr) VALUES (?, ?, ?, ?, ?, ?)',
                         [(sid, i, s, h, k, t) for i, (s, h, k, t) in enumerate(series)])
     adapt = None if info is None else dict(active=info['active'], reason_fr=info['reason_fr'], rule_fr=info['rule_fr'])
@@ -419,6 +422,35 @@ def my_reviews(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
     with closing(connect()) as con:
         res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode))
     return dict(res, mode=mode, due_items=res['due_items'][:quiz.SERIES_SIZE * 4])
+
+
+@app.get('/users/me/today')
+def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """séance du jour (programme de travail, étape 1) : révision, thème du jour, range du jour ; série de jours ; BB perdus sur 7 jours"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    tz = max(-840, min(840, tz))
+    with closing(connect()) as con:
+        version = serving_version(con, mode)
+        sess = [dict(r) for r in con.execute(
+            'SELECT s.created_at, s.plan, s.filters, s.size, s.dataset_version, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
+            'FROM sessions s WHERE s.player_id = ?', (pid,))]
+        sess = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+        rngs = [r[0] for r in con.execute('SELECT answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
+        rows = _mode_rows(con, pid, mode, None)
+        due = review.summary(rows, version)['due']
+        gto = serving_version(con, 'gto')                                  # l'exercice de range est toujours sur la référence GTO
+    now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)
+    week = lambda a, b: [r for r in rows if (now - datetime.timedelta(days=b)).isoformat() < (r['answered_at'] or '') <= (now - datetime.timedelta(days=a)).isoformat()]
+    stats = progress.compute(rows) if rows else {}
+    out = today.build(sess, rngs, due, stats.get('focus'), day, tz,
+                      progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
+                      progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None)
+    rs = out['steps'][2]
+    for f in (rs['filters'], {k: v for k, v in rs['filters'].items() if k != 'hero'},          # range du thème, sinon la plus proche
+              {k: v for k, v in rs['filters'].items() if k in ('family', 'table')}, {}):
+        if ranges.pick(gto, f or None, seed=0): rs['filters'] = f; break
+    return dict(out, mode=mode)
 
 
 @app.post('/users/me/adaptation/reset')

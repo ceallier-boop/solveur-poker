@@ -34,7 +34,15 @@
     <!-- Accueil -->
     <section id="screen-home" class="screen" aria-labelledby="home-title">
       <h1 id="home-title">Entraînement Expresso</h1>
-      <p class="lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <p class="lead" id="home-lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <section class="today" id="today" hidden aria-labelledby="today-title">
+        <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
+        <h2 id="today-title">Ta séance du jour <small>· 15 min</small></h2>
+        <ol class="today-steps" id="today-steps"></ol>
+        <p class="note" id="today-note" hidden></p>
+        <button class="primary big" id="today-go">Commencer la séance</button>
+      </section>
+      <h2 class="free-title" id="free-title" hidden>Jouer librement</h2>
       <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
         <button type="button" data-value="gto" aria-pressed="true">GTO</button>
         <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
@@ -189,6 +197,15 @@
       <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes mains » sur l'accueil).</p>
       <button class="primary big" id="again-btn">Nouvelle série</button>
       <button class="link" id="back-home">Retour à l'accueil</button>
+    </section>
+
+    <!-- Fin de la séance du jour -->
+    <section id="screen-today" class="screen" hidden aria-labelledby="td-title">
+      <h2 id="td-title">Séance du jour faite</h2>
+      <div class="score" id="td-score"></div>
+      <ul class="td-lines" id="td-lines"></ul>
+      <button class="primary big" id="td-more">Une série en plus</button>
+      <button class="link" id="td-home">Retour à l'accueil</button>
     </section>
 
     <!-- Progression -->

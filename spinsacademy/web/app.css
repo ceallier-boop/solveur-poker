@@ -446,3 +446,19 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .filters summary { display: flex; align-items: center; gap: 8px; list-style: none; }
 .filters summary::-webkit-details-marker { display: none; }
 .filters summary::before { content: '▸'; color: var(--accent); } .filters[open] summary::before { content: '▾'; }
+/* séance du jour (programme de travail, étape 1) */
+.today { background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; margin: 4px 0 8px; }
+.today h2 { margin: 0; font-size: 1.15rem; } .today h2 small { color: var(--muted); font-weight: 500; font-size: .9rem; }
+.today-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+.today-head #today-streak { font-weight: 700; color: var(--accent); }
+.today-head .up { color: var(--ok); font-weight: 700; } .today-head .down { color: var(--bad); font-weight: 700; }
+.today-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.today-steps li { display: flex; align-items: center; gap: 10px; font-size: .95rem; }
+.today-steps .tick { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: .8rem; font-weight: 800; color: var(--accent-text, #fff); }
+.today-steps li.done .tick { background: var(--ok); border-color: var(--ok); color: #fff; }
+.today-steps li.done > span:last-child { color: var(--muted); text-decoration: line-through; }
+.today-steps li.now { font-weight: 650; } .today-steps li.now .tick { border-color: var(--accent); }
+.today-steps small { color: var(--muted); font-weight: 500; }
+.today.is-done { border-color: var(--ok); }
+.free-title { font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 0; }
+.td-lines { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }

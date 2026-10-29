@@ -108,11 +108,11 @@ for (const group of document.querySelectorAll('.chips')) {
   });
 }
 
-async function start(f, review = false) {
+async function start(f, review = false, plan = null) {
   if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -455,6 +455,7 @@ async function summary() {
     ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${e.chosen} automatique)` : `Ton coup : ${e.chosen} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${e.best}</b></li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
+  $('again-btn').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle série';
   show('summary');
   refreshStats();                                                    // la progression hors connexion suit la dernière série
 }
@@ -523,7 +524,7 @@ async function stats() {
     + (f.label ? `<p><b>${f.label}</b></p>` : '') + `<p>${f.reason_fr}</p>`
     + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
     + (f.filters && !offline ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
-  if (f.filters && !offline) $('train-focus').addEventListener('click', () => start(f.filters));
+  if (f.filters && !offline) $('train-focus').addEventListener('click', () => { state.inToday = false; start(f.filters); });
   const groups = Object.entries(s.by).filter(([, rows]) => rows.length);          // pas de carte vide
   const old = s.untracked_questions || 0;                                         // démo : réponses d'une version précédente, sans description
   const cards = groups.map(([k, rows]) => `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
@@ -659,8 +660,8 @@ $('st-delete').addEventListener('click', async () => {
   if (!confirmTwice($('st-delete'), 'Confirmer : tout effacer définitivement')) return;
   await api('/users/me', { method: 'DELETE' }); store.del('sid'); store.del(STATS_KEY); stats();
 });
-$('quick-start').addEventListener('click', () => start({}));
-$('review-btn').addEventListener('click', () => start({}, true));
+$('quick-start').addEventListener('click', () => { state.inToday = false; start({}); });
+$('review-btn').addEventListener('click', () => { state.inToday = false; start({}, true); });
 
 // révision espacée : bouton quand des mains ratées sont arrivées à échéance (1, 3 puis 7 jours)
 async function reviews() {
@@ -682,7 +683,7 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode() {
   store.set('mode', mode());                                         // gardé après un rechargement
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews();
+  reviews(); if (!$('screen-home').hidden) loadToday();               // la séance suit le mode choisi
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -694,11 +695,12 @@ function onMode() {
   }
 }
 document.querySelector('.mode-switch').addEventListener('click', onMode);
-$('custom-start').addEventListener('click', () => start(filters()));
+$('custom-start').addEventListener('click', () => { state.inToday = false; start(filters()); });
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });
 $('next-btn').addEventListener('click', goNext);
 $('again-btn').addEventListener('click', () => {                 // A1 : même mode, mêmes filtres
+  if (state.inToday) { todayContinue(); return; }
   let f = state.filters; if (!f) { try { f = JSON.parse(store.get('filters') || '{}'); } catch (e) { f = {}; } }
   start({ ...f, mode: state.mode || mode() });
 });
@@ -712,7 +714,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function home() {
-  progress(''); show('home'); homeSummary();
+  progress(''); show('home'); homeSummary(); loadToday();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -726,14 +728,58 @@ $('past-rows').addEventListener('click', (e) => {
   const p = pastilles(); p[b.dataset.name] = b.dataset.color; store.set('pastilles', JSON.stringify(p)); renderPastilles();
 });
 renderPastilles();
+// ------------------------------------------------------------------ séance du jour (programme de travail, étape 1)
+// révision, thème du jour (2 séries), range du jour ; le serveur (ou la démo) construit le plan, l'application l'enchaîne
+const tzOffset = () => -new Date().getTimezoneOffset();
+async function loadToday() {
+  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
+  state.today = t; renderToday(t); return t;
+}
+function renderToday(t) {
+  $('today').hidden = false; $('free-title').hidden = false; $('home-lead').hidden = true;
+  $('quick-start').className = 'secondary';                          // un seul bouton plein sur l'accueil : la séance
+  $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : 'Première séance : c\'est parti';
+  const d = t.bb7 != null && t.bb7_prev != null ? t.bb7 - t.bb7_prev : null;
+  $('today-bb').innerHTML = t.bb7 != null ? `BB perdus / 100 sur 7 jours : <b>${bb(t.bb7)}</b>${d != null && Math.abs(d) >= 0.05 ? ` <span class="${d < 0 ? 'up' : 'down'}">${d < 0 ? '▼' : '▲'} ${bb(Math.abs(d))}</span>` : ''}` : '';
+  $('today-steps').innerHTML = t.steps.map((x, i) => `<li class="${x.done ? 'done' : i === t.next ? 'now' : ''}"><span class="tick" aria-hidden="true">${x.done ? '✓' : ''}</span>`
+    + `<span>${escT(x.label_fr)}${x.total ? ` <small>${x.count}/${x.total} séries</small>` : ''}</span></li>`).join('');
+  $('today-note').hidden = !t.done;
+  $('today-note').textContent = t.done ? 'Séance faite. Reviens demain : tes révisions et un nouveau thème t\'attendent.' : '';
+  $('today-go').textContent = t.done ? 'Une série en plus' : t.started ? 'Continuer la séance' : 'Commencer la séance';
+  $('today').classList.toggle('is-done', t.done);
+}
+function todayGo() {
+  const t = state.today; if (!t) return;
+  if (t.done) { state.inToday = false; start(t.steps[1].filters); return; }
+  const st = t.steps[t.next]; state.inToday = true;
+  if (st.kind === 'review') start({}, true, 'review');
+  else if (st.kind === 'theme') start(st.filters, false, 'theme');
+  else rangeStart(st.filters);
+}
+async function todayContinue() {
+  const t = await loadToday(); if (!t) { home(); return; }
+  if (t.done) showTodayDone(t); else todayGo();
+}
+function showTodayDone(t) {
+  state.inToday = false; progress('');
+  $('td-score').innerHTML = `✓<small>${t.minutes} minutes de travail · ${t.streak} jour${t.streak > 1 ? 's' : ''} de suite</small>`;
+  $('td-lines').innerHTML = [`Thème travaillé : <b>${escT(t.theme_fr)}</b>`,
+    t.bb7 != null ? `BB perdus pour 100 décisions sur 7 jours : <b>${bb(t.bb7)}</b>${t.bb7_prev != null ? ` (semaine précédente : ${bb(t.bb7_prev)})` : ''}` : '',
+    'Demain : tes mains ratées reviennent en révision, et la séance choisit ton thème le plus fragile.'].filter(Boolean).map((l) => `<li>${l}</li>`).join('');
+  show('today'); refreshStats();
+}
+$('today-go').addEventListener('click', todayGo);
+$('td-more').addEventListener('click', () => start((state.today && state.today.steps[1].filters) || {}));
+$('td-home').addEventListener('click', home);
+
 // ------------------------------------------------------------------ « Construis ta range » (chantier 2) : colorier une range, correction main par main
 const RK13 = 'AKQJT98765432';
 const cellName = (i, j) => (i === j ? RK13[i] + RK13[j] : i < j ? RK13[i] + RK13[j] + 's' : RK13[j] + RK13[i] + 'o');
 const combos = (h) => (h.length === 2 ? 6 : h.endsWith('s') ? 4 : 12);
 const RG_STATUS = { ok_in: 'à jouer : bien vu', ok_out: 'pas avec cette action : bien vu', extra: 'jouée à tort', missing: 'oubliée',
   mixed: 'mixte (action demandée de 25 à 75 % du temps) : les deux sont acceptés', close: 'écart négligeable (moins de 0,01 BB) : les deux sont acceptés' };
-async function rangeStart() {
-  const f = filters(); delete f.mode;
+async function rangeStart(forced) {
+  const f = forced ? { ...forced } : filters(); delete f.mode;          // séance du jour : la situation du thème
   if (f.family === 'read') delete f.family;
   let recent = []; try { recent = JSON.parse(store.get('ranges_recent') || '[]'); } catch (e) { recent = []; }
   f.exclude = recent.join(',');                                          // pas deux fois la même situation de suite
@@ -806,13 +852,14 @@ async function rangeSubmit() {
     + `<p class="rg-legend"><span class="st-ok_in">à jouer</span><span class="st-extra">en trop</span><span class="st-missing">oubliée</span><span class="st-mixed">mixte (les deux acceptés)</span><span class="st-close">écart négligeable</span><span class="st-chosen">ton choix</span></p><p class="note">Touche une case pour voir ce que fait la référence.</p>`
     + (rem ? `<p class="remember"><b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span></p>` : '');
   $('rg-result').hidden = false; $('rg-edit').hidden = true; $('rg-after').hidden = false; $('rg-help').hidden = true;
+  $('rg-again').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle range';
   glossify($('rg-result'));
   refreshStats();
 }
-$('range-btn').addEventListener('click', rangeStart);
+$('range-btn').addEventListener('click', () => { state.inToday = false; rangeStart(); });
 $('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });
 $('rg-submit').addEventListener('click', rangeSubmit);
-$('rg-again').addEventListener('click', rangeStart);
+$('rg-again').addEventListener('click', () => (state.inToday ? todayContinue() : rangeStart()));
 $('rg-home').addEventListener('click', home);
 
 // test joueurs du 24/10 : le mode et le thème choisis restent après un rechargement

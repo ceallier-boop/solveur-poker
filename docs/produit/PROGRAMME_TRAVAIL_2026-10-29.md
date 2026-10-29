@@ -172,3 +172,19 @@ Après les étapes 1 et 2 : un test joueurs centré sur « sais-tu quoi faire en
 3. Rappels (notification ou courriel) : oui, non, ou plus tard avec les comptes.
 4. Défi du jour commun à tous : à garder anonyme tant qu'il n'y a pas de comptes.
 5. Seuils de passage des niveaux (§2) : à caler sur les données des premiers joueurs.
+
+## 11. Étape 1 réalisée (29/10/2026) : séance du jour et accueil
+
+Décision du porteur du projet : séance de 15 minutes.
+
+- **Accueil** : en tête, la carte « Ta séance du jour · 15 min » avec la série de jours, les BB perdus pour 100 décisions sur 7 jours (et l'écart avec la semaine précédente), trois étapes à cocher et le seul bouton plein de l'écran (« Commencer la séance », « Continuer la séance », puis « Une série en plus »). Dessous, « Jouer librement » regroupe le mode, le chrono, la série rapide, l'exercice de range, le conseiller et la progression.
+- **Étapes** (`spinsacademy/today.py`, `GET /users/me/today?mode=&tz=`) :
+  1. révision des mains arrivées à échéance (faite d'office s'il n'y a rien à revoir) ;
+  2. thème du jour en 2 séries de 5 : le thème à travailler du diagnostic, sinon un cycle de 8 thèmes qui commence par les tapis courts pour un nouveau joueur ; le thème reste le même toute la journée ;
+  3. range du jour sur la situation du thème (filtres élargis si l'exercice n'a pas de situation pour ce thème).
+- **Enchaînement** : à la fin de chaque série ou range, « Suite de la séance » lance l'étape suivante ; à la fin, l'écran « Séance du jour faite » (thème, BB perdus sur 7 jours, série de jours, ce qui revient demain).
+- **Série de jours** : un jour compte dès qu'une série est finie ou qu'une range est faite ; un jour manqué par période de 7 jours est pardonné. La journée suit le fuseau de l'appareil.
+- Les séries de la séance sont marquées en base (`sessions.plan` : `review` ou `theme`) ; la démo autonome refait le même calcul dans le navigateur.
+- Contrôles : `tests/test_today.py`, `tools/web/e2e_today.cjs` (application et démo).
+
+Hors étape 1, prévu ensuite : variantes 5 et 30 minutes, défi du jour dans la séance (étape 5), recommandations (étape 2).

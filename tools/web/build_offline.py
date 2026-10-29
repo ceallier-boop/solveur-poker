@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, field, quiz, ranges, review
+from spinsacademy import adaptive, field, quiz, ranges, review, today
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -281,6 +281,53 @@ const DEMO = (() => {
     return { rule_fr: __REVIEW_RULE__, due: due.length, pending: later.length, next_due_at: later.length ? new Date(later[0].due_at).toISOString() : null, mode };
   }
 
+  // séance du jour : même règle que spinsacademy.today (jour local du navigateur)
+  const THEMES = __THEMES__;
+  const pad = (x) => String(x).padStart(2, '0');
+  const dayOf = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const dayBack = (k) => dayOf(new Date(Date.now() - k * DAY).toISOString());
+  function streak(days) {                                          // un jour manqué par période de 7 jours est pardonné
+    let n = 0, miss = null; const oldest = [...days].sort()[0];
+    for (let k = days.has(dayBack(0)) ? 0 : 1; k < 800; k++) {
+      const d = dayBack(k);
+      if (days.has(d)) n += 1;
+      else if (miss === null || k - miss >= 7) { if (!oldest || d < oldest) break; miss = k; } else break;
+    }
+    return n;
+  }
+  function bbWindow(mode, a, b) {                                  // BB perdus pour 100 décisions entre a et b jours en arrière
+    let n = 0, lost = 0; const lo = Date.now() - b * DAY, hi = Date.now() - a * DAY;
+    for (const s of Object.values(load().sessions)) if (s.mode === mode && own(s)) for (const r of Object.values(s.answers)) {
+      const t = Date.parse(r.at); if (!(t > lo && t <= hi) || (r.field && r.field.read)) continue; n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10);
+    }
+    return n ? Math.round(lost / 1000 * 100 / n * 100) / 100 : null;
+  }
+  function rangeOk(f) { return RTASKS.some((t) => (!f.table || t.table === f.table) && (!f.hero || t.hero === f.hero) && (!f.family || t.family === f.family)
+    && t.effective_stack_bb >= (f.min_stack || 0) && t.effective_stack_bb <= (f.max_stack || 999)); }
+  function today(mode) {
+    const db = load(), td = dayBack(0);
+    const ss = Object.values(db.sessions).filter((s) => s.mode === mode && own(s));
+    const done = ss.filter((s) => Object.keys(s.answers).length >= s.items.length), doneToday = done.filter((s) => dayOf(s.created_at) === td);
+    const rgs = (db.ranges || []).map((r) => r.at);
+    const active = new Set([...done.map((s) => dayOf(s.created_at)), ...rgs.map(dayOf)]);
+    const firstTheme = ss.filter((s) => s.plan === 'theme' && dayOf(s.created_at) === td).sort((a, b) => (a.created_at < b.created_at ? -1 : 1))[0];
+    const focus = stats().focus; let label, f;
+    if (firstTheme) { f = firstTheme.filters || {}; label = (THEMES.find(([, x]) => JSON.stringify(x) === JSON.stringify(f)) || [focus && focus.label || 'Ton thème du jour'])[0]; }
+    else if (focus && focus.filters) { f = Object.fromEntries(Object.entries(focus.filters).filter(([k]) => k !== 'mode')); label = focus.label || 'Ton thème à travailler'; }
+    else [label, f] = THEMES[[...active].filter((d) => d !== td).length % THEMES.length];
+    const due = reviews(mode).due, reviewed = doneToday.some((s) => s.plan === 'review'), themed = doneToday.filter((s) => s.plan === 'theme').length;
+    const ranged = rgs.filter((r) => dayOf(r) === td).length;
+    let rf = Object.fromEntries(['table', 'hero', 'family', 'min_stack', 'max_stack'].filter((k) => f[k] != null).map((k) => [k, f[k]])); if (rf.family === 'read') delete rf.family;
+    for (const g of [rf, { ...rf, hero: undefined }, { family: rf.family, table: rf.table }, {}]) { const c = Object.fromEntries(Object.entries(g).filter(([, v]) => v != null)); if (rangeOk(c)) { rf = c; break; } }
+    const steps = [
+      { kind: 'review', done: reviewed || due === 0, count: due, label_fr: due ? `Révision : ${due} main${due > 1 ? 's' : ''} à revoir` : "Révision : rien à revoir aujourd'hui" },
+      { kind: 'theme', done: themed >= 2, count: Math.min(themed, 2), total: 2, label_fr: `Thème : ${label}`, filters: f },
+      { kind: 'range', done: ranged >= 1, label_fr: 'Range : la situation du thème', filters: rf }];
+    const nxt = steps.findIndex((x) => !x.done);
+    return { minutes: 15, date: td, steps, next: nxt < 0 ? null : nxt, done: nxt < 0, started: (reviewed || themed > 0 || ranged > 0) && nxt >= 0,
+      streak: streak(active), active_today: active.has(td), theme_fr: label, bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
+  }
+
   // « Construis ta range » : même règle que spinsacademy.ranges.grade
   function rangeGrade(t, selected) {
     const sel = new Set(selected); const cells = {}; let wt = 0, good = 0, lost = 0, refw = 0, myw = 0; const errs = [];
@@ -322,7 +369,7 @@ const DEMO = (() => {
       }
       if (!picked || !picked.length) return [422, { detail: 'pas assez de situations pour ces filtres' }];
       const id = Math.random().toString(16).slice(2) + Date.now().toString(16);
-      db.sessions[id] = { id, build: BUILD, created_at: now(), mode, items: picked, answers: {}, purposes }; save();
+      db.sessions[id] = { id, build: BUILD, created_at: now(), mode, items: picked, answers: {}, purposes, plan: body.plan || null, filters: f }; save();
       return [201, { session_id: id, mode, size: picked.length, adaptive: null }];
     }
     const sm = p.match(/^\/sessions\/([^/]+)\/summary$/);
@@ -371,6 +418,7 @@ const DEMO = (() => {
     }
     if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
+    if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
   }
@@ -417,7 +465,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 
