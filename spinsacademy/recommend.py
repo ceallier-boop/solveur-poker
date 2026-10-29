@@ -78,7 +78,9 @@ def discover(stats, today_filters=None):
     return None
 
 
-def build(stats, review_items, last_range, rows, today_filters, now=None):
+def build(stats, review_items, last_range, rows, today_filters, now=None, level_msg=None, level_next=None):
     now = now or datetime.datetime.now(datetime.timezone.utc)
-    cands = [review_late(review_items, now), fragile(stats, today_filters), range_redo(last_range), timeouts(rows, now), discover(stats, today_filters)]
+    cands = [review_late(review_items, now), fragile(stats, today_filters), range_redo(last_range), timeouts(rows, now),
+             dict(kind='level', text_fr=level_msg, label_fr='Voir mon niveau', action=dict(type='level')) if level_msg else None,   # étape 4
+             discover(stats, today_filters)]
     return [c for c in cands if c][:MAX_RECS]

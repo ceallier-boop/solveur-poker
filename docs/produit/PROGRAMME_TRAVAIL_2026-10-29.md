@@ -218,3 +218,20 @@ Pas encore : recommandation « niveau presque validé » (avec les niveaux, éta
 - Contrôles : `tests/test_goals.py`, `tools/web/e2e_goals.cjs` (application et démo).
 
 Pas encore : objectif « vitesse » au chrono (avec les niveaux 3 et 4), bilan détaillé par thème (plus progressé, à surveiller).
+
+## 14. Étape 4 réalisée (29/10/2026) : niveaux et premier lancement
+
+- **Premier lancement** (nouveau joueur sans historique) en trois écrans : expérience et but ; niveau de départ proposé (moins de 3 mois → niveau 1, plus de 3 mois ou gros volume → niveau 2), modifiable ; présentation de la séance de 15 minutes et des objectifs. « Passer » démarre au niveau 1. Un joueur qui avait déjà joué n'y passe pas : il part du niveau 1 et monte d'après ses résultats.
+- **Niveaux** (`spinsacademy/levels.py`, `GET` et `PUT /users/me/level`, `POST /users/me/onboarding`, table `player_level`) :
+  1. Tapis courts (moins de 10 BB) : 100 décisions du niveau à moins de 15 BB perdus pour 100, et 3 ranges du niveau à 85 % ;
+  2. Le jeu à 10-16 BB : 150 décisions à moins de 12, et aucun thème du niveau fragile ;
+  3. Le jeu à 17-25 BB : 150 décisions à moins de 10 ;
+  4. Exploiter le field : le mode exploitant, ouvert en continu.
+  Mesure sur les 300 dernières décisions du niveau ; passage automatique (message « Bravo : tu passes au niveau 2… ») ; le joueur peut choisir son niveau de 1 à 3.
+- **Séance du jour** : le thème vient du niveau (cycle de ses thèmes) ; un thème fragile hors du niveau n'est pas imposé. En mode exploitant, les thèmes du niveau 4.
+- **Accueil** : la carte de la séance affiche le niveau et l'avancement (« 40/100 décisions · 33,9 BB/100 (cible < 15) · 0/3 ranges à 85 % ») ; un toucher ouvre « Mon niveau » dans la progression (critères cochés, changement de niveau).
+- **Recommandation « niveau presque validé »** (application) : « Plus que 20 décisions pour passer au niveau 2. »
+- Le niveau est exporté et effacé avec les autres données ; la démo refait les mêmes calculs dans le navigateur (sans la recommandation de niveau).
+- Contrôles : `tests/test_levels.py`, `tools/web/e2e_onboard.cjs` ; les autres parcours passent le premier lancement par « Passer ».
+
+Pas encore : test de placement de 10 décisions, choix du temps par jour (5 / 15 / 30 minutes), objectif « vitesse » des niveaux 3 et 4.

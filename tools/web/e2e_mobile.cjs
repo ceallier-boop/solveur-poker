@@ -1,12 +1,16 @@
 // Parcours complet sur mobile (390 x 844) : accueil, 5 questions (dont un signalement), bilan ; captures d'écran et erreurs JavaScript.
 // Usage : BASE_URL=http://localhost:8000/ [MODE=exploit] [EXTRA_SERIES=n] node tools/web/e2e_mobile.cjs <dossier_captures> [light|dark]
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur voit d'abord le premier lancement
+  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
+    if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ }
+};
 (async () => {
   const out = process.argv[2]; const errors = [];
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: process.argv[3] || 'light' });
   const p = await ctx.newPage();
   p.on('pageerror', e => errors.push(String(e))); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
-  await p.goto(process.env.BASE_URL || 'http://localhost:8000/'); await p.screenshot({ path: out + '/1_accueil.png' });
+  await p.goto(process.env.BASE_URL || 'http://localhost:8000/'); await skipOnboarding(p); await p.screenshot({ path: out + '/1_accueil.png' });
   if (process.env.MODE === 'exploit') await p.click('.mode-switch [data-value="exploit"]');
   await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
   await p.screenshot({ path: out + '/2_question.png' });

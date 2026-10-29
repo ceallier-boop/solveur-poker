@@ -47,7 +47,7 @@ def streak(days, today):
     return n
 
 
-def theme_of_day(focus, nth, first_today):
+def theme_of_day(focus, nth, first_today, themes=THEMES):
     """(libellé, filtres) du thème du jour : celui de la première série du jour, sinon le diagnostic, sinon le cycle, pris dans
     l'ordre des jours de travail (un nouveau joueur commence par les tapis courts)"""
     if first_today: return first_today
@@ -56,7 +56,7 @@ def theme_of_day(focus, nth, first_today):
         label = focus.get('label') or 'Ton thème à travailler'
         for m in ('GTO · ', 'Exploitant · '): label = label[len(m):] if label.startswith(m) else label   # le mode est déjà choisi
         return label, f
-    return THEMES[nth % len(THEMES)]
+    return themes[nth % len(themes)]
 
 
 def range_filters(f):
@@ -66,7 +66,7 @@ def range_filters(f):
     return out
 
 
-def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None):
+def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None):
     """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
     due : mains à réviser aujourd'hui ; focus : diagnostic de progress.compute. Renvoie le plan du jour"""
     done_s = [s for s in sessions if s['answered'] >= s['size']]
@@ -76,9 +76,9 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None):
     first = None
     if first_theme:
         f = json.loads(first_theme['filters'] or '{}')
-        first = (next((l for l, x in THEMES if x == f), None) or (focus or {}).get('label') or 'Ton thème du jour', f)
+        first = (next((l for l, x in tuple(themes) + THEMES if x == f), None) or (focus or {}).get('label') or 'Ton thème du jour', f)
     active = {local_day(s['created_at'], tz) for s in done_s} | {local_day(r, tz) for r in ranges}
-    label, f = theme_of_day(focus, sum(1 for d in active if d < today), first)
+    label, f = theme_of_day(focus, sum(1 for d in active if d < today), first, themes)
     reviewed = any(s['plan'] == 'review' for s in today_s)
     themed = sum(1 for s in today_s if s['plan'] == 'theme')
     ranged = sum(1 for r in ranges if local_day(r, tz) == today)
@@ -92,4 +92,4 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None):
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
     return dict(minutes=MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
                 started=(reviewed or themed > 0 or ranged > 0) and nxt is not None,
-                streak=streak(active, today), active_today=today in active, theme_fr=label, bb7=bb7, bb7_prev=bb7_prev)
+                streak=streak(active, today), active_today=today in active, theme_fr=label, bb7=bb7, bb7_prev=bb7_prev, level=level)

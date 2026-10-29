@@ -37,6 +37,7 @@
       <p class="lead" id="home-lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
       <section class="today" id="today" hidden aria-labelledby="today-title">
         <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
+        <button class="level-line" id="today-level" hidden></button>
         <h2 id="today-title">Ta séance du jour <small>· 15 min</small></h2>
         <ol class="today-steps" id="today-steps"></ol>
         <p class="note" id="today-note" hidden></p>
@@ -210,6 +211,36 @@
       <button class="link" id="back-home">Retour à l'accueil</button>
     </section>
 
+    <!-- Premier lancement (programme de travail, étape 4) -->
+    <section id="screen-onboard" class="screen" hidden aria-labelledby="ob-title">
+      <p class="ob-steps" id="ob-steps">Étape 1 sur 3</p>
+      <div id="ob-1">
+        <h2 id="ob-title">Bienvenue sur SpinsAcademy</h2>
+        <p class="lead">Trois questions pour préparer ton entraînement.</p>
+        <h3>Tu joues en Expresso depuis…</h3>
+        <div class="chips ob-chips" id="ob-exp"></div>
+        <h3>Ton but</h3>
+        <div class="chips ob-chips" id="ob-goal"></div>
+      </div>
+      <div id="ob-2" hidden>
+        <h2>Ton niveau de départ</h2>
+        <p class="lead">Proposé d'après ton expérience. Tu passes au niveau suivant tout seul, quand tes résultats le montrent.</p>
+        <div class="ob-levels" id="ob-levels"></div>
+        <p class="note">Le niveau 4, « Exploiter le field », se joue en mode Exploitant, ouvert à tout moment.</p>
+      </div>
+      <div id="ob-3" hidden>
+        <h2>Ta séance du jour : 15 minutes</h2>
+        <ol class="ob-plan">
+          <li><b>Révision</b> : tes mains ratées reviennent 1, 3 puis 7 jours plus tard.</li>
+          <li><b>Thème du jour</b> : deux séries de 5 décisions sur ce que tu dois travailler.</li>
+          <li><b>Range du jour</b> : tu dessines la range de la situation du thème.</li>
+        </ol>
+        <p class="note">Chaque semaine, trois objectifs à ta mesure. Un jour manqué par semaine ne casse pas ta série de jours.</p>
+      </div>
+      <button class="primary big" id="ob-next">Suivant</button>
+      <button class="link" id="ob-skip">Passer</button>
+    </section>
+
     <!-- Fin de la séance du jour -->
     <section id="screen-today" class="screen" hidden aria-labelledby="td-title">
       <h2 id="td-title">Séance du jour faite</h2>
@@ -225,6 +256,13 @@
       <p class="offline-note" id="st-offline" role="status" hidden></p>
       <div class="score" id="st-score"></div>
       <div class="focus" id="st-focus" role="status"></div>
+      <section class="my-level" id="st-level" hidden aria-labelledby="st-level-title">
+        <h3 id="st-level-title">Mon niveau</h3>
+        <p id="st-level-name"></p>
+        <ul class="level-crit" id="st-level-crit"></ul>
+        <p class="note">Changer de niveau :</p>
+        <div class="chips" id="st-level-pick"></div>
+      </section>
       <h3>Score des dernières séries</h3>
       <div class="evo-wrap"><div class="evo-axis" aria-hidden="true"><span>100 %</span><span>50 %</span><span>0 %</span></div>
         <div class="evolution" id="st-evolution" aria-label="Score des dernières séries, de la plus ancienne à la plus récente"></div></div>

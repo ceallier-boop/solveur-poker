@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, field, goals, quiz, ranges, review, today
+from spinsacademy import adaptive, field, goals, levels, quiz, ranges, review, today
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -302,6 +302,41 @@ const DEMO = (() => {
     }
     return n ? Math.round(lost / 1000 * 100 / n * 100) / 100 : null;
   }
+  // niveaux et premier lancement : mêmes règles que spinsacademy.levels
+  const LV = __LEVELS__;
+  function levelRow() {
+    const db = load();
+    if (!db.level) { if (!Object.keys(db.sessions).length) return { level: 1, onboarded_at: null }; db.level = { level: 1, onboarded_at: now() }; save(); }
+    return db.level;
+  }
+  const inLevel = (lv, eff, fam) => { const L = LV.levels[lv]; return eff >= L.depth[0] && eff < L.depth[1] && L.themes.some(([, f]) => f.family === fam); };
+  const levelFits = (lv, f) => lv >= 4 || ((f.min_stack ?? 0) >= LV.levels[lv].depth[0] && (f.max_stack ?? 99) <= LV.levels[lv].depth[1]);
+  function levelStatus(lv) {
+    if (!LV.decisions[lv]) return { level: lv, ready: false, criteria: [], final: true };
+    const xs = [];
+    for (const s of Object.values(load().sessions)) if (s.mode === 'gto' && own(s)) s.items.forEach((i, k) => { const r = s.answers[k]; if (!r) return;
+      const m = r.meta || (ITEMS[i] && metaOf(ITEMS[i])); if (m && inLevel(lv, m.eff, m.family)) xs.push([r.at, r]); });
+    const mine = xs.sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-LV.recent).map(([, r]) => r);
+    const dec = mine.length, lost = mine.reduce((a, r) => a + 10 * Math.round((r.regret_mbb || 0) / 10), 0), bbv = dec ? Math.round(lost / 1000 * 100 / dec * 100) / 100 : null;
+    const crit = [{ kind: 'decisions', label_fr: `${LV.decisions[lv]} décisions du niveau`, value: dec, target: LV.decisions[lv], ok: dec >= LV.decisions[lv] },
+      { kind: 'bb', label_fr: `Moins de ${String(LV.bb_target[lv]).replace('.', ',')} BB perdus pour 100 décisions`, value: bbv, target: LV.bb_target[lv], ok: bbv != null && dec >= LV.decisions[lv] && bbv < LV.bb_target[lv] }];
+    if (lv === 1) { const good = (load().ranges || []).filter((r) => { const t = RTASKS.find((x) => x.spot_id === r.spot_id); return r.accuracy_pct >= LV.range_good && t && inLevel(1, t.effective_stack_bb, t.family); }).length;
+      crit.push({ kind: 'ranges', label_fr: `${LV.ranges_l1} ranges du niveau à ${LV.range_good} % ou plus`, value: good, target: LV.ranges_l1, ok: good >= LV.ranges_l1 }); }
+    if (lv === 2) { const weak = (stats().focus || {}).kind === 'weak'; crit.push({ kind: 'fragile', label_fr: 'Aucun thème du niveau fragile', value: weak ? stats().focus.label : null, target: null, ok: dec > 0 && !weak }); }
+    return { level: lv, ready: crit.every((c) => c.ok), criteria: crit, final: false };
+  }
+  function levelInfo() {
+    const row = levelRow(); let promoted = null, st;
+    for (;;) { st = levelStatus(row.level); if (!st.ready || !row.onboarded_at) break; row.level += 1; promoted = row.level; const db = load(); db.level = row; save(); }
+    return { level: row.level, name: LV.levels[row.level].name, onboarded: !!row.onboarded_at, experience: row.experience || null, goal: row.goal || null, promoted_to: promoted, status: st,
+      levels: Object.entries(LV.levels).map(([k, v]) => ({ number: +k, name: v.name, mode: v.mode })), experiences: LV.experiences, goals: LV.goals };
+  }
+  function setLevel(body, onboarding) {
+    const db = load(), lv = onboarding ? (body.level || LV.start[body.experience] || 1) : body.level;
+    if (!(lv >= 1 && lv <= 3)) return [422, { detail: 'niveau de 1 à 3' }];
+    db.level = Object.assign(db.level || {}, { level: lv }, onboarding ? { experience: body.experience, goal: body.goal, onboarded_at: now() } : { onboarded_at: (db.level || {}).onboarded_at || now() }); save();
+    return [200, levelInfo()];
+  }
   function rangeOk(f) { return RTASKS.some((t) => (!f.table || t.table === f.table) && (!f.hero || t.hero === f.hero) && (!f.family || t.family === f.family)
     && t.effective_stack_bb >= (f.min_stack || 0) && t.effective_stack_bb <= (f.max_stack || 999)); }
   function today(mode) {
@@ -311,10 +346,11 @@ const DEMO = (() => {
     const rgs = (db.ranges || []).map((r) => r.at);
     const active = new Set([...done.map((s) => dayOf(s.created_at)), ...rgs.map(dayOf)]);
     const firstTheme = ss.filter((s) => s.plan === 'theme' && dayOf(s.created_at) === td).sort((a, b) => (a.created_at < b.created_at ? -1 : 1))[0];
-    const focus = stats().focus; let label, f;
-    if (firstTheme) { f = firstTheme.filters || {}; label = (THEMES.find(([, x]) => JSON.stringify(x) === JSON.stringify(f)) || [focus && focus.label || 'Ton thème du jour'])[0]; }
+    const lvn = mode === 'gto' ? levelRow().level : 4, themes = LV.levels[lvn].themes;     // étape 4 : thèmes du niveau
+    let focus = stats().focus; if (focus && focus.filters && !levelFits(lvn, focus.filters)) focus = null; let label, f;
+    if (firstTheme) { f = firstTheme.filters || {}; label = (themes.concat(THEMES).find(([, x]) => JSON.stringify(x) === JSON.stringify(f)) || [focus && focus.label || 'Ton thème du jour'])[0]; }
     else if (focus && focus.filters) { f = Object.fromEntries(Object.entries(focus.filters).filter(([k]) => k !== 'mode')); label = (focus.label || 'Ton thème à travailler').replace(/^(GTO|Exploitant) · /, ''); }
-    else [label, f] = THEMES[[...active].filter((d) => d !== td).length % THEMES.length];
+    else [label, f] = themes[[...active].filter((d) => d !== td).length % themes.length];
     const due = reviews(mode).due, reviewed = doneToday.some((s) => s.plan === 'review'), themed = doneToday.filter((s) => s.plan === 'theme').length;
     const ranged = rgs.filter((r) => dayOf(r) === td).length;
     let rf = Object.fromEntries(['table', 'hero', 'family', 'min_stack', 'max_stack'].filter((k) => f[k] != null).map((k) => [k, f[k]])); if (rf.family === 'read') delete rf.family;
@@ -325,7 +361,7 @@ const DEMO = (() => {
       { kind: 'range', done: ranged >= 1, label_fr: 'Range : la situation du thème', filters: rf }];
     const nxt = steps.findIndex((x) => !x.done);
     return { minutes: 15, date: td, steps, next: nxt < 0 ? null : nxt, done: nxt < 0, started: (reviewed || themed > 0 || ranged > 0) && nxt >= 0,
-      streak: streak(active), active_today: active.has(td), theme_fr: label, bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
+      streak: streak(active), active_today: active.has(td), theme_fr: label, level: { number: lvn, name: LV.levels[lvn].name }, bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
   }
 
   // objectifs de la semaine : mêmes règles que spinsacademy.goals (semaine du lundi au dimanche, heure du navigateur)
@@ -498,6 +534,9 @@ const DEMO = (() => {
     if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/recommendations') return [200, recommendations(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/goals' && method === 'PUT') return setGoal(body);
+    if (p === '/users/me/level' && method === 'PUT') return setLevel(body, false);
+    if (p === '/users/me/onboarding' && method === 'POST') return setLevel(body, true);
+    if (p === '/users/me/level') return [200, levelInfo()];
     if (p === '/users/me/goals') return [200, goals(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
@@ -545,7 +584,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

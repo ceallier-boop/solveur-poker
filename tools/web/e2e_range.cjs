@@ -1,11 +1,15 @@
 // Chantiers 2 et 5 : « Construis ta range » (colorier en glissant, correction), mode chrono à 8 s (fold automatique),
 // BB perdus dans le bilan et la progression, réglage du chrono gardé. Usage : BASE_URL=http://localhost:8061/ node tools/web/e2e_range.cjs [dossier]
 const { chromium } = require('playwright');
+const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur voit d'abord le premier lancement
+  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
+    if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ }
+};
 (async () => {
   const out = process.argv[2] || '.'; const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const b = await chromium.launch(); const res = {};
   const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
-  await p.goto(BASE); if (process.argv[2]) await p.screenshot({ path: `${out}/accueil.png` });
+  await p.goto(BASE); await skipOnboarding(p); if (process.argv[2]) await p.screenshot({ path: `${out}/accueil.png` });
   // range
   await p.tap('#range-btn'); await p.waitForSelector('#screen-range:not([hidden])');
   res.question = await p.textContent('#rg-question');
@@ -28,6 +32,6 @@ const { chromium } = require('playwright');
   await p.tap('#next-btn'); await p.waitForSelector('#screen-summary:not([hidden])'); res.summary = (await p.textContent('#s-score')).trim();
   await p.tap('#back-home'); await p.tap('#stats-btn'); await p.waitForSelector('#screen-stats:not([hidden])'); await p.waitForTimeout(300);
   res.stats = (await p.textContent('#st-score')).trim(); if (process.argv[2]) await p.screenshot({ path: `${out}/stats.png` });
-  res.chronoKept = await (async () => { await p.goto(BASE); return p.getAttribute('.chips[data-name="chrono"] [data-value="8"]', 'aria-pressed'); })();
+  res.chronoKept = await (async () => { await p.goto(BASE); await skipOnboarding(p); return p.getAttribute('.chips[data-name="chrono"] [data-value="8"]', 'aria-pressed'); })();
   res.errs = errs; console.log(JSON.stringify(res, null, 1)); await b.close();
 })();

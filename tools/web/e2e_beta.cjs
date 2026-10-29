@@ -4,6 +4,10 @@
 //   A12 coupure réseau pendant une réponse : message, réessai, une seule réponse enregistrée.
 // Usage : BASE_URL=http://localhost:8061/ ADMIN_TOKEN=... [DEMO_URL=http://localhost:8052/spinsacademy.html] node tools/web/e2e_beta.cjs
 const { chromium } = require('playwright');
+const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur voit d'abord le premier lancement
+  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
+    if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ }
+};
 const BASE = process.env.BASE_URL || 'http://localhost:8061/', TOKEN = process.env.ADMIN_TOKEN;
 const FOUR_G = { offline: false, latency: 70, downloadThroughput: 4e6 / 8, uploadThroughput: 3e6 / 8 };   // « 4G » : 4 Mbit/s, 70 ms
 
@@ -15,7 +19,7 @@ async function mobile(browser) {
 }
 
 async function firstQuestion(p, url) {
-  await p.goto(url); await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
+  await p.goto(url); await skipOnboarding(p); await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
 }
 
 (async () => {
@@ -49,7 +53,7 @@ async function firstQuestion(p, url) {
     const cdp = await ctx.newCDPSession(p); await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', FOUR_G);
     let bytes = 0; p.on('response', async (r) => { try { bytes += (await r.body()).length; } catch (e) { /* redirection */ } });
     const t0 = Date.now();
-    await p.goto(url); const tPage = Date.now() - t0;
+    await p.goto(url); await skipOnboarding(p); const tPage = Date.now() - t0;
     await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])', { timeout: 120000 });
     out.A11[name] = { page_s: +(tPage / 1000).toFixed(1), first_question_s: +((Date.now() - t0) / 1000).toFixed(1), kio: Math.round(bytes / 1024) };
     await ctx.close();

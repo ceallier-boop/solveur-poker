@@ -505,6 +505,8 @@ async function stats() {
   for (const id of ['st-export', 'st-delete']) $(id).hidden = !!offline;   // ces actions demandent le serveur
   if (offline) $('st-adapt').hidden = true; else await adaptation();
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
+  if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
+  else api('/users/me/level').then((lv) => { renderLevel(lv); if (state.scrollLevel) { state.scrollLevel = false; $('st-level').scrollIntoView({ block: 'start' }); } }).catch(() => renderLevel(null));
   if (!s.questions) {
     $('st-score').innerHTML = '—<small>Joue une première série pour voir ta progression.</small>';
     for (const id of ['st-evolution', 'st-themes']) $(id).innerHTML = '';
@@ -717,7 +719,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function home() {
-  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals();
+  if (!state.levelChecked) {                                          // étape 4 : premier lancement en trois écrans
+    state.levelChecked = true;
+    try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
+  }
+  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals(); loadLevel();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -775,6 +781,66 @@ function showTodayDone(t) {
 }
 $('today-go').addEventListener('click', todayGo);
 
+// ------------------------------------------------------------------ niveaux et premier lancement (programme de travail, étape 4)
+function onboard(lv) {
+  const ob = state.ob = { step: 1, exp: null, goal: null, level: null, lv };
+  const chips = (id, map, key) => { $(id).innerHTML = Object.entries(map).map(([k, t]) => `<button type="button" data-v="${k}" aria-pressed="false">${escT(t)}</button>`).join('');
+    $(id).onclick = (e) => { const b = e.target.closest('button'); if (!b) return; ob[key] = b.dataset.v; for (const x of $(id).querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b)); obButton(); }; };
+  chips('ob-exp', lv.experiences, 'exp'); chips('ob-goal', lv.goals, 'goal');
+  obShow(); show('onboard'); progress('Bienvenue');
+}
+function obButton() { const ob = state.ob; $('ob-next').disabled = ob.step === 1 && !(ob.exp && ob.goal); }
+function obShow() {
+  const ob = state.ob;
+  for (const k of [1, 2, 3]) $(`ob-${k}`).hidden = k !== ob.step;
+  $('ob-steps').textContent = `Étape ${ob.step} sur 3`;
+  $('ob-next').textContent = ob.step === 3 ? "C'est parti" : 'Suivant';
+  if (ob.step === 2) {
+    ob.level = ob.level || ({ debut: 1, confirme: 2, gros_volume: 2 })[ob.exp] || 1;
+    $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}</button>`).join('');
+    $('ob-levels').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; ob.level = +b.dataset.v; for (const x of $('ob-levels').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b)); };
+  }
+  obButton();
+}
+async function obFinish(skip) {
+  const ob = state.ob;
+  const body = skip ? { experience: 'debut', goal: 'bases' } : { experience: ob.exp, goal: ob.goal, level: ob.level };
+  try { state.level = await api('/users/me/onboarding', { method: 'POST', body: JSON.stringify(body) }); } catch (e) { /* le niveau 1 s'appliquera */ }
+  home();
+}
+$('ob-next').addEventListener('click', () => { const ob = state.ob; if (ob.step < 3) { ob.step += 1; obShow(); } else obFinish(false); });
+$('ob-skip').addEventListener('click', () => obFinish(true));
+
+async function loadLevel() {
+  let lv; try { lv = await api('/users/me/level'); } catch (e) { $('today-level').hidden = true; return null; }
+  state.level = lv;
+  if (lv.promoted_to || state.promo) { state.promo = null; notify(`Bravo : tu passes au niveau ${lv.level}, « ${lv.name} ». Ta séance du jour suit ce nouveau niveau.`); }
+  const b = $('today-level'), m = mode() === 'gto';
+  b.hidden = false;
+  b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
+    : '<b>Niveau 4 · Exploiter le field</b><small>mode exploitant, ouvert en continu</small>';
+  return lv;
+}
+function critText(c) {
+  if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.target} décisions`;
+  if (c.kind === 'bb') return `${c.value == null ? '—' : bb(c.value)} BB/100 (cible < ${bb(c.target)})`;
+  if (c.kind === 'ranges') return `${c.value}/${c.target} ranges à 85 %`;
+  return c.ok ? 'aucun thème fragile' : c.value ? `thème fragile : ${c.value}` : 'pas encore de décision';
+}
+function renderLevel(lv) {
+  $('st-level').hidden = !lv;
+  if (!lv) return;
+  $('st-level-name').innerHTML = `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
+  $('st-level-crit').innerHTML = lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(c.label_fr)} <small>${escT(critText(c))}</small></li>`).join('');
+  $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
+}
+$('st-level-pick').addEventListener('click', async (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: +b.dataset.v }) }); renderLevel(state.level); }
+  catch (err) { notify(netMsg(err, "le niveau n'a pas été changé")); }
+});
+$('today-level').addEventListener('click', () => { state.scrollLevel = true; $('stats-btn').click(); });
+
 // recommandations (programme de travail, étape 2) : au plus deux, un constat chiffré et une action en un toucher
 async function loadRecs() {
   let r; try { r = await api(`/users/me/recommendations?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('recs').hidden = true; return; }
@@ -816,6 +882,7 @@ $('recs-list').addEventListener('click', (e) => {
   if (a.chrono) { store.set('chrono', String(a.chrono)); for (const x of document.querySelectorAll('.chips[data-name="chrono"] button')) x.setAttribute('aria-pressed', String(x.dataset.value === String(a.chrono))); }
   if (a.type === 'review') start({}, true);
   else if (a.type === 'range') rangeStart({ spot: a.spot_id });
+  else if (a.type === 'level') { state.scrollLevel = true; $('stats-btn').click(); }
   else start(a.filters || {});
 });
 $('td-more').addEventListener('click', () => start((state.today && state.today.steps[1].filters) || {}));

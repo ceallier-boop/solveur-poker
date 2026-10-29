@@ -1,11 +1,15 @@
 // Objectifs de la semaine (programme de travail, étape 3) : affichage, modification d'une cible, effet d'une séance.
 // Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_goals.cjs [dossier]
 const { chromium } = require('playwright');
+const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur voit d'abord le premier lancement
+  try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
+    if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ }
+};
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 (async () => {
   const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
-  await p.goto(BASE); await p.waitForSelector('#goals:not([hidden])', { timeout: 15000 });
+  await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#goals:not([hidden])', { timeout: 15000 });
   const goals = () => p.$$eval('#goals-list li', (x) => x.map((y) => y.innerText.replace(/\n+/g, ' | ')));
   const res = { before: await goals() };
   await p.click('#goals-edit'); await p.click('#goals-list button[data-k="days"][data-d="-1"]'); await p.waitForTimeout(600);

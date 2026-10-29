@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, goals, progress, quiz, ranges, ratelimit, recommend, review, today
+from . import adaptive, catalog, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today
 from .hrc import ROOT
 
 SCHEMA = """
@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS range_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT, 
   spot_id TEXT NOT NULL, hands TEXT NOT NULL, accuracy_pct REAL NOT NULL, bb_per_100 REAL NOT NULL, answered_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS goals(player_id TEXT NOT NULL, mode TEXT NOT NULL, week TEXT NOT NULL, kind TEXT NOT NULL,
   target REAL NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(player_id, mode, week, kind));
+CREATE TABLE IF NOT EXISTS player_level(player_id TEXT PRIMARY KEY, level INTEGER NOT NULL, experience TEXT, goal TEXT,
+  onboarded_at TEXT, promoted_at TEXT, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
 """
@@ -448,9 +450,13 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
     now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)
     week = lambda a, b: [r for r in rows if (now - datetime.timedelta(days=b)).isoformat() < (r['answered_at'] or '') <= (now - datetime.timedelta(days=a)).isoformat()]
     stats = progress.compute(rows) if rows else {}
-    out = today.build(sess, rngs, due, stats.get('focus'), day, tz,
+    with closing(connect()) as con, con: lv = _level_row(con, pid)['level'] if mode == 'gto' else 4      # étape 4 : thèmes du niveau
+    focus = stats.get('focus')
+    if focus and focus.get('filters') and not levels.fits(lv, focus['filters']): focus = None          # un thème fragile hors du niveau attend
+    out = today.build(sess, rngs, due, focus, day, tz,
                       progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
-                      progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None)
+                      progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None,
+                      themes=levels.LEVELS[lv]['themes'], level=dict(number=lv, name=levels.LEVELS[lv]['name']))
     rs = out['steps'][2]
     for f in (rs['filters'], {k: v for k, v in rs['filters'].items() if k != 'hero'},          # range du thème, sinon la plus proche
               {k: v for k, v in rs['filters'].items() if k in ('family', 'table')}, {}):
@@ -469,7 +475,78 @@ def my_recommendations(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str
         last = con.execute('SELECT spot_id, hands, accuracy_pct, dataset_version FROM range_attempts WHERE player_id = ? ORDER BY id DESC LIMIT 1', (pid,)).fetchone()
     stats = progress.compute(rows) if rows else {}
     last = dict(last, hands=json.loads(last['hands'])) if last else None
-    return dict(mode=mode, items=recommend.build(stats, review.items(rows, version), last, rows, t['steps'][1]['filters']))
+    msg = None
+    if mode == 'gto':
+        with closing(connect()) as con, con: lvl = _level_info(con, pid)
+        msg = levels.almost(lvl['status'])
+    return dict(mode=mode, items=recommend.build(stats, review.items(rows, version), last, rows, t['steps'][1]['filters'], level_msg=msg))
+
+
+# ------------------------------------------------------------------ niveaux et premier lancement (programme de travail, étape 4)
+def _level_row(con, pid):
+    r = con.execute('SELECT * FROM player_level WHERE player_id = ?', (pid,)).fetchone()
+    if r: return dict(r)
+    played = con.execute('SELECT 1 FROM sessions WHERE player_id = ? LIMIT 1', (pid,)).fetchone()
+    if played:                                                             # joueur d'avant les niveaux : niveau 1, il monte d'après ses résultats
+        con.execute('INSERT OR IGNORE INTO player_level(player_id, level, onboarded_at, updated_at) VALUES (?, 1, ?, ?)', (pid, _now(), _now()))
+        return dict(player_id=pid, level=1, experience=None, goal=None, onboarded_at=_now(), promoted_at=None)
+    return dict(player_id=pid, level=1, experience=None, goal=None, onboarded_at=None, promoted_at=None)
+
+
+def _level_info(con, pid):
+    """niveau du joueur, passage automatique au suivant quand les critères sont tenus, avancement"""
+    row = _level_row(con, pid); promoted = None
+    rows = _player_rows(con, pid)
+    rr = [dict(r) for r in con.execute('SELECT spot_id, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
+    gto = serving_version(con, 'gto')
+    while True:
+        st = levels.status(row['level'], rows, rr, levels.level_spots(gto, row['level']) if row['level'] == 1 else set())
+        if not st['ready'] or not row['onboarded_at']: break
+        row['level'] += 1; promoted = row['level']
+        con.execute('UPDATE player_level SET level = ?, promoted_at = ?, updated_at = ? WHERE player_id = ?', (row['level'], _now(), _now(), pid))
+    lv = levels.LEVELS[row['level']]
+    return dict(level=row['level'], name=lv['name'], onboarded=bool(row['onboarded_at']), experience=row['experience'], goal=row['goal'],
+                promoted_to=promoted, status=st, levels=[dict(number=k, name=v['name'], mode=v['mode']) for k, v in levels.LEVELS.items()],
+                experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR)
+
+
+@app.get('/users/me/level')
+def my_level(x_player_id: Optional[str] = Header(None)):
+    pid = player(x_player_id, required=True)
+    with closing(connect()) as con, con: return _level_info(con, pid)
+
+
+class Onboarding(BaseModel):
+    experience: str = Field(pattern='^(debut|confirme|gros_volume)$')
+    goal: str = Field(pattern='^(bases|recreatifs|ranges)$')
+    level: Optional[int] = Field(None, ge=1, le=3)
+
+
+@app.post('/users/me/onboarding')
+def onboarding(body: Onboarding, x_player_id: Optional[str] = Header(None)):
+    """premier lancement : expérience, but, niveau de départ (proposé d'après l'expérience, modifiable)"""
+    pid = player(x_player_id, required=True)
+    lv = body.level or levels.START_LEVEL[body.experience]
+    with closing(connect()) as con, con:
+        con.execute('INSERT INTO player_level(player_id, level, experience, goal, onboarded_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) '
+                    'ON CONFLICT(player_id) DO UPDATE SET level = excluded.level, experience = excluded.experience, goal = excluded.goal, '
+                    'onboarded_at = excluded.onboarded_at, updated_at = excluded.updated_at', (pid, lv, body.experience, body.goal, _now(), _now()))
+        return _level_info(con, pid)
+
+
+class LevelChange(BaseModel):
+    level: int = Field(ge=1, le=3)
+
+
+@app.put('/users/me/level')
+def set_level(body: LevelChange, x_player_id: Optional[str] = Header(None)):
+    """le joueur choisit son niveau GTO (1 à 3) ; le niveau exploitant se joue en mode exploitant"""
+    pid = player(x_player_id, required=True)
+    with closing(connect()) as con, con:
+        _level_row(con, pid)
+        con.execute('INSERT INTO player_level(player_id, level, onboarded_at, updated_at) VALUES (?, ?, ?, ?) '
+                    'ON CONFLICT(player_id) DO UPDATE SET level = excluded.level, updated_at = excluded.updated_at', (pid, body.level, _now(), _now()))
+        return _level_info(con, pid)
 
 
 def _goal_data(con, pid, mode):
@@ -552,7 +629,8 @@ def my_export(x_player_id: Optional[str] = Header(None)):
         sessions = [dict(r) for r in con.execute('SELECT id, created_at, dataset_version, filters, seed, size FROM sessions WHERE player_id = ?', (pid,))]
         ranges_done = [dict(r) for r in con.execute('SELECT dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
         goals_set = [dict(r) for r in con.execute('SELECT mode, week, kind, target, updated_at FROM goals WHERE player_id = ?', (pid,))]
-        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set)
+        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set,
+                    level=dict(r) if (r := con.execute('SELECT level, experience, goal, onboarded_at, promoted_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()) else None)
 
 
 @app.delete('/users/me', status_code=204)
@@ -567,6 +645,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         con.execute('DELETE FROM range_attempts WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM goals WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM player_level WHERE player_id = ?', (pid,))
 
 
 # ------------------------------------------------------------------ signalements (cahier des charges §7 et §14)
