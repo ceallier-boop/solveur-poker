@@ -1,5 +1,5 @@
 // Corrections du test joueurs 9 : mode en haut et niveau qui le suit, chrono en pause pendant une erreur « trop de requêtes ».
-// Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_retest9.cjs [dossier]
+// Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_retest9.cjs [dossier]   (ou la démo autonome : BASE_URL=http://localhost:8052/demo.html)
 const { chromium } = require('playwright');
 const skipOnboarding = async (pg) => { try { await pg.waitForSelector('#screen-onboard:not([hidden]), #screen-home:not([hidden])', { timeout: 15000 });
   if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ } };
@@ -17,7 +17,8 @@ const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = proce
   res.progressExploit = await p.innerText('#st-level-name'); res.picked = await p.textContent('#st-level-pick [aria-pressed="true"]');
   await p.click('#st-back'); await p.click('.mode-switch [data-value="gto"]'); await p.waitForTimeout(1500);
   res.levelGto = await p.innerText('#today-level');
-  // erreur 429 sur la réponse : le chrono s'arrête derrière le message et repart à la fermeture
+  // erreur 429 sur la réponse : le chrono s'arrête derrière le message et repart à la fermeture (pas dans la démo autonome, sans réseau)
+  if (await p.evaluate(() => typeof DEMO !== 'undefined')) { res.errs = errs; console.log(JSON.stringify(res, null, 1)); await b.close(); return; }
   let fail = true;
   await p.route('**/attempts', (r) => (fail ? (fail = false, r.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ detail: 'Trop de requêtes en peu de temps : attends 5 s avant de réessayer.' }) })) : r.continue()));
   await p.click('.chrono-row [data-value="15"]'); await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');

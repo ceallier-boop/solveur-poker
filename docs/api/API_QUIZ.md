@@ -13,7 +13,7 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 |---|---|
 | `GET /health` | état, version du dataset, nombre de spots |
 | `POST /sessions` | crée une série : `{"mode": "gto" | "exploit", "size": 5, "seed": 12, "filters": {"table": "3-handed", "hero": "SB", "family": "vs_limp", "min_stack": 10, "max_stack": 25}}`, tous les champs étant facultatifs. Réponse : `session_id`, `dataset_version`, `size`. Erreur 422 si les filtres ne laissent pas assez de spots. |
-| `GET /quiz/next?session_id=` | question suivante non répondue : énoncé (`prompt_fr`), état du jeu (tapis, historique, pot, montant à payer), options `{id, label_fr}`. **Aucune solution n'est envoyée.** `done: true` en fin de série. |
+| `GET /quiz/next?session_id=` | question suivante non répondue : énoncé (`prompt_fr`), état du jeu (tapis, historique, pot, montant à payer), options `{id, label_fr}`, `plan` de la série (`theme`, `review`, `challenge_daily`…). **Aucune solution n'est envoyée.** `done: true` en fin de série. |
 | `POST /attempts` | `{"session_id", "question_index", "action_id"}` → verdict, points, regret en mBB, meilleure action, stratégie arrondie, explication. Une réponse est définitive : renvoyer la même réponse rend la correction enregistrée (reprise après coupure réseau) ; une réponse différente donne 409. |
 | `GET /users/me/stats` | progression du joueur (`X-Player-Id` obligatoire) : <br>• score global, verdicts, nombre de séries et de questions ; <br>• score par situation, position, format et profondeur, chaque ligne indiquant si son échantillon est suffisant (`reliable` : au moins 10 questions) ; <br>• évolution sur les 20 dernières séries ; <br>• les 3 erreurs récurrentes (thème avec au moins deux erreurs) ; <br>• point faible (`weakest`), seulement s'il existe un thème fiable. Chaque thème fournit les `filters` à passer à `POST /sessions` pour s'y entraîner. |
 | `GET /users/me/export` | toutes les séries et réponses enregistrées pour ce joueur (droit d'accès et de portabilité) |
@@ -139,7 +139,8 @@ L'adaptation s'applique à la « série recommandée » d'un joueur identifié (
 |---|---|
 | `POST /sessions` | champ facultatif `adaptive` (sinon : préférence du joueur) ; la réponse contient `adaptive` : `active`, `reason_fr`, `rule_fr` |
 | `GET /users/me/adaptation?mode=gto` | règle, thèmes à retravailler, thèmes en révision, état de la préférence, date de réinitialisation |
-| `GET /users/me/preferences`, `PUT /users/me/preferences` | `{adaptive: true \| false}` (activée par défaut) |
+| `GET /users/me/preferences`, `PUT /users/me/preferences` | `{adaptive: true \| false, mode: "gto" \| "exploit" \| null}` ; un `PUT` ne change que les champs envoyés (test joueurs 9 : le mode gardé sur le serveur) |
+| `POST /sessions` avec `challenge` | défi ; `daily` : une tentative par jour UTC, tous modes (409 ensuite) ; `perfect` : thème de la séance du jour (envoyer `tz`) |
 | `POST /users/me/adaptation/reset` | l'adaptation ne compte plus que les réponses postérieures ; l'historique et les statistiques sont conservés |
 
 Les préférences sont incluses dans `GET /users/me/export` et effacées par `DELETE /users/me`.

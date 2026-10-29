@@ -349,9 +349,9 @@ function renderAnswer(r) {
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
-  const lucky = state.timedOut && r.chosen_label === r.best_label;     // test joueurs 9 : le coup au temps tombait sur le bon coup
-  v.innerHTML = title + `<small>${state.timedOut ? (lucky ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
-    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${lucky ? '' : sub}</small>`;
+  const onBest = state.timedOut && r.chosen_label === r.best_label;     // test joueurs 9 : le coup au temps tombait sur le bon coup
+  v.innerHTML = title + `<small>${state.timedOut ? (onBest ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
+    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${onBest ? '' : sub}</small>`;
   stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -813,7 +813,7 @@ function showTodayDone(t) {
     'Demain : tes mains ratées reviennent en révision, et la séance choisit ton thème le plus fragile.'].filter(Boolean).map((l) => `<li>${l}</li>`).join('');
   show('today'); refreshStats();
   loadGoals().then((g) => { if (!g) return;                          // étape 3 : où en sont les objectifs de la semaine
-    $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.map((x) => `${escT(x.label_fr.charAt(0).toLowerCase() + x.label_fr.slice(1))} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
+    $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.map((x) => `${escT(/^[A-Z]{2}/.test(x.label_fr) ? x.label_fr : x.label_fr.charAt(0).toLowerCase() + x.label_fr.slice(1))} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
 }
 $('today-go').addEventListener('click', todayGo);
 
