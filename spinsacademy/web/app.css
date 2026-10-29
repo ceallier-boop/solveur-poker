@@ -498,3 +498,14 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ch .small { min-height: 40px; padding: 6px 14px; }
 .ch-result { display: block; margin-top: 8px; font-weight: 700; } .ch-result.won { color: var(--ok); }
 .my-challenges { margin: 12px 0; } .my-challenges li { font-size: .92rem; } .my-challenges small { color: var(--muted); }
+/* test joueurs 9 : défis repliés, blocs sans données, tentatives dans « Mes défis » */
+.ch-more { margin-top: 8px; } .ch-more summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.ch-more summary { list-style: none; gap: 8px; } .ch-more summary::-webkit-details-marker { display: none; }
+.ch-more summary::before { content: '▸'; } .ch-more[open] summary::before { content: '▾'; }
+.ch-more ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ch-started { border-color: var(--warn); }
+.block-error { margin: 6px 0; padding: 10px 12px; border-radius: var(--radius); background: var(--warn-bg); color: var(--text); font-size: .9rem; }
+.block-error .link { padding: 0 4px; }
+.my-challenges li.tried { color: var(--muted); }
+.theory-note { background: var(--warn-bg); border-radius: 10px; padding: 8px 12px; color: var(--text); }
+.ob-level small { color: var(--muted); font-weight: 500; }

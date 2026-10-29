@@ -16,8 +16,8 @@ MAX_RECS = 2
 LATE_DAYS = 2
 RANGE_MIN = 80
 TIMEOUTS_MIN = 2
-SIDE = {'tight': ("surtout en jouant trop serré : tu te couches ou tu paies quand il fallait engager plus",),
-        'loose': ("surtout en jouant trop large : tu engages plus de jetons qu'il ne faut",)}
+SIDE = {'tight': ("le plus souvent en mettant moins de jetons qu'il ne fallait : tu te couches ou tu paies quand il fallait relancer ou pousser",),
+        'loose': ("le plus souvent en mettant plus de jetons qu'il ne fallait : tu paies, relances ou pousses quand il fallait te coucher ou payer",)}   # test joueurs 9 : « trop large » se lisait comme la taille de la mise
 DISCOVER = (     # situations proposées à la découverte, de la plus simple à la plus fine
     ('first_in', 'Premier à parler'), ('vs_allin', 'Face à un tapis'), ('vs_limp', 'Face à un limp'), ('vs_raise', 'Face à une relance'))
 

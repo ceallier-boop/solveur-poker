@@ -32,9 +32,14 @@
 
   <main id="app">
     <!-- Accueil -->
-    <section id="screen-home" class="screen" aria-labelledby="home-title">
+    <section id="screen-home" class="screen" hidden aria-labelledby="home-title">
       <h1 id="home-title">Entraînement Expresso</h1>
       <p class="lead" id="home-lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
+        <button type="button" data-value="gto" aria-pressed="true">GTO</button>
+        <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
+      </div>
+      <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <section class="today" id="today" hidden aria-labelledby="today-title">
         <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
         <button class="level-line" id="today-level" hidden></button>
@@ -43,26 +48,12 @@
         <p class="note" id="today-note" hidden></p>
         <button class="primary big" id="today-go">Commencer la séance</button>
       </section>
+      <p class="block-error" id="today-error" hidden></p>
       <section class="recs" id="recs" hidden aria-labelledby="recs-title">
         <h2 class="free-title" id="recs-title">Recommandé pour toi</h2>
         <ul id="recs-list"></ul>
       </section>
-      <section class="goals" id="goals" hidden aria-labelledby="goals-title">
-        <div class="goals-head"><h2 class="free-title" id="goals-title">Objectifs de la semaine</h2><button class="link" id="goals-edit">modifier</button></div>
-        <div class="last-week" id="last-week" hidden></div>
-        <ul id="goals-list"></ul>
-        <p class="note" id="goals-note"></p>
-      </section>
-      <section class="challenges" id="challenges" hidden aria-labelledby="ch-title">
-        <h2 class="free-title" id="ch-title">Défis</h2>
-        <ul id="ch-list"></ul>
-      </section>
       <h2 class="free-title" id="free-title" hidden>Jouer librement</h2>
-      <div class="mode-switch chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
-        <button type="button" data-value="gto" aria-pressed="true">GTO</button>
-        <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
-      </div>
-      <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
         <div class="chips" data-name="chrono">
           <button type="button" data-value="0" aria-pressed="false">Sans</button>
@@ -124,6 +115,19 @@
         <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche à côté des adversaires que tu as assez observés (une question sur deux : l'autre te laisse lire ses stats), et sur les questions « Quelle pastille ? ».</p>
         <div id="past-rows"></div>
       </details>
+      <section class="goals" id="goals" hidden aria-labelledby="goals-title">
+        <div class="goals-head"><h2 class="free-title" id="goals-title">Objectifs de la semaine</h2><button class="link" id="goals-edit">modifier</button></div>
+        <div class="last-week" id="last-week" hidden></div>
+        <ul id="goals-list"></ul>
+        <p class="note" id="goals-note"></p>
+        <p class="block-error" id="goals-error" hidden></p>
+      </section>
+      <section class="challenges" id="challenges" hidden aria-labelledby="ch-title">
+        <h2 class="free-title" id="ch-title">Défis</h2>
+        <ul id="ch-list"></ul>
+        <p class="block-error" id="ch-error" hidden></p>
+        <details class="ch-more" id="ch-more"><summary id="ch-more-title">Les autres défis</summary><ul id="ch-others"></ul></details>
+      </section>
     </section>
 
     <!-- Construis ta range (chantier 2) -->
@@ -131,6 +135,7 @@
       <h2 id="rg-title">Construis ta range</h2>
       <p class="recap" id="rg-situation"></p>
       <p class="ask" id="rg-question"></p>
+      <p class="note theory-note" id="rg-theory" hidden>Exercice corrigé sur la stratégie théorique (GTO), même en mode Exploitant : il n'y a pas de range complète contre les joueurs réels.</p>
       <p class="note" id="rg-help">Touche ou fais glisser ton doigt sur les mains. Paires sur la diagonale, assorties en haut à droite, dépareillées en bas à gauche.</p>
       <div class="rgrid" id="rg-grid" role="group" aria-label="Grille des 169 mains"></div>
       <p class="rg-count" id="rg-count" role="status"></p>
@@ -264,7 +269,7 @@
         <h3 id="st-level-title">Mon niveau</h3>
         <p id="st-level-name"></p>
         <ul class="level-crit" id="st-level-crit"></ul>
-        <p class="note">Changer de niveau :</p>
+        <p class="note" id="st-level-pick-note">Changer de niveau :</p>
         <div class="chips" id="st-level-pick"></div>
       </section>
       <section class="my-challenges" id="st-challenges" hidden aria-labelledby="st-ch-title">
@@ -290,7 +295,7 @@
       <button class="link danger" id="st-delete">Effacer mes données</button>
     </section>
 
-    <div class="loading" id="loading" hidden>Chargement…</div>
+    <div class="loading" id="loading">Chargement…</div>
     <div class="notice" id="notice" role="alert" hidden><span id="notice-text"></span>
       <button class="secondary" id="notice-retry" hidden>Réessayer</button><button class="link" id="notice-close" aria-label="Fermer le message">✕</button></div>
   </main>

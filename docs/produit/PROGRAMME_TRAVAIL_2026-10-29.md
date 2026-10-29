@@ -252,3 +252,13 @@ Pas encore : test de placement de 10 décisions, choix du temps par jour (5 / 15
 - Contrôles : `tests/test_challenges.py`, `tools/web/e2e_challenges.cjs` (application et démo).
 
 Le programme de travail (étapes 1 à 5) est en place. Restent : variantes de séance de 5 et 30 minutes, test de placement, objectif « vitesse », bilan détaillé par thème, mains réelles (« Mes mains »), classements (avec les comptes).
+
+## 16. Corrections du neuvième test joueurs (29/10/2026)
+
+Détail dans `RETEST9_JOUEURS_2026-10-29.md` §5. Changements de règles par rapport aux §11 à §15 :
+- défi du jour : une seule tentative par jour, tous modes confondus, comptée dès la création de la série ; une tentative abandonnée se reprend ;
+- série parfaite : thème de la séance du jour du joueur (et non plus le même pour tous) ; sous pression à 4/5 ; range au cordeau avec au moins 85 % de mains bien classées ; lecteur de vilain avec au moins 2 « Quelle pastille ? » ;
+- thème et range du jour figés pour la journée (table `day_plan`) ; étape de révision cochée seulement quand il ne reste rien à revoir ; échéances de révision en jours du joueur ;
+- série de jours et semaine pleine comptées sur les mêmes jours, tous modes confondus ;
+- objectifs : séances plafonnées aux jours restants, cibles de départ plus basses pour un nouveau joueur, bilan seulement s'il y avait des objectifs ;
+- accueil : mode en haut (gardé côté serveur), « Jouer librement » avant les objectifs et les défis, défis repliés, un seul chiffre BB.

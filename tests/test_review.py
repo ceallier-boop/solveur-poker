@@ -49,7 +49,7 @@ def test_review_session_api(client, monkeypatch):
         if a['verdict'] != 'correct': missed.append((q['spot_id'], q['hand']))
     later = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
     real = review.summary
-    monkeypatch.setattr(review, 'summary', lambda rows, v, now=None: real(rows, v, later))
+    monkeypatch.setattr(review, "summary", lambda rows, v, now=None, tz=0: real(rows, v, later, tz))
     r = client.get('/users/me/reviews', headers=H).json()
     assert r['due'] == len(set(missed)) and r['rule_fr']
     s = client.post('/sessions', json={'review': True, 'seed': 4}, headers=H).json()

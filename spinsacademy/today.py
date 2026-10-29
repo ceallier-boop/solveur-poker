@@ -1,13 +1,15 @@
 """Séance du jour (programme de travail, étape 1, 29/10/2026 ; docs/produit/PROGRAMME_TRAVAIL_2026-10-29.md).
 
 Une séance de 15 minutes, construite à partir de ce que l'application sait déjà :
-  1. révision : les mains ratées arrivées à échéance (révision espacée) ; faite quand une série de révision est finie dans la
-     journée, ou d'office s'il n'y a rien à revoir ;
-  2. thème du jour : SERIES_PER_THEME séries de 5 sur le thème à travailler (diagnostic « À travailler maintenant »), sinon un
-     thème du cycle THEMES selon le jour ; le thème choisi reste le même toute la journée (celui de la première série du jour) ;
+  1. révision : les mains ratées arrivées à échéance (révision espacée) ; faite quand il ne reste plus de main à revoir
+     aujourd'hui (test joueurs 9 : plus d'étape cochée avec des mains encore prêtes) ;
+  2. thème du jour : SERIES_PER_THEME séries de 5 sur le thème à travailler (un thème fragile ou à surveiller du diagnostic,
+     avec sa position et sa profondeur), sinon un thème du cycle du niveau selon le jour ;
   3. range du jour : un exercice « Construis ta range » sur la situation du thème.
-La journée se compte dans le fuseau du joueur (décalage `tz` en minutes, envoyé par l'appareil). Série de jours : jours avec au
-moins une série finie ou une range ; un jour manqué par période de 7 jours est pardonné, aujourd'hui sans activité ne casse rien.
+Le thème et la range du jour sont figés au premier affichage de la journée (table day_plan de l'API, test joueurs 9 : ils
+changeaient au fil des séries). La journée se compte dans le fuseau du joueur (décalage `tz` en minutes, envoyé par
+l'appareil). Série de jours : jours avec au moins une série finie ou une range, tous modes confondus ; un jour manqué par
+période de 7 jours est pardonné, aujourd'hui sans activité ne casse rien.
 """
 import datetime
 import json
@@ -49,9 +51,10 @@ def streak(days, today):
 
 def theme_of_day(focus, nth, first_today, themes=THEMES):
     """(libellé, filtres) du thème du jour : celui de la première série du jour, sinon le diagnostic, sinon le cycle, pris dans
-    l'ordre des jours de travail (un nouveau joueur commence par les tapis courts)"""
+    l'ordre des jours de travail (un nouveau joueur commence par les tapis courts). Seul un thème fragile ou à surveiller sert :
+    il a une situation, une position et une profondeur ; un score par dimension (« Position : SB ») mélangerait les tapis."""
     if first_today: return first_today
-    if focus and focus.get('filters'):
+    if focus and focus.get('filters') and focus.get('kind') in ('weak', 'watch'):
         f = {k: v for k, v in focus['filters'].items() if k != 'mode'}
         label = focus.get('label') or 'Ton thème à travailler'
         for m in ('GTO · ', 'Exploitant · '): label = label[len(m):] if label.startswith(m) else label   # le mode est déjà choisi
@@ -66,9 +69,10 @@ def range_filters(f):
     return out
 
 
-def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None):
+def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None, theme=None, active=None):
     """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
-    due : mains à réviser aujourd'hui ; focus : diagnostic de progress.compute. Renvoie le plan du jour"""
+    due : mains à réviser aujourd'hui ; focus : diagnostic de progress.compute ; theme : (libellé, filtres) figé pour la journée ;
+    active : jours d'activité tous modes confondus (pour la série de jours). Renvoie le plan du jour"""
     done_s = [s for s in sessions if s['answered'] >= s['size']]
     today_s = [s for s in done_s if local_day(s['created_at'], tz) == today]
     first_theme = next((s for s in sorted(sessions, key=lambda s: s['created_at'])
@@ -77,14 +81,14 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
     if first_theme:
         f = json.loads(first_theme['filters'] or '{}')
         first = (next((l for l, x in tuple(themes) + THEMES if x == f), None) or (focus or {}).get('label') or 'Ton thème du jour', f)
-    active = {local_day(s['created_at'], tz) for s in done_s} | {local_day(r, tz) for r in ranges}
-    label, f = theme_of_day(focus, sum(1 for d in active if d < today), first, themes)
+    if active is None: active = {local_day(s['created_at'], tz) for s in done_s} | {local_day(r, tz) for r in ranges}
+    label, f = theme or theme_of_day(focus, sum(1 for d in active if d < today), first, themes)
     reviewed = any(s['plan'] == 'review' for s in today_s)
     themed = sum(1 for s in today_s if s['plan'] == 'theme')
     ranged = sum(1 for r in ranges if local_day(r, tz) == today)
     steps = [
-        dict(kind='review', done=reviewed or due == 0, count=due,
-             label_fr=(f"Révision : {due} main{'s' if due > 1 else ''} à revoir" if due else "Révision : rien à revoir aujourd'hui")),
+        dict(kind='review', done=due == 0, count=due,
+             label_fr=(f"Révision : {due} main{'s' if due > 1 else ''} à revoir" if due else "Révision : faite" if reviewed else "Révision : rien à revoir aujourd'hui")),
         dict(kind='theme', done=themed >= SERIES_PER_THEME, count=min(themed, SERIES_PER_THEME), total=SERIES_PER_THEME,
              label_fr=f"Thème : {label}", filters=f),
         dict(kind='range', done=ranged >= 1, label_fr="Range : la situation du thème", filters=range_filters(f)),

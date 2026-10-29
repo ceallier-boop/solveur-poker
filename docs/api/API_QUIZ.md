@@ -12,7 +12,7 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 | Route | Rôle |
 |---|---|
 | `GET /health` | état, version du dataset, nombre de spots |
-| `POST /sessions` | crée une série : `{"mode": "gto" | "exploit", "size": 5, "seed": 12, "filters": {"table": "3-handed", "hero": "SB", "family": "vs_limp", "min_stack": 10, "max_stack": 25}}`, tous les champs étant facultatifs. Réponse : `session_id`, `dataset_version`, `size`. Erreur 422 si les filtres ne laissent pas assez de spots. |
+| `POST /sessions` | crée une série : `{"mode": "gto" | "exploit", "size": 5, "seed": 12, "filters": {"table": "3-handed", "hero": "SB", "family": "vs_limp", "min_stack": 10, "max_stack": 25}}`, tous les champs étant facultatifs ; aussi `tz` (décalage de l'appareil en minutes : jour du joueur), `plan` (`review` ou `theme`, étape de la séance du jour) et `challenge` (`daily`, `perfect`, `pressure`, `reader`). Réponse : `session_id`, `dataset_version`, `size`. Erreur 422 si les filtres ne laissent pas assez de spots ; 409 pour un deuxième défi du jour le même jour UTC, quel que soit le mode (test joueurs 9). |
 | `GET /quiz/next?session_id=` | question suivante non répondue : énoncé (`prompt_fr`), état du jeu (tapis, historique, pot, montant à payer), options `{id, label_fr}`. **Aucune solution n'est envoyée.** `done: true` en fin de série. |
 | `POST /attempts` | `{"session_id", "question_index", "action_id"}` → verdict, points, regret en mBB, meilleure action, stratégie arrondie, explication. Une réponse est définitive : renvoyer la même réponse rend la correction enregistrée (reprise après coupure réseau) ; une réponse différente donne 409. |
 | `GET /users/me/stats` | progression du joueur (`X-Player-Id` obligatoire) : <br>• score global, verdicts, nombre de séries et de questions ; <br>• score par situation, position, format et profondeur, chaque ligne indiquant si son échantillon est suffisant (`reliable` : au moins 10 questions) ; <br>• évolution sur les 20 dernières séries ; <br>• les 3 erreurs récurrentes (thème avec au moins deux erreurs) ; <br>• point faible (`weakest`), seulement s'il existe un thème fiable. Chaque thème fournit les `filters` à passer à `POST /sessions` pour s'y entraîner. |
@@ -50,11 +50,11 @@ La notation est celle de `spinsacademy/grading.py` (`docs/dataset/FORMAT_SPOT.md
 
 ## Révision espacée des erreurs (`spinsacademy/review.py`, évaluation du MVP, remarque 21)
 
-Une main ratée (erreur ou imprécision) revient 1 jour, puis 3 jours, puis 7 jours après ; une bonne réponse à l'échéance la fait avancer, une réussite avant l'échéance ne compte pas, une nouvelle erreur la fait repartir à 1 jour. Après la révision à 7 jours, la main est acquise. Seules les mains dont la situation existe dans le dataset servi (même `spot_id`) et y reste proposable sont révisées.
+Une main ratée (erreur ou imprécision) revient 1 jour, puis 3 jours, puis 7 jours après, en jours du joueur (`tz`) : due dès le matin du jour de l'échéance (test joueurs 9) ; une bonne réponse le jour de l'échéance ou après la fait avancer, une réussite avant ne compte pas, une nouvelle erreur la fait repartir à 1 jour. Après la révision à 7 jours, la main est acquise. Seules les mains dont la situation existe dans le dataset servi (même `spot_id`) et y reste proposable sont révisées.
 
 | Route | Rôle |
 |---|---|
-| `GET /users/me/reviews?mode=gto` | règle, nombre de mains prêtes (`due`) et à venir (`pending`), date de la prochaine, mains prêtes (20 au plus) |
+| `GET /users/me/reviews?mode=gto&tz=60` | règle, nombre de mains prêtes (`due`) et à venir (`pending`), date de la prochaine, mains prêtes (20 au plus) |
 | `POST /sessions` avec `review: true` | série qui commence par les mains prêtes, complétée par un tirage normal ; `purpose: "spaced"`, `purpose_fr` « Révision de ton erreur du 14/10 (étape 1 sur 3) » ; exige `X-Player-Id` |
 
 Accueil : bouton « Revoir mes erreurs (N mains prêtes) », ou date de la prochaine révision ; le bilan d'une série avec des erreurs le rappelle. La démo applique la même règle dans le navigateur.
@@ -139,7 +139,7 @@ L'adaptation s'applique à la « série recommandée » d'un joueur identifié (
 |---|---|
 | `POST /sessions` | champ facultatif `adaptive` (sinon : préférence du joueur) ; la réponse contient `adaptive` : `active`, `reason_fr`, `rule_fr` |
 | `GET /users/me/adaptation?mode=gto` | règle, thèmes à retravailler, thèmes en révision, état de la préférence, date de réinitialisation |
-| `GET /users/me/preferences`, `PUT /users/me/preferences` | `{adaptive: true \| false}` (activée par défaut) |
+| `GET /users/me/preferences`, `PUT /users/me/preferences` | `{adaptive: true \| false, mode: "gto" \| "exploit"}` : adaptation (activée par défaut) et dernier mode choisi (test joueurs 9 : il suit le joueur, pas seulement le navigateur) ; un champ absent du `PUT` est gardé |
 | `POST /users/me/adaptation/reset` | l'adaptation ne compte plus que les réponses postérieures ; l'historique et les statistiques sont conservés |
 
 Les préférences sont incluses dans `GET /users/me/export` et effacées par `DELETE /users/me`.

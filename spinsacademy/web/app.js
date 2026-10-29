@@ -70,7 +70,13 @@ function notify(msg, retry) {
   const n = $('notice'); $('notice-text').textContent = msg; n.hidden = false;
   $('notice-retry').hidden = !retry;
   $('notice-retry').onclick = () => { n.hidden = true; retry(); };
-  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; }, 6000);
+  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; resumeTimer(); }, 6000);
+}
+// bloc de l'accueil sans données (réseau, trop de requêtes) : un message et « Réessayer », jamais un cadre vide (test joueurs 9)
+function blockError(id, what, e, retry) {
+  const box = $(id); box.hidden = false;
+  box.innerHTML = `${escT(netMsg(e, what))} ` + (retryable(e) ? '<button class="link">Réessayer</button>' : '');
+  const b = box.querySelector('button'); if (b) b.onclick = () => { box.hidden = true; retry(); };
 }
 const closed = (e) => !!(e && e.status === 503 && /aucun dataset publié/.test(e.message));   // test joueurs 6 : rien en ligne, réessayer ne sert à rien
 const netMsg = (e, what) => (closed(e) ? `L'entraînement n'est pas ouvert sur ce serveur : ${what}, aucune banque de questions n'est en ligne. Réessayer ne changera rien : préviens l'équipe.`
@@ -113,13 +119,15 @@ async function start(f, review = false, plan = null, challenge = null) {
   if (state.starting) return; state.starting = true;                 // A' : un double appui ne lance pas deux séries
   $('home-error').hidden = true; loading(true);
   try {
-    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
+    const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
     await next();
   } catch (e) {
-    loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
+    loading(false);
+    if (e.status === 409) { notify(e.message); loadChallenges(); return; }      // défi du jour déjà relevé (autre onglet, autre mode)
+    $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
       : e.status && e.status < 500 ? e.message : netMsg(e, "la série n'a pas pu démarrer");            // jamais « Failed to fetch »
     $('filters').open = true; $('home-error').hidden = false;
     $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
@@ -230,11 +238,17 @@ function actionHTML(label) {
 // mode chrono (chantier 5) : comme au client, le temps est compté ; à zéro, fold automatique (check s'il n'y a rien à payer)
 const chrono = () => { if (state.forceChrono) return state.forceChrono;   // défi au chrono imposé
   const v = Number(store.get('chrono') ?? 15); return [0, 8, 15].includes(v) ? v : 15; };   // 15 s par défaut
-function stopTimer() { clearInterval(state.timer); state.timer = null; $('q-timer').hidden = true; }
-function startTimer(q) {
-  stopTimer(); state.timedOut = false;
+function stopTimer() { clearInterval(state.timer); state.timer = null; state.paused = null; $('q-timer').hidden = true; }
+// test joueurs 9 : le chrono s'arrête pendant l'envoi d'une réponse et pendant un message d'erreur réseau, puis reprend où il en était
+function pauseTimer() { if (!state.timer) return; clearInterval(state.timer); state.timer = null; state.paused = Math.max(0, state.timerEnd - Date.now()); }
+function resumeTimer() {
+  if (state.paused == null || state.timer || state.busy || $('screen-question').hidden || !$('notice').hidden) return;
+  const left = state.paused; state.paused = null; startTimer(state.q, Math.max(left, 3000));
+}
+function startTimer(q, leftMs) {
+  clearInterval(state.timer); state.timer = null; state.paused = null; $('q-timer').hidden = true; if (leftMs == null) state.timedOut = false;
   const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr)) return;   // pas de chrono pour la lecture du vilain
-  const end = Date.now() + secs * 1000, box = $('q-timer'); box.hidden = false;
+  const end = Date.now() + (leftMs ?? secs * 1000), box = $('q-timer'); box.hidden = false; state.timerEnd = end;
   const tick = () => {
     const left = Math.max(0, end - Date.now());
     box.querySelector('i').style.width = `${100 * left / (secs * 1000)}%`; box.querySelector('span').textContent = `${Math.ceil(left / 1000)} s`;
@@ -310,15 +324,16 @@ async function next() {
 
 // ------------------------------------------------------------------ correction
 async function answer(id, timedOut = false) {
-  if (state.busy) return; state.busy = true; clearInterval(state.timer); state.timer = null;
+  if (state.busy) return; state.busy = true; pauseTimer();
   for (const b of $('actions').querySelectorAll('button')) b.disabled = true;
   try {
     const r = await api('/attempts', { method: 'POST', body: JSON.stringify({ session_id: state.sid, question_index: state.index, action_id: id, timed_out: timedOut }) });
-    renderAnswer(r);
+    state.paused = null; renderAnswer(r);
   } catch (e) {
     if (!e.status) console.error(e);                              // erreur d'affichage : visible dans la console
     for (const b of $('actions').querySelectorAll('button')) b.disabled = false;
-    notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id) : null);
+    if (timedOut) state.paused = null;                             // le temps était écoulé : on ne le rend pas
+    notify(netMsg(e, "ta réponse n'a pas été enregistrée"), retryable(e) ? () => answer(id, timedOut) : null);   // chrono en pause tant que le message reste
   } finally { state.busy = false; }
 }
 
@@ -340,7 +355,9 @@ function renderAnswer(r) {
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
-  v.innerHTML = title + `<small>${state.timedOut ? `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n` : ''}${sub}</small>`;
+  const onBest = state.timedOut && r.chosen_label && r.chosen_label === r.best_label;     // test joueurs 9 : le coup automatique tombait sur le bon coup
+  v.innerHTML = title + `<small>${state.timedOut ? (onBest ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
+    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${sub}</small>`;
   stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -464,7 +481,10 @@ async function summary() {
   if (state.challenge) {                                               // étape 5 : résultat du défi
     const kind = state.challenge; state.challenge = null; state.forceChrono = null;
     loadChallenges().then((c) => { const x = c && [...c.daily, ...c.weekly].find((y) => y.kind === kind); if (!x) return;
-      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${x.status === 'won' ? `${escT(x.title_fr)} : réussi !` : `${escT(x.title_fr)} : ${escT(x.result_fr || '')}, pas encore réussi.`}</small>`); });
+      const txt = x.status === 'won' ? `${x.title_fr} : réussi (${x.result_fr}) !`
+        : kind === 'daily' ? `${x.title_fr} : ${x.result_fr}. ${x.next_fr || 'Nouveau défi demain.'}`        // test joueurs 9 : il ne se retente pas
+        : `${x.title_fr} : ${x.result_fr}, pas encore réussi. Tu peux le retenter.`;
+      $('s-score').insertAdjacentHTML('beforeend', `<small class="ch-result ${x.status}">${escT(txt)}</small>`); });
   }
   show('summary');
   refreshStats();                                                    // la progression hors connexion suit la dernière série
@@ -514,8 +534,8 @@ async function stats() {
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
   if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
     $('st-challenges').hidden = false;
-    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li>✓ <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}</small></li>`).join('')
-      : '<li class="note">Pas encore de défi réussi : relève le défi du jour depuis l\'accueil.</li>';
+    $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li class="${h.won ? 'won' : 'tried'}">${h.won ? '✓' : '·'} <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}${h.won ? ' · réussi' : ''}</small></li>`).join('')
+      : '<li class="note">Pas encore de défi relevé : commence par le défi du jour, depuis l\'accueil.</li>';
   }).catch(() => { $('st-challenges').hidden = true; });
   else $('st-challenges').hidden = true;
   if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
@@ -614,7 +634,8 @@ let lexReturn = null;
 // A7 : dans la correction, les mots techniques s'expliquent au toucher (première occurrence de chaque terme)
 const GLOSS = { 'Range': ['range'], 'Équité': ['équité'], 'Cote du pot': ['cote du pot', 'la cote'], 'SPR (rapport tapis / pot)': ['SPR'],
   'Fold equity': ['fold equity'], 'Limp (compléter)': ['limp', 'limps'], 'Isoler (iso)': ['iso'], 'Rec passif': ['rec passif'],
-  'Tapis effectif': ['tapis effectif'], 'Stratégie mixte': ['stratégie mixte'], 'Paire max (top pair)': ['paire max'], 'Kicker': ['kicker'], 'Read': ['read'] };
+  'Tapis effectif': ['tapis effectif'], 'Stratégie mixte': ['stratégie mixte'], 'Paire max (top pair)': ['paire max'], 'Kicker': ['kicker'], 'Read': ['read'],
+  'BB perdus pour 100 décisions': ['BB perdus pour 100 décisions'] };
 async function glossify(root) {
   let L; try { L = await lexique(); } catch (e) { return; }                 // lexique indisponible : texte brut
   const terms = L.terms.filter((t) => GLOSS[t.term]).map((t) => ({ ...t, re: new RegExp(`(?<![\\p{L}\\d])(?:${GLOSS[t.term].join('|')})(?![\\p{L}\\d])`, 'iu') }));
@@ -665,7 +686,7 @@ document.addEventListener('keydown', (e) => {
 const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
 $('stats-btn').addEventListener('click', openStats);
 $('st-back').addEventListener('click', home);
-$('notice-close').addEventListener('click', () => { $('notice').hidden = true; });
+$('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
   try {
     const data = await api('/users/me/export');
@@ -684,7 +705,7 @@ $('review-btn').addEventListener('click', () => { state.inToday = false; start({
 // révision espacée : bouton quand des mains ratées sont arrivées à échéance (1, 3 puis 7 jours)
 async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
-  let r; try { r = await api(`/users/me/reviews?mode=${mode()}`); } catch (e) { return; }
+  let r; try { r = await api(`/users/me/reviews?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { return; }
   if (r.due > 0) {
     $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
@@ -698,10 +719,15 @@ const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouen
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
 const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin', 'read'] };
 const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10-16', '17-25'] };   // v4.5 : exploitant de 4 à 25 BB
-function onMode() {
+function setMode(m) {
+  const btn = document.querySelector(`.mode-switch [data-value="${m}"]`); if (!btn) return;
+  for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn));
+}
+function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
+  if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* gardé sur l'appareil */ });   // test joueurs 9 : et côté serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); }   // séance, recommandations et objectifs suivent le mode
+  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -712,7 +738,7 @@ function onMode() {
     }
   }
 }
-document.querySelector('.mode-switch').addEventListener('click', onMode);
+document.querySelector('.mode-switch').addEventListener('click', (e) => { if (e.target.closest('button')) onMode(e); });
 $('custom-start').addEventListener('click', () => { state.inToday = false; start(filters()); });
 $('report-form').addEventListener('submit', sendReport);
 const goNext = () => next().catch((e) => { loading(false); notify(netMsg(e, "la question suivante n'a pas pu être chargée"), goNext); });
@@ -735,6 +761,9 @@ async function home() {
   if (!state.levelChecked) {                                          // étape 4 : premier lancement en trois écrans
     state.levelChecked = true;
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
+    if (!store.get('mode')) {                                         // test joueurs 9 : le mode suit le joueur, pas seulement ce navigateur
+      try { const p = await api('/users/me/preferences'); if (p.mode && p.mode !== mode()) { setMode(p.mode); onMode(); } } catch (e) { /* mode par défaut */ }
+    }
   }
   progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
@@ -754,15 +783,15 @@ renderPastilles();
 // révision, thème du jour (2 séries), range du jour ; le serveur (ou la démo) construit le plan, l'application l'enchaîne
 const tzOffset = () => -new Date().getTimezoneOffset();
 async function loadToday() {
-  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
-  state.today = t; renderToday(t); return t;
+  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}`); }
+  catch (e) { if (!state.today || state.today.mode !== mode()) blockError('today-error', 'ta séance du jour n\'a pas pu être chargée', e, () => loadToday().then(loadRecs)); return null; }
+  $('today-error').hidden = true; state.today = t; renderToday(t); return t;
 }
 function renderToday(t) {
   $('today').hidden = false; $('free-title').hidden = false; $('home-lead').hidden = true;
   $('quick-start').className = 'secondary';                          // un seul bouton plein sur l'accueil : la séance
-  $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : 'Première séance : c\'est parti';
-  const d = t.bb7 != null && t.bb7_prev != null ? t.bb7 - t.bb7_prev : null;
-  $('today-bb').innerHTML = t.bb7 != null ? `BB perdus / 100 sur 7 jours : <b>${bb(t.bb7)}</b>${d != null && Math.abs(d) >= 0.05 ? ` <span class="${d < 0 ? 'up' : 'down'}">${d < 0 ? '▼' : '▲'} ${bb(Math.abs(d))}</span>` : ''}` : '';
+  $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : t.has_history ? 'Nouvelle série de jours : c\'est parti' : 'Première séance : c\'est parti';
+  $('today-bb').textContent = '';                                    // test joueurs 9 : un seul chiffre « BB perdus » sur l'accueil (objectif de la semaine)
   $('today-steps').innerHTML = t.steps.map((x, i) => `<li class="${x.done ? 'done' : i === t.next ? 'now' : ''}"><span class="tick" aria-hidden="true">${x.done ? '✓' : ''}</span>`
     + `<span>${escT(x.label_fr)}${x.total ? ` <small>${x.count}/${x.total} séries</small>` : ''}</span></li>`).join('');
   $('today-note').hidden = !t.done;
@@ -776,7 +805,7 @@ function todayGo() {
   const st = t.steps[t.next]; state.inToday = true;
   if (st.kind === 'review') start({}, true, 'review');
   else if (st.kind === 'theme') start(st.filters, false, 'theme');
-  else rangeStart(st.filters);
+  else rangeStart(st.spot_id ? { ...st.filters, spot: st.spot_id } : st.filters);     // la même situation toute la journée
 }
 async function todayContinue() {
   const t = await loadToday(); if (!t) { home(); return; }
@@ -810,7 +839,7 @@ function obShow() {
   $('ob-next').textContent = ob.step === 3 ? "C'est parti" : 'Suivant';
   if (ob.step === 2) {
     ob.level = ob.level || ({ debut: 1, confirme: 2, gros_volume: 2 })[ob.exp] || 1;
-    $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}</button>`).join('');
+    $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}${l.depth_fr ? ` <small>· ${escT(l.depth_fr)}</small>` : ''}</button>`).join('');
     $('ob-levels').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; ob.level = +b.dataset.v; for (const x of $('ob-levels').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b)); };
   }
   obButton();
@@ -830,12 +859,13 @@ async function loadLevel() {
   if (lv.promoted_to || state.promo) { state.promo = null; notify(`Bravo : tu passes au niveau ${lv.level}, « ${lv.name} ». Ta séance du jour suit ce nouveau niveau.`); }
   const b = $('today-level'), m = mode() === 'gto';
   b.hidden = false;
-  b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
+  // test joueurs 9 : sur l'accueil, l'avancement sans chiffre BB (le seul est celui de l'objectif de la semaine) ; le détail est dans « Ma progression »
+  b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.filter((c) => c.kind !== 'bb').map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')} · voir mon niveau</small>`}`
     : '<b>Niveau 4 · Exploiter le field</b><small>mode exploitant, ouvert en continu</small>';
   return lv;
 }
 function critText(c) {
-  if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.target} décisions`;
+  if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.label_fr}`;      // « 16/100 décisions à moins de 10 BB »
   if (c.kind === 'bb') return `${c.value == null ? '—' : bb(c.value)} BB/100 (cible < ${bb(c.target)})`;
   if (c.kind === 'ranges') return `${c.value}/${c.target} ranges à 85 %`;
   return c.ok ? 'aucun thème fragile' : c.value ? `thème fragile : ${c.value}` : 'pas encore de décision';
@@ -843,8 +873,14 @@ function critText(c) {
 function renderLevel(lv) {
   $('st-level').hidden = !lv;
   if (!lv) return;
-  $('st-level-name').innerHTML = `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
-  $('st-level-crit').innerHTML = lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(c.label_fr)} <small>${escT(critText(c))}</small></li>`).join('');
+  if (mode() === 'exploit') {                                        // test joueurs 9 : le niveau suit le mode
+    $('st-level-name').innerHTML = `<b>Niveau 4 · Exploiter le field</b> : le mode Exploitant, ouvert en continu. Ton parcours GTO en est au niveau ${lv.level}, « ${escT(lv.name)} ».`;
+    $('st-level-crit').innerHTML = ''; $('st-level-pick-note').textContent = 'Changer de niveau GTO :';
+  } else {
+    $('st-level-name').innerHTML = `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
+    $('st-level-crit').innerHTML = lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(c.label_fr)} <small>${escT(critText(c))}</small></li>`).join('');
+    $('st-level-pick-note').textContent = 'Changer de niveau :';
+  }
   $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
 }
 $('st-level-pick').addEventListener('click', async (e) => {
@@ -863,17 +899,20 @@ async function loadRecs() {
 }
 // objectifs de la semaine (programme de travail, étape 3) : trois cibles, modifiables, et le bilan de la semaine passée
 async function loadGoals() {
-  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('goals').hidden = true; return null; }
-  renderGoals(g); return g;
+  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); }
+  catch (e) { if (!state.goals || state.goals.mode !== mode()) { $('goals').hidden = false; $('goals-list').innerHTML = ''; $('goals-note').textContent = ''; $('last-week').hidden = true; blockError('goals-error', 'tes objectifs n\'ont pas pu être chargés', e, loadGoals); } return null; }
+  $('goals-error').hidden = true; renderGoals(g); return g;
 }
 function renderGoals(g) {
   state.goals = g; $('goals').hidden = false;
   const edit = !!state.goalsEdit;
   $('goals-edit').textContent = edit ? 'terminé' : 'modifier';
   $('goals-list').innerHTML = g.items.map((x) => `<li class="goal${x.done ? ' done' : ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(x.label_fr)}</span>`
-    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
+    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-d="-1" aria-label="Baisser la cible"${x.target <= x.min ? ' disabled' : ''}>−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-d="1" aria-label="Monter la cible"${x.target >= x.max ? ' disabled' : ''}>+</button></span>` : '')
     + `</div><div class="sbar"><i style="width:${Math.round(100 * x.progress)}%"></i></div><small>${escT(x.text_fr)}</small></li>`).join('');
-  $('goals-note').textContent = g.days_left > 0 ? `Encore ${g.days_left} jour${g.days_left > 1 ? 's' : ''} cette semaine.` : 'Dernier jour de la semaine.';
+  $('goals-note').textContent = (g.days_left > 0 ? `Encore ${g.days_left} jour${g.days_left > 1 ? 's' : ''} cette semaine` : 'Dernier jour de la semaine')
+    + ` · objectifs du mode ${g.mode === 'exploit' ? 'Exploitant' : 'GTO'} ; les séances comptées sont celles de la séance du jour.`;   // test joueurs 9 : dit, pas deviné
+  glossify($('goals-list'));                                         // « BB perdus pour 100 décisions » s'explique au toucher
   const lw = g.last_week, seen = store.get('goals_seen') === g.week;
   $('last-week').hidden = !lw || seen;
   if (lw && !seen) $('last-week').innerHTML = `<b>Semaine dernière : ${lw.done} objectif${lw.done > 1 ? 's' : ''} sur ${lw.total} tenu${lw.done > 1 ? 's' : ''}.</b> `
@@ -891,19 +930,31 @@ $('goals-list').addEventListener('click', async (e) => {
 });
 // défis (programme de travail, étape 5)
 async function loadChallenges() {
-  let c; try { c = await api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('challenges').hidden = true; return null; }
+  let c; try { c = await api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`); }
+  catch (e) { if (!state.ch || state.ch.mode !== mode()) { $('challenges').hidden = false; $('ch-list').innerHTML = ''; $('ch-more').hidden = true; blockError('ch-error', 'les défis n\'ont pas pu être chargés', e, loadChallenges); } return null; }
+  $('ch-error').hidden = true;
   state.ch = c; const all = [...c.daily, ...c.weekly, ...c.monthly];
-  $('challenges').hidden = false;
-  $('ch-list').innerHTML = all.map((x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
-    + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">Relever</button>` : '') + `</div>`
-    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}</li>`).join('');
+  const card = (x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
+    + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">${x.action.type === 'resume' ? 'Reprendre' : 'Relever'}</button>` : '') + `</div>`
+    + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : x.status === 'started' ? 'En cours' : 'Ton résultat'} : ${escT(x.result_fr)}${x.next_fr && x.status !== 'won' ? ` · ${escT(x.next_fr)}` : ''}</small>` : ''}</li>`;
+  // test joueurs 9 : accueil trop long ; le défi du jour reste visible, les autres sont repliés en une ligne
+  $('challenges').hidden = false; $('ch-more').hidden = all.length < 2;
+  $('ch-list').innerHTML = card(all[0], 0);
+  $('ch-others').innerHTML = all.slice(1).map((x, k) => card(x, k + 1)).join('');
+  const won = all.slice(1).filter((x) => x.status === 'won').length;
+  $('ch-more-title').textContent = `${all.length - 1} autres défis${won ? ` · ${won} réussi${won > 1 ? 's' : ''}` : ''}`;
   return c;
 }
-$('ch-list').addEventListener('click', (e) => {
+$('challenges').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-i]'); if (!b) return;
   const x = [...state.ch.daily, ...state.ch.weekly, ...state.ch.monthly][+b.dataset.i], a = x.action; state.inToday = false;
   if (a.type === 'range') { rangeStart(); return; }
   state.challenge = a.challenge; state.forceChrono = a.chrono || null;
+  if (a.type === 'resume') {                                         // défi du jour entamé : il se reprend, il ne se recommence pas
+    state.sid = a.session_id; store.set('sid', a.session_id); state.mode = mode();
+    next().catch((err) => { loading(false); notify(netMsg(err, "le défi n'a pas pu reprendre")); });
+    return;
+  }
   start({}, false, null, a.challenge);
 });
 $('recs-list').addEventListener('click', (e) => {
@@ -937,7 +988,7 @@ async function rangeStart(forced) {
   state.range = { t, sel: new Set(), done: false };
   store.set('ranges_recent', JSON.stringify([t.spot_id, ...recent.filter((x) => x !== t.spot_id)].slice(0, 15)));
   $('rg-situation').textContent = t.situation_fr; $('rg-question').innerHTML = `${escT(t.question_fr)}<small>${escT(t.others_fr || '')}</small>`;
-  $('rg-cellinfo').hidden = true;
+  $('rg-cellinfo').hidden = true; $('rg-theory').hidden = mode() !== 'exploit';         // test joueurs 9 : dit, en mode Exploitant
   $('rg-result').hidden = true; $('rg-edit').hidden = false; $('rg-after').hidden = true; $('rg-help').hidden = false;
   renderRangeGrid(); show('range'); progress('Construis ta range');
 }
@@ -1010,8 +1061,7 @@ $('rg-home').addEventListener('click', home);
 
 // test joueurs du 24/10 : le mode et le thème choisis restent après un rechargement
 (function restoreHome() {
-  const m = store.get('mode'); const btn = m && document.querySelector(`.mode-switch [data-value="${m}"]`);
-  if (btn) { for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn)); }
+  const m = store.get('mode'); if (m) setMode(m);
   let f = {}; try { f = JSON.parse(store.get('filters') || '{}') || {}; } catch (e) { f = {}; }
   const want = { family: f.family, hero: f.hero, table: f.table, depth: f.min_stack !== undefined ? `${f.min_stack}-${f.max_stack - 0.5}` : undefined };
   for (const [name, v] of Object.entries(want)) {
