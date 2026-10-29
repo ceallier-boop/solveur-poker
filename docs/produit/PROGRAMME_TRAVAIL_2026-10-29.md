@@ -204,3 +204,17 @@ Hors étape 1, prévu ensuite : variantes 5 et 30 minutes, défi du jour dans la
 - Contrôles : `tests/test_recommend.py`, `tools/web/e2e_recs.cjs` (application et démo).
 
 Pas encore : recommandation « niveau presque validé » (avec les niveaux, étape 4), mains réelles (avec « Mes mains »), situations consultées dans le conseiller (le conseiller ne garde pas d'historique côté serveur).
+
+## 13. Étape 3 réalisée (29/10/2026) : objectifs de la semaine
+
+- **Accueil** : bloc « Objectifs de la semaine » sous les recommandations, trois objectifs avec leur barre et « encore N jours cette semaine » ; « modifier » affiche des boutons − / + pour changer chaque cible.
+- **Objectifs** (`spinsacademy/goals.py`, `GET` et `PUT /users/me/goals`), semaine du lundi au dimanche dans le fuseau de l'appareil :
+  - séances dans la semaine : jours avec au moins une série du thème de la séance finie (cible 5, de 1 à 7) ;
+  - BB perdus pour 100 décisions de la semaine sous la cible, sur au moins 30 décisions (cible : moyenne des 4 dernières semaines moins 10 %, sinon 20) ;
+  - ranges à 85 % ou plus (cible 3, de 1 à 10).
+- Les cibles sont fixées à la première visite de la semaine (table `goals`), puis gardées ; un objectif manqué est reconduit un peu plus facile la semaine suivante, jamais affiché en échec.
+- **Bilan de la semaine passée** en début de semaine : objectifs tenus, séances, BB perdus pour 100 décisions comparés à la semaine d'avant ; « OK » le range. L'écran de fin de séance rappelle où en sont les objectifs.
+- Les objectifs sont exportés et effacés avec les autres données du joueur ; la démo refait les mêmes calculs dans le navigateur.
+- Contrôles : `tests/test_goals.py`, `tools/web/e2e_goals.cjs` (application et démo).
+
+Pas encore : objectif « vitesse » au chrono (avec les niveaux 3 et 4), bilan détaillé par thème (plus progressé, à surveiller).

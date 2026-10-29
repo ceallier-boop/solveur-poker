@@ -686,7 +686,7 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode() {
   store.set('mode', mode());                                         // gardé après un rechargement
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden) loadToday();               // la séance suit le mode choisi
+  reviews(); if (!$('screen-home').hidden) { loadToday().then(loadRecs); loadGoals(); }   // séance, recommandations et objectifs suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()];
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -717,7 +717,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function home() {
-  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs);
+  progress(''); show('home'); homeSummary(); loadToday().then(loadRecs); loadGoals();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -770,6 +770,8 @@ function showTodayDone(t) {
     t.bb7 != null ? `BB perdus pour 100 décisions sur 7 jours : <b>${bb(t.bb7)}</b>${t.bb7_prev != null ? ` (semaine précédente : ${bb(t.bb7_prev)})` : ''}` : '',
     'Demain : tes mains ratées reviennent en révision, et la séance choisit ton thème le plus fragile.'].filter(Boolean).map((l) => `<li>${l}</li>`).join('');
   show('today'); refreshStats();
+  loadGoals().then((g) => { if (!g) return;                          // étape 3 : où en sont les objectifs de la semaine
+    $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.map((x) => `${escT(x.label_fr.toLowerCase())} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
 }
 $('today-go').addEventListener('click', todayGo);
 
@@ -780,6 +782,34 @@ async function loadRecs() {
   $('recs').hidden = !state.recs.length;
   $('recs-list').innerHTML = state.recs.map((x, i) => `<li class="rec rec-${x.kind}"><p>${escT(x.text_fr)}</p><button class="secondary small" data-i="${i}">${escT(x.label_fr)}</button></li>`).join('');
 }
+// objectifs de la semaine (programme de travail, étape 3) : trois cibles, modifiables, et le bilan de la semaine passée
+async function loadGoals() {
+  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('goals').hidden = true; return null; }
+  renderGoals(g); return g;
+}
+function renderGoals(g) {
+  state.goals = g; $('goals').hidden = false;
+  const edit = !!state.goalsEdit;
+  $('goals-edit').textContent = edit ? 'terminé' : 'modifier';
+  $('goals-list').innerHTML = g.items.map((x) => `<li class="goal${x.done ? ' done' : ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(x.label_fr)}</span>`
+    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
+    + `</div><div class="sbar"><i style="width:${Math.round(100 * x.progress)}%"></i></div><small>${escT(x.text_fr)}</small></li>`).join('');
+  $('goals-note').textContent = g.days_left > 0 ? `Encore ${g.days_left} jour${g.days_left > 1 ? 's' : ''} cette semaine.` : 'Dernier jour de la semaine.';
+  const lw = g.last_week, seen = store.get('goals_seen') === g.week;
+  $('last-week').hidden = !lw || seen;
+  if (lw && !seen) $('last-week').innerHTML = `<b>Semaine dernière : ${lw.done} objectif${lw.done > 1 ? 's' : ''} sur ${lw.total} tenu${lw.done > 1 ? 's' : ''}.</b> `
+    + `${lw.days} séance${lw.days > 1 ? 's' : ''}${lw.bb != null ? ` · ${bb(lw.bb)} BB perdus pour 100 décisions${lw.bb_before != null ? ` (la semaine d'avant : ${bb(lw.bb_before)})` : ''}` : ''}.`
+    + (lw.done < lw.total ? ' Les objectifs manqués sont reconduits un peu plus faciles.' : '') + ' <button class="link" id="lw-ok">OK</button>';
+  if (lw && !seen) $('lw-ok').addEventListener('click', () => { store.set('goals_seen', g.week); $('last-week').hidden = true; });
+}
+$('goals-edit').addEventListener('click', () => { state.goalsEdit = !state.goalsEdit; if (state.goals) renderGoals(state.goals); });
+$('goals-list').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-k]'); if (!b) return;
+  const x = state.goals.items.find((i) => i.kind === b.dataset.k), step = x.kind === 'precision' ? 1 : 1;
+  const t = Math.min(x.max, Math.max(x.min, x.target + step * +b.dataset.d)); if (t === x.target) return;
+  try { renderGoals(await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: mode(), kind: x.kind, target: t, tz: tzOffset() }) })); }
+  catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
+});
 $('recs-list').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-i]'); if (!b) return;
   const a = state.recs[+b.dataset.i].action; state.inToday = false;

@@ -468,3 +468,11 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .rec p { margin: 0; font-size: .92rem; } .rec .small { min-height: 40px; padding: 8px 14px; align-self: flex-start; }
 .rec-review { border-left-color: var(--warn); } .rec-range { border-left-color: var(--bad); }
 .conseil-from { display: inline-block; margin: 4px 0 8px; }
+/* objectifs de la semaine (programme de travail, étape 3) */
+.goals ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.goals-head { display: flex; align-items: baseline; justify-content: space-between; }
+.goal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.goal-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .92rem; font-weight: 600; }
+.goal small { color: var(--muted); font-size: .82rem; } .goal.done { border-color: var(--ok); } .goal.done .sbar i { background: var(--ok); }
+.goal-step { display: inline-flex; align-items: center; gap: 8px; } .goal-step .small { min-height: 36px; min-width: 40px; padding: 4px 10px; }
+.last-week { background: var(--ok-bg); border-radius: var(--radius); padding: 10px 12px; font-size: .9rem; margin-top: 6px; }

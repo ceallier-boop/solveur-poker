@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, progress, quiz, ranges, ratelimit, recommend, review, today
+from . import adaptive, catalog, goals, progress, quiz, ranges, ratelimit, recommend, review, today
 from .hrc import ROOT
 
 SCHEMA = """
@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS preferences(player_id TEXT PRIMARY KEY, adaptive INTE
   updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS range_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT, player_id TEXT, dataset_version TEXT NOT NULL,
   spot_id TEXT NOT NULL, hands TEXT NOT NULL, accuracy_pct REAL NOT NULL, bb_per_100 REAL NOT NULL, answered_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS goals(player_id TEXT NOT NULL, mode TEXT NOT NULL, week TEXT NOT NULL, kind TEXT NOT NULL,
+  target REAL NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(player_id, mode, week, kind));
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
 """
@@ -470,6 +472,68 @@ def my_recommendations(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str
     return dict(mode=mode, items=recommend.build(stats, review.items(rows, version), last, rows, t['steps'][1]['filters']))
 
 
+def _goal_data(con, pid, mode):
+    sess = [dict(r) for r in con.execute(
+        'SELECT s.created_at, s.plan, s.size, s.dataset_version, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
+        'FROM sessions s WHERE s.player_id = ?', (pid,))]
+    sess = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+    rgs = [dict(r) for r in con.execute('SELECT answered_at, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
+    return _mode_rows(con, pid, mode, None), sess, rgs
+
+
+def _targets(con, pid, mode, week):
+    return {r['kind']: r['target'] for r in con.execute('SELECT kind, target FROM goals WHERE player_id = ? AND mode = ? AND week = ?', (pid, mode, week))}
+
+
+@app.get('/users/me/goals')
+def my_goals(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """objectifs de la semaine (programme de travail, étape 3) et bilan de la semaine passée"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    tz = max(-840, min(840, tz))
+    day = today.local_day(datetime.datetime.now(datetime.timezone.utc).isoformat(), tz); start = goals.week_start(day)
+    wk = lambda k: start - datetime.timedelta(days=7 * k)
+    with closing(connect()) as con, con:
+        rows, sess, rgs = _goal_data(con, pid, mode)
+        vals = lambda k: goals.week_values(rows, sess, rgs, wk(k), tz)
+        cur = _targets(con, pid, mode, start.isoformat())
+        prev_t = _targets(con, pid, mode, wk(1).isoformat()); prev_v = vals(1)
+        if len(cur) < len(goals.KINDS):                                    # première visite de la semaine : cibles proposées, puis gardées
+            prop = goals.propose(prev_t, prev_v if prev_t else None, [vals(k)['precision'] if vals(k)['decisions'] >= goals.MIN_DECISIONS else None for k in (1, 2, 3, 4)])
+            for k, t in prop.items():
+                if k not in cur:
+                    con.execute('INSERT OR IGNORE INTO goals(player_id, mode, week, kind, target, updated_at) VALUES (?, ?, ?, ?, ?, ?)', (pid, mode, start.isoformat(), k, t, _now()))
+                    cur[k] = t
+    last = None
+    if prev_v['days'] or prev_v['ranges'] or prev_v['decisions']:                  # bilan seulement si la semaine passée a servi
+        items = goals.view({k: prev_t.get(k, goals.DEFAULT.get(k, goals.DEFAULT_BB)) for k in goals.KINDS}, prev_v)
+        last = dict(week=wk(1).isoformat(), done=sum(x['done'] for x in items), total=len(items), bb=prev_v['precision'],
+                    bb_before=vals(2)['precision'], days=prev_v['days'], decisions=prev_v['decisions'])
+    return dict(mode=mode, week=start.isoformat(), days_left=6 - day.weekday(), items=goals.view(cur, vals(0)), last_week=last)
+
+
+class GoalChange(BaseModel):
+    mode: str = Field('gto', pattern='^(gto|exploit)$')
+    kind: str = Field(pattern='^(days|precision|ranges)$')
+    target: float
+    tz: int = 0
+
+
+@app.put('/users/me/goals')
+def set_goal(body: GoalChange, x_player_id: Optional[str] = Header(None)):
+    """le joueur change une cible de la semaine en cours (dans les bornes de l'objectif)"""
+    pid = player(x_player_id, required=True)
+    lo, hi = goals.BOUNDS[body.kind]
+    t = round(body.target * 2) / 2 if body.kind == 'precision' else round(body.target)
+    if not lo <= t <= hi: raise HTTPException(422, f'cible hors des bornes ({lo} à {hi})')
+    day = today.local_day(datetime.datetime.now(datetime.timezone.utc).isoformat(), max(-840, min(840, body.tz)))
+    with closing(connect()) as con, con:
+        con.execute('INSERT INTO goals(player_id, mode, week, kind, target, updated_at) VALUES (?, ?, ?, ?, ?, ?) '
+                    'ON CONFLICT(player_id, mode, week, kind) DO UPDATE SET target = excluded.target, updated_at = excluded.updated_at',
+                    (pid, body.mode, goals.week_start(day).isoformat(), body.kind, t, _now()))
+    return my_goals(body.mode, body.tz, x_player_id)
+
+
 @app.post('/users/me/adaptation/reset')
 def reset_adaptation(x_player_id: Optional[str] = Header(None)):
     """l'adaptation repart de zéro (les statistiques et l'historique sont conservés)"""
@@ -487,7 +551,8 @@ def my_export(x_player_id: Optional[str] = Header(None)):
     with closing(connect()) as con:
         sessions = [dict(r) for r in con.execute('SELECT id, created_at, dataset_version, filters, seed, size FROM sessions WHERE player_id = ?', (pid,))]
         ranges_done = [dict(r) for r in con.execute('SELECT dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
-        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done)
+        goals_set = [dict(r) for r in con.execute('SELECT mode, week, kind, target, updated_at FROM goals WHERE player_id = ?', (pid,))]
+        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set)
 
 
 @app.delete('/users/me', status_code=204)
@@ -501,6 +566,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         con.execute('DELETE FROM sessions WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM range_attempts WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM goals WHERE player_id = ?', (pid,))
 
 
 # ------------------------------------------------------------------ signalements (cahier des charges §7 et §14)

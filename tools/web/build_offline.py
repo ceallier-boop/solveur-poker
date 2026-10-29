@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, field, quiz, ranges, review, today
+from spinsacademy import adaptive, field, goals, quiz, ranges, review, today
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -328,6 +328,58 @@ const DEMO = (() => {
       streak: streak(active), active_today: active.has(td), theme_fr: label, bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
   }
 
+  // objectifs de la semaine : mêmes règles que spinsacademy.goals (semaine du lundi au dimanche, heure du navigateur)
+  const G = __GOALS__;
+  const mondayOf = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const nfr = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+  function weekValues(mode, start) {
+    const lo = start.getTime(), hi = lo + 7 * DAY, inw = (at) => { const t = Date.parse(at); return t >= lo && t < hi; }, db = load();
+    const days = new Set(); let n = 0, lost = 0;
+    for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s)) {
+      if (s.plan === 'theme' && Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));
+      for (const r of Object.values(s.answers)) if (r.at && inw(r.at) && !(r.field && r.field.read)) { n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10); }
+    }
+    const good = (db.ranges || []).filter((r) => inw(r.at) && r.accuracy_pct >= G.range_good).length;
+    return { days: days.size, precision: n ? Math.round(lost / 1000 * 100 / n * 100) / 100 : null, decisions: n, ranges: good };
+  }
+  const gDone = (k, t, v) => (k === 'precision' ? v.precision != null && v.decisions >= G.min_decisions && v.precision <= t : v[k] >= t);
+  function gView(t, v) {
+    return G.kinds.map((k) => {
+      let text, frac;
+      if (k === 'precision') {
+        const cur = v.precision; text = (cur != null ? `${nfr(cur)} cette semaine (${v.decisions} décisions) · cible : moins de ${nfr(t[k])}` : `cible : moins de ${nfr(t[k])}`) + (v.decisions < G.min_decisions ? ` (au moins ${G.min_decisions} décisions)` : '');
+        frac = cur == null ? 0 : Math.min(1, v.decisions / G.min_decisions) * (cur <= t[k] ? 1 : Math.max(0, Math.min(1, t[k] / cur)));
+      } else { text = `${v[k]} / ${t[k]}`; frac = Math.min(1, v[k] / t[k]); }
+      return { kind: k, label_fr: G.label[k], target: t[k], value: k === 'precision' ? v.precision : v[k], text_fr: text, progress: Math.round(frac * 100) / 100,
+        done: gDone(k, t[k], v), min: G.bounds[k][0], max: G.bounds[k][1] };
+    });
+  }
+  function goals(mode) {
+    const db = load(), start = mondayOf(Date.now()), wk = (k) => new Date(start.getTime() - 7 * k * DAY), store = (db.goals = db.goals || {});
+    const key = (k) => `${mode}:${iso(wk(k))}`, prevT = store[key(1)], prevV = weekValues(mode, wk(1));
+    if (!store[key(0)]) {
+      const t = {};
+      for (const k of ['days', 'ranges']) { const p = (prevT || {})[k] ?? G.default[k]; t[k] = prevT && !gDone(k, p, prevV) ? Math.max(G.bounds[k][0], p - 1) : p; }
+      const hist = [1, 2, 3, 4].map((k) => weekValues(mode, wk(k))).filter((v) => v.decisions >= G.min_decisions).map((v) => v.precision);
+      t.precision = hist.length ? Math.max(G.bounds.precision[0], Math.round(hist.reduce((a, b) => a + b, 0) / hist.length * 0.9 * 2) / 2) : G.default_bb;
+      if (prevT && !gDone('precision', prevT.precision, prevV)) t.precision = Math.max(t.precision, Math.round(prevT.precision * 1.1 * 2) / 2);
+      store[key(0)] = t; save();
+    }
+    let last = null;
+    if (prevV.days || prevV.ranges || prevV.decisions) {
+      const items = gView(Object.assign({ days: G.default.days, ranges: G.default.ranges, precision: G.default_bb }, prevT || {}), prevV);
+      last = { week: iso(wk(1)), done: items.filter((x) => x.done).length, total: items.length, bb: prevV.precision, bb_before: weekValues(mode, wk(2)).precision, days: prevV.days, decisions: prevV.decisions };
+    }
+    const today0 = new Date(); return { mode, week: iso(start), days_left: 6 - ((today0.getDay() + 6) % 7), items: gView(store[key(0)], weekValues(mode, start)), last_week: last };
+  }
+  function setGoal(body) {
+    const k = body.kind, [lo, hi] = G.bounds[k] || [0, -1], t = k === 'precision' ? Math.round(body.target * 2) / 2 : Math.round(body.target);
+    if (!(t >= lo && t <= hi)) return [422, { detail: `cible hors des bornes (${lo} à ${hi})` }];
+    goals(body.mode || 'gto'); const db = load(); db.goals[`${body.mode || 'gto'}:${iso(mondayOf(Date.now()))}`][k] = t; save();
+    return [200, goals(body.mode || 'gto')];
+  }
+
   // recommandations : mêmes règles que spinsacademy.recommend (sans le sens des erreurs)
   function recommendations(mode) {
     const out = [], st = stats(), td = today(mode), tf = td.steps[1].filters || {};
@@ -445,6 +497,8 @@ const DEMO = (() => {
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/recommendations') return [200, recommendations(url.searchParams.get('mode') || 'gto')];
+    if (p === '/users/me/goals' && method === 'PUT') return setGoal(body);
+    if (p === '/users/me/goals') return [200, goals(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
   }
@@ -491,7 +545,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 
