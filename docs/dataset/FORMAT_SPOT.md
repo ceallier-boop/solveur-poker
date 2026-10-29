@@ -106,3 +106,12 @@ Une main non proposable (`quiz_eligible` faux) est refusée par la correction.
 - Une main ne revient pas deux fois dans une série ; une question facile n'est tirée à dessein que `quiz.EASY_SHARE` (6 %) du temps quand la situation offre mieux (plafond validé : 15 % au total) ; poids de tirage = combos × racine du poids d'atteinte.
 - Mains exclues du tirage quand l'EV de référence d'un call perd plus que le montant à payer (`quiz.impossible_ev`, artefact de référence).
 - Lot 1 (2026-10-14) : en EV de référence, une main n'est proposée que si la moins chère des vraies erreurs coûte au moins 150 mBB (`quiz.error_gap`, seuil de bruit `REF_NOISE_MBB`) ; une action à moins de 0,1 BB n'empêche plus la question, elle reçoit une nuance. En EV exacte, toute main avec une erreur est proposable.
+
+### Moyenne des exports répétés (2026-10-29 ; importeur 1.5.0)
+
+- Les exports répétés d'un même calcul sont moyennés avant la construction des spots (`hrc.average`). Répétitions = même base, mêmes réglages (`hrc_tree`), mêmes tapis ; nommage v4 `<table>_<tapis>_r<n>` (`docs/reference/EXPORTS_A_PRODUIRE.md` §10.5), mais la règle vaut pour toute base.
+- Par main : poids d'atteinte en moyenne simple ; fréquences en moyenne pondérée par le poids d'atteinte de chaque répétition (l'arbre reste cohérent : poids du nœud × fréquence = poids du fils) ; EV en moyenne simple.
+- Nouveaux champs : `hands[*].ev_hrc_se` (erreur type de l'EV moyenne, en BB : écart type entre répétitions / √n), seulement quand le spot vient de plusieurs exports ; `provenance.exports` (exports moyennés) et `provenance.repetitions` ; `averaged` dans le manifeste. `provenance.export` reste le premier export.
+- Des répétitions dont un nœud n'a pas la même séquence ou les mêmes actions bloquent la publication.
+- Mesure sur les 4 exports identiques heads-up 12 / 12 (`data/hrc/tests/precision_v1`, test `tests/test_repetitions.py`) : écart médian avec l'EV exacte 100 mBB (1 export), 60 (2), 43 (4) ; 90e centile 274, 192, 123.
+- Bases actuelles : deux couples d'exports identiques sont désormais moyennés, `v3/hand_10` + `v3/hand_33` (25 / 25 / 25) et `complement2/hand_8` + `complement2/hand_10` (heads-up 4 / 8). Les versions publiées ne changent pas.

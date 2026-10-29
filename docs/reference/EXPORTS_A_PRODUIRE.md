@@ -268,6 +268,6 @@ Total P1 : 59 configurations, multipliées par le nombre de répétitions (choix
 
 ### 10.6 Ce que je fais à réception
 
-Moyenne des répétitions dans l'importeur, contrôle de chaque lot, reconstruction de la banque GTO sur ce seul arbre, baisse du filtre de bruit selon la précision mesurée, puis nouveau test joueurs.
+Moyenne des répétitions dans l'importeur (**codée le 29/10/2026**, importeur 1.5.0 : `docs/dataset/FORMAT_SPOT.md`), contrôle de chaque lot, reconstruction de la banque GTO sur ce seul arbre, baisse du filtre de bruit selon la précision mesurée, puis nouveau test joueurs.
 
 Droits sur les données de référence (A13) : réglés le 26/10/2026, l'usage respecte les conditions de l'éditeur. Les exports bruts ne sont jamais embarqués dans l'application.

@@ -22,7 +22,7 @@ Les banques servies (GTO `2026.10.13-3`, exploitant `2026.10.23-1`) viennent **d
 | 8 | Évaluateur de mains | ✅ | `postflop/kernels.py` (dénombrement exact 5 et 7 cartes, 0 désaccord sur 60 000 duels) | — |
 | 9 | Comparaison avec la référence | ✅ | `tools/solver/benchmark_hrc.py`, `docs/solver/CONTROLE_ABSTRACTION.md` | à refaire sur la v4 dès réception |
 | 10 | Données de référence | ⚠️ | bases `complement`, `complement2`, `min_raise_*`, v2, v3 (63 mains, arbre complet) dans `data/hrc/raw/` | **v4 non reçue** ; choix A à F de §10.3 à trancher ; pilote 12/12/12 et HU 12/12 |
-| 11 | Import, validation, publication | ✅ / ⚠️ | `hrc.py`, `importer.py` 1.4.0, `tools/hrc/validate.py`, `precision_test.py`, `catalog.py`, administration | **moyenne des répétitions** (§10.6) non codée dans l'importeur |
+| 11 | Import, validation, publication | ✅ | `hrc.py`, `importer.py` 1.5.0 (moyenne des exports répétés, 29/10), `tools/hrc/validate.py`, `precision_test.py`, `catalog.py`, administration | — |
 | 12 | Bruit et notation | ✅ | seuils 20 / 60 mBB (`grading.py`), filtre `REF_NOISE_MBB` à 150 mBB, retrait des mains mal résolues | seuil à baisser selon la précision v4 ; seuils non validés par un expert |
 | 13 | Exploitant (verrouillage de nœuds, profils) | ⚠️ | `field.py`, `tools/field/*` (profils v4, limp au SB), `tools/hrc/make_locks.py` (135 calculs) | profils = hypothèses de coachs ; historique de mains pour calibrer (B2) ; calculs verrouillés non lancés |
 | 14 | Contenu postflop | ❌ | statistiques de flop par main (`postflop_profiles.json`), paquet postflop de `legacy/` (bibliothèque de flops, quiz d'équité) | aucune stratégie postflop de référence ; exports §9.7 non commandés |
@@ -32,7 +32,7 @@ Les banques servies (GTO `2026.10.13-3`, exploitant `2026.10.23-1`) viennent **d
 ## 3. Ce qu'il me faut
 
 ### Décisions
-1. **Rôle du moteur maison.** Soit il reste un outil de contrôle et la référence fournit tout, soit il produit lui-même les situations que la référence ne couvre pas (tapis inégaux à 3 joueurs, tailles d'ouverture, 3-bet non all-in), contrôlées contre elle. C'est ce choix qui fixe la priorité des travaux ci-dessous.
+1. **Rôle du moteur maison : tranché le 29/10/2026.** À terme, les résultats servis viennent de notre solveur ; la référence ne sert plus qu'à le caler et à le contrôler. Conséquences : la précision de la référence compte pour mesurer le solveur (d'où la moyenne des répétitions), et le solveur doit produire des spots au même format, avec ses propres contrôles avant publication.
 2. **Choix A à F de la commande v4** (§10.3), en premier A (tailles d'ouverture) et B (nombre de répétitions).
 
 ### Données
@@ -41,7 +41,7 @@ Les banques servies (GTO `2026.10.13-3`, exploitant `2026.10.23-1`) viennent **d
 5. Plus tard : exports postflop de la référence sur une vingtaine de textures (pots limpés, 15-25 BB).
 
 ### Travaux de mon côté
-6. Importeur : moyenne des répétitions (EV et fréquences) et contrôle de précision à réception.
+6. ~~Importeur : moyenne des répétitions~~ : fait le 29/10 (importeur 1.5.0). Reste le contrôle de précision à réception de la v4.
 7. Format de sortie du solveur maison vers `spots.jsonl` (même format que l'importeur, même correction), pour pouvoir publier ses situations derrière un contrôle.
 8. Précision : BB face à une relance et SB face au limp du BTN (2 à 3 fois le plancher), puis l'abstraction postflop (groupes selon le potentiel de la main, stratégie par famille de flops).
 9. EV exacte à 3 joueurs (cartes du joueur couché retirées), qui sert aussi à mesurer la référence à 3 joueurs.
