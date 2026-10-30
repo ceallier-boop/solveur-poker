@@ -5,10 +5,23 @@ from numba import njit
 from .kernels import CC, combo_ranks, strength, texture
 
 
-def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False):
+def groups(s, B, metric, nc, board=None, textured=False):
+    """groupe de chaque combo à partir de sa force s (-1 : combo bloqué) sur un board de nc cartes visibles.
+    metric 'ehs2' (flop et turn) : groupes d'effectifs égaux, EHS² n'étant pas uniforme sur [0, 1] ; sinon tranches égales.
+    textured : + B * classe de texture du board visible (kernels.texture)."""
+    if metric == 'ehs2' and nc < 5:
+        v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, B + 1)[1:-1]); g = np.where(v, np.searchsorted(q, s), 0)
+    else:
+        g = np.clip((s * B).astype(np.int64), 0, B - 1)
+    g = np.where(s >= 0, g, 0)
+    return g + B * texture(board, nc) if textured else g
+
+
+def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False, flop_buckets=0):
     """n boards tirés au hasard : valeurs à la river (n, 1326), ordre de tri, validité, groupes de force (n, 3, 1326).
     metric : 'ehs' (force moyenne) ou 'ehs2' (moyenne du carré, flop et turn ; la river reste le rang exact).
-    textured : groupe = force + buckets * classe de texture du board visible (kernels.texture), buckets * 8 groupes en tout."""
+    textured : groupe = force + B * classe de texture du board visible (kernels.texture), B * 8 groupes en tout.
+    flop_buckets : nombre de groupes au flop (0 : comme aux autres rues)."""
     rng = np.random.default_rng(seed)
     ranks = np.zeros((n, 1326), np.int64); order = np.zeros((n, 1326), np.int64)
     bucket = np.zeros((n, 3, 1326), np.int64); valid = np.zeros((n, 1326), np.bool_)
@@ -18,12 +31,7 @@ def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False):
         s0 = int(rng.integers(1 << 30))
         for k, nc in enumerate((3, 4, 5)):
             s = strength(board, nc, board, rollouts, CC, s0 + nc, metric == 'ehs2' and nc < 5)
-            if metric == 'ehs2' and nc < 5:                  # groupes d'effectifs égaux : EHS² n'est pas uniforme sur [0, 1]
-                v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, buckets + 1)[1:-1])
-                bucket[i, k] = np.where(v, np.searchsorted(q, s), 0)
-            else:
-                bucket[i, k] = np.clip((s * buckets).astype(np.int64), 0, buckets - 1)
-            if textured: bucket[i, k] += buckets * texture(board, nc)
+            bucket[i, k] = groups(s, flop_buckets if nc == 3 and flop_buckets else buckets, metric, nc, board, textured)
     return ranks, order, valid, bucket
 
 

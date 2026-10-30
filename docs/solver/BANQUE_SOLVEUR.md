@@ -133,3 +133,25 @@ Même constat que pour la relance payée, en position cette fois : l'abstraction
 ### Conclusion de G9
 
 La résolution exacte au flop tranche les désaccords : les écarts entre notre solveur et la référence dans les pots relancés viennent de notre abstraction postflop (groupes de force partagés entre tous les flops), qui déplace la valeur des paires et des mains spéculatives vers les As et les broadways. Correction à faire, mesurée avec cet outil sur les mêmes flops : groupes selon le potentiel (`ehs2`), plus de groupes au flop, stratégie par famille de flops.
+
+### Correction du regroupement après le flop : réglages à mesurer (G13, 30/10/2026)
+
+Réglages nommés (`spinsacademy/postflop/hu_solver.py`, `PRESETS`), tous disponibles pour le solveur de production et pour la mesure exacte :
+
+| Réglage | Groupes au flop | Groupes turn / river | Force | Texture du board |
+|---|---|---|---|---|
+| `production` (actuel) | 16 | 16 | moyenne (EHS) | non |
+| `ehs2` | 16 | 16 | potentiel (EHS², groupes d'effectifs égaux) | non |
+| `ehs2_flop32` | 32 | 16 | potentiel | non |
+| `ehs2_texture` | 16 × 8 | 16 × 8 | potentiel | oui : stratégie par famille de boards (couleur possible, board pairé, quinte possible) |
+| `ehs2_flop32_texture` | 32 × 8 | 16 × 8 | potentiel | oui |
+
+Nouveau réglage `PostflopConfig.flop_buckets` (nombre de groupes au flop, le reste inchangé) ; le calcul des groupes est commun au solveur et à la mesure exacte (`fast.groups`).
+
+Mesure : `tools/solver/exact_flop_check.py --variants all` résout chaque flop exactement une seule fois et y rejoue la stratégie de chaque réglage, sur les 5 flops de G9 (graine 1). Critères de choix (G16) : l'écart moyen avec l'exact, le **transfert entre familles** (dispersion des écarts par famille de mains autour de leur moyenne : c'est le défaut constaté en G9), et l'exploitabilité de la stratégie sur chaque flop. La mesure (environ 4 h 15) se lance sur l'ordinateur du porteur du projet : `docs/solver/PROCEDURE_ORDINATEUR.md`, action O3. Le réglage de production ne change qu'après cette mesure.
+
+La grille peut tourner sur l'arbre v5 (G14) : `python -m spinsacademy.solver.dataset --grid p1 --tree v5 --postflop <réglage>` (ouvertures à 2 BB, tapis direct toujours proposé).
+
+Contrôles après le choix du réglage (G16), à partir de la relecture simulée des coachs (`docs/relecture/solveur_2026-10-30/SYNTHESE.md`) :
+- O3 affiche le gain postflop des mains signalées, pour les deux joueurs de l'iso payé : celles qui paient l'iso (K5o, Q8o, K4o : le solveur les couche, les trois coachs les défendent) et celles qui isolent (T9o, 96o, J8o, Q4o, Q5o isolées par le solveur, KJo non isolée : les trois coachs contre) ;
+- la banque pilote est refaite avec le réglage retenu (4 configurations, environ 45 minutes), puis `python tools/solver/control_spots.py --after gto_preflop/<version>` met côte à côte, pour les 60 situations de l'échantillon, la décision du solveur avant et après, celle de la référence et l'avis majoritaire des coachs. Les familles qui vont au flop (défense face à l'iso, composition de la range d'iso) doivent bouger ; celles où le solveur l'emporte (pas de limp au BTN à 3 joueurs, tapis du SB à 12 BB) ne doivent pas bouger.

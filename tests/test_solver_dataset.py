@@ -112,3 +112,18 @@ def test_linear_averaging_of_postflop_corrections():
     for v in vals[:2]:
         m.store(Nd, 0, 1, v, -v, 0.5); m.commit(0.5)
     assert np.allclose(m.offsets[7][0], 1.5)                                    # amortissement fixe : inchangé
+
+
+def test_v5_tree_runs_with_two_bb_opens(tmp_path):
+    """arbre v5 (commande de calage du 30/10) : ouvertures à 2 BB, tapis direct toujours proposé ; banque à son propre arbre"""
+    cfg = ds.TREES['v5']
+    res, path = ds.run((25.0, 25.0), cfg, FAST, runs=str(tmp_path), log=None)
+    assert res['tree'] == ds.tree_id(cfg) != 'daa9aaa0' and {'R2', 'A'} <= set(hrc_labels(res['nodes']['root']))
+    spots, _ = ds.spots_of(res, path)
+    assert spots and all(sp['open_sizes']['SB'] == 2.0 and sp['preflop_tree'] == res['tree'] for sp in spots)
+    assert ds.calibrate(res) is None                                    # pas encore de référence v5
+
+
+def hrc_labels(node):
+    from spinsacademy import hrc
+    return hrc.labels(node, [25.0, 25.0])

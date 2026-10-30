@@ -20,7 +20,7 @@ La publication est bloquée si un spot est invalide ou si une configuration dép
 
 Usage :
   python -m spinsacademy.solver.dataset --version 2026.10.30-s1 --configs hu:12-12,3w:12-12-12
-  python -m spinsacademy.solver.dataset --version 2026.10.30-s1 --grid p1          # les 58 configurations P1 de la commande v4
+  python -m spinsacademy.solver.dataset --version 2026.10.30-s1 --grid p1 --tree v5   # les 58 configurations P1, ouvertures à 2 BB
   python -m spinsacademy.solver.dataset --check gto_preflop/2026.10.30-s1          # recalcule et compare (test de référence)
 """
 import argparse, dataclasses, datetime, hashlib, json, os, time
@@ -28,7 +28,7 @@ import numpy as np
 from .. import allin, hrc, importer
 from ..cards import NAMES
 from ..grading import MIXED_MIN
-from ..postflop.hu_solver import PostflopConfig
+from ..postflop.hu_solver import PRESETS, PostflopConfig
 from . import calibration
 from .cfr import Solver
 from .postflop import Showdown
@@ -37,6 +37,9 @@ from .tree import POS, TreeConfig
 SOLVER_VERSION = '1.0.0'
 RUNS = os.path.join(hrc.ROOT, 'data', 'solver', 'runs')
 REFERENCE_TREES = {'daa9aaa0': TreeConfig()}      # arbre de la référence : notre arbre par défaut en reproduit exactement les actions
+# Arbres nommés pour la ligne de commande. v5 : commande de calage du 30/10/2026 (EXPORTS_A_PRODUIRE.md §11), ouvertures à
+# 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé ; c'est l'arbre des banques à venir.
+TREES = {'reference': TreeConfig(), 'v5': TreeConfig(open_btn=2.0, open_sb=2.0, unopened_allin_max=0)}
 MAX_EXPLOITABILITY_MBB = 5.0      # meilleure réponse d'un joueur contre la stratégie : au-delà, la résolution n'a pas convergé
 MAX_DRIFT_MBB = 1.0               # exploitabilité de la stratégie de l'avant-dernier tour dans le modèle du dernier (pipeline.solve)
 
@@ -286,13 +289,16 @@ if __name__ == '__main__':
     ap.add_argument('--model', default='realization', choices=['realization', 'showdown'])
     ap.add_argument('--pre-iters', type=int, default=1500); ap.add_argument('--outer', type=int, default=10)
     ap.add_argument('--post-iters', type=int, default=3000); ap.add_argument('--boards', type=int, default=1000)
-    ap.add_argument('--workers', type=int, default=4)
+    ap.add_argument('--workers', type=int, default=4, help='processus pour les sous-jeux postflop (mettre le nombre de cœurs)')
+    ap.add_argument('--tree', default='reference', choices=list(TREES), help='reference : BTN 2,3 BB, SB 3,5 BB ; v5 : ouvertures à 2 BB')
+    ap.add_argument('--postflop', default='production', choices=list(PRESETS), help='réglage de regroupement après le flop (G13)')
     a = ap.parse_args()
     if a.check:
         ok, diff = check(a.check, os.path.dirname(os.path.dirname(a.out)), a.workers)
         raise SystemExit(0 if ok else f'{len(diff)} spots diffèrent du recalcul (premier : {diff[0]})')
     if not a.version or not (a.configs or a.grid): ap.error('--version et --configs (ou --grid) sont requis')
     configs = [st for _, st in GRID_P1] if a.grid else parse_configs(a.configs)
-    p = SolveParams(model=a.model, pre_iters=a.pre_iters, outer=a.outer, post_iters=a.post_iters, boards=a.boards)
-    m = publish(a.version, a.out, configs, params=p, workers=a.workers)
+    p = SolveParams(model=a.model, pre_iters=a.pre_iters, outer=a.outer, post_iters=a.post_iters, boards=a.boards,
+                    postflop=dataclasses.asdict(PostflopConfig(**PRESETS[a.postflop])))
+    m = publish(a.version, a.out, configs, cfg=TREES[a.tree], params=p, workers=a.workers)
     print(f"{m['spots']} spots publiés en staging : {m['version']} ({len(m['configs'])} configurations, {m['questions_eligible']} questions)")

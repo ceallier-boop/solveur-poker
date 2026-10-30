@@ -26,12 +26,24 @@ class PostflopConfig:
     metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
     allin_spr: float = 0.0            # > 0 : le tapis n'est proposé que si tapis restant / pot <= allin_spr (règle HRC : 5)
     textured: bool = False            # groupes croisés force x texture du board visible (8 classes, kernels.texture)
+    flop_buckets: int = 0             # groupes au flop (0 : comme aux autres rues) ; le flop concentre les erreurs (G9, 30/10/2026)
     donk: bool = False                # False (règle HRC, par défaut) : OOP ne peut pas ouvrir les mises d'une rue si IP a été l'agresseur de la rue
                                       # précédente (le relanceur préflop pour le flop) : règle HRC POSTFLOP_ALLOW_DONK = False
 
 
     @property
-    def n_buckets(self): return self.buckets * (N_TEXTURES if self.textured else 1)
+    def n_buckets(self): return max(self.buckets, self.flop_buckets) * (N_TEXTURES if self.textured else 1)
+
+
+# Réglages de regroupement nommés (G13, 30/10/2026) : comparés à la résolution exacte par tools/solver/exact_flop_check.py,
+# choisis pour une banque par python -m spinsacademy.solver.dataset --postflop <nom>
+PRESETS = {
+    'production': dict(),
+    'ehs2': dict(metric='ehs2'),
+    'ehs2_flop32': dict(metric='ehs2', flop_buckets=32),
+    'ehs2_texture': dict(metric='ehs2', textured=True),
+    'ehs2_flop32_texture': dict(metric='ehs2', flop_buckets=32, textured=True),
+}
 
 
 class _N:
@@ -133,10 +145,10 @@ class HUPostflop:
     def _context(self, rng):
         board = rng.choice(52, 5, replace=False).astype(np.int64)
         ranks = combo_ranks(board, CC); valid = ranks >= 0
-        B = self.cfg.buckets; seed = int(rng.integers(1 << 30)); bucket = []
+        cfg = self.cfg; seed = int(rng.integers(1 << 30)); bucket = []
         for k in (3, 4, 5):
-            s = strength(board, k, board, self.cfg.rollouts, CC, seed + k)
-            bucket.append(np.clip((s * B).astype(np.int64), 0, B - 1) + (B * texture(board, k) if self.cfg.textured else 0))
+            s = strength(board, k, board, cfg.rollouts, CC, seed + k, cfg.metric == 'ehs2' and k < 5)
+            bucket.append(fast.groups(s, cfg.flop_buckets if k == 3 and cfg.flop_buckets else cfg.buckets, cfg.metric, k, board, cfg.textured))
         return dict(board=board, ranks=ranks, valid=valid, bucket=bucket)
 
     # ---------------------------------------------------------------- version numba
