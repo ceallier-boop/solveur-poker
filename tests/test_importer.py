@@ -12,6 +12,7 @@ def built():
     return im.build_dataset()
 
 
+@pytest.mark.slow
 def test_no_rejection_and_known_trees_only(built):
     spots, rejected, used, skipped = built
     assert not rejected
@@ -20,6 +21,7 @@ def test_no_rejection_and_known_trees_only(built):
     assert {s['preflop_tree'] for s in spots} == set(im.TREES)
 
 
+@pytest.mark.slow
 def test_one_export_per_stack_configuration(built):
     spots, _, used, _ = built
     keys = [(s['preflop_tree'], tuple(s['stacks_bb']), s['node_key']) for s in spots]
@@ -27,6 +29,7 @@ def test_one_export_per_stack_configuration(built):
     assert len({s['spot_id'] for s in spots}) == len(spots)
 
 
+@pytest.mark.slow
 def test_spots_are_legal_and_normalised(built):
     for s in built[0]:
         hero = s['players'].index(s['hero']); stack = s['stacks_bb'][hero]
@@ -41,6 +44,7 @@ def test_spots_are_legal_and_normalised(built):
             assert abs(sum(h['freq']) - 1) < 2e-3 and len(h['freq']) == len(h['ev_hrc']) == len(ids)
 
 
+@pytest.mark.slow
 def test_exact_ev_matches_hrc_where_hrc_is_precise(built):
     """à 2 BB heads-up, HRC est précis : le calcul exact (call et shove) doit coïncider à quelques mBB près"""
     for s in built[0]:
@@ -51,6 +55,7 @@ def test_exact_ev_matches_hrc_where_hrc_is_precise(built):
             assert abs(np.average(hrc - ex, weights=w)) < 0.005 and np.average(np.abs(hrc - ex), weights=w) < 0.015
 
 
+@pytest.mark.slow
 def test_publish_is_immutable(tmp_path):
     m = im.publish('test-1', str(tmp_path))
     d = tmp_path / 'test-1'
@@ -60,6 +65,7 @@ def test_publish_is_immutable(tmp_path):
         im.publish('test-1', str(tmp_path))
 
 
+@pytest.mark.slow
 def test_grading_rules(built):
     spot = next(s for s in built[0] if s['table'] == 'heads-up' and s['stacks_bb'] == [10.0, 10.0] and s['node_key'] == 'SB-allin')
     assert spot['ev_reference'] == 'exact'
@@ -83,6 +89,7 @@ def test_grading_rules(built):
     assert checked > 1000
 
 
+@pytest.mark.slow
 def test_eligibility_excludes_reach_and_inconsistent_hrc(built):
     for s in built[0]:
         for name, h in s['hands'].items():
@@ -91,6 +98,7 @@ def test_eligibility_excludes_reach_and_inconsistent_hrc(built):
             assert h['quiz_eligible'] == (h['reach'] >= im.MIN_REACH and h['hrc_self_regret_mbb'] <= im.MAX_SELF_REGRET_MBB and mixed_ok)
 
 
+@pytest.mark.slow
 def test_mixed_strategy_actions_are_never_penalised(built):
     for s in built[0]:
         for name, h in s['hands'].items():
@@ -99,6 +107,7 @@ def test_mixed_strategy_actions_are_never_penalised(built):
                 if grading.reference_freq(s, name)[j] >= grading.MIXED_MIN: assert grading.grade(s, name, a['id'])['verdict'] == 'correct'
 
 
+@pytest.mark.slow
 def test_displayed_mix_rounds_to_100(built):
     for s in built[0][:40]:
         for h in NAMES:

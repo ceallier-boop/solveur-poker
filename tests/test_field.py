@@ -64,6 +64,7 @@ def test_audit_corrections_v4_2():
             assert f['limp_estimate'] == (s['table'] == 'heads-up')
 
 
+@pytest.mark.slow
 def test_catalog_validates_field_dataset():
     r = catalog.validate(quiz.DEFAULT_FIELD)
     assert r['ok'], [c for c in r['checks'] if not c['ok']]
@@ -109,6 +110,7 @@ def test_engine_v4_2_checks():
     assert abs(g[i] - ee.hero_ev_hrc('hu', 8, '', 'C')[i]) < 1e-12          # contre un BB GTO, l'estimation rend l'EV HRC
 
 
+@pytest.mark.slow
 def test_profiles_follow_field_shares():
     """v4.3 : le volume prime (banque x 10) ; le rec passif reste le profil le plus représenté, et le tirage des séries
     pondère chaque question par la part de son profil dans le field"""

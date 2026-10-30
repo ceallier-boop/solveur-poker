@@ -57,6 +57,7 @@ def test_fit_offsets_reproduces_marginals():
     assert np.abs((D * Gh) @ w1 / (D @ w1) - G0).max() < 1e-6 and np.abs((D * (P - Gh)).T @ w0 / (D.T @ w0) - G1).max() < 1e-6
 
 
+@pytest.mark.slow
 def test_pipeline_three_handed_runs_and_stays_consistent():
     """chaîne complète à 3 joueurs (petits réglages) : pas d'erreur, ranges postflop prises en compte, exploitabilité faible"""
     from spinsacademy.solver.pipeline import solve

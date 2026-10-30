@@ -17,7 +17,7 @@ Application d'entraînement au Spin & Go / Expresso. Cahier des charges : `docs/
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q                                   # tests
+python -m pytest -q -m "not slow"                     # tests rapides (1 min) ; sans -m : suite complète (10 à 15 min), docs/exploitation/TESTS.md
 python tools/hrc/validate.py                          # rapport docs/reference/VALIDATION_REFERENCE.md
 python -m spinsacademy.importer --version AAAA.MM.JJ-N  # produit un dataset en staging (à contrôler puis publier dans /admin)
 python -m spinsacademy.catalog gto_preflop/AAAA.MM.JJ-N  # contrôles de publication, hors application
