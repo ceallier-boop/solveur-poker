@@ -504,7 +504,7 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
                       progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
                       progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None,
                       level=dict(number=lv, name=levels.LEVELS[lv]['name'], depth_fr=levels.DEPTH_FR[lv]), plan=plan, active=active,
-                      next_due=(rv['next_due_at'], rv['pending']), review_filters=levels.depth_filters(lv), played_before=bool(done_all or rngs))
+                      next_due=(rv['next_due_at'], rv['pending']), review_filters=levels.depth_filters(lv), played_before=bool(done_all or rngs), mode=mode)
     return dict(out, mode=mode)
 
 

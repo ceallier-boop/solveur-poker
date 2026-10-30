@@ -18,6 +18,8 @@ import json
 
 MINUTES = 15
 SERIES_PER_THEME = 2
+RANGE_FR = 'Range : la situation du thème'
+RANGE_EXPLOIT_FR = RANGE_FR + ', corrigée sur la théorie'   # l'exercice de range est toujours corrigé sur la référence GTO (test 9)
 REVIEW_CAP = 4            # séries de révision dans la journée au-delà desquelles l'étape est cochée (mains qu'on ne peut plus servir)
 THEMES = (       # cycle par défaut quand aucun thème n'est à travailler : du plus simple au plus fin
     ('Premier à parler, moins de 10 BB', dict(family='first_in', min_stack=0, max_stack=9.5)),
@@ -92,7 +94,7 @@ def _hour(iso, tz):
 
 
 def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None, plan=None, active=None,
-          next_due=None, review_filters=None, played_before=None):
+          next_due=None, review_filters=None, played_before=None, mode='gto'):
     """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
     due : mains à réviser maintenant ; focus : diagnostic de progress.compute ; plan : thème fixé pour la journée
     dict(theme_fr, filters, range_filters, range_spot) ; active : jours d'activité tous modes (série de jours) ;
@@ -114,7 +116,7 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
         dict(kind='review', done=due == 0 or reviews >= REVIEW_CAP, count=due, label_fr=rlabel, filters=review_filters or {}),
         dict(kind='theme', done=themed >= SERIES_PER_THEME, count=min(themed, SERIES_PER_THEME), total=SERIES_PER_THEME,
              label_fr=f"Thème : {label}", filters=f),
-        dict(kind='range', done=ranged >= 1, label_fr="Range : la situation du thème", filters=rs, spot_id=(plan or {}).get('range_spot')),
+        dict(kind='range', done=ranged >= 1, label_fr=RANGE_FR if mode == 'gto' else RANGE_EXPLOIT_FR, filters=rs, spot_id=(plan or {}).get('range_spot')),
     ]
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
     return dict(minutes=MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
