@@ -70,15 +70,20 @@ Risque à lever : le mot est courant dans le café (Nespresso l'utilise comme no
 | SpinLab | Laboratoire du spin | `spinlab.poker` | Garde « Spin » (PokerStars) |
 | PushFold | Descriptif | `pushfold.app`, `pushfold.fr` | Réduit l'appli au push/fold, alors qu'elle va au-delà |
 
-### Décision du porteur du projet (29/10) : **SpinLab**
+### Décision du porteur du projet (30/10) : **SpinPokerTraining**, à l'essai
 
-Le porteur du projet retient **SpinLab** (débloque I7).
+Le 29/10, SpinLab avait été retenu ; une société « Spinlab » (spinlab.studio, logiciels de casino en marque blanche, créée en 2025) occupe déjà le nom dans le secteur des jeux d'argent. Le 30/10, le porteur du projet essaie **SpinPokerTraining**.
 
-Disponibilité vérifiée le 29/10 (registre RDAP) : `spinlab.poker`, `spinlabpoker.com`, `spinlabpoker.fr`, `spinlab.gg` et `spinlab.io` sont libres ; `spinlab.com`, `spinlab.fr`, `spinlab.app` et `spinlab.academy` sont pris. Aucune appli de poker trouvée sous ce nom.
+Disponibilité vérifiée le 30/10 (registre RDAP) : `spinpokertraining.com`, `.fr`, `.app`, `.io`, `.poker` et `spinpoker.training` sont tous libres. Aucun produit trouvé sous ce nom exact.
 
-**Risque à lever avant tout dépôt** : une société « Spinlab » (spinlab.studio, créée en 2025) fournit des logiciels de casino en marque blanche. Même secteur des jeux d'argent, donc risque de conflit de marque en classes 9 et 41. Recherche d'antériorité INPI / EUIPO à faire en priorité ; si elle bloque, variante de repli : « SpinLab Poker ».
+Points d'attention :
 
-Suite : recherche de marque, achat de `spinlab.poker` et `spinlabpoker.fr`, réservation des comptes réseaux sociaux, puis renommage dans l'en-tête, le manifeste et les artéfacts (I7, interface « Interface »).
+- **Proximité avec Advanced Poker Training** : cet éditeur exploite `pokertraining.com` et un entraîneur Spin & Go à `spinngo.pokertraining.com`. Notre nom contient le leur en entier : risque de confusion et d'opposition.
+- **Nom descriptif** : « spin », « poker » et « training » sont des mots courants du secteur ; une marque purement descriptive se protège mal (dépôt fragile, copie difficile à empêcher). Un logo et une forme graphique propres aident.
+- **« Spin Poker »** désigne aussi un jeu de vidéo-poker de casino (Action Gaming).
+- **Anglais et long** (17 lettres) pour un public d'abord francophone ; en abrégé, « SPT » est plus facile à retenir.
+
+Suite : recherche d'antériorité INPI / EUIPO (classes 9 et 41), achat de `spinpokertraining.com` et `spinpokertraining.fr`, réservation des comptes réseaux sociaux, puis renommage dans l'en-tête, le manifeste et les artéfacts (I7, interface « Interface »).
 
 ## 4. Prochaines étapes de l'analyse de marché
 
@@ -95,4 +100,5 @@ Suite : recherche de marque, achat de `spinlab.poker` et `spinlabpoker.fr`, rés
 - [GTO Sensei (App Store)](https://apps.apple.com/us/app/id1523876570)
 - [Poker Coaching (App Store)](https://apps.apple.com/app/id1444569705), [Poker Flight Simulator](https://apps.apple.com/app/id6786825538), [Poker Preflop Trainer PRO](https://mwm.ai/apps/poker-preflop-trainer-pro/1624849305)
 - [Spinlab, logiciels de casino (Trustpilot)](https://ch.trustpilot.com/review/spinlab.studio), [SlotCatalog](https://slotcatalog.com/en/soft/spinlab)
+- [Advanced Poker Training, entraîneur Spin-N-Go](https://www.pokertraining.com/poker/blog/spin-n-go-training-has-arrived/), [FAQ](https://spinngo.pokertraining.com/poker/faq.php)
 - [Historique Expresso et Spin & Go (PokerNews)](https://www.pokernews.com/strategy/spin-and-go-poker-36231.htm)
