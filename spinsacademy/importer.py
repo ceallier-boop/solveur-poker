@@ -47,11 +47,16 @@ class InvalidSpot(Exception):
     pass
 
 
+
+def _rel(path):
+    """chemin relatif au dépôt, toujours avec des « / » (manifestes identiques sous Windows, macOS et Linux)"""
+    return os.path.relpath(path, ROOT).replace(os.sep, '/')
+
 def _sha256(path):
     h = hashlib.sha256()
     for root, _, files in sorted(os.walk(path)):
         for f in sorted(files):
-            p = os.path.join(root, f); h.update(os.path.relpath(p, path).encode()); h.update(open(p, 'rb').read())
+            p = os.path.join(root, f); h.update(os.path.relpath(p, path).replace(os.sep, '/').encode()); h.update(open(p, 'rb').read())
     return h.hexdigest()
 
 
@@ -136,7 +141,7 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
     (la première sert d'origine)"""
     dirs = [export_dir] if isinstance(export_dir, str) else list(export_dir)
     pre = settings['treeconfig']['preflop']['settings']
-    prov = dict(export=os.path.relpath(dirs[0], ROOT), exports=[os.path.relpath(d, ROOT) for d in dirs], repetitions=nodes[key].get('repetitions', 1),
+    prov = dict(export=_rel(dirs[0]), exports=[_rel(d) for d in dirs], repetitions=nodes[key].get('repetitions', 1),
                 export_sha256=source_sha, hrc_tree=tree_hash(settings), hrc_preflop_tree=preflop_hash(settings),
                 postflop_mode=settings['treeconfig']['postflop']['id'].split('.')[-1], importer=IMPORTER_VERSION,
                 equity_matrix=os.path.basename(allin.EQUITY_FILE))
@@ -237,7 +242,7 @@ def publish(version, out, raw=None):
     target = os.path.join(out, version)
     if os.path.exists(target): raise SystemExit(f'{target} existe déjà : une version publiée est immuable, choisir un nouveau numéro')
     spots, rejected, used, skipped = build_dataset(raw)
-    if rejected: raise SystemExit('Publication bloquée, spots invalides :\n' + '\n'.join(f'  {os.path.relpath(d, ROOT)} {k} : {m}' for d, k, m in rejected))
+    if rejected: raise SystemExit('Publication bloquée, spots invalides :\n' + '\n'.join(f'  {_rel(d)} {k} : {m}' for d, k, m in rejected))
     os.makedirs(target)
     with open(os.path.join(target, 'spots.jsonl'), 'w') as f:
         for sp in spots: f.write(json.dumps(sp, ensure_ascii=False, separators=(',', ':')) + '\n')
@@ -247,8 +252,8 @@ def publish(version, out, raw=None):
                     ev_reference_rule="EV exacte si chaque action autre que fold en a une, sinon EV HRC", min_reach_for_questions=MIN_REACH, max_self_regret_mbb=MAX_SELF_REGRET_MBB,
                     mixed_min=MIXED_MIN, max_mixed_regret_mbb=MAX_MIXED_REGRET_MBB,
                     questions_eligible=sum(sp['eligible_hands'] for sp in spots),
-                    sources=[os.path.relpath(d, ROOT) for d in used],
-                    averaged=sorted({tuple(sp['provenance']['exports']) for sp in spots if sp['provenance']['repetitions'] > 1}), skipped=[dict(export=os.path.relpath(d, ROOT), reason=r) for d, r in skipped],
+                    sources=[_rel(d) for d in used],
+                    averaged=sorted({tuple(sp['provenance']['exports']) for sp in spots if sp['provenance']['repetitions'] > 1}), skipped=[dict(export=_rel(d), reason=r) for d, r in skipped],
                     status='staging')
     json.dump(manifest, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return manifest

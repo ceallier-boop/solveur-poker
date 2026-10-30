@@ -36,6 +36,11 @@ from .tree import POS, TreeConfig
 
 SOLVER_VERSION = '1.0.0'
 RUNS = os.path.join(hrc.ROOT, 'data', 'solver', 'runs')
+def _rel(path):
+    """chemin relatif au dépôt, toujours avec des « / » (manifestes identiques sous Windows, macOS et Linux)"""
+    return os.path.relpath(path, hrc.ROOT).replace(os.sep, '/')
+
+
 REFERENCE_TREES = {'daa9aaa0': TreeConfig()}      # arbre de la référence : notre arbre par défaut en reproduit exactement les actions
 # Arbres nommés pour la ligne de commande. v5 : commande de calage du 30/10/2026 (EXPORTS_A_PRODUIRE.md §11), ouvertures à
 # 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé ; c'est l'arbre des banques à venir.
@@ -181,7 +186,7 @@ def reference_nodes(tree, stacks, raw=None):
     base = lambda d: d.split(os.sep)[-2]
     runs = [x for x in found if base(x[0]) == base(best[0]) and hrc.tree_hash(x[1]) == hrc.tree_hash(best[1])]
     nodes = hrc.average([x[1:] for x in runs]) if len(runs) > 1 else best[3]
-    return dict(exports=[os.path.relpath(x[0], hrc.ROOT) for x in runs], nodes=nodes)
+    return dict(exports=[_rel(x[0]) for x in runs], nodes=nodes)
 
 
 def calibrate(res, raw=None):
@@ -199,7 +204,7 @@ def calibrate(res, raw=None):
 def spots_of(res, path):
     st = [float(x) for x in res['stacks']]; cfg = res['tree_config']; nodes = res['nodes']
     sizes = dict(BTN=cfg['open_btn'] if len(st) == 3 else None, SB=cfg['open_sb'], BB_iso=cfg['iso_base'])
-    prov = dict(source='solveur', solver=res['solver'], run=os.path.relpath(path, hrc.ROOT), model=res['params']['model'],
+    prov = dict(source='solveur', solver=res['solver'], run=_rel(path), model=res['params']['model'],
                 iterations=res['info']['iterations'], exploitability_mbb=res['info']['exploitability_mbb'],
                 equity_matrix=os.path.basename(allin.EQUITY_FILE))
     spots, skipped = [], []
@@ -223,7 +228,7 @@ def build(configs, cfg=None, params=None, workers=4, runs=RUNS, raw=None, log=pr
             sp, sk = spots_of(res, path); spots += sp; skipped += sk
         except importer.InvalidSpot as e:
             rejected.append((config_name(stacks), 'spot', str(e))); sp = []
-        report.append(dict(config=config_name(stacks), stacks=list(stacks), run=os.path.relpath(path, hrc.ROOT), spots=len(sp),
+        report.append(dict(config=config_name(stacks), stacks=list(stacks), run=_rel(path), spots=len(sp),
                            seconds=res['info']['seconds'], exploitability_mbb=res['info']['exploitability_mbb'], shift_pts=res['info']['shift_pts'], drift_mbb=res['info'].get('drift_mbb'),
                            controls=[dict(id=c, label_fr=l, ok=bool(o), details_fr=d) for c, l, o, d in ctl], calibration=calibrate(res, raw)))
     return spots, rejected, report, skipped
