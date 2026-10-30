@@ -221,6 +221,8 @@ Voir `docs/reference/TEST_PRECISION_2026-10-14.md` : les 4 exports reçus par co
 
 ## 10. Commande v4 (26 octobre 2026) : une base unique, précise et cohérente
 
+> **Remplacée par la commande v5 du 30/10/2026 (§11)** : les questions viendront de notre solveur ; la référence n'est plus qu'un jeu de calage. La section est gardée pour l'historique.
+
 Objectif : remplacer toutes les bases précédentes par **un seul arbre de référence**, refait à toutes les profondeurs, assez précis pour que les ranges ne paraissent plus bruitées. Constats des tests joueurs 4 à 6 à l'origine de cette commande :
 - références jugées bruitées (bluffs isolés : 42s relance mais KQs limpe, 76s à laisser mais 95s à jouer) ;
 - une même situation calculée dans plusieurs arbres (relance à 2 ou 3 BB), donc des mains en jeu qui ne suivent pas la stratégie servie au coup précédent ;
@@ -282,3 +284,51 @@ Total P1 : 59 configurations, multipliées par le nombre de répétitions (choix
 Moyenne des répétitions dans l'importeur (**codée le 29/10/2026**, importeur 1.5.0 : `docs/dataset/FORMAT_SPOT.md`), contrôle de chaque lot, reconstruction de la banque GTO sur ce seul arbre, baisse du filtre de bruit selon la précision mesurée, puis nouveau test joueurs.
 
 Droits sur les données de référence (A13) : réglés le 26/10/2026, l'usage respecte les conditions de l'éditeur. Les exports bruts ne sont jamais embarqués dans l'application.
+
+## 11. Commande v5 (30 octobre 2026) : un jeu de calage pour le solveur maison
+
+Décision du porteur du projet du 30/10/2026 : les questions servies viennent de notre solveur (`docs/solver/BANQUE_SOLVEUR.md`). La référence ne sert plus à produire les banques, seulement à caler le solveur. Elle le cale grossièrement (EV par main bruitées : environ 100 mBB par export, 42 à 66 mBB en moyenne de 4 ; postflop Monte-Carlo à 256 groupes), elle ne le certifie pas. La qualité du solveur se prouve par ses propres contrôles (exploitabilité, stabilité) et par la résolution exacte de sous-jeux. D'où une commande courte et précise, à la place des 58 configurations P1 de la v4.
+
+### 11.1 Réglages de l'arbre (identiques pour tous les calculs)
+
+| Réglage | Valeur |
+|---|---|
+| Modèle | chip EV, sans rake, ante 0, blinds 0,5 / 1 |
+| Postflop | mode « simple » partout |
+| `ALLOWED_FLATS_PER_RAISE` | `[1, 1, 1, 1, 0]` (limp du BTN autorisé) ; `ALLOW_SB_COMPLETE` oui ; `ALLOW_COLD_CALLS` non |
+| **Ouvertures** | **2 BB** : BTN 2 BB, SB 2 BB (à 3 joueurs comme en heads-up) |
+| Iso du BB | 3 BB face au limp du SB, 3,5 BB + 1 BB par limper face au BTN (inchangé) |
+| 3-bets, 4-bets, 5-bets | comme au §0 |
+| Tapis direct | toujours proposé jusqu'à 25 BB effectifs (par exemple `PREFLOP_ADD_ALLIN_SPR` à 30 ; à vérifier dans la référence) |
+| Nœuds exportés | **tous les nœuds préflop** (arbre complet) |
+
+Notre solveur reproduit cet arbre : `TreeConfig(open_btn=2.0, open_sb=2.0, unopened_allin_max=0)`. Si la référence n'accepte pas une ouverture du SB à 2 BB à 3 joueurs, garder 2 BB pour le BTN et le heads-up, et me dire la taille retenue pour le SB.
+
+### 11.2 Configurations
+
+| Lot | Moteur | Configurations (tapis BTN / SB / BB, ou SB / BB) | Exports par configuration | Total |
+|---|---|---|---|---|
+| C1 calage | Monte-Carlo (`montecarlo`), comme les bases précédentes | 3 joueurs 8 / 8 / 8, 12 / 12 / 12, 16 / 16 / 16, 20 / 20 / 20, 25 / 25 / 25 ; heads-up 8 / 8, 12 / 12, 16 / 16, 20 / 20, 25 / 25 | 4 (moyennés par l'importeur 1.5.0) | 40 |
+| C2 repère exact | `enumerated` (exact, sans bruit) | 3 joueurs 4 / 4 / 4, 6 / 6 / 6, 8 / 8 / 8 ; heads-up 4 / 4, 6 / 6, 8 / 8 | 1 (calcul exact : une répétition ne change rien) | 6 |
+
+Pourquoi C2 : le moteur `enumerated` ne joue pas le postflop ; dès qu'un flop est vu, chaque main reçoit son équité contre la range adverse (§9.9, `docs/reference/TEST_PRECISION_2026-10-14.md`, test 2 : écart avec l'EV exacte 2,5 mBB en médiane contre 100 en Monte-Carlo). C'est exactement le jeu que résout notre solveur en modèle `showdown` : la comparaison y est sans bruit et porte sur la mécanique préflop seule (arbre, équités à 3 joueurs, pots annexes). À 8 BB et moins, le flop est peu vu et ce jeu est proche du vrai.
+
+### 11.3 Ordre de production
+
+1. **Pilote** : heads-up 12 / 12 en Monte-Carlo (4 exports) et heads-up 8 / 8 en `enumerated` (1 export). Je contrôle l'arbre (empreinte, ouvertures à 2 BB, tapis direct, nœuds complets), la précision, et je cale le solveur avant la suite.
+2. C1, puis C2.
+
+### 11.4 Livraison
+
+- Un dossier par export : `v5/<table>_<tapis>_r<n>/` pour C1 (par exemple `v5/3w_12-12-12_r1/`), `v5/<table>_<tapis>_enum/` pour C2 (par exemple `v5/hu_8-8_enum/`), avec `settings.json` et `nodes/`.
+- Un fichier `NOTES.txt` par lot : version de la référence, réglage de précision ou nombre d'itérations, durée d'un calcul.
+- Les exports restent dans `data/hrc/raw/v5/` : jamais embarqués dans l'application.
+
+### 11.5 Ce que je fais à réception
+
+Moyenne des répétitions (importeur 1.5.0) ; ajout de l'empreinte de cet arbre dans `REFERENCE_TREES` (`spinsacademy/solver/dataset.py`) pour que chaque banque du solveur sur ces tapis porte son calage ; calage du modèle `showdown` du solveur sur C2 et du modèle complet sur C1 ; compte rendu dans `docs/solver/BANQUE_SOLVEUR.md`.
+
+### 11.6 Ce qui n'est plus demandé
+
+Les 58 configurations P1 de la v4 (tapis inégaux compris), les tailles d'ouverture alternatives (P2) et les répétitions sur l'ancien arbre (BTN 2,3 BB, SB 3,5 BB) : notre solveur calcule lui-même toutes les configurations et toutes les tailles. Les calculs exploitants verrouillés (P2) relèvent du moteur exploitant et de l'historique de mains (§10.3 E) ; le postflop de référence (P3) est remplacé par la résolution exacte de sous-jeux (`spinsacademy/postflop/exact_flop.py`).
+
