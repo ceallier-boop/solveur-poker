@@ -1,0 +1,61 @@
+id;coach;meilleure_action;calcul_le_plus_juste;confiance;commentaire
+S001;Lucky;CALL 2,5 BB;les deux;faible;KQo face au 3,5x : call ou 3-bet tapis, pas de 3-bet sizé ; les deux calculs restent proches en EV
+S002;Lucky;CHECK;B;moyenne;T9o au BB HU contre le limp : checkback, l'iso commence plus haut
+S003;Lucky;FOLD;les deux;forte;J6o face à tapis + call : fold
+S004;Lucky;RAISE TO 2,3 BB;B;forte;BTN 3-way : on ne limpe jamais, la SB complète avec une cote de 16,6 % et la BB checke gratuitement
+S005;Lucky;FOLD;les deux;forte;98o au SB contre l'open BTN 12 BB : fold
+S006;Lucky;CHECK;B;moyenne;96o contre le limp : check
+S007;Lucky;ALL-IN 12 BB;B;faible;54s HU 12 BB : le jam est simple et défendable, le limp à 86 % me semble beaucoup
+S008;Lucky;RAISE TO 2,3 BB;B;forte;Jamais de limp au BTN 3-way, même avec une petite paire
+S009;Lucky;CHECK;A;moyenne;J8o contre le limp HU : checkback
+S010;Lucky;RAISE TO 3 BB;les deux;faible;K7o à 25 BB contre le limp : main limite pour l'iso, EV proches
+S011;Lucky;FOLD;les deux;forte;73o : fold
+S012;Lucky;CALL 11 BB;les deux;forte;A9s contre le tapis : call
+S013;Lucky;RAISE TO 3 BB;B;moyenne;A3o contre limp 3-way : iso pour jouer heads-up
+S014;Lucky;ALL-IN 12 BB;A;faible;Q8s SB contre BB à 12 BB : jam, on préfère les pots ouverts aux pots limpés
+S015;Lucky;CALL 2 BB;B;moyenne;En théorie K5o paie l'iso en position ; contre un rec qui iso peu (et fort), je folderais plus
+S016;Lucky;CALL 0,5 BB;les deux;forte;95o HU : limp
+S017;Lucky;ALL-IN 12 BB;les deux;forte;K9o : jam
+S018;Lucky;CHECK;les deux;forte;T9s : check dans le pot limpé
+S019;Lucky;ALL-IN 12 BB;B;moyenne;Pas de limp au BTN 3-way : K6s se jamme à 12 BB
+S020;Lucky;ALL-IN 12 BB;B;moyenne;87s BTN 12 BB : jam plutôt que limp
+S021;Lucky;CHECK;les deux;forte;J2s : check
+S022;Lucky;CHECK;les deux;forte;72o : check
+S023;Lucky;ALL-IN 12 BB;B;moyenne;88 à 12 BB : jam en value
+S024;Lucky;RAISE TO 3,5 BB;A;faible;BvB 3-way : on limpe trop ; j'ouvre plutôt (en 2 bb), même si le limp de K2o se défend
+S025;Lucky;CHECK;les deux;forte;K8s : check
+S026;Lucky;RAISE TO 3 BB;A;moyenne;KJo contre le limp : iso en value
+S027;Lucky;RAISE TO 3,5 BB;A;moyenne;A2s SB contre BB : open plutôt que limp
+S028;Lucky;CHECK;les deux;forte;T3o : check
+S029;Lucky;FOLD;les deux;forte;52o : fold
+S030;Lucky;FOLD;les deux;forte;J2o face au 3-bet : fold
+S031;Lucky;FOLD;B;faible;Q8o face à un open 3,5x (range forte) : si j'hésite entre call et fold, je folde
+S032;Lucky;FOLD;B;faible;J8o face au 3,5x : même logique que Q8o, fold
+S033;Lucky;CALL 1,3 BB;les deux;forte;KJo contre le clic : call
+S034;Lucky;FOLD;B;moyenne;JTo SB contre BTN : fold ou jam, pas de flat hors de position avec le BB derrière
+S035;Lucky;RAISE TO 2,3 BB;A;moyenne;AA à plus de 10 BB : open, le limp-trap se réserve à 5-10 BB
+S036;Lucky;RAISE TO 3,5 BB;les deux;forte;AKs : open
+S037;Lucky;CALL 2 BB;B;moyenne;Théorie : call en position ; contre un rec, Q8o se folderait (iso trop fort)
+S038;Lucky;RAISE TO 3 BB;B;faible;KJs domine le limp : iso plus souvent
+S039;Lucky;RAISE TO 2,3 BB;B;forte;Pas de limp au BTN 3-way
+S040;Lucky;CHECK;A;moyenne;Q4o contre limp : check
+S041;Lucky;ALL-IN 12 BB;B;faible;76o SB 12 BB : « tu folds trop », le jam rapporte
+S042;Lucky;CALL 11 BB;les deux;forte;A6s : call
+S043;Lucky;CALL 0,5 BB;B;moyenne;94s HU 25 BB : limp correct (le field iso peu)
+S044;Lucky;ALL-IN 12 BB;les deux;forte;ATo : jam
+S045;Lucky;CALL 0,5 BB;les deux;forte;J4s : limp
+S046;Lucky;RAISE TO 3,5 BB;B;faible;ATs : j'ouvre (en 2 bb idéalement), main assez forte pour un pot ouvert
+S047;Lucky;FOLD;les deux;forte;T2s : fold
+S048;Lucky;CALL 2 BB;B;moyenne;Théorie : call ; contre un rec, K4o est limite
+S049;Lucky;CHECK;B;moyenne;Q5o contre limp : check
+S050;Lucky;CALL 0,5 BB;A;moyenne;83s HU : limp
+S051;Lucky;CALL 0,5 BB;les deux;faible;98s HU 12 BB : limp et jam très proches
+S052;Lucky;ALL-IN 12 BB;B;moyenne;Q5s SB 12 BB : jam plutôt que limp
+S053;Lucky;ALL-IN 25 BB;A;moyenne;Un 3-bet, c'est un tapis : pas de 3-bet sizé hors de position (cauchemar de SPR)
+S054;Lucky;CHECK;B;moyenne;98s contre le limp : check
+S055;Lucky;ALL-IN 12 BB;B;faible;K8o à 12 BB contre le limp : jam, on est plus agressif que la théorie
+S056;Lucky;FOLD;les deux;forte;K7o face au tapis BTN : fold
+S057;Lucky;CALL 1,3 BB;B;moyenne;76o contre le clic : la cote impose de défendre
+S058;Lucky;CALL 1,3 BB;B;moyenne;K6o contre le clic : défense
+S059;Lucky;CHECK;B;moyenne;85s contre le limp : check
+S060;Lucky;CALL 0,5 BB;les deux;faible;Q6s HU 12 BB : limp et jam se valent
