@@ -698,7 +698,7 @@ $('review-btn').addEventListener('click', () => { state.inToday = false; start({
 // révision espacée : bouton quand des mains ratées sont arrivées à échéance (1, 3 puis 7 jours)
 async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
-  let r; try { r = await api(`/users/me/reviews?mode=${mode()}`); } catch (e) { return; }
+  let r; try { r = await api(`/users/me/reviews?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { return; }
   if (r.due > 0) {
     $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;

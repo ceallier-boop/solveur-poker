@@ -272,7 +272,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             version = serving_version(con, body.mode); excluded = _excluded(con)
             want = pid is not None and not filters and not body.review and not body.challenge and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
-            due = review.summary(_mode_rows(con, pid, body.mode, None), version)['due_items'] if body.review else None
+            due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
             recent = _recent(con, pid)
         if due is not None:
             series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
@@ -288,12 +288,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         elif fixed_seed is not None:
             series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, fixed_seed, excluded)]
         elif reader:                                                       # test joueurs 9 : au moins READER_PROFILES « Quelle pastille ? »
-            spots = quiz.load(version)[1]; profiles = lambda ser: sum(spots[x[0]]['field']['type'] == 'profil' for x in ser)
-            base = body.seed if body.seed is not None else random.randrange(1 << 30); ser = None
-            for k in range(40):
-                ser = quiz.draw_series(version, filters, body.size, base + k, excluded)
-                if profiles(ser) >= challenges.READER_PROFILES: break
-            series = [(s, h, None, None) for s, h in ser]
+            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded, min_profil=challenges.READER_PROFILES)]
         else:
             series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded), body.seed, recent)]
     except ValueError as e:
@@ -458,12 +453,12 @@ def my_adaptation(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
 
 
 @app.get('/users/me/reviews')
-def my_reviews(mode: str = 'gto', x_player_id: Optional[str] = Header(None)):
+def my_reviews(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
     """révision espacée (1, 3 puis 7 jours) : mains ratées prêtes à revoir, et date de la prochaine"""
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     with closing(connect()) as con:
-        res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode))
+        res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode), tz=max(-840, min(840, tz)))   # échéances en jours du joueur
     return dict(res, mode=mode, due_items=res['due_items'][:quiz.SERIES_SIZE * 4])
 
 
@@ -482,7 +477,7 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
         sess = [x for x in every if quiz.mode_of(x['dataset_version']) == mode]
         rngs = [r[0] for r in con.execute('SELECT answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
         rows = _mode_rows(con, pid, mode, None)
-        rv = review.summary(rows, version)
+        rv = review.summary(rows, version, tz=tz)
         gto = serving_version(con, 'gto')                                  # l'exercice de range est toujours sur la référence GTO
         excluded = _excluded(con)
     now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)

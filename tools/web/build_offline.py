@@ -277,7 +277,7 @@ const DEMO = (() => {
       .map(([i, x]) => ({ i: Number(i), stage: x.stage + 1, miss: x.miss, due_at: x.since + INTERVALS[x.stage] * DAY })).sort((a, b) => a.due_at - b.due_at);
   }
   function reviews(mode) {
-    const it = reviewItems(mode), t = Date.now(), due = it.filter((x) => x.due_at <= t), later = it.filter((x) => x.due_at > t);
+    const it = reviewItems(mode), td = dayBack(0), due = it.filter((x) => dayOf(new Date(x.due_at).toISOString()) <= td), later = it.filter((x) => dayOf(new Date(x.due_at).toISOString()) > td);   // en jours du joueur
     return { rule_fr: __REVIEW_RULE__, due: due.length, pending: later.length, next_due_at: later.length ? new Date(later[0].due_at).toISOString() : null, mode };
   }
 
@@ -552,7 +552,7 @@ const DEMO = (() => {
         for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
       }
       if (body.review) {
-        const due = reviewItems(mode).filter((x) => x.due_at <= Date.now()).slice(0, size);
+        const due = reviewItems(mode).filter((x) => dayOf(new Date(x.due_at).toISOString()) <= dayBack(0)).slice(0, size);
         const rest = (picked || []).filter((i) => !due.some((x) => x.i === i));
         due.forEach((x, k) => { purposes[k] = `Révision de ton erreur du ${new Date(x.miss).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} (étape ${x.stage} sur ${INTERVALS.length})`; });
         picked = due.map((x) => x.i).concat(rest).slice(0, size);
