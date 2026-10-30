@@ -85,6 +85,43 @@ Points d'attention :
 
 Suite : recherche d'antériorité INPI / EUIPO (classes 9 et 41), achat de `spinpokertraining.com` et `spinpokertraining.fr`, réservation des comptes réseaux sociaux, puis renommage dans l'en-tête, le manifeste et les artéfacts (I7, interface « Interface »).
 
+### Analyse des noms disponibles (30/10)
+
+**Méthode.** 45 noms testés : domaines `.com`, `.fr`, `.app` et `.poker` (registre RDAP), puis recherche web d'un produit existant sous ce nom (poker, jeux d'argent, entraînement). Les registres de marques (TMview, INPI) refusent les accès automatiques depuis notre environnement : **aucun nom n'est garanti « libre de droits » tant que la recherche INPI / EUIPO n'est pas faite** (liens plus bas).
+
+**Constat.** Presque tous les noms courts en `.com` sont pris (Spinto, Spinzo, Spinova, Spinflow, SpinCoach, SpinMind…). Le `.fr` et le `.app` suffisent pour une appli d'abord francophone.
+
+#### Noms retenus
+
+| Rang | Nom | Sens | `.com` | `.fr` | `.app` | `.poker` | Produit existant | Avis |
+|---|---|---|---|---|---|---|---|---|
+| 1 | **SpinDrill** | Spin + drill (exercice répété) | libre | libre | libre | libre | aucun trouvé | Seul nom court avec les quatre domaines libres. Dit ce que fait l'appli, garde « Spin ». « Drill » est connu des joueurs, moins du grand public. |
+| 2 | **Spinkata** | Kata : geste répété jusqu'à l'automatisme | pris | libre | libre | — | aucun trouvé | Le plus distinctif, donc le plus facile à déposer. Image forte (routine, maîtrise). |
+| 3 | **Ristretto** | L'expresso serré : tapis courts, séance courte | pris | pris | pris | libre | aucun en poker | La meilleure histoire, mais seul le `.poker` est libre. Mot courant du café. |
+| 4 | **Shovio** | Mot inventé, de « shove » (tapis) | pris | libre | libre | — | aucun trouvé | Inventé, donc dépôt solide ; peu parlant au premier abord. |
+| 5 | **Spinvo** | Mot inventé | pris | libre | libre | — | aucun trouvé | Court et déposable ; ne dit rien du produit. |
+
+#### Noms possibles avec réserve
+
+| Nom | Domaines libres | Réserve |
+|---|---|---|
+| SpinDojo | `.fr`, `.app` | Une appli « Poker Dojo » existe déjà |
+| JamFold | les quatre | Jargon ; réduit l'appli au push/fold |
+| SpinTuto | les quatre | Sonne débutant, pas assez premium pour un public confirmé |
+| SpinPokerTraining | les quatre | Contient en entier le nom d'Advanced Poker Training, qui vend un entraîneur Spin-N-Go |
+
+#### Noms écartés
+
+SpinAcademy (domaines `.com` pris, proche de Poker Academy), SpinLab (société de logiciels de casino du même nom), SpinCoach, Spinto, Spinzo, Spinova, Spinflow, Spinoza, Trilo (domaines principaux pris).
+
+#### À propos de « Spin »
+
+PokerStars utilise « Spin & Go » ; « spin » seul est devenu le mot courant du format, ce qui limite le risque, mais empêche aussi de déposer « Spin » seul. La protection portera sur le nom entier (SpinDrill, Spinkata) et sur le logo.
+
+#### Recommandation
+
+**SpinDrill**, ou **Spinkata** si l'on préfère un nom plus distinctif. Avant de trancher : recherche gratuite sur [data.inpi.fr](https://data.inpi.fr) et [TMview](https://www.tmdn.org/tmview/) (classes 9 et 41), puis achat des domaines le jour même.
+
 ## 4. Prochaines étapes de l'analyse de marché
 
 1. Taille du marché à partir des rapports annuels de l'ANJ et des données de trafic.
