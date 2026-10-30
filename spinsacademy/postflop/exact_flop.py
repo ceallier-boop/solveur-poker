@@ -18,7 +18,7 @@ import numba
 import numpy as np
 from numba import njit, prange
 from .kernels import CC, CLASS_OF, combo_ranks, strength, _percentile
-from .fast import _showdown2, _compat
+from .fast import _showdown2, _compat, groups
 from .hu_solver import HUPostflop
 
 ACT, FOLD, SHOW, CHANCE = 0, 1, 2, 3
@@ -279,16 +279,13 @@ class ExactFlopHU:
         return ((float((r0 * v0).sum() + (r1 * v1).sum())) / M - self.P) / 2 / self.P
 
 
-def flop_buckets(ex, B, rollouts, seed, metric='ehs'):
-    """groupes de force de chaque combo, comme fast.board_pool : flop, chaque turn, chaque river"""
+def flop_buckets(ex, cfg, seed):
+    """groupes de chaque combo pour la stratégie abstraite de réglages cfg (PostflopConfig), comme fast.board_pool :
+    flop, chaque turn, chaque river"""
     def grp(board, k):
         b5 = np.array(board + [0] * (5 - len(board)), np.int64)
-        s = _percentile(combo_ranks(b5, CC)) if k == 5 else strength(b5, k, b5, rollouts, CC, seed + k, metric == 'ehs2' and k < 5)
-        if metric == 'ehs2' and k < 5:
-            v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, B + 1)[1:-1]); g = np.where(v, np.searchsorted(q, s), 0)
-        else:
-            g = np.clip((s * B).astype(np.int64), 0, B - 1)
-        return np.where(s >= 0, g, 0)
+        s = _percentile(combo_ranks(b5, CC)) if k == 5 else strength(b5, k, b5, cfg.rollouts, CC, seed + k, cfg.metric == 'ehs2' and k < 5)
+        return groups(s, cfg.flop_buckets if k == 3 and cfg.flop_buckets else cfg.buckets, cfg.metric, k, b5, cfg.textured)
     T = len(ex.turns); b0 = grp(ex.flop, 3); b1 = np.zeros((T, 1326), np.int64); b2 = np.zeros((T, 49, 1326), np.int64)
     for ti, t in enumerate(ex.turns):
         b1[ti] = grp(ex.flop + [t], 4)

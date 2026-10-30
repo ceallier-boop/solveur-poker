@@ -26,9 +26,9 @@ from .tree import TreeConfig
 _POOL = None
 
 
-def _init_pool(n, buckets, rollouts, seed, metric='ehs', textured=False):
+def _init_pool(n, buckets, rollouts, seed, metric='ehs', textured=False, flop_buckets=0):
     global _POOL
-    _POOL = fast.board_pool(n, buckets, rollouts, seed, metric, textured)
+    _POOL = fast.board_pool(n, buckets, rollouts, seed, metric, textured, flop_buckets)
 
 
 def _subgame(job):
@@ -50,7 +50,7 @@ def strategy_shift(a, b):
 def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=None, boards=1000, workers=4, seed=1, damping=0.5, log=print, tol=None, tol_mbb=None):
     pf_cfg = pf_cfg or PostflopConfig(); model = Realization(); history = []
     ctx = mp.get_context('fork')
-    with ctx.Pool(workers, initializer=_init_pool, initargs=(boards, pf_cfg.buckets, pf_cfg.rollouts, seed, pf_cfg.metric, pf_cfg.textured)) as pool:
+    with ctx.Pool(workers, initializer=_init_pool, initargs=(boards, pf_cfg.buckets, pf_cfg.rollouts, seed, pf_cfg.metric, pf_cfg.textured, pf_cfg.flop_buckets)) as pool:
         s = Solver(stacks, cfg or TreeConfig(), postflop=model).solve(pre_iters); prev = s.strategy()
         for k in range(outer):
             t0 = time.time(); _, reach = s._pass(avg=True); subs = Realization.subgames(s)
