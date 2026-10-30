@@ -1,0 +1,273 @@
+{
+ "dataset": "gto_preflop",
+ "version": "2026.10.29-s1",
+ "created_at": "2026-10-30T00:07:11+00:00",
+ "source": "solveur",
+ "solver": "1.0.0",
+ "importer": "1.5.0",
+ "reference_preflop_tree": "daa9aaa0",
+ "tree_config": {
+  "open_btn": 2.3,
+  "open_sb": 3.5,
+  "iso_bb_vs_sb": 3.0,
+  "iso_base": 3.5,
+  "iso_per_limper": 1.0,
+  "threebet_vs_btn": 3.3,
+  "threebet_bb_vs_sb": 2.5,
+  "threebet_sb_vs_bb": 2.6,
+  "threebet_ip": 2.5,
+  "threebet_per_caller": 1.0,
+  "allin_fraction": 0.4,
+  "max_raises": 4,
+  "flats_per_level": 1,
+  "allow_limp": true,
+  "allow_cold_calls": false,
+  "unopened_allin_max": null
+ },
+ "params": {
+  "model": "realization",
+  "pre_iters": 1500,
+  "outer": 10,
+  "tol_mbb": 0.6,
+  "post_iters": 3000,
+  "boards": 1000,
+  "damping": "linear",
+  "seed": 1,
+  "postflop": {
+   "bet_fraction": 0.66,
+   "allin_fraction": 0.67,
+   "buckets": 16,
+   "rollouts": 24,
+   "raise_fraction": 0.66,
+   "max_raises": 2,
+   "metric": "ehs",
+   "allin_spr": 0.0,
+   "textured": false,
+   "donk": false
+  }
+ },
+ "run": "daa9aaa0_d051410a",
+ "model": "chip_ev",
+ "spots": 123,
+ "spots_sha256": "4040a986e6bb1e02e78800f4bae264c3683519f73020b1a46265f76e3784d23f",
+ "ev_reference_rule": "EV exacte si chaque action autre que fold en a une, sinon EV du solveur",
+ "min_reach_for_questions": 0.05,
+ "max_self_regret_mbb": 60.0,
+ "mixed_min": 0.1,
+ "max_mixed_regret_mbb": 60.0,
+ "max_exploitability_mbb": 5.0,
+ "max_drift_mbb": 1.0,
+ "questions_eligible": 9378,
+ "configs": [
+  {
+   "config": "hu_12-12",
+   "stacks": [
+    12.0,
+    12.0
+   ],
+   "run": "data/solver/runs/daa9aaa0_d051410a/hu_12-12.json",
+   "spots": 7,
+   "seconds": 169.0,
+   "exploitability_mbb": [
+    0.081,
+    0.051
+   ],
+   "shift_pts": 0.945,
+   "drift_mbb": 0.365,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.08 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.365 mBB par main (seuil 1), variation des fréquences 0.945 points"
+    }
+   ],
+   "calibration": {
+    "nodes": 8,
+    "tv": 13.1,
+    "agree": 88.3,
+    "loss_mbb": 12.3,
+    "floor_mbb": 6.9,
+    "outside": 0.0,
+    "worst": {
+     "node": "SB-raise3.5",
+     "loss_mbb": 34.8,
+     "floor_mbb": 17.7
+    },
+    "exports": [
+     "data/hrc/raw/v3/hand_13"
+    ]
+   }
+  },
+  {
+   "config": "hu_25-25",
+   "stacks": [
+    25.0,
+    25.0
+   ],
+   "run": "data/solver/runs/daa9aaa0_d051410a/hu_25-25.json",
+   "spots": 9,
+   "seconds": 459.0,
+   "exploitability_mbb": [
+    0.449,
+    0.361
+   ],
+   "shift_pts": 1.686,
+   "drift_mbb": 0.548,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.45 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.548 mBB par main (seuil 1), variation des fréquences 1.686 points"
+    }
+   ],
+   "calibration": {
+    "nodes": 10,
+    "tv": 19.5,
+    "agree": 81.4,
+    "loss_mbb": 54.4,
+    "floor_mbb": 33.5,
+    "outside": 0.0,
+    "worst": {
+     "node": "SB-call_BB-raise3_SB-raise7.8",
+     "loss_mbb": 366.1,
+     "floor_mbb": 228.7
+    },
+    "exports": [
+     "data/hrc/raw/v3/hand_18"
+    ]
+   }
+  },
+  {
+   "config": "3w_12-12-12",
+   "stacks": [
+    12.0,
+    12.0,
+    12.0
+   ],
+   "run": "data/solver/runs/daa9aaa0_d051410a/3w_12-12-12.json",
+   "spots": 44,
+   "seconds": 929.9,
+   "exploitability_mbb": [
+    0.067,
+    0.126,
+    0.089
+   ],
+   "shift_pts": 1.577,
+   "drift_mbb": 0.381,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.13 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.381 mBB par main (seuil 1), variation des fréquences 1.577 points"
+    }
+   ],
+   "calibration": {
+    "nodes": 44,
+    "tv": 13.8,
+    "agree": 87.4,
+    "loss_mbb": 41.7,
+    "floor_mbb": 34.7,
+    "outside": 0.0,
+    "worst": {
+     "node": "BTN-call_SB-raise4.5_BB-allin_BTN-call",
+     "loss_mbb": 320.0,
+     "floor_mbb": 106.4
+    },
+    "exports": [
+     "data/hrc/raw/v3/hand_3"
+    ]
+   }
+  },
+  {
+   "config": "3w_25-25-25",
+   "stacks": [
+    25.0,
+    25.0,
+    25.0
+   ],
+   "run": "data/solver/runs/daa9aaa0_d051410a/3w_25-25-25.json",
+   "spots": 63,
+   "seconds": 1025.0,
+   "exploitability_mbb": [
+    0.161,
+    0.227,
+    0.181
+   ],
+   "shift_pts": 0.794,
+   "drift_mbb": 0.427,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.23 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.427 mBB par main (seuil 1), variation des fréquences 0.794 points"
+    }
+   ],
+   "calibration": {
+    "nodes": 64,
+    "tv": 17.1,
+    "agree": 85.6,
+    "loss_mbb": 100.2,
+    "floor_mbb": 114.4,
+    "outside": 0.0,
+    "worst": {
+     "node": "BTN-raise2.3_SB-call_BB-raise9.89_BTN-allin_SB-call",
+     "loss_mbb": 895.0,
+     "floor_mbb": 272.9
+    },
+    "exports": [
+     "data/hrc/raw/v3/hand_10",
+     "data/hrc/raw/v3/hand_33"
+    ]
+   }
+  }
+ ],
+ "sources": [
+  "data/solver/runs/daa9aaa0_d051410a/hu_12-12.json",
+  "data/solver/runs/daa9aaa0_d051410a/hu_25-25.json",
+  "data/solver/runs/daa9aaa0_d051410a/3w_12-12-12.json",
+  "data/solver/runs/daa9aaa0_d051410a/3w_25-25-25.json"
+ ],
+ "skipped": [
+  {
+   "export": "hu_12-12",
+   "reason": "SB-raise3.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_25-25",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  }
+ ],
+ "status": "staging"
+}
