@@ -8,7 +8,7 @@ RAW = os.path.join(ROOT, 'data', 'hrc', 'raw')
 POS3, POS2 = ['BTN', 'SB', 'BB'], ['SB', 'BB']
 from .cards import NC
 # Ordre de préférence quand plusieurs exports existent pour les mêmes stacks : le plus récent d'abord
-BASE_PREFERENCE = ['v4', 'v3', 'v2', 'complement2', 'complement', 'min_raise_hu', 'min_raise_3way']
+BASE_PREFERENCE = ['v5', 'v4', 'v3', 'v2', 'complement2', 'complement', 'min_raise_hu', 'min_raise_3way']
 
 
 def _md5(obj):

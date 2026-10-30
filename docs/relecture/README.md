@@ -30,3 +30,29 @@ relecteurs mesure les consignes autant que l'application.
 
 Contenu : EV dérivées de la référence, sans export brut. À ne pas diffuser hors de l'équipe tant que les droits sur les données
 dérivées ne sont pas clarifiés (remarque 27).
+
+## Calculs du solveur maison contre la référence, 30/10/2026 (`solveur_2026-10-30/`, action G12)
+
+60 situations tirées par `python tools/solver/coach_sample.py docs/relecture/solveur_2026-10-30` (graine 30) dans la banque
+pilote du solveur `gto_preflop/2026.10.29-s1` (heads-up 12 et 25 BB, 3 joueurs 12 et 25 BB, arbre de la référence). Les deux
+calculs sont présentés à l'aveugle (« calcul A » / « calcul B », ordre tiré au hasard à chaque situation).
+
+| Fichier | Pour qui |
+|---|---|
+| `CONSIGNES.md` | à donner à chaque coach en premier |
+| `questions.md` | les 60 fiches : situation, main, fréquences et EV des deux calculs |
+| `reponses_modele.csv` | la grille à rendre (meilleure action, calcul le plus juste, confiance, commentaire) |
+| `cle.csv` | **à ne pas donner aux coachs** : quel calcul est le solveur, type de cas, perte du solveur mesurée avec les EV de la référence et bruit de la référence |
+
+Composition : 39 désaccords (actions dominantes différentes, au-delà du bruit de la référence de 50 mBB au moins), 9 décisions
+serrées, 12 témoins où les deux calculs sont d'accord. Les désaccords sont classés par fréquence réelle de la situation
+(probabilité de la ligne d'après la référence × atteinte de la main × combos) : les lignes rares, où le Monte-Carlo de la
+référence est maigre et ses EV parfois aberrantes, passent après. Sur toute la banque, ces désaccords pèsent 3,7 % des
+décisions pondérées par leur fréquence (679 mains sur 9 378).
+
+Désaccords les plus fréquents dans l'échantillon : tapis du solveur là où la référence paie ou limpe (8), iso-relance du BB
+face au limp du SB là où la référence checke (7), fold du solveur là où la référence paie (7), relance du BTN ou du SB là où
+la référence limpe (8, dont AA à 12 BB à 3 joueurs).
+
+Dépouillement : les réponses se rapprochent de la clé (`cle.csv`, colonnes `A` et `B`) ; le taux de « solveur plus juste »
+parmi les désaccords, par famille de décision, dit où caler le solveur en priorité.
