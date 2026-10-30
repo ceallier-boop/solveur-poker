@@ -43,9 +43,9 @@ Les banques servies (GTO `2026.10.13-3`, exploitant `2026.10.23-1`) viennent **d
 ### Travaux de mon côté
 6. ~~Importeur : moyenne des répétitions~~ : fait le 29/10 (importeur 1.5.0). Reste le contrôle de précision à réception de la v4.
 7. ~~Format de sortie du solveur maison vers `spots.jsonl`~~ : fait le 29/10 (`docs/solver/BANQUE_SOLVEUR.md`).
-8. Précision : BB face à une relance et SB face au limp du BTN (2 à 3 fois le plancher), puis l'abstraction postflop (groupes selon le potentiel de la main, stratégie par famille de flops).
+8. Précision : pilote du 29/10 (`docs/solver/BANQUE_SOLVEUR.md`) : à 3 joueurs, perte proche du plancher de la référence ; en heads-up 25 BB, l'écart vient du sous-jeu postflop des pots relancés (appelant sous-évalué). Piste : groupes selon le potentiel (`ehs2`), puis contrôle exact étendu au flop pour arbitrer.
 9. EV exacte à 3 joueurs (cartes du joueur couché retirées), qui sert aussi à mesurer la référence à 3 joueurs.
 
 ### Environnement
-10. Temps de calcul : 5 à 14 minutes par configuration heads-up sur 4 cœurs ; une série de 59 configurations à 3 joueurs demande une machine dédiée ou des sessions longues.
+10. Temps de calcul (pilote du 29/10, 4 cœurs) : 3 à 8 minutes par configuration heads-up, 15 à 20 minutes à 3 joueurs ; environ 12 heures pour les 58 configurations P1. Une machine dédiée ou une session longue est nécessaire.
 11. `pytest` à installer dans l'environnement cloud (`pip install -r requirements.txt`) pour faire tourner les tests du solveur.
