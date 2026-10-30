@@ -9,6 +9,9 @@ Règles :
     arbre (`preflop_tree`) et ses tailles d'ouverture (`open_sizes`). Quand plusieurs exports ont le même arbre et les
     mêmes stacks, le plus récent est retenu (ordre BASE_PREFERENCE), et à base égale le mode postflop « simple » (le plus
     répandu : un seul modèle postflop autant que possible) ;
+  - 1.5.0 : les exports répétés d'un même calcul (même base, mêmes réglages, mêmes tapis : commande v4, `<table>_<tapis>_r<n>`)
+    sont moyennés (hrc.average) avant de construire les spots ; chaque main porte alors `ev_hrc_se`, l'erreur type de
+    l'EV moyenne, et la provenance liste les exports moyennés ;
   - EV de référence pour la correction : l'EV exacte quand chaque action autre que fold en a une (décision tout
     ou rien), sinon l'EV HRC ;
   - une main n'est proposée en question que si elle atteint le nœud (reach >= MIN_REACH) et si la stratégie HRC
@@ -21,12 +24,13 @@ Règles :
 Usage : python -m spinsacademy.importer --version 2026.10.12-1 [--out data/datasets/gto_preflop]
 """
 import argparse, datetime, hashlib, json, os
+from collections import defaultdict
 import numpy as np
 from . import allin
 from .cards import NAMES, W
-from .hrc import ROOT, exports, is_allin, labels, load, positions, preflop_hash, tree_hash
+from .hrc import ROOT, average, exports, is_allin, labels, load, positions, preflop_hash, tree_hash
 
-IMPORTER_VERSION = '1.4.0'               # 1.4.0 : plusieurs arbres préflop ; 1.3.0 : calls heads-up exacts face au tapis du BB après limp ou relance
+IMPORTER_VERSION = '1.5.0'               # 1.5.0 : moyenne des exports répétés ; 1.4.0 : plusieurs arbres préflop ; 1.3.0 : calls heads-up exacts face au tapis du BB après limp ou relance
 REF_PREFLOP = 'daa9aaa0'          # arbre préflop de référence (limp du BTN autorisé, BTN 2,3 BB, SB 3,5 BB), voir data/hrc/README.md
 POSTFLOP_PREFERENCE = ('simple', 'general')
 TREES = {REF_PREFLOP: 'référence : BTN 2,3 BB, SB 3,5 BB',   # arbres importés (empreinte préflop), base v3 ; c22b0ad6 (sans limp du BTN) reste écarté
@@ -128,6 +132,20 @@ def _vec_weight(node):
 
 
 def build_spot(export_dir, st, nodes, key, settings, source_sha):
+    """spot d'un export de référence. export_dir : un dossier d'export, ou la liste des répétitions moyennées dans `nodes`
+    (la première sert d'origine)"""
+    dirs = [export_dir] if isinstance(export_dir, str) else list(export_dir)
+    pre = settings['treeconfig']['preflop']['settings']
+    prov = dict(export=os.path.relpath(dirs[0], ROOT), exports=[os.path.relpath(d, ROOT) for d in dirs], repetitions=nodes[key].get('repetitions', 1),
+                export_sha256=source_sha, hrc_tree=tree_hash(settings), hrc_preflop_tree=preflop_hash(settings),
+                postflop_mode=settings['treeconfig']['postflop']['id'].split('.')[-1], importer=IMPORTER_VERSION,
+                equity_matrix=os.path.basename(allin.EQUITY_FILE))
+    return make_spot(st, nodes, key, preflop_hash(settings), dict(BTN=pre.get('SIZES_OPEN_BU'), SB=pre.get('SIZES_OPEN_SB'), BB_iso=pre.get('SIZES_OPEN_BB')), prov)
+
+
+def make_spot(st, nodes, key, tree, open_sizes, provenance):
+    """cœur commun aux exports de référence et au solveur maison (spinsacademy.solver.dataset) : `nodes` au format des
+    exports (séquence, actions, et par main weight / played / evs, evs_se en option), `tree` l'empreinte de l'arbre préflop"""
     node = nodes[key]; names = positions(st); labs = labels(node, st)
     if len(labs) < 2: return None
     if len(node['hands']) != 169 or set(node['hands']) != set(NAMES): raise InvalidSpot('169 classes attendues')
@@ -137,6 +155,8 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
     freq = np.array([node['hands'][h]['played'] for h in NAMES], float)
     if np.abs(freq.sum(1) - 1).max() > 2e-3: raise InvalidSpot('fréquences non normalisées')
     ev_hrc = np.array([node['hands'][h]['evs'] for h in NAMES], float)
+    reps = node.get('repetitions', 1)
+    ev_se = np.array([node['hands'][h]['evs_se'] for h in NAMES], float) if reps > 1 else None
     reach = _vec_weight(node)
     exact = _exact(st, nodes, key, labs)
     keep = [j for j, a in enumerate(acts) if a is not None]
@@ -144,6 +164,7 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
         if freq[:, [j for j in range(len(acts)) if acts[j] is None]].max() > 1e-3: raise InvalidSpot('fold gratuit joué par HRC')
         acts = [acts[j] for j in keep]; labs = [labs[j] for j in keep]; exact = [exact[j] for j in keep]
         freq = freq[:, keep]; freq = freq / freq.sum(1, keepdims=True); ev_hrc = ev_hrc[:, keep]
+        if ev_se is not None: ev_se = ev_se[:, keep]
     full_exact = all(e is not None for e in exact)
     ev_ref_source = 'exact' if full_exact else 'hrc'
     hero = node['player']
@@ -159,24 +180,22 @@ def build_spot(export_dir, st, nodes, key, settings, source_sha):
                         ev_hrc=[round(float(x), 5) for x in ev_hrc[i]], ev_exact=ex,
                         hrc_self_regret_mbb=self_regret,
                         quiz_eligible=bool(r >= MIN_REACH and self_regret <= MAX_SELF_REGRET_MBB and mixed_ok))   # décidé sur les valeurs publiées
+        if ev_se is not None: hands[h]['ev_hrc_se'] = [round(float(x), 5) for x in ev_se[i]]
     table = '3-handed' if len(st) == 3 else 'heads-up'
-    tree = preflop_hash(settings); pre = settings['treeconfig']['preflop']['settings']
     sid = hashlib.sha256(json.dumps([tree, table, st, key]).encode()).hexdigest()[:12]      # même identifiant qu'en 1.3.0 pour l'arbre de référence
     mass = W * reach
     return dict(
         spot_id=f"{'3w' if len(st) == 3 else 'hu'}-{'-'.join(f'{x:g}' for x in st)}-{key}-{sid[:6]}",
         table=table, players=names, stacks_bb=st, blinds_bb=dict(sb=0.5, bb=1.0), ante_bb=0.0, model='chip_ev',
         hero=names[hero], node_key=key, history=hist, preflop_tree=tree,
-        open_sizes=dict(BTN=pre.get('SIZES_OPEN_BU'), SB=pre.get('SIZES_OPEN_SB'), BB_iso=pre.get('SIZES_OPEN_BB')),
+        open_sizes=open_sizes,
         pot_bb=round(sum(commit), 4), to_call_bb=round(to_call, 4), hero_committed_bb=round(commit[hero], 4),
         effective_stack_bb=round(min(st[q] for q in range(len(st)) if not folded[q]), 4),
         actions=acts, ev_reference=ev_ref_source, ev_exact_approximate=bool(len(st) == 3 and allin.APPROXIMATE_3WAY and any(e is not None for e, l in zip(exact, labs) if l != 'F')),
         reach_share=round(float(mass.sum() / W.sum()), 4),
         eligible_hands=sum(1 for x in hands.values() if x['quiz_eligible']),
         hands=hands,
-        provenance=dict(export=os.path.relpath(export_dir, ROOT), export_sha256=source_sha, hrc_tree=tree_hash(settings), hrc_preflop_tree=preflop_hash(settings),
-                        postflop_mode=settings['treeconfig']['postflop']['id'].split('.')[-1], importer=IMPORTER_VERSION,
-                        equity_matrix=os.path.basename(allin.EQUITY_FILE)))
+        provenance=provenance)
 
 
 def build_dataset(raw=None):
@@ -187,14 +206,26 @@ def build_dataset(raw=None):
     order = {b: k for k, b in enumerate(dict.fromkeys(base(d) for d, *_ in loaded))}
     mode = lambda s: s['treeconfig']['postflop']['id'].split('.')[-1]
     loaded.sort(key=lambda x: (order[base(x[0])], POSTFLOP_PREFERENCE.index(mode(x[1])) if mode(x[1]) in POSTFLOP_PREFERENCE else 9))   # tri stable
+    groups = defaultdict(list)                                 # répétitions : même base, mêmes réglages, mêmes tapis
+    for x in loaded: groups[(base(x[0]), tree_hash(x[1]), tuple(x[2]))].append(x)
     for d, s, st, nodes in loaded:
         k = (preflop_hash(s), tuple(st))
         if k[0] not in TREES: skipped.append((d, 'arbre préflop non retenu')); continue
-        if k in seen: skipped.append((d, 'arbre et stacks déjà couverts par un export prioritaire')); continue
-        seen.add(k); sha = _sha256(d); used.append(d)
+        if k in seen:
+            if d not in used: skipped.append((d, 'arbre et stacks déjà couverts par un export prioritaire'))
+            continue
+        seen.add(k)
+        runs = groups[(base(d), tree_hash(s), tuple(st))]; dirs = [r[0] for r in runs]
+        if len(runs) > 1:
+            try:
+                nodes = average([r[1:] for r in runs])
+            except ValueError as e:
+                rejected.extend((r, '*', f'répétitions incompatibles : {e}') for r in dirs); continue
+        sha = _sha256(d) if len(dirs) == 1 else hashlib.sha256(''.join(_sha256(r) for r in dirs).encode()).hexdigest()
+        used.extend(dirs)
         for key in sorted(nodes, key=lambda k: (k.count('_'), k)):
             try:
-                sp = build_spot(d, st, nodes, key, s, sha)
+                sp = build_spot(dirs if len(dirs) > 1 else d, st, nodes, key, s, sha)
                 if sp and sp['eligible_hands'] == 0: skipped.append((d, f'{key} : aucune main proposable (nœud presque jamais atteint)'))
                 elif sp: spots.append(sp)
             except InvalidSpot as e:
@@ -216,7 +247,8 @@ def publish(version, out, raw=None):
                     ev_reference_rule="EV exacte si chaque action autre que fold en a une, sinon EV HRC", min_reach_for_questions=MIN_REACH, max_self_regret_mbb=MAX_SELF_REGRET_MBB,
                     mixed_min=MIXED_MIN, max_mixed_regret_mbb=MAX_MIXED_REGRET_MBB,
                     questions_eligible=sum(sp['eligible_hands'] for sp in spots),
-                    sources=[os.path.relpath(d, ROOT) for d in used], skipped=[dict(export=os.path.relpath(d, ROOT), reason=r) for d, r in skipped],
+                    sources=[os.path.relpath(d, ROOT) for d in used],
+                    averaged=sorted({tuple(sp['provenance']['exports']) for sp in spots if sp['provenance']['repetitions'] > 1}), skipped=[dict(export=os.path.relpath(d, ROOT), reason=r) for d, r in skipped],
                     status='staging')
     json.dump(manifest, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return manifest

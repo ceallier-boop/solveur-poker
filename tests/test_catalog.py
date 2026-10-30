@@ -40,17 +40,28 @@ def copy(tmp_path, monkeypatch):
 from conftest import needs_raw
 
 
+@pytest.fixture()
+def fresh(tmp_path, monkeypatch):
+    """dataset GTO publié par l'importeur actuel : sa reconstruction est comparable (la 2026.10.13-3 date de l'importeur 1.4.0)"""
+    from spinsacademy import importer
+    root = tmp_path / 'datasets'; importer.publish('test-1', str(root / 'gto_preflop'))
+    monkeypatch.setattr(quiz, 'DATASETS', str(root)); quiz.load.cache_clear()
+    yield root / 'gto_preflop' / 'test-1'
+    quiz.load.cache_clear()
+
+
 @pytest.mark.slow
 @needs_raw
-def test_tampered_file_is_rejected(copy):
+def test_tampered_file_is_rejected(fresh):
+    copy, ref = fresh, 'gto_preflop/test-1'
     lines = open(copy / 'spots.jsonl').read().splitlines()
     sp = json.loads(lines[0]); sp['hands']['AA']['freq'] = [0.2, 0.2]; lines[0] = json.dumps(sp)
     open(copy / 'spots.jsonl', 'w').write('\n'.join(lines) + '\n')
-    rep = catalog.validate(GTO); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
+    rep = catalog.validate(ref); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
     assert not rep['ok'] and {'integrity', 'spots', 'rebuild'} <= fails
     m = json.load(open(copy / 'manifest.json')); m['spots_sha256'] = catalog._sha(copy / 'spots.jsonl')     # même avec une empreinte recalculée
     json.dump(m, open(copy / 'manifest.json', 'w'))
-    rep = catalog.validate(GTO); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
+    rep = catalog.validate(ref); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
     assert 'integrity' not in fails and 'spots' in fails and 'rebuild' in fails
 
 

@@ -3,8 +3,14 @@
   1. préflop résolu avec le modèle postflop courant (au départ : showdown) ;
   2. pour chaque fin de tour « flop » : sous-jeux postflop heads-up (un par paire de joueurs actifs) résolus avec les ranges qui y arrivent,
      corrections de réalisation ajustées (postflop.fit_offsets) ;
-  3. retour en 1 avec ces corrections, amorties (moyenne avec le tour précédent, poids `damping`) ;
-     on s'arrête après `outer` tours.
+  3. retour en 1 avec ces corrections, amorties (moyenne avec le tour précédent, poids `damping`, ou moyenne de tous les
+     tours : 'linear') ; on s'arrête après `outer` tours, ou plus tôt dès que la variation de stratégie d'un tour passe sous
+     `tol` points, ou que la dérive passe sous `tol_mbb`.
+Deux mesures de stabilité par tour :
+  - shift_pts : variation des fréquences (points), pondérée par combos et atteinte. Les mains mixtes, presque indifférentes,
+    peuvent changer de fréquence d'un tour à l'autre sans effet sur l'EV : cette mesure surestime l'instabilité ;
+  - drift_mbb : exploitabilité de la stratégie du tour précédent dans le modèle du nouveau tour (mBB par main, pire joueur) :
+    ce que coûterait de garder l'ancienne stratégie. C'est la mesure qui compte pour la correction.
 Les sous-jeux sont indépendants et résolus en parallèle.
 """
 import multiprocessing as mp
@@ -41,7 +47,7 @@ def strategy_shift(a, b):
     return 100 * tot / max(wt, 1e-12)
 
 
-def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=None, boards=1000, workers=4, seed=1, damping=0.5, log=print):
+def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=None, boards=1000, workers=4, seed=1, damping=0.5, log=print, tol=None, tol_mbb=None):
     pf_cfg = pf_cfg or PostflopConfig(); model = Realization(); history = []
     ctx = mp.get_context('fork')
     with ctx.Pool(workers, initializer=_init_pool, initargs=(boards, pf_cfg.buckets, pf_cfg.rollouts, seed, pf_cfg.metric, pf_cfg.textured)) as pool:
@@ -55,8 +61,11 @@ def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=Non
                 d0, d1 = fit_offsets(pot, reach[nd.id][o], reach[nd.id][i], G0, G1)
                 model.store(nd, o, i, d0, d1, damping); roots[(nd.key, o, i)] = rf
             model.commit(damping)                                # amortissement : évite les oscillations entre tours
+            old_S = s.S
             s = Solver(stacks, cfg or TreeConfig(), postflop=model).solve(pre_iters)
             cur = s.strategy(); shift = strategy_shift(cur, prev); prev = cur
-            history.append(dict(round=k + 1, subgames=len(subs), shift_pts=shift, seconds=time.time() - t0))
-            if log: log(f'  tour {k + 1} : {len(subs)} sous-jeux postflop, variation de stratégie {shift:.2f} points ({time.time() - t0:.0f} s)')
+            new_S, s.S = s.S, old_S; drift = 1000 * max(s.exploitability()); s.S = new_S     # même arbre : mêmes identifiants de nœuds
+            history.append(dict(round=k + 1, subgames=len(subs), shift_pts=shift, drift_mbb=drift, seconds=time.time() - t0))
+            if log: log(f'  tour {k + 1} : {len(subs)} sous-jeux postflop, variation de stratégie {shift:.2f} points, dérive {drift:.2f} mBB ({time.time() - t0:.0f} s)')
+            if (tol is not None and shift <= tol) or (tol_mbb is not None and drift <= tol_mbb): break
     return s, model, history

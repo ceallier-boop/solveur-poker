@@ -97,10 +97,15 @@ class Realization:
         acc.setdefault(o, []).append(d0); acc.setdefault(i, []).append(d1)
 
     def commit(self, damping):
+        """damping : poids de l'ancienne correction (0 à 1), ou 'linear' : moyenne de tous les tours, le tour k pesant k
+        (comme la moyenne des stratégies de CFR+) ; elle fait converger le point fixe quand les tours oscillent"""
+        self._round = getattr(self, '_round', 0) + 1; wsum = getattr(self, '_wsum', 0)
+        a = wsum / (wsum + self._round) if damping == 'linear' else damping
         for nid, acc in self._pending.items():
             new = {p: np.mean(v, axis=0) for p, v in acc.items()}
             old = self.offsets.get(nid)
-            if old is not None and damping > 0:
-                new = {p: damping * old[p] + (1 - damping) * new[p] for p in new}
+            if old is not None and a > 0:
+                new = {p: a * old[p] + (1 - a) * new[p] for p in new}
             self.offsets[nid] = new
+        self._wsum = wsum + self._round
         self._pending = {}

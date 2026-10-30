@@ -1,12 +1,14 @@
-"""Lecture des exports HRC (settings.json + nodes/*.json) : empreintes d'arbre, clés de nœuds, étiquettes d'action."""
-import glob, hashlib, json, os
+"""Lecture des exports HRC (settings.json + nodes/*.json) : empreintes d'arbre, clés de nœuds, étiquettes d'action,
+moyenne des exports répétés d'un même calcul."""
+import copy, glob, hashlib, json, os, re
+import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(ROOT, 'data', 'hrc', 'raw')
 POS3, POS2 = ['BTN', 'SB', 'BB'], ['SB', 'BB']
 from .cards import NC
 # Ordre de préférence quand plusieurs exports existent pour les mêmes stacks : le plus récent d'abord
-BASE_PREFERENCE = ['v3', 'v2', 'complement2', 'complement', 'min_raise_hu', 'min_raise_3way']
+BASE_PREFERENCE = ['v4', 'v3', 'v2', 'complement2', 'complement', 'min_raise_hu', 'min_raise_3way']
 
 
 def _md5(obj):
@@ -76,8 +78,48 @@ def load(d):
     return s, st, nodes
 
 
+def _natural(name):
+    """clé de tri naturelle : hand_2 avant hand_10, hu_12-12_r2 avant hu_12-12_r10"""
+    return [int(t) if t.isdigit() else t for t in re.split(r'(\d+)', name)]
+
+
 def exports(raw=RAW):
-    """tous les dossiers d'export, dans l'ordre de préférence des bases"""
-    ds = glob.glob(os.path.join(raw, '*', 'hand_*'))
-    rank = lambda d: (BASE_PREFERENCE.index(d.split(os.sep)[-2]) if d.split(os.sep)[-2] in BASE_PREFERENCE else 99, int(d.rsplit('_', 1)[1]))
-    return sorted(ds, key=rank)
+    """tous les dossiers d'export (`<base>/<dossier>/settings.json` : hand_N jusqu'à la v3, <table>_<tapis>_r<n> en v4),
+    dans l'ordre de préférence des bases"""
+    ds = [os.path.dirname(f) for f in glob.glob(os.path.join(raw, '*', '*', 'settings.json'))]
+    base = lambda d: d.split(os.sep)[-2]
+    return sorted(ds, key=lambda d: (BASE_PREFERENCE.index(base(d)) if base(d) in BASE_PREFERENCE else 99, base(d), _natural(os.path.basename(d))))
+
+
+def _signature(node):
+    return [(a['player'], a['type'], a['amount']) for a in node['sequence']], node['player'], [(a['type'], a['amount']) for a in node['actions']]
+
+
+def average(runs):
+    """Moyenne de répétitions d'un même calcul (mêmes réglages, mêmes tapis) : [(settings, stacks, nodes)] -> nodes.
+
+    Le bruit Monte-Carlo de la référence est aléatoire (docs/reference/TEST_PRECISION_2026-10-14.md) : la moyenne de n
+    exports le divise à peu près par √n. Pour chaque nœud et chaque main :
+      - weight (poids d'atteinte) : moyenne simple ;
+      - played (fréquences) : moyenne pondérée par le poids d'atteinte de chaque répétition (moyenne simple si la main
+        n'atteint le nœud dans aucune). L'arbre reste cohérent : poids moyen du nœud × fréquence moyenne = poids moyen du fils ;
+      - evs : moyenne simple ; evs_se : erreur type de cette moyenne (écart type entre répétitions / √n), en BB.
+    Un nœud absent d'une répétition est moyenné sur celles qui l'ont (`repetitions` du nœud). Des répétitions dont un même
+    nœud n'a pas la même séquence ou les mêmes actions ne sont pas le même calcul : ValueError."""
+    if len({json.dumps(dict(s, handdata=None), sort_keys=True) for s, _, _ in runs}) > 1 or len({tuple(st) for _, st, _ in runs}) > 1:
+        raise ValueError('répétitions de réglages ou de tapis différents')
+    out = {}
+    for key in sorted(set().union(*[set(nodes) for _, _, nodes in runs])):
+        ns = [nodes[key] for _, _, nodes in runs if key in nodes]
+        if any(_signature(n) != _signature(ns[0]) for n in ns): raise ValueError(f'{key} : séquence ou actions différentes selon la répétition')
+        node = copy.deepcopy(ns[0]); node['repetitions'] = len(ns)
+        for h in node['hands']:
+            w = np.array([n['hands'][h]['weight'] for n in ns], float)
+            p = np.array([n['hands'][h]['played'] for n in ns], float); e = np.array([n['hands'][h]['evs'] for n in ns], float)
+            H = node['hands'][h]
+            H['weight'] = float(w.mean())
+            H['played'] = (w @ p / w.sum() if w.sum() > 0 else p.mean(0)).tolist()
+            H['evs'] = e.mean(0).tolist()
+            H['evs_se'] = (e.std(0, ddof=1) / np.sqrt(len(ns)) if len(ns) > 1 else np.zeros(e.shape[1])).tolist()
+        out[key] = node
+    return out
