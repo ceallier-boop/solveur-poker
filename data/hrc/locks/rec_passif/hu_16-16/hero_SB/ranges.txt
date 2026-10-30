@@ -1,0 +1,18 @@
+Source GTO : data/hrc/raw/v3/hand_15
+Profil : Rec passif (défaut) (rec_passif) : shove 0.60, call 0.60, iso 0.40, limp_k 2.00
+Héros (nœuds libres) : SB
+
+=== Nœud SB-call (joue : BB)
+  F: (aucune main)
+  X: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,A2o,32s,33,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o,42s,43s,44:0.01,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o,A4o,52s,53s,54s,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,A5o,62s,63s,64s,65s,76o,86o,96o,T6o,J6o,Q6o,K6o,A6o,72s,73s,74s,75s,76s,87o,97o,T7o,J7o,Q7o,K7o,82s,83s,84s,85s,86s,87s,98o,T8o,J8o,Q8o,K8o,92s,93s,94s,95s,96s,97s,98s,T9o,J9o,Q9o,K9o:0.50,T2s,T3s,T4s,T5s,T6s,T7s,T8s,T9s,JTo,QTo,J2s,J3s,J4s,J5s,J6s,J7s,J8s,J9s,JTs,QJo:0.46,Q2s,Q3s,Q4s,Q5s,Q6s,Q7s,Q8s,Q9s:0.36,QTs:0.30,QJs:0.01,K2s,K3s,K4s,K5s,K6s,K7s,K8s:0.48,K9s:0.04,KTs:0.75,KJs:0.01,KQs:0.14,A2s,A3s:0.73,A4s:0.76,A5s:0.15,A6s:0.06
+  R3: 44:0.99,55,66,77,A7o,88,A8o,99,K9o:0.50,A9o,TT,KTo,ATo,JJ,QJo:0.54,KJo,AJo,Q9s:0.64,QTs:0.70,QJs:0.99,QQ,KQo,AQo,K8s:0.52,K9s:0.96,KTs:0.25,KJs:0.99,KQs:0.86,KK,AKo,A3s:0.27,A4s:0.24,A5s:0.85,A6s:0.94,A7s,A8s,A9s,ATs,AJs,AQs,AKs,AA
+
+=== Nœud SB-raise3.5 (joue : BB)
+  F: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,A2o:0.99,32s,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o:0.01,42s,43s,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o,A4o:0.01,52s,53s,54s,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,62s,63s,64s,65s,76o,86o,96o,T6o,J6o,Q6o,K6o:0.91,A6o:0.22,72s,73s,74s,75s,76s,87o,97o,T7o,J7o,Q7o,K7o:0.09,82s,83s,84s,85s,86s,87s,98o,T8o,J8o,K8o:0.02,92s,93s,94s,95s,96s,97s,98s,T9o,J9o:0.18,K9o:0.09,T2s,T3s,T4s,T5s,T6s,T7s,T8s,J2s,J3s,J4s,J5s,J6s,J7s,Q2s,Q3s,Q4s,Q5s,Q8s:0.02,K2s,K3s:0.04,K5s:0.05,K6s:0.01
+  C: A2o:0.01,A3o:0.85,A4o:0.95,A5o:0.35,K6o:0.09,A6o:0.44,K7o:0.91,A7o:0.28,Q8o:0.96,K8o:0.97,J9o:0.81,Q9o,K9o:0.88,T9s:0.60,JTo:0.97,QTo:0.65,KTo:0.87,J8s:0.96,J9s:0.96,JTs:0.98,QJo:0.99,KJo:0.67,Q6s:0.97,Q7s:0.98,Q8s:0.90,Q9s:0.59,QTs:0.82,QJs:0.81,KQo:0.68,K3s:0.68,K4s:0.77,K5s:0.91,K6s:0.63,K7s,K8s:0.99,K9s:0.80,KTs:0.52,KJs:0.56,KQs:0.30,KK:0.01,A2s:0.59,A3s:0.72,A4s:0.99,A5s:0.54,A6s:0.59,A7s:0.54,A8s:0.11,AA:0.41
+  A: A2o:0.01,33,A3o:0.15,44,A4o:0.04,55,A5o:0.64,66,A6o:0.35,77,A7o:0.72,88,Q8o:0.04,K8o:0.01,A8o,99,K9o:0.03,A9o,T9s:0.40,TT,JTo:0.03,QTo:0.35,KTo:0.13,ATo,J8s:0.04,J9s:0.04,JTs:0.02,JJ,QJo:0.01,KJo:0.33,AJo,Q6s:0.03,Q7s:0.02,Q8s:0.08,Q9s:0.41,QTs:0.18,QJs:0.19,QQ,KQo:0.32,AQo,K3s:0.27,K4s:0.23,K5s:0.04,K6s:0.36,K8s:0.01,K9s:0.20,KTs:0.47,KJs:0.44,KQs:0.70,KK:0.99,AKo,A2s:0.41,A3s:0.28,A5s:0.46,A6s:0.41,A7s:0.46,A8s:0.89,A9s,ATs,AJs,AQs,AKs,AA:0.59
+
+=== Nœud SB-call_BB-raise3_SB-allin (joue : BB)
+  F: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,A2o,32s,33,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o,42s,43s,44,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o,A4o,52s,53s,54s,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,A5o,62s,63s:0.94,64s,65s,76o,86o,96o,T6o,J6o,Q6o,K6o,A6o,72s,73s,74s,75s,76s,87o,97o,T7o,J7o,Q7o,K7o,A7o:0.02,82s,83s,84s,85s,86s,87s,98o,T8o,J8o,Q8o,K8o,92s,93s,94s,95s,96s,97s,98s,T9o,J9o,Q9o,K9o,T2s,T3s,T4s,T5s,T6s,T7s,T8s,T9s,JTo,QTo,KTo:0.48,J2s,J3s,J4s,J5s,J6s,J7s,J8s,J9s,JTs,QJo:0.85,Q2s,Q3s,Q4s,Q5s,Q6s,Q7s,Q8s,Q9s,QTs:0.03,K2s,K3s,K4s,K5s,K6s,K7s,K8s,K9s:0.08,KTs:0.12,A2s,A3s,A5s:0.06,A6s:0.07,A7s:0.01
+  C: 55,63s:0.06,66,77,A7o:0.98,88,A8o,99,A9o,TT,KTo:0.52,ATo,JJ,QJo:0.15,KJo,AJo,QTs:0.97,QJs,QQ,KQo,AQo,K9s:0.92,KTs:0.88,KJs,KQs,KK,AKo,A4s,A5s:0.94,A6s:0.93,A7s:0.99,A8s,A9s,ATs,AJs,AQs,AKs,AA
+

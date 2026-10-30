@@ -42,8 +42,8 @@ Fichiers générés par `python tools/hrc/make_locks.py` dans `data/hrc/locks/` 
 - `manifest.csv` : la liste des calculs, avec priorité ;
 - un dossier par calcul, `<profil>/<table>_<stacks>/hero_<position>/`, qui contient `ranges.txt` (lisible, à coller dans la référence) et `locks.json` (même contenu, pour les scripts).
 
-**135 calculs**, dont **45 en priorité P1** (12, 15 et 20 BB) ; la liste a été recalculée après réception de la base v2 :
-- 3 profils : nit, fish, maniac. Le profil Shark est inutile : c'est la solution GTO.
+**180 calculs**, dont **60 en priorité P1** (12, 15 et 20 BB) ; liste recalculée le 29/10/2026 sur la base v3, avec les profils du moteur exploitant :
+- 4 profils, ceux du mode exploitant (`tools/field/profils_field.py`) : rec passif (profil par défaut, 55 % du field), calling station, dégène, nit. Le reg est inutile : ses facteurs valent 1, c'est la solution GTO. Les anciens profils nit / fish / maniac (facteurs de l'ancien moteur) sont abandonnés : les calculs verrouillés jouent désormais contre les mêmes vilains que les questions de l'application.
 - Chaque position du héros : BTN, SB, BB à 3 joueurs ; SB, BB en heads-up.
 - Stacks égaux à partir de 10 BB. En dessous, les décisions sont surtout tout ou rien, et `exploit_engine` et `exp_hu_solver` couvrent déjà l'exploitant.
 
@@ -58,15 +58,26 @@ Ils couvrent maintenant toutes les profondeurs de 10 à 25 BB, à 3 joueurs comm
 
 ### Règles des profils (à valider)
 
-| Profil | Agressivité (raise, all-in) | Passivité (limp, call) | Mains retirées de l'agressivité |
-|---|---|---|---|
-| nit | cotes × 0,5 | cotes × 0,5 | vont au fold |
-| fish | cotes × 0,9 | cotes × 2,0 | deviennent limp ou call |
-| maniac | cotes × 2,0 | cotes × 1,3 | vont au fold |
+Les facteurs sont lus dans `tools/field/profils_field.py` : changer un profil (par exemple après la calibration B2) et relancer `make_locks.py` suffit. Le facteur appliqué dépend de la situation du vilain, comme dans le moteur exploitant :
 
-« Cotes × k » : une fréquence p devient k·p / (1 + (k − 1)·p). C'est la convention du moteur exploitant existant ; les facteurs sont ceux de `exploit_engine.PROFILES`.
+| Situation du vilain | Actions déformées | Facteur |
+|---|---|---|
+| premier à parler | relance et tapis / limp | `shove` / `limp_k` |
+| face à un limp | iso (relance, tapis) / limp derrière | `iso` / `limp_k` |
+| face à une relance ou un tapis | continuer (payer, relancer) | `call` |
 
-Les mains ajoutées sont prises dans le fold (ou dans le check, quand checker est gratuit), des plus fortes aux plus faibles. Les mains retirées sont les plus faibles.
+| Profil | `shove` | `call` | `iso` | `limp_k` | Mains retirées de l'agressivité, premier à parler |
+|---|---|---|---|---|---|
+| rec passif | 0,6 | 0,6 | 0,4 | 2,0 | deviennent limp ; la moitié de la baisse sur ses mains fortes, As faibles gardés |
+| calling station | 0,8 | 1,8 | 0,5 | 2,0 | idem |
+| dégène | 2,0 | 1,3 | 2,0 | 0,6 | vont au fold |
+| nit | 0,5 | 0,5 | 0,5 | 0,7 | vont au fold |
+
+Rec passif : facteurs de 12 BB, valables jusqu'à 25 BB faute de mesure (le moteur fait de même) ; de 4 à 12 BB, ils suivent la profondeur.
+
+« Cotes × k » : une fréquence p devient k·p / (1 + (k − 1)·p). C'est la convention du moteur exploitant.
+
+Les mains ajoutées sont prises dans le fold (ou dans le check, quand checker est gratuit), des plus fortes aux plus faibles. Les mains retirées sont les plus faibles, sauf la part prise sur les mains fortes des récréatifs.
 
 ## 3. Livraison
 
@@ -113,7 +124,7 @@ Sur 6 configurations (12, 16, 20 BB symétriques ; 35/25/15, 40/20/15, 30/20 HU)
 
 ### 6.3 Mode exploitant au-delà du call d'un tapis (priorité 2)
 
-Les 135 calculs verrouillés du §2 couvrent les limps, les limp-relances et les opens. Ajouter, pour les profils de l'évaluation :
+Les 180 calculs verrouillés du §2 couvrent les limps, les limp-relances et les opens. Ajouter, pour les profils de l'évaluation :
 - BB qui se couche trop face aux opens et aux limps (défense réduite de 30 % et 50 %) ;
 - joueur qui limp-relance trop (fréquence de limp-relance x 2) ;
 - joueur qui ouvre en min-raise trop large (open x 1,5).
@@ -190,7 +201,7 @@ Les arbres BTN 2 BB / SB 3 BB, BTN 2 BB / SB 2,5 BB et BTN 2,5 BB / SB 3,5 BB n'
 
 ### 9.6 Mode exploitant au-delà du call d'un tapis (priorité 2)
 
-Les 135 calculs verrouillés du §2 (dont 45 en P1 : 12, 15 et 20 BB) : profils nit, fish, maniac, sur les limps, les limp-relances et les opens. À tester d'abord sur un seul nœud pour valider la notation `main:poids`. (L'open-shove contre un joueur qui paie trop ne demande rien : je le calcule exactement.)
+Les 180 calculs verrouillés du §2 (dont 60 en P1 : 12, 15 et 20 BB) : profils rec passif, calling station, dégène, nit, sur les limps, les limp-relances et les opens. À tester d'abord sur un seul nœud pour valider la notation `main:poids`. (L'open-shove contre un joueur qui paie trop ne demande rien : je le calcule exactement.)
 
 ### 9.7 Postflop minimal (priorité 3)
 
@@ -240,7 +251,7 @@ Objectif : remplacer toutes les bases précédentes par **un seul arbre de réf�
 | P1 inégaux, heads-up (SB / BB) | 4/8, 8/4, 10/20, 20/10, 12/18, 18/12, 15/25, 25/15, 20/30, 30/20, 35/15, 15/35 | 12 |
 | P1 inégaux, 3 joueurs (BTN / SB / BB) | les 16 du §6.1, plus les 6 permutations de 6 / 10 / 14 | 22 |
 | P2 tailles d'ouverture | si le choix A garde une seule taille : un arbre par taille alternative, à 12, 16 et 20 BB (3 joueurs et heads-up), pour de futures questions « quelle taille ? » | 6 par taille |
-| P2 exploitant verrouillé | les 45 calculs P1 du §2 (`data/hrc/locks/manifest.csv`), après le choix E | 45 |
+| P2 exploitant verrouillé | les 60 calculs P1 du §2 (`data/hrc/locks/manifest.csv`), après le choix E ; rec passif d'abord (15 calculs) s'il faut réduire | 60 |
 | P3 postflop | §9.7 (pots limpés, environ 20 textures) | — |
 
 Total P1 : 59 configurations, multipliées par le nombre de répétitions (choix B).
