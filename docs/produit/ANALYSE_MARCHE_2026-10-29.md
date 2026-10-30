@@ -140,6 +140,22 @@ PokerStars utilise « Spin & Go » ; « spin » seul est devenu le mot courant d
 
 **Recommandation : SpinXpresso**, avec le sous-titre « Poker Trainer ». Avant d'adopter le nom : recherche INPI / EUIPO sur « Xpresso » et « Expresso » en classes 9 et 41, puis achat de `spinxpresso.com`, `.fr`, `.app` et `.poker`.
 
+### Décision du porteur du projet (30/10) : **SpinXpresso**
+
+Nom retenu : **SpinXpresso**, sous-titre « Poker Trainer ». Le porteur du projet confirme que le nom est libre de droits. Les domaines `spinxpresso.com`, `.fr` et `.app` sont encore libres au 30/10.
+
+**Coût des quatre domaines** (prix publics relevés en octobre 2026, TTC, arrondis ; ils varient selon le registraire et les promotions) :
+
+| Domaine | 1ʳᵉ année | Renouvellement par an | Remarque |
+|---|---|---|---|
+| `spinxpresso.com` | 10 à 15 € | 13 à 18 € | |
+| `spinxpresso.fr` | 6 à 10 € | 9 à 12 € | Titulaire domicilié dans l'UE |
+| `spinxpresso.app` | 12 à 18 € | 15 à 22 € | HTTPS obligatoire (sans effet pour nous, le site est déjà en HTTPS) |
+| `spinxpresso.poker` | 5 à 10 € (promotion) | 45 à 55 € | Le plus cher à renouveler |
+| **Total** | **35 à 50 €** | **85 à 105 €** | Sans le `.poker` : 40 à 50 € par an |
+
+Conseils : tout prendre chez le même registraire (par exemple OVHcloud, français, pour le `.fr`), au nom du porteur du projet ou de sa société, avec le renouvellement automatique activé. Le `.poker` sert surtout à protéger le nom ; on peut s'en passer si le budget compte, au risque qu'un tiers le prenne.
+
 ## 4. Prochaines étapes de l'analyse de marché
 
 1. Taille du marché à partir des rapports annuels de l'ANJ et des données de trafic.
@@ -157,4 +173,5 @@ PokerStars utilise « Spin & Go » ; « spin » seul est devenu le mot courant d
 - [Spinlab, logiciels de casino (Trustpilot)](https://ch.trustpilot.com/review/spinlab.studio), [SlotCatalog](https://slotcatalog.com/en/soft/spinlab)
 - [Advanced Poker Training, entraîneur Spin-N-Go](https://www.pokertraining.com/poker/blog/spin-n-go-training-has-arrived/), [FAQ](https://spinngo.pokertraining.com/poker/faq.php)
 - [Expresso, format Winamax (CardPlayer)](https://www.cardplayer.com/fr/poker-en-ligne/expresso-poker)
+- Prix des domaines : [OVHcloud](https://www.ovhcloud.com/fr/domains/tld/fr/), [domainoffer.net .poker](https://domainoffer.net/tld/poker/porkbun), [domainoffer.net .app](https://domainoffer.net/tld/app/namecheap)
 - [Historique Expresso et Spin & Go (PokerNews)](https://www.pokernews.com/strategy/spin-and-go-poker-36231.htm)
