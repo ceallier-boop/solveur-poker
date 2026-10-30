@@ -28,6 +28,10 @@ from spinsacademy.postflop.kernels import CLASS_OF  # noqa: E402
 from spinsacademy.solver import dataset as ds  # noqa: E402
 
 R_ = '23456789TJQKA'
+# mains suivies (relecture des coachs du 30/10, docs/relecture/solveur_2026-10-30/SYNTHESE.md) : celles qui paient l'iso
+# (le solveur les couche, les coachs les défendent) et celles qui isolent (le solveur isole des mains faibles, pas KJo)
+WATCH = {'appelant': ('J8o', 'K9o', '76s', 'A5s', '22', '44', '66', 'K5o', 'Q8o', 'K4o'),
+         'relanceur': ('T9o', '96o', 'J8o', 'Q4o', 'Q5o', 'KJo', 'A5s', '76s')}
 OUT = os.path.join(os.path.dirname(__file__), '..', '..', 'docs', 'solver')
 
 
@@ -79,7 +83,7 @@ def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('p
         hp = HUPostflop(pot, stack, cfg, aggressor=ag).fast_solve(w0, w1, pool, iters=3000, seed=seed)
         prod[v] = (cfg, average_sigma(hp)); log(f'{v} : stratégie abstraite en {time.time() - t0:.0f} s')
     rng = np.random.default_rng(seed); keys = ['exact'] + list(variants)
-    acc = {k: [np.zeros(169), np.zeros(169)] for k in keys}; per_flop = []
+    acc = {k: [np.zeros(169), np.zeros(169)] for k in keys}; acc_ag = {k: [np.zeros(169), np.zeros(169)] for k in keys}; per_flop = []
     w = (w0 if caller == 0 else w1) * W
     for f in range(flops):
         flop = sorted(rng.choice(52, 3, replace=False).tolist()); t1 = time.time()
@@ -90,7 +94,8 @@ def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('p
             cfg, tab = prod[v]; ex.set_abstract(tab, flop_buckets(ex, cfg, seed))
             vals[v] = ex.values(r0, r1, mode=2); row[f'exploitability_pct_{v}'] = round(100 * ex.exploitability(r0, r1, mode=2), 2)
         for k, V in vals.items():
-            num, den = class_values(ex, V, r0, r1)[caller]; acc[k][0] += num; acc[k][1] += den
+            cv = class_values(ex, V, r0, r1); num, den = cv[caller]; acc[k][0] += num; acc[k][1] += den
+            acc_ag[k][0] += cv[1 - caller][0]; acc_ag[k][1] += cv[1 - caller][1]
             g = np.where(den > 0, num / np.where(den > 0, den, 1), 0)
             row[f'G_{k}'] = round(float((w * g * (den > 0)).sum() / max((w * (den > 0)).sum(), 1e-12)), 4)
         per_flop.append(row)
@@ -108,13 +113,17 @@ def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('p
         # dispersion entre familles : la valeur déplacée d'une famille à l'autre (0 = aucun transfert)
         spread = float(np.sqrt(sum(w[ix].sum() * (fam[f] - np.average(d[ok], weights=w[ok])) ** 2 for f, ix in fams.items()) / w[ok].sum()))
         return dict(mean=round(float(np.average(d[ok], weights=w[ok])), 1), spread=round(spread, 1), families=fam)
-    hands = {h: {k: round(float(G[k][NAMES.index(h)]), 3) for k in keys + ['ref']} for h in ('J8o', 'K9o', '76s', 'A5s', '22', '44', '66', '88', 'TT', 'QQ') if ok[NAMES.index(h)]}
+    Gag = {k: np.where(acc_ag[k][1] > 0, acc_ag[k][0] / np.where(acc_ag[k][1] > 0, acc_ag[k][1], 1), np.nan) for k in acc_ag}
+    wag = (w1 if caller == 0 else w0) * W
+    hands = {h: {k: round(float(G[k][NAMES.index(h)]), 3) for k in keys + ['ref']} for h in WATCH['appelant'] if ok[NAMES.index(h)]}
+    hands_ag = {h: {k: round(float(Gag[k][NAMES.index(h)]), 3) for k in keys} for h in WATCH['relanceur']
+                if wag[NAMES.index(h)] > 0 and np.isfinite(Gag['exact'][NAMES.index(h)])}
     sd = np.std([r['G_exact'] for r in per_flop], ddof=1) if len(per_flop) > 1 else None
     res = dict(stacks=stacks, spot=spot, min_weight=min_weight, pot=pot, stack=stack, caller='OOP (BB)' if caller == 0 else 'IP (SB)', reference=exports, flops=flops, iters=iters,
                variants={v: dict(settings=VARIANTS[v], exact_minus_variant_mbb=cmp('exact', v), variant_minus_ref_mbb=cmp(v, 'ref'),
                                  exploitability_pct=round(float(np.mean([r['exploitability_pct_' + v] for r in per_flop])), 2)) for v in variants},
                exact_minus_ref_mbb=cmp('exact', 'ref'),
-               flop_sample_sd_mbb=round(1000 * sd / np.sqrt(len(per_flop)), 1) if sd is not None else None, hands=hands, per_flop=per_flop,
+               flop_sample_sd_mbb=round(1000 * sd / np.sqrt(len(per_flop)), 1) if sd is not None else None, hands=hands, hands_aggressor=hands_ag, per_flop=per_flop,
                seconds=round(time.time() - t0))
     if 'production' in variants:                                        # champs de la première mesure (G9), pour comparaison
         res['exact_minus_prod_mbb'] = res['variants']['production']['exact_minus_variant_mbb']
@@ -136,4 +145,5 @@ if __name__ == '__main__':
     for v, r in res['variants'].items():
         e = r['exact_minus_variant_mbb']; print(f"{v:22s} {e['mean']:>+22.1f} {e['spread']:>26.1f} {r['exploitability_pct']:>13.2f} %")
         print('   ', e['families'])
+    print("mains suivies, G de l'appelant (BB) :", res['hands']); print('mains suivies, G du relanceur (BB) :', res['hands_aggressor'])
     print('résultats :', path)
