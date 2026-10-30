@@ -1,0 +1,146 @@
+{
+ "stacks": [
+  25.0,
+  25.0
+ ],
+ "spot": "raise",
+ "min_weight": 0.001,
+ "pot": 7.0,
+ "stack": 21.5,
+ "caller": "OOP (BB)",
+ "reference": [
+  "data/hrc/raw/v3/hand_18"
+ ],
+ "flops": 5,
+ "iters": 100,
+ "exact_minus_prod_mbb": {
+  "mean": -41.4,
+  "families": {
+   "As assortis": -230.5,
+   "As dépareillés": -180.0,
+   "autres assorties": 84.5,
+   "autres dépareillées": 3.4,
+   "broadways assortis": -309.4,
+   "broadways dépareillés": -338.1,
+   "connecteurs assortis": 307.5,
+   "paires": 750.7
+  }
+ },
+ "exact_minus_ref_mbb": {
+  "mean": 413.2,
+  "families": {
+   "As assortis": 352.1,
+   "As dépareillés": 598.7,
+   "autres assorties": 306.2,
+   "autres dépareillées": 279.2,
+   "broadways assortis": 510.8,
+   "broadways dépareillés": 928.2,
+   "connecteurs assortis": 140.7,
+   "paires": -1358.7
+  }
+ },
+ "prod_minus_ref_mbb": {
+  "mean": 454.6,
+  "families": {
+   "As assortis": 582.6,
+   "As dépareillés": 778.7,
+   "autres assorties": 221.7,
+   "autres dépareillées": 275.8,
+   "broadways assortis": 820.2,
+   "broadways dépareillés": 1266.3,
+   "connecteurs assortis": -166.8,
+   "paires": -2109.4
+  }
+ },
+ "flop_sample_sd_mbb": 170.5,
+ "hands": {
+  "J8o": {
+   "exact": 4.137,
+   "prod": 4.468,
+   "ref": 2.628
+  },
+  "K9o": {
+   "exact": 1.724,
+   "prod": 1.44,
+   "ref": 2.894
+  },
+  "76s": {
+   "exact": 2.249,
+   "prod": 1.735,
+   "ref": 2.983
+  },
+  "A5s": {
+   "exact": 3.999,
+   "prod": 4.339,
+   "ref": 3.561
+  },
+  "22": {
+   "exact": 1.43,
+   "prod": 0.684,
+   "ref": 2.983
+  },
+  "44": {
+   "exact": 1.635,
+   "prod": 0.771,
+   "ref": 3.549
+  }
+ },
+ "per_flop": [
+  {
+   "flop": [
+    "7s",
+    "8h",
+    "Js"
+   ],
+   "exploitability_pct": 0.607,
+   "abstract_exploitability_pct": 13.44,
+   "G_exact": 3.9948,
+   "G_prod": 4.1366
+  },
+  {
+   "flop": [
+    "3s",
+    "Qd",
+    "Ad"
+   ],
+   "exploitability_pct": 0.587,
+   "abstract_exploitability_pct": 11.85,
+   "G_exact": 3.2251,
+   "G_prod": 3.263
+  },
+  {
+   "flop": [
+    "5h",
+    "7d",
+    "Qs"
+   ],
+   "exploitability_pct": 0.617,
+   "abstract_exploitability_pct": 10.86,
+   "G_exact": 3.0501,
+   "G_prod": 2.9898
+  },
+  {
+   "flop": [
+    "7c",
+    "9c",
+    "Tc"
+   ],
+   "exploitability_pct": 0.598,
+   "abstract_exploitability_pct": 12.57,
+   "G_exact": 3.6789,
+   "G_prod": 3.7598
+  },
+  {
+   "flop": [
+    "Jh",
+    "Qs",
+    "As"
+   ],
+   "exploitability_pct": 0.65,
+   "abstract_exploitability_pct": 16.9,
+   "G_exact": 3.6724,
+   "G_prod": 3.9161
+  }
+ ],
+ "seconds": 4477
+}

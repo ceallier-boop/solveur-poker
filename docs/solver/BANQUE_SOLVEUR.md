@@ -85,3 +85,27 @@ Protocole : le sous-jeu postflop seul, résolu avec les ranges exactes de la ré
 - `ehs2` divise par 2,5 l'écart de l'iso payé : piste à confirmer sur la configuration complète.
 
 Rappel du principe : la référence sert à caler, pas à dicter. Son postflop est lui-même simplifié (« simple », 256 groupes Monte-Carlo) et ses EV par main sont bruitées. Un écart avec elle n'est pas forcément une erreur du solveur ; l'arbitre final est la résolution exacte de sous-jeux (`postflop/exact.py`), à étendre au flop pour trancher.
+
+### Résolution exacte à partir du flop : relance payée, heads-up 25 BB (G9, 30/10/2026)
+
+Outil : `tools/solver/exact_flop_check.py --spot raise --flops 5 --iters 100` (moteur `spinsacademy/postflop/exact_flop.py`). Le SB relance à 3,5 BB, le BB paie (hors de position) : pot 7 BB, 21,5 BB derrière ; ranges d'entrée de la référence (`v3/hand_18`). Sur chaque flop : résolution exacte combo par combo (100 itérations de CFR+ alterné, 15 minutes), et stratégie du solveur de production rejouée sur le même flop. Détail : `exact_flop_hu25_raise.json`.
+
+| Flop | Exploitabilité exacte | Exploitabilité de la stratégie de production sur ce flop | G de l'appelant : exact / production (BB) |
+|---|---|---|---|
+| 7♠ 8♥ J♠ | 0,61 % du pot | 13,4 % | 3,995 / 4,137 |
+| 3♠ Q♦ A♦ | 0,59 % | 11,9 % | 3,225 / 3,263 |
+| 5♥ 7♦ Q♠ | 0,62 % | 10,9 % | 3,050 / 2,990 |
+| 7♣ 9♣ T♣ | 0,60 % | 12,6 % | 3,679 / 3,760 |
+| J♥ Q♠ A♠ | 0,65 % | 16,9 % | 3,672 / 3,916 |
+
+Exact − production, mêmes flops (comparaison appariée, sans bruit d'échantillon), en mBB, pondéré par la range de l'appelant :
+
+| Global | Paires | Connecteurs assortis | Autres assorties | Autres dépareillées | As assortis | As dépareillés | Broadways assortis | Broadways dépareillés |
+|---|---|---|---|---|---|---|---|---|
+| −41 | **+751** | +308 | +85 | +3 | −231 | −180 | −309 | −338 |
+
+Lecture :
+- **Le défaut est bien dans notre abstraction postflop**, pas dans la référence : sur les mêmes flops, la stratégie de production sous-évalue les paires (+751 mBB à l'exact) et les connecteurs assortis (+308), et surévalue As et broadways (−180 à −338). C'est le sens de l'écart mesuré contre la référence (paires −480 à −550, broadways +100 à +140) : la référence avait raison sur ce point. Sur la moyenne de la range, l'abstraction ne se trompe que de 41 mBB : elle déplace la valeur entre familles de mains plus qu'elle ne la crée ou la détruit.
+- La stratégie de production, partagée entre tous les flops par groupes de force, est exploitable de 11 à 17 % du pot sur un flop donné ; l'exacte de 0,6 %.
+- Les mains citées (J8o, 22, 44) ne se comparent à la référence qu'en moyenne sur beaucoup de flops : 5 flops (dont 3 avec une dame et 2 avec un as) ne suffisent pas, l'écart type du G moyen entre flops est de 170 mBB et bien plus par main. Comparaison appariée sur ces flops : production − exact = +331 mBB pour J8o, −746 pour 22, −864 pour 44.
+- Suite : corriger l'abstraction là où elle se trompe (groupes selon le potentiel `ehs2`, qui réduisait déjà l'écart avec la référence sur l'iso payé ; stratégie par famille de flops), puis remesurer avec cet outil sur les mêmes flops.
