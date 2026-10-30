@@ -122,6 +122,24 @@ PokerStars utilise « Spin & Go » ; « spin » seul est devenu le mot courant d
 
 **SpinDrill**, ou **Spinkata** si l'on préfère un nom plus distinctif. Avant de trancher : recherche gratuite sur [data.inpi.fr](https://data.inpi.fr) et [TMview](https://www.tmdn.org/tmview/) (classes 9 et 41), puis achat des domaines le jour même.
 
+### Noms qui renvoient au format Expresso / Spin (30/10)
+
+**Ce que le porteur du projet demande.** Un nom qui renvoie clairement au format Expresso de Winamax, compris en français (Expresso) et en anglais (Spin), qui dise « poker », qui se distingue des autres et qui fasse comprendre l'utilité de l'appli.
+
+**Contrainte.** « Expresso » est le nom commercial de Winamax. Nous n'avons pas pu vérifier s'il est déposé (les registres bloquent notre accès), mais il faut le supposer. Reprendre le mot exact dans notre marque, c'est s'exposer à une opposition et brouiller la frontière avec un produit officiel Winamax. Le citer dans les descriptions (« pour s'entraîner à l'Expresso et au Spin & Go ») reste un usage descriptif courant.
+
+| Nom | Expresso (FR) | Spin (EN) | `.com` `.fr` `.app` `.poker` | Produit existant | Risque de marque | Avis |
+|---|---|---|---|---|---|---|
+| **SpinXpresso** | Xpresso | Spin | tous libres | aucun trouvé | Faible à moyen : évoque sans reprendre | **Recommandé.** Les deux formats dans un seul mot, original, compris par tout joueur de spin. |
+| Spinpresso | presso | Spin | `.com` `.fr` `.app` libres | aucun (une cafetière « Spinn » existe) | Faible | Plus doux, mais fait davantage penser au café qu'au poker. |
+| XpressoSpin | Xpresso | Spin | tous libres | aucun trouvé | Faible à moyen | Même idée, se lit moins bien. |
+| SpinExpresso / ExpressoSpin | Expresso | Spin | tous libres | aucun trouvé | Élevé : reprend le mot de Winamax | Le plus explicite, le plus exposé. |
+| Expresso Trainer / Expresso Poker | Expresso | — | tous libres | aucun trouvé | Élevé | Oublie le Spin ; ressemble à un produit Winamax. |
+
+**La dimension poker** passe par le sous-titre, affiché partout avec le nom (stores, en-tête, réseaux) : **« SpinXpresso — Poker Trainer »**, ou en français « l'entraîneur poker pour Spin & Expresso ». Les stores comptent ce sous-titre dans la recherche : quelqu'un qui tape « Expresso poker » ou « Spin trainer » trouve l'appli.
+
+**Recommandation : SpinXpresso**, avec le sous-titre « Poker Trainer ». Avant d'adopter le nom : recherche INPI / EUIPO sur « Xpresso » et « Expresso » en classes 9 et 41, puis achat de `spinxpresso.com`, `.fr`, `.app` et `.poker`.
+
 ## 4. Prochaines étapes de l'analyse de marché
 
 1. Taille du marché à partir des rapports annuels de l'ANJ et des données de trafic.
@@ -138,4 +156,5 @@ PokerStars utilise « Spin & Go » ; « spin » seul est devenu le mot courant d
 - [Poker Coaching (App Store)](https://apps.apple.com/app/id1444569705), [Poker Flight Simulator](https://apps.apple.com/app/id6786825538), [Poker Preflop Trainer PRO](https://mwm.ai/apps/poker-preflop-trainer-pro/1624849305)
 - [Spinlab, logiciels de casino (Trustpilot)](https://ch.trustpilot.com/review/spinlab.studio), [SlotCatalog](https://slotcatalog.com/en/soft/spinlab)
 - [Advanced Poker Training, entraîneur Spin-N-Go](https://www.pokertraining.com/poker/blog/spin-n-go-training-has-arrived/), [FAQ](https://spinngo.pokertraining.com/poker/faq.php)
+- [Expresso, format Winamax (CardPlayer)](https://www.cardplayer.com/fr/poker-en-ligne/expresso-poker)
 - [Historique Expresso et Spin & Go (PokerNews)](https://www.pokernews.com/strategy/spin-and-go-poker-36231.htm)
