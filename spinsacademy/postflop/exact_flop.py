@@ -25,7 +25,7 @@ ACT, FOLD, SHOW, CHANCE = 0, 1, 2, 3
 
 
 @njit(cache=True)
-def _sig_node(n, c, k, street, slot, aidx, mode, R0, S0, R1, S1, Tab, orig, bk0, bk1, bk2, ctx, out):
+def _sig_node(n, c, ii, k, street, slot, aidx, mode, R0, S0, R1, S1, Tab, orig, bk0, bk1, bk2, ctx, out):
     """stratégie d'un combo à un nœud : 0 regrets courants, 1 stratégie moyenne, 2 stratégie abstraite (groupes)"""
     if mode == 2:
         v = ctx[n]
@@ -35,17 +35,18 @@ def _sig_node(n, c, k, street, slot, aidx, mode, R0, S0, R1, S1, Tab, orig, bk0,
     s = 0.0
     for a in range(k):
         if street[n] == 0: x = R0[aidx[n], c, a] if mode == 0 else S0[aidx[n], c, a]
-        else: x = R1[aidx[n], c, a] if mode == 0 else S1[aidx[n], c, a]
+        else: x = R1[aidx[n], ii, a] if mode == 0 else S1[aidx[n], ii, a]
         out[a] = x if x > 0 else 0.0; s += out[a]
     for a in range(k): out[a] = out[a] / s if s > 0 else 1.0 / k
 
 
 @njit(cache=True)
 def _slice(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slot, P, ranks, order, valid, mode, br, upd, tw,
-           R0, S0, R1, S1, Tab, orig, bk0, bk1, bk2, r0, r1, actl, nact, sig, V, reach, buf, win, tie, tot, CC):
+           R0, S0, R1a, S1a, R1b, S1b, Tab, orig, bk0, bk1, bk2, r0, r1, actl, nact, sig, V, reach, buf, win, tie, tot, CC):
     """une tranche (turn fixée) : passe avant (atteintes), passe arrière (valeurs) ; mises à jour CFR+ des nœuds de turn et de river.
     Indexage compact : V, reach et sig ne portent que les combos de la range de chaque joueur (combo actl[p, ii]) ; les
-    abattages et les folds passent par un tableau des 1 326 combos (buf)."""
+    abattages et les folds passent par un tableau des 1 326 combos (buf). Regrets et stratégies cumulées des rues turn et
+    river : un tableau par joueur (R1a / S1a pour OOP, R1b / S1b pour IP), indexé par ses seuls combos (économie de mémoire)."""
     N = kind.shape[0]; tmp = np.zeros(8)
     for p in range(2):
         for ii in range(nact[p]):
@@ -54,7 +55,8 @@ def _slice(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slot, P,
         if kind[n] == ACT:
             a = player[n]; o = 1 - a; k = nch[n]; sl = slot[n]
             for ii in range(nact[a]):
-                _sig_node(n, actl[a, ii], k, street, sl, aidx, mode, R0, S0, R1, S1, Tab, orig, bk0, bk1, bk2, ctx, tmp)
+                if a == 0: _sig_node(n, actl[a, ii], ii, k, street, sl, aidx, mode, R0, S0, R1a, S1a, Tab, orig, bk0, bk1, bk2, ctx, tmp)
+                else: _sig_node(n, actl[a, ii], ii, k, street, sl, aidx, mode, R0, S0, R1b, S1b, Tab, orig, bk0, bk1, bk2, ctx, tmp)
                 for j in range(k): sig[sl, ii, j] = tmp[j]
             for j in range(k):
                 ch = child[n, j]
@@ -105,19 +107,19 @@ def _slice(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slot, P,
                     for j in range(k): va += sig[sl, ii, j] * V[child[n, j], a, ii]
                     V[n, a, ii] = va
             if upd == a and street[n] >= 1:
-                i = aidx[n]
+                i = aidx[n]; R1 = R1a if a == 0 else R1b; S1 = S1a if a == 0 else S1b
                 for ii in range(nact[a]):
                     c = actl[a, ii]
                     if valid[v, c] == 0: continue
                     for j in range(k):
-                        x = R1[i, c, j] + V[child[n, j], a, ii] - V[n, a, ii]
-                        R1[i, c, j] = x if x > 0 else 0.0
-                        S1[i, c, j] += tw * reach[n, a, ii] * sig[sl, ii, j]
+                        x = R1[i, ii, j] + V[child[n, j], a, ii] - V[n, a, ii]
+                        R1[i, ii, j] = x if x > 0 else 0.0
+                        if tw > 0: S1[i, ii, j] += tw * reach[n, a, ii] * sig[sl, ii, j]
 
 
 @njit(parallel=True, cache=True)
 def _all_slices(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slot, P, ranks, order, valid, mode, br, upd, tw,
-                R0, S0, R1, S1, Tab, orig, bk0, bk1, bk2, r0, r1, actl, nact, flop_nodes, acc, nslot, W, G, CC):
+                R0, S0, R1a, S1a, R1b, S1b, Tab, orig, bk0, bk1, bk2, r0, r1, actl, nact, flop_nodes, acc, nslot, W, G, CC):
     """toutes les tranches, réparties en G groupes parallèles ; acc[t] reçoit les valeurs des nœuds du flop de la tranche t
     (dans les 1 326 combos). Les tampons d'un groupe servent à toutes ses tranches."""
     T = ranks.shape[0]; N = kind.shape[0]; M = actl.shape[1]
@@ -126,7 +128,7 @@ def _all_slices(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slo
         buf = np.zeros(1326); win = np.zeros(1326); tie = np.zeros(1326); tot = np.zeros(1326)
         for t in range(g, T, G):
             _slice(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slot, P, ranks[t], order[t], valid[t], mode, br, upd, tw,
-                   R0, S0, R1[t], S1[t], Tab, orig, bk0, bk1[t], bk2[t], r0, r1, actl, nact, sig, V, reach, buf, win, tie, tot, CC)
+                   R0, S0, R1a[t], S1a[t], R1b[t], S1b[t], Tab, orig, bk0, bk1[t], bk2[t], r0, r1, actl, nact, sig, V, reach, buf, win, tie, tot, CC)
             for i in range(flop_nodes.shape[0]):
                 for p in range(2):
                     for c in range(1326): acc[t, i, p, c] = 0.0
@@ -136,7 +138,10 @@ def _all_slices(kind, player, street, c0, c1, winner, nch, child, ctx, aidx, slo
 class ExactFlopHU:
     """sous-jeu heads-up à partir d'un flop fixé, même arbre de mises que HUPostflop (pot, tapis, réglages, agresseur)"""
 
-    def __init__(self, pot, stack, flop, cfg=None, aggressor=-1):
+    def __init__(self, pot, stack, flop, cfg=None, aggressor=-1, low_memory=False):
+        """low_memory : pas de stratégie moyenne aux rues turn et river (presque la moitié de la mémoire) ; les valeurs et
+        l'exploitabilité utilisent alors la stratégie courante de CFR+, qui converge aussi avec les mises à jour alternées"""
+        self.low_memory = low_memory
         self.flop = [int(x) for x in flop]; assert len(self.flop) == 3
         self.tree = HUPostflop(pot, stack, cfg, aggressor=aggressor); self.P = self.tree.P
         self.turns = [x for x in range(52) if x not in self.flop]
@@ -152,7 +157,7 @@ class ExactFlopHU:
         used = np.zeros(52, bool); used[self.flop] = True; self.valid_flop = ~(used[CC[:, 0]] | used[CC[:, 1]])
         W = self.W
         self.R0 = np.zeros((self.na0, 1326, W)); self.S0 = np.zeros((self.na0, 1326, W))
-        self.R1 = np.zeros((T, max(self.na1, 1), 1326, W), np.float32); self.S1 = np.zeros((T, max(self.na1, 1), 1326, W), np.float32)
+        self._R1 = None; self._ranges = None                              # regrets des rues turn et river : alloués au premier parcours
         self._acc = np.zeros((T, len(self.flop_nodes), 2, 1326)); self.t = 0
         self.Tab = np.zeros((1, 1, W)); self.bk = (np.zeros(1326, np.int64), np.zeros((T, 1326), np.int64), np.zeros((T, nctx, 1326), np.int64))
 
@@ -187,7 +192,10 @@ class ExactFlopHU:
         act = self.kind == ACT
         self.aidx = np.full(N, -1, np.int64); self.slot = np.full(N, -1, np.int64)
         f = np.where(act & (self.street == 0))[0]; o = np.where(act & (self.street >= 1))[0]
-        self.aidx[f] = np.arange(len(f)); self.aidx[o] = np.arange(len(o)); self.slot[act] = np.arange(int(act.sum()))
+        self.aidx[f] = np.arange(len(f)); self.slot[act] = np.arange(int(act.sum()))
+        for p in (0, 1):                                                  # rues turn et river : numérotés par joueur
+            op = o[self.player[o] == p]; self.aidx[op] = np.arange(len(op))
+        self.na1p = [int((self.player[o] == p).sum()) for p in (0, 1)]
         self.na0, self.na1, self.nslot = len(f), len(o), int(act.sum())
         # nœuds du flop (rue 0, hors hasard) et premiers nœuds hors du flop : leurs valeurs moyennées sur les turns
         flop_set = {i for i in range(N) if self.street[i] == 0 and kind[i] != CHANCE}; border = set()
@@ -201,10 +209,13 @@ class ExactFlopHU:
     # ---------------------------------------------------------------- parcours
     def _run(self, r0, r1, mode, br=-1, upd=-1):
         """upd : joueur dont les regrets sont mis à jour (CFR+ alterné), -1 aucun"""
-        bk0, bk1, bk2 = self.bk
+        bk0, bk1, bk2 = self.bk; actl, nact = self._alloc(r0, r1); R1a, S1a, R1b, S1b = self._R1
+        if self.low_memory:
+            if mode == 1: mode = 0                                     # pas de stratégie moyenne : la stratégie courante
+        tw = 0.0 if self.low_memory else float(self.t)
         _all_slices(self.kind, self.player, self.street, self.c0, self.c1, self.winner, self.nch, self.child, self.ctx, self.aidx, self.slot,
-                    self.P, self.ranks, self.order, self.valid, mode, br, upd, float(self.t), self.R0, self.S0, self.R1, self.S1,
-                    self.Tab, self.orig, bk0, bk1, bk2, r0, r1, *self._active(r0, r1), self.flop_nodes, self._acc, self.nslot, self.W, min(numba.get_num_threads(), len(self.turns)), CC)
+                    self.P, self.ranks, self.order, self.valid, mode, br, upd, tw, self.R0, self.S0, R1a, S1a, R1b, S1b,
+                    self.Tab, self.orig, bk0, bk1, bk2, r0, r1, actl, nact, self.flop_nodes, self._acc, self.nslot, self.W, min(numba.get_num_threads(), len(self.turns)), CC)
         A = self._acc.sum(0) / 45.0                                # un couple de mains donné est compatible avec 45 turns
         Vf = {}                                                    # valeurs des nœuds du flop, recalculées avec la stratégie commune
         for i in range(len(self.flop_nodes) - 1, -1, -1):
@@ -220,6 +231,23 @@ class ExactFlopHU:
                 self.R0[j, :, :k] = np.where(ok, np.maximum(self.R0[j, :, :k] + CV[a] - v[a][:, None], 0), 0)
                 self.S0[j, :, :k] += self.t * self._reach0[n][a][:, None] * sg
         return Vf[0]
+
+    def _alloc(self, r0, r1):
+        """combos de chaque joueur, et au premier appel les regrets des rues turn et river, dimensionnés à ces combos : les
+        ranges ne changent plus ensuite"""
+        actl, nact = self._active(r0, r1)
+        if self._R1 is None:
+            T = len(self.turns); W = self.W
+            shape = lambda p, keep: (T, max(self.na1p[p], 1), max(int(nact[p]), 1), W) if keep else (T, 1, 1, W)   # mode économe : tranches factices, jamais écrites
+            self._R1 = [np.zeros(shape(p, k), np.float32) for p in (0, 1) for k in (True, not self.low_memory)]   # R1a, S1a, R1b, S1b
+            self._ranges = (actl.copy(), nact.copy())
+        elif not (np.array_equal(nact, self._ranges[1]) and np.array_equal(actl, self._ranges[0])):
+            raise ValueError('ranges différentes de celles du premier parcours')
+        return actl, nact
+
+    def memory(self):
+        """octets des regrets et stratégies cumulées des rues turn et river (0 avant le premier parcours)"""
+        return sum(x.nbytes for x in self._R1) if self._R1 is not None else 0
 
     def _active(self, r0, r1):
         """combos de la range de chaque joueur sur ce flop : (2, n) et nombres"""
