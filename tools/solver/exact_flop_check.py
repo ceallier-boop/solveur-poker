@@ -71,7 +71,7 @@ def spots(stacks):
 VARIANTS = PRESETS                                                 # réglages de regroupement comparés à l'exact (G13)
 
 
-def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('production',), log=print):
+def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('production',), low_memory=False, log=print):
     sp, exports = spots(stacks)
     pot, stack, w0, w1, caller, ev_call, commit, ag = sp[spot]
     base = PostflopConfig(); r0, r1 = w0[CLASS_OF], w1[CLASS_OF]
@@ -87,7 +87,7 @@ def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('p
     w = (w0 if caller == 0 else w1) * W
     for f in range(flops):
         flop = sorted(rng.choice(52, 3, replace=False).tolist()); t1 = time.time()
-        ex = ExactFlopHU(pot, stack, flop, base, aggressor=ag).solve(r0, r1, iters=iters)
+        ex = ExactFlopHU(pot, stack, flop, base, aggressor=ag, low_memory=low_memory).solve(r0, r1, iters=iters)
         row = dict(flop=[R_[c // 4] + 'cdhs'[c % 4] for c in flop], exploitability_pct=round(100 * ex.exploitability(r0, r1), 3))
         vals = {'exact': ex.values(r0, r1, mode=1)}
         for v in variants:
@@ -119,7 +119,7 @@ def main(stacks, spot, flops, iters, seed, boards, min_weight=1e-3, variants=('p
     hands_ag = {h: {k: round(float(Gag[k][NAMES.index(h)]), 3) for k in keys} for h in WATCH['relanceur']
                 if wag[NAMES.index(h)] > 0 and np.isfinite(Gag['exact'][NAMES.index(h)])}
     sd = np.std([r['G_exact'] for r in per_flop], ddof=1) if len(per_flop) > 1 else None
-    res = dict(stacks=stacks, spot=spot, min_weight=min_weight, pot=pot, stack=stack, caller='OOP (BB)' if caller == 0 else 'IP (SB)', reference=exports, flops=flops, iters=iters,
+    res = dict(stacks=stacks, spot=spot, min_weight=min_weight, low_memory=low_memory, pot=pot, stack=stack, caller='OOP (BB)' if caller == 0 else 'IP (SB)', reference=exports, flops=flops, iters=iters,
                variants={v: dict(settings=VARIANTS[v], exact_minus_variant_mbb=cmp('exact', v), variant_minus_ref_mbb=cmp(v, 'ref'),
                                  exploitability_pct=round(float(np.mean([r['exploitability_pct_' + v] for r in per_flop])), 2)) for v in variants},
                exact_minus_ref_mbb=cmp('exact', 'ref'),
@@ -136,14 +136,22 @@ if __name__ == '__main__':
     ap.add_argument('--flops', type=int, default=8); ap.add_argument('--iters', type=int, default=150); ap.add_argument('--seed', type=int, default=1)
     ap.add_argument('--boards', type=int, default=1000)
     ap.add_argument('--variants', default='production', help=f"réglages comparés, séparés par des virgules, parmi : {', '.join(VARIANTS)} ; all : tous")
+    ap.add_argument('--threads', type=int, default=0, help='fils de calcul (0 : tous les cœurs) ; moins de fils, moins de mémoire (environ 0,2 à 0,4 Go par fil)')
+    ap.add_argument('--low-memory', action='store_true', help="pas de stratégie moyenne aux rues turn et river : environ 2,3 Go de moins pour l'iso payé, 0,8 pour la relance payée")
     ap.add_argument('--out', help='fichier de résultats (par défaut docs/solver/exact_flop_hu<tapis>_<situation>.json)')
     a = ap.parse_args(); st = [float(x) for x in a.stacks.split(',')]
+    if a.threads:
+        import numba; numba.set_num_threads(min(a.threads, numba.config.NUMBA_NUM_THREADS))
     variants = list(VARIANTS) if a.variants == 'all' else a.variants.split(',')
-    res = main(st, a.spot, a.flops, a.iters, a.seed, a.boards, variants=variants)
+    res = main(st, a.spot, a.flops, a.iters, a.seed, a.boards, variants=variants, low_memory=a.low_memory)
     path = a.out or os.path.join(OUT, f"exact_flop_hu{int(st[0])}_{a.spot}.json"); json.dump(res, open(path, 'w'), ensure_ascii=False, indent=1)
     print(f"{'réglage':22s} {'exact − réglage (mBB)':>22s} {'transfert entre familles':>26s} {'exploitabilité':>15s}")
     for v, r in res['variants'].items():
         e = r['exact_minus_variant_mbb']; print(f"{v:22s} {e['mean']:>+22.1f} {e['spread']:>26.1f} {r['exploitability_pct']:>13.2f} %")
         print('   ', e['families'])
     print("mains suivies, G de l'appelant (BB) :", res['hands']); print('mains suivies, G du relanceur (BB) :', res['hands_aggressor'])
+    try:
+        import resource; print(f"mémoire maximale : {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6:.2f} Go")   # Linux (Ko)
+    except ImportError:
+        pass
     print('résultats :', path)

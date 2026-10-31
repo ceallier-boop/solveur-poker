@@ -31,3 +31,15 @@ def test_small_game_is_zero_sum_and_converges():
     V = ex.values(r0, r1); m0, _ = ex.compat(r0, r1); M = float((r0 * ex.valid_flop * m0).sum())
     assert abs(((r0 * V[0]).sum() + (r1 * V[1]).sum()) / M / 4.0 - 1) < 1e-9
     assert e30 < e3 and e30 < 0.02
+
+
+def test_low_memory_mode_converges_on_the_current_strategy():
+    """mode économe : pas de stratégie moyenne aux rues turn et river ; la stratégie courante converge aussi"""
+    rng = np.random.default_rng(3); r0 = np.zeros(1326); r1 = np.zeros(1326)
+    r0[rng.choice(1326, 60, replace=False)] = 1; r1[rng.choice(1326, 60, replace=False)] = 1
+    full = ExactFlopHU(4.0, 2.0, FLOP, aggressor=1).solve(r0, r1, iters=30)
+    low = ExactFlopHU(4.0, 2.0, FLOP, aggressor=1, low_memory=True).solve(r0, r1, iters=30)
+    assert low.memory() < 0.6 * full.memory() and low.exploitability(r0, r1) < 0.02
+    V, Vl = full.values(r0, r1), low.values(r0, r1); m0, _ = full.compat(r0, r1); M = float((r0 * full.valid_flop * m0).sum())
+    assert abs(((r0 * Vl[0]).sum() + (r1 * Vl[1]).sum()) / M / 4.0 - 1) < 1e-9          # somme des gains = pot
+    assert abs((r0 * (V[0] - Vl[0])).sum() / M) < 0.01 * 4.0                              # valeur de OOP : moins de 1 % du pot d'écart

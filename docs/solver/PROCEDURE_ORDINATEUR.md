@@ -11,7 +11,7 @@ Les calculs de plusieurs heures ne tournent pas dans la session cloud : ils se l
 ## Matériel
 
 - 4 cœurs au moins ; plus il y en a, plus c'est court (le calcul exact et les sous-jeux postflop se répartissent sur tous les cœurs).
-- **16 Go de mémoire** : le calcul exact de l'iso payé en utilise environ 7 Go.
+- **16 Go de mémoire** (Python 64 bits). Mémoire maximale mesurée pour O3 (5 réglages) : voir le tableau d'O3.
 - 2 Go d'espace disque.
 - Linux, macOS ou Windows. L'ordinateur doit rester allumé et ne pas se mettre en veille pendant le calcul (réglages d'alimentation).
 
@@ -73,8 +73,19 @@ python tools/solver/exact_flop_check.py --spot raise --flops 5 --iters 100 --var
 ```
 
 ```bash
-python tools/solver/exact_flop_check.py --spot iso --flops 5 --iters 100 --variants all --out docs/solver/exact_flop_hu25_iso_g13.json
+python tools/solver/exact_flop_check.py --spot iso --flops 5 --iters 100 --variants all --low-memory --threads 4 --out docs/solver/exact_flop_hu25_iso_g13.json
 ```
+
+Mémoire maximale mesurée (31/10/2026) :
+
+| Commande | 4 fils de calcul | 2 fils de calcul |
+|---|---|---|
+| relance payée (`--spot raise`) | 2,5 Go | 2,2 Go |
+| iso payé, mode normal | 6,2 Go | 5,5 Go |
+| **iso payé, `--low-memory`** | **4,0 Go** | 3,3 Go |
+
+- `--low-memory` : pas de stratégie moyenne aux rues turn et river ; les valeurs utilisent la stratégie courante du calcul exact. Vérifié sur le premier flop de G9 : écart avec notre solveur +0,141 BB contre +0,142 avec la stratégie moyenne, exploitabilité 0,38 % du pot contre 0,61 %.
+- `--threads` : nombre de fils de calcul. Sans cette option, tous les cœurs sont utilisés et chaque fil ajoute 0,2 à 0,4 Go : c'est ce qui faisait déborder la mémoire sur un ordinateur à beaucoup de cœurs. Avec 2 fils au lieu de 4, le calcul est deux fois plus long.
 
 Durées sur 4 cœurs : environ 1 h 20 pour la première, 2 h 55 pour la seconde. Chaque flop affiche une ligne de progression ; à la fin, un tableau compare les réglages (écart avec l'exact, transfert de valeur entre familles de mains, exploitabilité). Si un calcul s'arrête, relancer la même commande : elle repart du début de cette situation.
 
