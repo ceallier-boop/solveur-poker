@@ -1,0 +1,472 @@
+{
+ "stacks": [
+  25.0,
+  25.0
+ ],
+ "spot": "raise",
+ "min_weight": 0.001,
+ "pot": 7.0,
+ "stack": 21.5,
+ "caller": "OOP (BB)",
+ "reference": [
+  "data/hrc/raw/v3/hand_18"
+ ],
+ "flops": 5,
+ "iters": 100,
+ "variants": {
+  "production": {
+   "settings": {},
+   "exact_minus_variant_mbb": {
+    "mean": -41.4,
+    "spread": 198.7,
+    "families": {
+     "As assortis": -230.6,
+     "As dépareillés": -180.1,
+     "autres assorties": 84.5,
+     "autres dépareillées": 3.5,
+     "broadways assortis": -309.4,
+     "broadways dépareillés": -338.1,
+     "connecteurs assortis": 307.5,
+     "paires": 750.6
+    }
+   },
+   "variant_minus_ref_mbb": {
+    "mean": 454.6,
+    "spread": 458.9,
+    "families": {
+     "As assortis": 582.6,
+     "As dépareillés": 778.7,
+     "autres assorties": 221.7,
+     "autres dépareillées": 275.8,
+     "broadways assortis": 820.2,
+     "broadways dépareillés": 1266.3,
+     "connecteurs assortis": -166.8,
+     "paires": -2109.4
+    }
+   },
+   "exploitability_pct": 13.12
+  },
+  "ehs2": {
+   "settings": {
+    "metric": "ehs2"
+   },
+   "exact_minus_variant_mbb": {
+    "mean": 10.1,
+    "spread": 179.0,
+    "families": {
+     "As assortis": -127.7,
+     "As dépareillés": -68.8,
+     "autres assorties": 156.7,
+     "autres dépareillées": 8.9,
+     "broadways assortis": -251.8,
+     "broadways dépareillés": -261.5,
+     "connecteurs assortis": 315.6,
+     "paires": 709.9
+    }
+   },
+   "variant_minus_ref_mbb": {
+    "mean": 403.0,
+    "spread": 436.3,
+    "families": {
+     "As assortis": 479.8,
+     "As dépareillés": 667.5,
+     "autres assorties": 149.5,
+     "autres dépareillées": 270.3,
+     "broadways assortis": 762.7,
+     "broadways dépareillés": 1189.8,
+     "connecteurs assortis": -174.9,
+     "paires": -2068.7
+    }
+   },
+   "exploitability_pct": 12.37
+  },
+  "ehs2_flop32": {
+   "settings": {
+    "metric": "ehs2",
+    "flop_buckets": 32
+   },
+   "exact_minus_variant_mbb": {
+    "mean": 32.8,
+    "spread": 169.9,
+    "families": {
+     "As assortis": -125.1,
+     "As dépareillés": -66.1,
+     "autres assorties": 176.8,
+     "autres dépareillées": 29.6,
+     "broadways assortis": -208.4,
+     "broadways dépareillés": -206.0,
+     "connecteurs assortis": 327.6,
+     "paires": 709.0
+    }
+   },
+   "variant_minus_ref_mbb": {
+    "mean": 380.4,
+    "spread": 425.9,
+    "families": {
+     "As assortis": 477.2,
+     "As dépareillés": 664.8,
+     "autres assorties": 129.4,
+     "autres dépareillées": 249.7,
+     "broadways assortis": 719.2,
+     "broadways dépareillés": 1134.3,
+     "connecteurs assortis": -186.9,
+     "paires": -2067.7
+    }
+   },
+   "exploitability_pct": 12.32
+  },
+  "ehs2_texture": {
+   "settings": {
+    "metric": "ehs2",
+    "textured": true
+   },
+   "exact_minus_variant_mbb": {
+    "mean": 11.9,
+    "spread": 156.0,
+    "families": {
+     "As assortis": -68.7,
+     "As dépareillés": -5.1,
+     "autres assorties": 123.4,
+     "autres dépareillées": -16.6,
+     "broadways assortis": -215.0,
+     "broadways dépareillés": -220.5,
+     "connecteurs assortis": 309.1,
+     "paires": 659.7
+    }
+   },
+   "variant_minus_ref_mbb": {
+    "mean": 401.3,
+    "spread": 410.5,
+    "families": {
+     "As assortis": 420.7,
+     "As dépareillés": 603.8,
+     "autres assorties": 182.8,
+     "autres dépareillées": 295.8,
+     "broadways assortis": 725.9,
+     "broadways dépareillés": 1148.7,
+     "connecteurs assortis": -168.3,
+     "paires": -2018.4
+    }
+   },
+   "exploitability_pct": 11.49
+  },
+  "ehs2_flop32_texture": {
+   "settings": {
+    "metric": "ehs2",
+    "flop_buckets": 32,
+    "textured": true
+   },
+   "exact_minus_variant_mbb": {
+    "mean": 12.9,
+    "spread": 152.3,
+    "families": {
+     "As assortis": -105.6,
+     "As dépareillés": -36.8,
+     "autres assorties": 133.7,
+     "autres dépareillées": -8.3,
+     "broadways assortis": -208.2,
+     "broadways dépareillés": -201.1,
+     "connecteurs assortis": 293.1,
+     "paires": 678.3
+    }
+   },
+   "variant_minus_ref_mbb": {
+    "mean": 400.3,
+    "spread": 407.6,
+    "families": {
+     "As assortis": 457.6,
+     "As dépareillés": 635.5,
+     "autres assorties": 172.5,
+     "autres dépareillées": 287.6,
+     "broadways assortis": 719.0,
+     "broadways dépareillés": 1129.4,
+     "connecteurs assortis": -152.4,
+     "paires": -2037.1
+    }
+   },
+   "exploitability_pct": 11.6
+  }
+ },
+ "exact_minus_ref_mbb": {
+  "mean": 413.2,
+  "spread": 275.0,
+  "families": {
+   "As assortis": 352.0,
+   "As dépareillés": 598.7,
+   "autres assorties": 306.2,
+   "autres dépareillées": 279.2,
+   "broadways assortis": 510.8,
+   "broadways dépareillés": 928.3,
+   "connecteurs assortis": 140.7,
+   "paires": -1358.7
+  }
+ },
+ "flop_sample_sd_mbb": 170.5,
+ "hands": {
+  "J8o": {
+   "exact": 4.137,
+   "production": 4.468,
+   "ehs2": 4.601,
+   "ehs2_flop32": 4.606,
+   "ehs2_texture": 4.617,
+   "ehs2_flop32_texture": 4.66,
+   "ref": 2.628
+  },
+  "K9o": {
+   "exact": 1.724,
+   "production": 1.44,
+   "ehs2": 1.423,
+   "ehs2_flop32": 1.427,
+   "ehs2_texture": 1.504,
+   "ehs2_flop32_texture": 1.486,
+   "ref": 2.894
+  },
+  "76s": {
+   "exact": 2.249,
+   "production": 1.735,
+   "ehs2": 1.763,
+   "ehs2_flop32": 1.748,
+   "ehs2_texture": 1.845,
+   "ehs2_flop32_texture": 1.841,
+   "ref": 2.983
+  },
+  "A5s": {
+   "exact": 3.999,
+   "production": 4.339,
+   "ehs2": 4.23,
+   "ehs2_flop32": 4.231,
+   "ehs2_texture": 4.144,
+   "ehs2_flop32_texture": 4.191,
+   "ref": 3.561
+  },
+  "22": {
+   "exact": 1.43,
+   "production": 0.684,
+   "ehs2": 0.694,
+   "ehs2_flop32": 0.693,
+   "ehs2_texture": 0.766,
+   "ehs2_flop32_texture": 0.726,
+   "ref": 2.983
+  },
+  "44": {
+   "exact": 1.635,
+   "production": 0.771,
+   "ehs2": 0.765,
+   "ehs2_flop32": 0.775,
+   "ehs2_texture": 0.815,
+   "ehs2_flop32_texture": 0.79,
+   "ref": 3.549
+  },
+  "K5o": {
+   "exact": 1.567,
+   "production": 1.162,
+   "ehs2": 1.175,
+   "ehs2_flop32": 1.2,
+   "ehs2_texture": 1.199,
+   "ehs2_flop32_texture": 1.216,
+   "ref": 2.436
+  },
+  "Q8o": {
+   "exact": 4.387,
+   "production": 4.688,
+   "ehs2": 4.457,
+   "ehs2_flop32": 4.382,
+   "ehs2_texture": 4.506,
+   "ehs2_flop32_texture": 4.451,
+   "ref": 2.6
+  },
+  "K4o": {
+   "exact": 1.156,
+   "production": 0.725,
+   "ehs2": 0.733,
+   "ehs2_flop32": 0.734,
+   "ehs2_texture": 0.74,
+   "ehs2_flop32_texture": 0.723,
+   "ref": 2.426
+  }
+ },
+ "hands_aggressor": {
+  "T9o": {
+   "exact": 0.0,
+   "production": 0.0,
+   "ehs2": 0.0,
+   "ehs2_flop32": 0.0,
+   "ehs2_texture": 0.0,
+   "ehs2_flop32_texture": 0.0
+  },
+  "96o": {
+   "exact": 2.213,
+   "production": 1.706,
+   "ehs2": 1.783,
+   "ehs2_flop32": 1.805,
+   "ehs2_texture": 1.859,
+   "ehs2_flop32_texture": 1.798
+  },
+  "J8o": {
+   "exact": 4.612,
+   "production": 4.298,
+   "ehs2": 4.316,
+   "ehs2_flop32": 4.28,
+   "ehs2_texture": 4.501,
+   "ehs2_flop32_texture": 4.438
+  },
+  "Q4o": {
+   "exact": 3.189,
+   "production": 3.196,
+   "ehs2": 3.249,
+   "ehs2_flop32": 3.275,
+   "ehs2_texture": 3.227,
+   "ehs2_flop32_texture": 3.229
+  },
+  "Q5o": {
+   "exact": 3.681,
+   "production": 3.69,
+   "ehs2": 3.738,
+   "ehs2_flop32": 3.751,
+   "ehs2_texture": 3.673,
+   "ehs2_flop32_texture": 3.697
+  },
+  "KJo": {
+   "exact": 4.313,
+   "production": 4.219,
+   "ehs2": 4.352,
+   "ehs2_flop32": 4.356,
+   "ehs2_texture": 4.401,
+   "ehs2_flop32_texture": 4.398
+  },
+  "76s": {
+   "exact": 0.0,
+   "production": 0.0,
+   "ehs2": 0.0,
+   "ehs2_flop32": 0.0,
+   "ehs2_texture": 0.0,
+   "ehs2_flop32_texture": 0.0
+  }
+ },
+ "per_flop": [
+  {
+   "flop": [
+    "7s",
+    "8h",
+    "Js"
+   ],
+   "exploitability_pct": 0.607,
+   "exploitability_pct_production": 13.44,
+   "exploitability_pct_ehs2": 12.71,
+   "exploitability_pct_ehs2_flop32": 12.73,
+   "exploitability_pct_ehs2_texture": 11.61,
+   "exploitability_pct_ehs2_flop32_texture": 12.14,
+   "G_exact": 3.9948,
+   "G_production": 4.1366,
+   "G_ehs2": 4.0591,
+   "G_ehs2_flop32": 4.0168,
+   "G_ehs2_texture": 4.0589,
+   "G_ehs2_flop32_texture": 4.0497
+  },
+  {
+   "flop": [
+    "3s",
+    "Qd",
+    "Ad"
+   ],
+   "exploitability_pct": 0.586,
+   "exploitability_pct_production": 11.85,
+   "exploitability_pct_ehs2": 11.22,
+   "exploitability_pct_ehs2_flop32": 11.09,
+   "exploitability_pct_ehs2_texture": 9.77,
+   "exploitability_pct_ehs2_flop32_texture": 9.69,
+   "G_exact": 3.2251,
+   "G_production": 3.263,
+   "G_ehs2": 3.2145,
+   "G_ehs2_flop32": 3.2014,
+   "G_ehs2_texture": 3.1917,
+   "G_ehs2_flop32_texture": 3.2019
+  },
+  {
+   "flop": [
+    "5h",
+    "7d",
+    "Qs"
+   ],
+   "exploitability_pct": 0.617,
+   "exploitability_pct_production": 10.86,
+   "exploitability_pct_ehs2": 12.16,
+   "exploitability_pct_ehs2_flop32": 11.91,
+   "exploitability_pct_ehs2_texture": 10.62,
+   "exploitability_pct_ehs2_flop32_texture": 9.74,
+   "G_exact": 3.0501,
+   "G_production": 2.9898,
+   "G_ehs2": 2.9659,
+   "G_ehs2_flop32": 2.9382,
+   "G_ehs2_texture": 2.9525,
+   "G_ehs2_flop32_texture": 2.9458
+  },
+  {
+   "flop": [
+    "7c",
+    "9c",
+    "Tc"
+   ],
+   "exploitability_pct": 0.599,
+   "exploitability_pct_production": 12.57,
+   "exploitability_pct_ehs2": 11.58,
+   "exploitability_pct_ehs2_flop32": 11.66,
+   "exploitability_pct_ehs2_texture": 11.86,
+   "exploitability_pct_ehs2_flop32_texture": 12.49,
+   "G_exact": 3.6789,
+   "G_production": 3.7598,
+   "G_ehs2": 3.7309,
+   "G_ehs2_flop32": 3.7181,
+   "G_ehs2_texture": 3.7816,
+   "G_ehs2_flop32_texture": 3.8001
+  },
+  {
+   "flop": [
+    "Jh",
+    "Qs",
+    "As"
+   ],
+   "exploitability_pct": 0.65,
+   "exploitability_pct_production": 16.9,
+   "exploitability_pct_ehs2": 14.19,
+   "exploitability_pct_ehs2_flop32": 14.21,
+   "exploitability_pct_ehs2_texture": 13.59,
+   "exploitability_pct_ehs2_flop32_texture": 13.93,
+   "G_exact": 3.6724,
+   "G_production": 3.9161,
+   "G_ehs2": 3.7614,
+   "G_ehs2_flop32": 3.7342,
+   "G_ehs2_texture": 3.7374,
+   "G_ehs2_flop32_texture": 3.7257
+  }
+ ],
+ "seconds": 3124,
+ "exact_minus_prod_mbb": {
+  "mean": -41.4,
+  "spread": 198.7,
+  "families": {
+   "As assortis": -230.6,
+   "As dépareillés": -180.1,
+   "autres assorties": 84.5,
+   "autres dépareillées": 3.5,
+   "broadways assortis": -309.4,
+   "broadways dépareillés": -338.1,
+   "connecteurs assortis": 307.5,
+   "paires": 750.6
+  }
+ },
+ "prod_minus_ref_mbb": {
+  "mean": 454.6,
+  "spread": 458.9,
+  "families": {
+   "As assortis": 582.6,
+   "As dépareillés": 778.7,
+   "autres assorties": 221.7,
+   "autres dépareillées": 275.8,
+   "broadways assortis": 820.2,
+   "broadways dépareillés": 1266.3,
+   "connecteurs assortis": -166.8,
+   "paires": -2109.4
+  }
+ }
+}
