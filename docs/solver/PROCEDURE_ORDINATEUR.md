@@ -6,7 +6,7 @@ Les calculs de plusieurs heures ne tournent pas dans la session cloud : ils se l
 |---|---|---|---|
 | O1 | Installation (une fois) | 10 minutes | — |
 | O3 | Résolution exacte au flop, pour comparer les réglages de regroupement après le flop (G13) | environ 4 h 15 | `docs/solver/exact_flop_hu25_raise_g13.json`, `docs/solver/exact_flop_hu25_iso_g13.json` |
-| O5 | Grille complète du solveur sur l'arbre v5 (58 configurations), après le choix du réglage (G16) | environ 12 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/<version>/` |
+| O5 | Grille complète du solveur sur l'arbre v5 (58 configurations), après le choix du réglage (G16) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/<version>/` |
 
 ## Matériel
 
@@ -101,7 +101,8 @@ python -m spinsacademy.solver.dataset --version 2026.11.JJ-s2 --grid p1 --tree v
 
 - `--tree v5` : ouvertures à 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé.
 - `--workers` : mettre le nombre de cœurs de l'ordinateur.
-- Environ 12 h sur 4 cœurs : 3 à 8 minutes par configuration heads-up, 15 à 20 minutes à 3 joueurs. Une ligne s'affiche pour chaque configuration terminée.
+- Environ 5 h sur 4 cœurs depuis les accélérations du 02/11/2026 (12 h avant) : 1 à 3 minutes par configuration heads-up, 4 à 10 minutes à 3 joueurs. Une ligne s'affiche pour chaque configuration terminée.
+- Mémoire : environ 0,25 Go par processus et 0,2 Go pour le processus principal, soit 1,2 Go avec `--workers 4` (mesuré sous Linux) ; 8 Go suffisent largement.
 - **Reprise** : chaque configuration terminée est enregistrée tout de suite (`data/solver/runs/`). Si le calcul s'arrête, relancer exactement la même commande : les configurations déjà faites ne sont pas recalculées.
 - À la fin : « N spots publiés en staging ». La banque n'est pas servie aux joueurs : elle passe ensuite les contrôles du catalogue.
 
