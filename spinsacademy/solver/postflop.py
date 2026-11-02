@@ -28,6 +28,7 @@ class Showdown:
 
 def fit_offsets(P, w0, w1, G0, G1, iters=200):
     """deltas (d0, d1) tels que le modèle P*E + d0[i] - d1[j] reproduise G0 (contre w1) et G1 (contre w0)"""
+    G0 = np.nan_to_num(G0); G1 = np.nan_to_num(G1)             # classe sans adversaire compatible : sans effet, mais nan * 0 = nan
     m1 = D @ w1; m0 = D.T @ w0
     E0 = (D * E) @ w1 / np.maximum(m1, 1e-12)                   # équité moyenne de i contre la range 1
     E1 = (D * (1 - E)).T @ w0 / np.maximum(m0, 1e-12)           # équité moyenne de j contre la range 0
