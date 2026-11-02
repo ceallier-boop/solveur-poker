@@ -41,7 +41,7 @@ def test_challenges_api(client):
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
     d = r['daily'][0]
     assert d['status'] in ('won', 'tried') and d['result_fr'] and d['action'] is None                   # une seule tentative compte
-    assert (d['status'] == 'won') == bool(r['history'])
+    assert r['history'] and r['history'][0]['won'] == (d['status'] == 'won')                            # l'historique garde aussi les tentatives perdues
     _play(client, A, {'mode': 'gto', 'challenge': 'pressure'})
     assert client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()['weekly'][0]['status'] != 'todo'
     assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'reader'}, headers=A).status_code == 422
