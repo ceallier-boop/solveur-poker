@@ -49,7 +49,7 @@ def strategy_shift(a, b):
 
 def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=None, boards=1000, workers=4, seed=1, damping=0.5, log=print, tol=None, tol_mbb=None):
     pf_cfg = pf_cfg or PostflopConfig(); model = Realization(); history = []
-    ctx = mp.get_context('fork')
+    ctx = mp.get_context('fork' if 'fork' in mp.get_all_start_methods() else 'spawn')   # Windows : pas de fork
     with ctx.Pool(workers, initializer=_init_pool, initargs=(boards, pf_cfg.buckets, pf_cfg.rollouts, seed, pf_cfg.metric, pf_cfg.textured, pf_cfg.flop_buckets)) as pool:
         s = Solver(stacks, cfg or TreeConfig(), postflop=model).solve(pre_iters); prev = s.strategy()
         for k in range(outer):

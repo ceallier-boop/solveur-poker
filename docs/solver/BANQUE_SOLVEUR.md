@@ -155,3 +155,32 @@ La grille peut tourner sur l'arbre v5 (G14) : `python -m spinsacademy.solver.dat
 Contrôles après le choix du réglage (G16), à partir de la relecture simulée des coachs (`docs/relecture/solveur_2026-10-30/SYNTHESE.md`) :
 - O3 affiche le gain postflop des mains signalées, pour les deux joueurs de l'iso payé : celles qui paient l'iso (K5o, Q8o, K4o : le solveur les couche, les trois coachs les défendent) et celles qui isolent (T9o, 96o, J8o, Q4o, Q5o isolées par le solveur, KJo non isolée : les trois coachs contre) ;
 - la banque pilote est refaite avec le réglage retenu (4 configurations, environ 45 minutes), puis `python tools/solver/control_spots.py --after gto_preflop/<version>` met côte à côte, pour les 60 situations de l'échantillon, la décision du solveur avant et après, celle de la référence et l'avis majoritaire des coachs. Les familles qui vont au flop (défense face à l'iso, composition de la range d'iso) doivent bouger ; celles où le solveur l'emporte (pas de limp au BTN à 3 joueurs, tapis du SB à 12 BB) ne doivent pas bouger.
+
+### Choix du réglage de regroupement (G16, 02/11/2026)
+
+Mesure O3 (ordinateur du porteur du projet, `exact_flop_hu25_raise_g13.json`, `exact_flop_hu25_iso_g13.json`), mêmes 5 flops que G9, exact − réglage en mBB ; « transfert » = dispersion des écarts entre familles de mains, le défaut de G9 :
+
+| Réglage | Relance payée : moyenne / transfert / exploitabilité | Iso payé : moyenne / transfert / exploitabilité |
+|---|---|---|
+| `production` | −41 / 199 / 13,1 % | +31 / 282 / 15,8 % |
+| `ehs2` | +10 / 179 / 12,4 % | +55 / 190 / 15,2 % |
+| `ehs2_flop32` | +33 / 170 / 12,3 % | +60 / 192 / 15,1 % |
+| **`ehs2_texture`** | +12 / **156** / **11,5 %** | +55 / **150** / **14,9 %** |
+| `ehs2_flop32_texture` | +13 / 152 / 11,6 % | +55 / 149 / 14,8 % |
+
+**Réglage retenu : `ehs2_texture`** (groupes selon le potentiel, croisés avec la texture du board). Il réduit le transfert de 22 % (relance payée) et 47 % (iso payé) ; 32 groupes au flop n'apportent presque rien de plus pour un calcul plus lourd.
+
+Ce qui reste : les paires (+550 à +680 mBB) et les Kx faibles qui paient l'iso (K5o : 1,03 BB exact contre 0,45 ; K4o : 0,70 contre −0,07) restent sous-évalués, As et broadways surévalués (−50 à −250 mBB). Ce résidu ne vient ni du nombre de groupes ni de la mesure de force : il est commun à tous les réglages.
+
+Pilote heads-up refait avec `ehs2_texture` (`gto_preflop/2026.11.02-s1`, arbre de la référence) :
+
+| Configuration | Perte / plancher de la référence (mBB), production | Idem, `ehs2_texture` |
+|---|---|---|
+| HU 12 / 12 | 12,3 / 6,9 | **10,4** / 6,9 |
+| HU 25 / 25 | **54,4** / 33,5 | 65,7 / 33,5 |
+
+`tools/solver/control_spots.py` sur les situations relevées par les coachs : aucune décision ne change en heads-up 25 BB (K5o, Q8o, K4o se couchent toujours face à l'iso ; T9o et J8o sont toujours isolées). Le résidu des pots relancés porte donc sur des décisions réelles à 25 BB ; à 12 BB, où les pots relancés finissent surtout à tapis, le réglage améliore le calage.
+
+Calage sur la v5 : impossible pour l'instant, les exports v5 de la référence (O2, O4) ne sont pas reçus. À faire à leur réception (`REFERENCE_TREES`).
+
+Grille O5 : `--postflop ehs2_texture --tree v5`. Sous Windows, les sous-jeux postflop démarrent leurs processus par `spawn` (pas de `fork`), corrigé le 02/11/2026 (`solver/pipeline.py`).
