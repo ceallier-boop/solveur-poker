@@ -184,3 +184,26 @@ Pilote heads-up refait avec `ehs2_texture` (`gto_preflop/2026.11.02-s1`, arbre d
 Calage sur la v5 : impossible pour l'instant, les exports v5 de la référence (O2, O4) ne sont pas reçus. À faire à leur réception (`REFERENCE_TREES`).
 
 Grille O5 : `--postflop ehs2_texture --tree v5`. Sous Windows, les sous-jeux postflop démarrent leurs processus par `spawn` (pas de `fork`), corrigé le 02/11/2026 (`solver/pipeline.py`).
+
+### Accélération de la grille (02/11/2026)
+
+Mesuré avant tout calcul de la grille v5, sur les 4 configurations du pilote (arbre de la référence, réglage `production`, 4 cœurs, calculs seuls sur la machine) :
+
+| Configuration | Avant | Après | Exploitabilité (mBB) | Écart de stratégie | Perte / plancher de la référence (mBB) |
+|---|---|---|---|---|---|
+| HU 12 / 12 | 169 s | **73 s** | 0,08 → 0,07 | 0,9 point | 12,3 → 12,3 / 6,9 |
+| HU 25 / 25 | 459 s | **140 s** | 0,45 → 0,54 | 2,8 points | 54,4 → 54,9 / 33,5 |
+| 3 joueurs 12 | 930 s | **240 s** | 0,13 → 0,12 | 1,4 point | 41,7 → 42,3 / 34,7 |
+| 3 joueurs 25 | 1 025 s | **570 s** | 0,23 → 0,22 | 1,5 point | 100,2 → 101,9 / 114,4 |
+
+Total 2,5 fois plus rapide (2 583 s → 1 023 s) ; la grille O5 passe d'environ 12 h à environ 5 h sur 4 cœurs. Mémoire maximale : 0,2 Go pour le processus principal, 0,25 Go par processus de sous-jeux.
+
+Ce qui a changé (`solver/pipeline.py`, réglages enregistrés dans chaque résultat) :
+- à partir du 2e tour, chaque sous-jeu postflop repart des regrets du même sous-jeu au tour précédent, avec 1 000 itérations au lieu de 3 000 ; sa stratégie moyenne repart de zéro ;
+- un sous-jeu qui pèse moins de 0,1 % de la masse des sous-jeux (lignes rares à 3 joueurs : 19 sur 32 à 25 BB, 12 sur 18 à 12 BB) reçoit au plus 500 itérations ;
+- un sous-jeu dont une range est vide est sauté (sa correction du tour précédent est gardée) ;
+- le réservoir de boards est calculé une seule fois par jeu de réglages, puis relu par chaque processus.
+
+Essayé et écarté : reprendre aussi le préflop d'un tour à l'autre. Plus rapide, mais les nœuds peu joués (calls de tapis en fin de ligne à 3 joueurs, le BB qui part à tapis sur une relance) n'apprenaient plus rien et gardaient des fréquences sans valeur (perte de 300 à 750 mBB sur ces nœuds). Le préflop reste résolu depuis zéro à chaque tour.
+
+Les banques calculées avant ces accélérations se recalculent toujours à l'identique (`--check`) : les réglages absents de leur manifeste sont ceux d'avant (`dataset.params_of`).

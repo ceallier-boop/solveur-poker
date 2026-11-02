@@ -69,6 +69,20 @@ class SolveParams:
     damping: object = 'linear'        # corrections postflop moyennées sur tous les tours (postflop.Realization.commit)
     seed: int = 1
     postflop: dict = dataclasses.field(default_factory=lambda: dataclasses.asdict(PostflopConfig()))
+    # accélérations (02/11/2026, pipeline.solve) : sous-jeux postflop repris du tour précédent, moins d'itérations aux sous-jeux négligeables
+    warm: bool = True
+    post_warm: int = 1000
+    rare_mass: float = 0.001
+    rare_iters: int = 500
+
+
+LEGACY = dict(warm=False, rare_mass=0.0)          # réglages des banques calculées avant ces accélérations (manifeste sans ces champs)
+
+
+def params_of(d):
+    """SolveParams d'un manifeste ou d'un résultat enregistré ; les champs absents sont ceux d'avant les accélérations"""
+    names = {f.name for f in dataclasses.fields(SolveParams)}
+    return SolveParams(**{**LEGACY, **{k: v for k, v in d.items() if k in names}})
 
 
 def _md5(obj):
@@ -111,7 +125,8 @@ def solve(stacks, cfg, params, workers=4, log=print):
         from .pipeline import solve as full
         s, _, history = full(stacks, cfg, outer=params.outer, pre_iters=params.pre_iters, post_iters=params.post_iters,
                              pf_cfg=PostflopConfig(**params.postflop), boards=params.boards, workers=workers, seed=params.seed,
-                             damping=params.damping, log=log, tol_mbb=params.tol_mbb)
+                             damping=params.damping, log=log, tol_mbb=params.tol_mbb, warm=params.warm,
+                             post_warm=params.post_warm, rare_mass=params.rare_mass, rare_iters=params.rare_iters)
     else:
         raise ValueError(f'modèle inconnu : {params.model}')
     expl = [round(1000 * x, 3) for x in s.exploitability()]
@@ -274,7 +289,7 @@ def check(ref, datasets, workers=4, log=print):
     published = {}
     for line in open(os.path.join(d, 'spots.jsonl')):
         sp = json.loads(line); published[sp['spot_id']] = sp
-    cfg = TreeConfig(**manifest['tree_config']); params = SolveParams(**manifest['params'])
+    cfg = TreeConfig(**manifest['tree_config']); params = params_of(manifest['params'])
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         rebuilt = {}
