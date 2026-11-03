@@ -58,7 +58,8 @@ def _board(i):
     ex = ExactHU(a.pot, a.stack, board, tree=G_['tree'])
     ex.solve(r0, r1, a.exact_iters); e_eq = ex.exploitability(r0, r1)
     eq = ex.values(r0, r1)                                 # solve() laisse la stratégie moyenne dans ex.sig
-    ex.set_abstract(G_['sigma'], abstract_buckets(ex, a.buckets, a.rollouts, int(rng.integers(1 << 30)), a.metric, a.textured))
+    ex.set_abstract(G_['sigma'], abstract_buckets(ex, a.buckets, a.rollouts, int(rng.integers(1 << 30)), a.metric, a.textured,
+                                                  (G_['w0'], G_['w1']) if a.range_aware else None))
     ab = ex.values(r0, r1); e_ab = ex.exploitability(r0, r1)
     m = ex.compat(r0, r1)
     return dict(i=i, eq=eq, ab=ab, m=m, e_eq=e_eq, e_ab=e_ab, sec=time.time() - t0)
@@ -81,6 +82,7 @@ def main():
     ap.add_argument('--buckets', type=int, default=16); ap.add_argument('--rollouts', type=int, default=6)
     ap.add_argument('--metric', default='ehs'); ap.add_argument('--textured', action='store_true'); ap.add_argument('--workers', type=int, default=4)
     ap.add_argument('--seed', type=int, default=0); ap.add_argument('--out', default=None)
+    ap.add_argument('--range-aware', action='store_true', help='groupes par joueur, selon la force contre la range adverse (G17)')
     a = ap.parse_args()
     s, st, nodes = load(a.hrc)
     w0 = hrc_range(nodes, st, a.oop); w1 = hrc_range(nodes, st, a.ip)
@@ -89,10 +91,10 @@ def main():
     cfg = PostflopConfig(buckets=a.buckets, rollouts=a.rollouts, metric=a.metric, textured=a.textured)
     t0 = time.time()
     hp = HUPostflop(a.pot, a.stack, cfg, start_street=start)
-    pool = board_pool(a.pool, a.buckets, a.rollouts, a.seed + 1, a.metric, a.textured)
+    pool = board_pool(a.pool, a.buckets, a.rollouts, a.seed + 1, a.metric, a.textured, ranges=(w0, w1) if a.range_aware else None)
     hp.fast_solve(w0, w1, pool, iters=a.abs_iters, seed=a.seed)
     print(f'abstrait : {len(hp.nodes)} nœuds, {a.abs_iters} itérations sur {a.pool} boards ({time.time() - t0:.0f} s)', flush=True)
-    G_.update(args=a, r0=r0, r1=r1, tree=HUPostflop(a.pot, a.stack, cfg, start_street=start), sigma=average_sigma(hp))
+    G_.update(args=a, r0=r0, r1=r1, w0=w0, w1=w1, tree=HUPostflop(a.pot, a.stack, cfg, start_street=start), sigma=average_sigma(hp))
     res = []
     with mp.get_context('fork').Pool(a.workers) as p:
         for k, r in enumerate(p.imap_unordered(_board, range(a.boards))):

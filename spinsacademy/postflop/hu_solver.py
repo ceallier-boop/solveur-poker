@@ -168,8 +168,13 @@ class HUPostflop:
         self._arr = (kind, player, street, c0, c1, winner, nch, child)
         return self._arr
 
+    @staticmethod
+    def _per_player(bucket):
+        """groupes (n, 2, 3, 1326) : un réservoir à groupes communs (n, 3, 1326) sert aux deux joueurs"""
+        return bucket if bucket.ndim == 4 else np.ascontiguousarray(np.stack([bucket, bucket], axis=1))
+
     def fast_solve(self, w_oop, w_ip, pool, iters=4000, seed=0):
-        arr = self._arrays(); ranks, order, valid, bucket = pool
+        arr = self._arrays(); ranks, order, valid, bucket = pool; bucket = self._per_player(bucket)
         r0 = np.asarray(w_oop, float)[CLASS_OF]; r1 = np.asarray(w_ip, float)[CLASS_OF]
         rng = np.random.default_rng(seed); idx = rng.integers(len(ranks), size=iters)
         for i in idx:
@@ -179,7 +184,7 @@ class HUPostflop:
 
     def fast_evaluate(self, w_oop, w_ip, pool, boards=None):
         """G par classe (169) des deux joueurs avec la stratégie moyenne, sur les boards du réservoir"""
-        arr = self._arrays(); ranks, order, valid, bucket = pool
+        arr = self._arrays(); ranks, order, valid, bucket = pool; bucket = self._per_player(bucket)
         r0 = np.asarray(w_oop, float)[CLASS_OF]; r1 = np.asarray(w_ip, float)[CLASS_OF]
         Vs = [np.zeros(1326), np.zeros(1326)]; Ms = [np.zeros(1326), np.zeros(1326)]; m = np.zeros(1326)
         for i in range(len(ranks) if boards is None else boards):
@@ -197,7 +202,7 @@ class HUPostflop:
         arr = self._arrays(); ranks, order, valid, bucket = pool; r0 = np.asarray(w_oop, float)[CLASS_OF]
         acc = np.zeros(len(self.root.actions)); tot = 0.0
         for i in range(min(boards, len(ranks))):
-            b = bucket[i, 0]; S = np.maximum(self.Sf[0], 0); s = S.sum(1, keepdims=True)
+            b = bucket[i, 0] if bucket.ndim == 3 else bucket[i, 0, 0]; S = np.maximum(self.Sf[0], 0); s = S.sum(1, keepdims=True)
             sg = np.where(s > 0, S / np.where(s > 0, s, 1), 1.0 / len(self.root.actions))[:, :len(self.root.actions)]
             w = r0 * valid[i]; acc += (w[:, None] * sg[b]).sum(0); tot += w.sum()
         return dict(zip(self.root.actions, acc / tot))
