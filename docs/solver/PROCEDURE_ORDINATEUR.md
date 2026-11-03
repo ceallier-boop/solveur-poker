@@ -7,6 +7,7 @@ Les calculs de plusieurs heures ne tournent pas dans la session cloud : ils se l
 | O1 | Installation (une fois) | 10 minutes | — |
 | O3 | Résolution exacte au flop, pour comparer les réglages de regroupement après le flop (G13) | environ 4 h 15 | `docs/solver/exact_flop_hu25_raise_g13.json`, `docs/solver/exact_flop_hu25_iso_g13.json` |
 | O5 | Grille complète du solveur sur l'arbre v5 (58 configurations), après le choix du réglage (G16) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/<version>/` |
+| O6 | Calcul exact au flop pour apprendre la correction des pots relancés (G17) | 12 à 15 h | `data/solver/g17/hu_25-25_*.jsonl`, `hu_18-18_*.jsonl`, `hu_12-12_*.jsonl` |
 
 ## Matériel
 
@@ -107,6 +108,23 @@ python -m spinsacademy.solver.dataset --version 2026.11.JJ-s2 --grid p1 --tree v
 - À la fin : « N spots publiés en staging ». La banque n'est pas servie aux joueurs : elle passe ensuite les contrôles du catalogue.
 
 Fichiers à renvoyer : le dossier `data/solver/runs/<dossier>/` créé par le calcul (son nom commence par l'empreinte de l'arbre) et le dossier `data/datasets/gto_preflop/<version>/`.
+
+## O6 : apprendre la correction des pots relancés (G17)
+
+Résout exactement 8 flops au hasard dans les deux pots relancés les plus fréquents (le SB ouvre et le BB paie ; le SB limpe, le BB isole et le SB paie), à 25, 18 et 12 BB, avec les ranges de notre banque v5, et y compare notre solveur. Une seule commande (dans le dossier `solveur-poker`, environnement activé, après `git pull`) :
+
+```bash
+python tools/solver/learn_correction.py --set learn --threads 4 --low-memory
+```
+
+- Durée : environ 22 minutes par flop à 25 BB sur 4 cœurs (mesuré le 03/11/2026), moins aux tapis plus courts ; 48 flops en tout, 12 à 15 h. Avec plus de cœurs, mettre `--threads` au nombre de cœurs : plus court, et environ 0,3 Go de plus par fil.
+- Mémoire maximale : 3,2 Go avec `--threads 4 --low-memory` (mesuré) ; 8 Go suffisent.
+- **Reprise** : chaque flop terminé est écrit tout de suite (une ligne dans `data/solver/g17/<configuration>_<pot>.jsonl`). Si le calcul s'arrête (coupure, mise en veille), relancer exactement la même commande : il repart au flop suivant. On peut aussi l'arrêter volontairement (Ctrl+C) et le reprendre plus tard.
+- Une ligne s'affiche par flop terminé ; « FIN » à la fin.
+
+Le jeu de contrôle (8, 15 et 22 BB, d'autres flops) tourne dans la session cloud : ne pas le lancer.
+
+Fichiers à renvoyer : les fichiers `data/solver/g17/hu_25-25_*.jsonl`, `data/solver/g17/hu_18-18_*.jsonl` et `data/solver/g17/hu_12-12_*.jsonl` (branche `calculs/o6`, `git add data/solver/g17`, ou archive).
 
 ## Renvoyer les résultats
 

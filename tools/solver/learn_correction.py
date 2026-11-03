@@ -11,8 +11,8 @@ Deux jeux disjoints (tapis et flops différents) :
   check : HU 22, 15 (et 8 pour les tapis courts), flops d'une autre graine : contrôle hors échantillon.
 
 Usage :
-  python tools/solver/learn_correction.py --set learn --flops 12 --threads 4
-  python tools/solver/learn_correction.py --set check --flops 8 --threads 4
+  python tools/solver/learn_correction.py --set learn --threads 4 --low-memory
+  python tools/solver/learn_correction.py --set check --threads 4 --low-memory
   python tools/solver/learn_correction.py --report --name g17-v1      # table + contrôle
 """
 import argparse, glob, json, os, sys, time
@@ -33,8 +33,8 @@ from spinsacademy.solver.postflop import Realization  # noqa: E402
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
 BANK = os.path.join(ROOT, 'data', 'solver', 'runs', 'sf3dc2e6_48fa0906')      # banque v5 2026.11.02-s2, ehs2_texture
 OUT = os.path.join(ROOT, 'data', 'solver', 'g17')
-SETS = {'learn': dict(configs=('hu_25-25', 'hu_18-18', 'hu_12-12'), seed=101),
-        'check': dict(configs=('hu_22-22', 'hu_15-15', 'hu_8-8'), seed=202)}
+SETS = {'learn': dict(configs=('hu_25-25', 'hu_18-18', 'hu_12-12'), seed=101, flops=8),
+        'check': dict(configs=('hu_8-8', 'hu_15-15', 'hu_22-22'), seed=202, flops=6)}
 SUBGAMES = {'raise': 'SB-raise', 'iso': 'SB-call_BB-raise'}     # préfixe de la clé du nœud terminal (ligne préflop)
 
 
@@ -159,7 +159,7 @@ def report(out, name, shrink):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--set', choices=list(SETS), default='learn'); ap.add_argument('--configs', help='sous-ensemble des configurations du jeu, séparées par des virgules')
-    ap.add_argument('--subgames', default='raise,iso'); ap.add_argument('--flops', type=int, default=12); ap.add_argument('--iters', type=int, default=100)
+    ap.add_argument('--subgames', default='raise,iso'); ap.add_argument('--flops', type=int, help='flops par sous-jeu (par défaut : 8 pour learn, 6 pour check)'); ap.add_argument('--iters', type=int, default=100)
     ap.add_argument('--preset', default='ehs2_texture'); ap.add_argument('--threads', type=int, default=0)
     ap.add_argument('--low-memory', action='store_true'); ap.add_argument('--min-weight', type=float, default=1e-3)
     ap.add_argument('--bank', default=BANK); ap.add_argument('--out', default=OUT)
@@ -174,7 +174,7 @@ def main():
         sgs, _ = subgames(os.path.join(a.bank, c + '.json'))
         for name in a.subgames.split(','):
             if name not in sgs: print(f'{c} : pas de sous-jeu {name}'); continue
-            run_job(c, name, sgs[name], a.flops, st['seed'], a.iters, a.preset, a.low_memory, a.min_weight, a.out, log=lambda m: print(m, flush=True))
+            run_job(c, name, sgs[name], a.flops or st['flops'], st['seed'], a.iters, a.preset, a.low_memory, a.min_weight, a.out, log=lambda m: print(m, flush=True))
     print('FIN', flush=True)
 
 
