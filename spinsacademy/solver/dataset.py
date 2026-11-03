@@ -29,7 +29,7 @@ from .. import allin, hrc, importer
 from ..cards import NAMES
 from ..grading import MIXED_MIN
 from ..postflop.hu_solver import PRESETS, PostflopConfig
-from . import calibration
+from . import calibration, correction
 from .cfr import Solver
 from .postflop import Showdown
 from .tree import POS, TreeConfig
@@ -74,6 +74,8 @@ class SolveParams:
     post_warm: int = 1000
     rare_mass: float = 0.001
     rare_iters: int = 500
+    # G17 (03/11/2026) : table de correction des pots relancés apprise du calcul exact (solver.correction), None : aucune
+    correction: object = None
 
 
 LEGACY = dict(warm=False, rare_mass=0.0)          # réglages des banques calculées avant ces accélérations (manifeste sans ces champs)
@@ -97,8 +99,16 @@ def tree_id(cfg):
     return 's' + _md5(d)[:7]
 
 
+def params_key(params):
+    """réglages comptés dans l'empreinte : un champ ajouté après coup n'y entre que s'il est utilisé (correction G17), pour
+    que les résultats déjà calculés gardent la leur"""
+    d = dataclasses.asdict(params)
+    if d.get('correction') is None: d.pop('correction', None)
+    return d
+
+
 def run_id(cfg, params):
-    return f'{tree_id(cfg)}_{_md5([dataclasses.asdict(cfg), dataclasses.asdict(params), SOLVER_VERSION])}'
+    return f'{tree_id(cfg)}_{_md5([dataclasses.asdict(cfg), params_key(params), SOLVER_VERSION])}'
 
 
 def config_name(stacks):
@@ -126,7 +136,8 @@ def solve(stacks, cfg, params, workers=4, log=print):
         s, _, history = full(stacks, cfg, outer=params.outer, pre_iters=params.pre_iters, post_iters=params.post_iters,
                              pf_cfg=PostflopConfig(**params.postflop), boards=params.boards, workers=workers, seed=params.seed,
                              damping=params.damping, log=log, tol_mbb=params.tol_mbb, warm=params.warm,
-                             post_warm=params.post_warm, rare_mass=params.rare_mass, rare_iters=params.rare_iters)
+                             post_warm=params.post_warm, rare_mass=params.rare_mass, rare_iters=params.rare_iters,
+                             correction=params.correction)
     else:
         raise ValueError(f'modèle inconnu : {params.model}')
     expl = [round(1000 * x, 3) for x in s.exploitability()]
@@ -312,6 +323,7 @@ if __name__ == '__main__':
     ap.add_argument('--workers', type=int, default=4, help='processus pour les sous-jeux postflop (mettre le nombre de cœurs)')
     ap.add_argument('--tree', default='reference', choices=list(TREES), help='reference : BTN 2,3 BB, SB 3,5 BB ; v5 : ouvertures à 2 BB')
     ap.add_argument('--postflop', default='production', choices=list(PRESETS), help='réglage de regroupement après le flop (G13)')
+    ap.add_argument('--correction', help='table de correction des pots relancés (G17), dans spinsacademy/solver/corrections/ ; sans : aucune')
     a = ap.parse_args()
     if a.check:
         ok, diff = check(a.check, os.path.dirname(os.path.dirname(a.out)), a.workers)
@@ -319,6 +331,7 @@ if __name__ == '__main__':
     if not a.version or not (a.configs or a.grid): ap.error('--version et --configs (ou --grid) sont requis')
     configs = [st for _, st in GRID_P1] if a.grid else parse_configs(a.configs)
     p = SolveParams(model=a.model, pre_iters=a.pre_iters, outer=a.outer, post_iters=a.post_iters, boards=a.boards,
-                    postflop=dataclasses.asdict(PostflopConfig(**PRESETS[a.postflop])))
+                    postflop=dataclasses.asdict(PostflopConfig(**PRESETS[a.postflop])), correction=a.correction)
+    if a.correction: correction.get(a.correction)                # table absente : erreur avant de lancer la grille
     m = publish(a.version, a.out, configs, cfg=TREES[a.tree], params=p, workers=a.workers)
     print(f"{m['spots']} spots publiés en staging : {m['version']} ({len(m['configs'])} configurations, {m['questions_eligible']} questions)")

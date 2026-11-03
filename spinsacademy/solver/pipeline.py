@@ -20,6 +20,7 @@ from ..cards import DISJOINT as D, W
 from ..postflop import fast
 from ..postflop.hu_solver import HUPostflop, PostflopConfig
 from .cfr import Solver
+from . import correction
 from .postflop import Realization, fit_offsets
 from .tree import TreeConfig
 
@@ -51,12 +52,14 @@ def _init_pool(files):
 def _subgame(job):
     """un sous-jeu postflop ; state : regrets du même sous-jeu au tour précédent (reprise), ou None. La stratégie moyenne
     repart de zéro : elle ne doit refléter que les ranges de ce tour"""
-    pot, stack, w0, w1, iters, cfg, seed, aggressor, state = job
+    pot, stack, w0, w1, iters, cfg, seed, aggressor, state, corr = job
     g = HUPostflop(pot, stack, cfg, aggressor=aggressor); g._arrays()
     if state is not None:
         g.Rf[:] = state
     g.fast_solve(w0, w1, _POOL, iters=iters, seed=seed)
     G0, G1 = g.fast_evaluate(w0, w1, _POOL)
+    if corr:                                                 # G17 : écart exact - abstrait appris (solver.correction)
+        G0, G1 = correction.get(corr).apply(pot, stack, aggressor, G0, G1)
     return G0, G1, g.root_frequencies(w0, _POOL), g.Rf.astype(np.float32)
 
 
@@ -70,13 +73,14 @@ def strategy_shift(a, b):
 
 
 def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=None, boards=1000, workers=4, seed=1, damping=0.5, log=print, tol=None, tol_mbb=None,
-          warm=False, post_warm=1000, rare_mass=0.0, rare_iters=500):
+          warm=False, post_warm=1000, rare_mass=0.0, rare_iters=500, correction=None):
     """warm : à partir du 2e tour, chaque sous-jeu postflop repart des regrets du même sous-jeu au tour précédent (la stratégie
     moyenne, elle, repart de zéro : elle ne doit refléter que les ranges de ce tour), avec post_warm itérations au lieu de
     post_iters. Le préflop, lui, est toujours résolu depuis zéro (2 à 40 s) : repris, ses nœuds peu joués (le BB qui part à
     tapis sur une relance, par exemple) n'apprenaient plus rien et gardaient des fréquences sans valeur. rare_mass : un sous-jeu dont la masse (probabilité que ses deux
     ranges arrivent au flop) pèse moins de rare_mass de la masse de tous les sous-jeux reçoit au plus rare_iters itérations
-    (rare_iters // 2 en reprise) : ces lignes comptent peu dans les EV préflop."""
+    (rare_iters // 2 en reprise) : ces lignes comptent peu dans les EV préflop. correction : nom d'une table de
+    solver.correction (G17), ajoutée aux gains postflop des pots relancés avant fit_offsets ; None : aucune."""
     pf_cfg = pf_cfg or PostflopConfig(); model = Realization(); history = []; states = {}
     ctx = mp.get_context('fork' if 'fork' in mp.get_all_start_methods() else 'spawn')   # Windows : pas de fork
     files = pool_files(boards, pf_cfg.buckets, pf_cfg.rollouts, seed, pf_cfg.metric, pf_cfg.textured, pf_cfg.flop_buckets)
@@ -92,7 +96,7 @@ def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=Non
                 key = (nd.id, o, i); st = states.get(key) if warm else None
                 it = post_iters if st is None else post_warm
                 if mass[j] < rare_mass * tot: it = min(it, rare_iters if st is None else rare_iters // 2)
-                jobs.append((pot, stack, reach[nd.id][o], reach[nd.id][i], it, pf_cfg, seed + 17 * j + 1009 * k * warm, ag, st))
+                jobs.append((pot, stack, reach[nd.id][o], reach[nd.id][i], it, pf_cfg, seed + 17 * j + 1009 * k * warm, ag, st, correction))
             results = pool.map(_subgame, jobs)
             roots = {}
             for (nd, o, i, pot, stack, _), (G0, G1, rf, st) in zip(subs, results):
