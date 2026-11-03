@@ -207,3 +207,25 @@ Ce qui a changé (`solver/pipeline.py`, réglages enregistrés dans chaque résu
 Essayé et écarté : reprendre aussi le préflop d'un tour à l'autre. Plus rapide, mais les nœuds peu joués (calls de tapis en fin de ligne à 3 joueurs, le BB qui part à tapis sur une relance) n'apprenaient plus rien et gardaient des fréquences sans valeur (perte de 300 à 750 mBB sur ces nœuds). Le préflop reste résolu depuis zéro à chaque tour.
 
 Les banques calculées avant ces accélérations se recalculent toujours à l'identique (`--check`) : les réglages absents de leur manifeste sont ceux d'avant (`dataset.params_of`).
+
+### G17 : paires et Kx faibles sous-évalués dans les pots relancés, diagnostic (03/11/2026)
+
+Outil : `tools/solver/exact_check.py` (sous-jeu résolu exactement à partir de la turn ou de la river, comparé à la stratégie abstraite rejouée sur les mêmes boards). Pot relancé heads-up 25 BB (le SB relance à 3,5 BB, le BB paie : pot 7 BB, 21,5 BB derrière), ranges de la référence (`v3/hand_18`), réglage `ehs2_texture`. Écart abstrait − exact pour l'appelant (BB, hors de position), en mBB :
+
+| Variante | Rue de départ | Exploitabilité abstraite | Paires | Connecteurs assortis | As dépareillés | Broadways dépareillés |
+|---|---|---|---|---|---|---|
+| `ehs2_texture` | river (200 boards) | 4,9 % du pot | −124 | −36 | +4 | +49 |
+| `ehs2_texture` | turn (40 boards) | 8,7 % | **−387** | −148 | −78 | +96 |
+| 48 groupes au lieu de 16 | turn | 8,8 % | −390 | −158 | −83 | +83 |
+| 30 000 itérations au lieu de 3 000 | turn | 10,2 % | −356 | −148 | −57 | +57 |
+| groupes par joueur contre la range adverse (`strength_vs`) | turn | **6,8 %** | −356 | −131 | −198 | +70 |
+
+Lecture :
+- le défaut existe dès la turn (presque pas à la river) ; ce n'est ni la finesse des groupes, ni la convergence, ni la mesure de force (contre une main au hasard ou contre la range adverse) ;
+- il touche les mains qui attrapent les bluffs (paires, y compris JJ et 99) et les petites mains assorties de l'appelant ; le relanceur, lui, gagne avec ses As et broadways non appariés. C'est la signature d'une stratégie partagée entre des boards différents : ces mains ont besoin de décisions propres au board (payer ici, se coucher là), qu'un groupe de force commun à tous les boards ne peut pas prendre ;
+- les groupes contre la range adverse rendent la stratégie nettement moins exploitable (−22 %) sans corriger les paires : l'option reste disponible (`board_pool(ranges=...)`, `exact_check.py --range-aware`), non branchée dans la grille.
+
+Options pour la suite (décision à prendre) :
+1. **Correction apprise du calcul exact** : estimer, sur un échantillon de flops résolus exactement, l'écart exact − abstrait du gain postflop par classe de mains et type de pot (limpé, iso payé, relance payée ; profondeur), et l'ajouter aux gains avant le modèle de réalisation. Coût de calcul : des mesures exactes une fois pour toutes (quelques heures sur l'ordinateur), rien de plus par grille. Limite : la correction dépend un peu des ranges.
+2. **Sous-jeux résolus board par board** pour les pots relancés à 16 BB et plus (calcul exact par flop sur un échantillon de flops pondéré) : le plus juste, mais la grille passerait de 5 h à plusieurs jours.
+3. **Garder le défaut**, documenté, pour la banque v5 : il pèse sur les décisions qui vont au flop dans les pots relancés à 20-25 BB.
