@@ -1,0 +1,1299 @@
+{
+ "table": "g17-v1",
+ "learn": {
+  "hu_25-25 iso oop_aggressor": {
+   "spr": 3.67,
+   "flops": 8,
+   "rms_before_mbb": 309,
+   "rms_after_mbb": 119,
+   "families": {
+    "As assortis": [
+     -178.0,
+     -2.0
+    ],
+    "As dépareillés": [
+     -61.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     -176.0,
+     -1.0
+    ],
+    "Kx dépareillés": [
+     -198.0,
+     -1.0
+    ],
+    "autres assorties": [
+     129.0,
+     1.0
+    ],
+    "autres dépareillées": [
+     262.0,
+     0.0
+    ],
+    "broadways dépareillés": [
+     89.0,
+     -2.0
+    ],
+    "connecteurs assortis": [
+     272.0,
+     -0.0
+    ],
+    "grosses paires": [
+     -310.0,
+     3.0
+    ],
+    "paires moyennes": [
+     301.0,
+     -0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.99,
+   "exploitability_exact_pct": 0.55
+  },
+  "hu_25-25 iso ip_caller": {
+   "spr": 3.67,
+   "flops": 8,
+   "rms_before_mbb": 215,
+   "rms_after_mbb": 104,
+   "families": {
+    "As assortis": [
+     -59.0,
+     -2.0
+    ],
+    "As dépareillés": [
+     54.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     -232.0,
+     -2.0
+    ],
+    "Kx dépareillés": [
+     -156.0,
+     -3.0
+    ],
+    "autres assorties": [
+     116.0,
+     -1.0
+    ],
+    "autres dépareillées": [
+     24.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -118.0,
+     -2.0
+    ],
+    "connecteurs assortis": [
+     327.0,
+     -1.0
+    ],
+    "grosses paires": [
+     -628.0,
+     -2.0
+    ],
+    "paires moyennes": [
+     278.0,
+     -1.0
+    ],
+    "petites paires": [
+     590.0,
+     -2.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.99,
+   "exploitability_exact_pct": 0.55
+  },
+  "hu_25-25 raise oop_caller": {
+   "spr": 5.75,
+   "flops": 8,
+   "rms_before_mbb": 412,
+   "rms_after_mbb": 174,
+   "families": {
+    "As assortis": [
+     627.0,
+     -2.0
+    ],
+    "As dépareillés": [
+     638.0,
+     -3.0
+    ],
+    "Kx assortis": [
+     -300.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -306.0,
+     -0.0
+    ],
+    "autres assorties": [
+     180.0,
+     0.0
+    ],
+    "autres dépareillées": [
+     64.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -157.0,
+     0.0
+    ],
+    "connecteurs assortis": [
+     203.0,
+     -1.0
+    ],
+    "grosses paires": [
+     0.0,
+     0.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 18.65,
+   "exploitability_exact_pct": 0.73
+  },
+  "hu_25-25 raise ip_aggressor": {
+   "spr": 5.75,
+   "flops": 8,
+   "rms_before_mbb": 251,
+   "rms_after_mbb": 117,
+   "families": {
+    "As assortis": [
+     -5.0,
+     -1.0
+    ],
+    "As dépareillés": [
+     5.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     -61.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -47.0,
+     -1.0
+    ],
+    "autres assorties": [
+     179.0,
+     0.0
+    ],
+    "autres dépareillées": [
+     152.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -115.0,
+     -0.0
+    ],
+    "connecteurs assortis": [
+     183.0,
+     -1.0
+    ],
+    "grosses paires": [
+     24.0,
+     2.0
+    ],
+    "paires moyennes": [
+     493.0,
+     -0.0
+    ],
+    "petites paires": [
+     345.0,
+     -3.0
+    ]
+   },
+   "exploitability_abstract_pct": 18.65,
+   "exploitability_exact_pct": 0.73
+  },
+  "hu_18-18 iso oop_aggressor": {
+   "spr": 2.5,
+   "flops": 8,
+   "rms_before_mbb": 170,
+   "rms_after_mbb": 74,
+   "families": {
+    "As assortis": [
+     48.0,
+     -1.0
+    ],
+    "As dépareillés": [
+     8.0,
+     -0.0
+    ],
+    "Kx assortis": [
+     -82.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -81.0,
+     -0.0
+    ],
+    "autres assorties": [
+     9.0,
+     0.0
+    ],
+    "autres dépareillées": [
+     123.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -90.0,
+     1.0
+    ],
+    "connecteurs assortis": [
+     33.0,
+     -0.0
+    ],
+    "grosses paires": [
+     -200.0,
+     0.0
+    ],
+    "paires moyennes": [
+     211.0,
+     -5.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 11.38,
+   "exploitability_exact_pct": 0.24
+  },
+  "hu_18-18 iso ip_caller": {
+   "spr": 2.5,
+   "flops": 8,
+   "rms_before_mbb": 185,
+   "rms_after_mbb": 79,
+   "families": {
+    "As assortis": [
+     216.0,
+     -0.0
+    ],
+    "As dépareillés": [
+     234.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     27.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     104.0,
+     -1.0
+    ],
+    "autres assorties": [
+     49.0,
+     -0.0
+    ],
+    "autres dépareillées": [
+     -20.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -340.0,
+     1.0
+    ],
+    "connecteurs assortis": [
+     154.0,
+     -1.0
+    ],
+    "grosses paires": [
+     -91.0,
+     0.0
+    ],
+    "paires moyennes": [
+     113.0,
+     -4.0
+    ],
+    "petites paires": [
+     368.0,
+     -2.0
+    ]
+   },
+   "exploitability_abstract_pct": 11.38,
+   "exploitability_exact_pct": 0.24
+  },
+  "hu_18-18 raise oop_caller": {
+   "spr": 4.0,
+   "flops": 8,
+   "rms_before_mbb": 138,
+   "rms_after_mbb": 65,
+   "families": {
+    "As assortis": [
+     0.0,
+     0.0
+    ],
+    "As dépareillés": [
+     113.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     17.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -14.0,
+     -0.0
+    ],
+    "autres assorties": [
+     136.0,
+     -0.0
+    ],
+    "autres dépareillées": [
+     50.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -18.0,
+     -1.0
+    ],
+    "connecteurs assortis": [
+     164.0,
+     -1.0
+    ],
+    "grosses paires": [
+     0.0,
+     0.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 13.63,
+   "exploitability_exact_pct": 0.48
+  },
+  "hu_18-18 raise ip_aggressor": {
+   "spr": 4.0,
+   "flops": 8,
+   "rms_before_mbb": 95,
+   "rms_after_mbb": 47,
+   "families": {
+    "As assortis": [
+     25.0,
+     -0.0
+    ],
+    "As dépareillés": [
+     -31.0,
+     -0.0
+    ],
+    "Kx assortis": [
+     11.0,
+     0.0
+    ],
+    "Kx dépareillés": [
+     -32.0,
+     0.0
+    ],
+    "autres assorties": [
+     41.0,
+     -0.0
+    ],
+    "autres dépareillées": [
+     4.0,
+     0.0
+    ],
+    "broadways dépareillés": [
+     91.0,
+     -0.0
+    ],
+    "connecteurs assortis": [
+     38.0,
+     0.0
+    ],
+    "grosses paires": [
+     237.0,
+     2.0
+    ],
+    "paires moyennes": [
+     221.0,
+     0.0
+    ],
+    "petites paires": [
+     139.0,
+     -0.0
+    ]
+   },
+   "exploitability_abstract_pct": 13.63,
+   "exploitability_exact_pct": 0.48
+  },
+  "hu_12-12 iso oop_aggressor": {
+   "spr": 1.5,
+   "flops": 8,
+   "rms_before_mbb": 256,
+   "rms_after_mbb": 89,
+   "families": {
+    "As assortis": [
+     88.0,
+     0.0
+    ],
+    "As dépareillés": [
+     -15.0,
+     -0.0
+    ],
+    "Kx assortis": [
+     -122.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -183.0,
+     0.0
+    ],
+    "autres assorties": [
+     10.0,
+     0.0
+    ],
+    "autres dépareillées": [
+     239.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     75.0,
+     0.0
+    ],
+    "connecteurs assortis": [
+     26.0,
+     0.0
+    ],
+    "grosses paires": [
+     -85.0,
+     0.0
+    ],
+    "paires moyennes": [
+     319.0,
+     -1.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 9.94,
+   "exploitability_exact_pct": 0.23
+  },
+  "hu_12-12 iso ip_caller": {
+   "spr": 1.5,
+   "flops": 8,
+   "rms_before_mbb": 167,
+   "rms_after_mbb": 77,
+   "families": {
+    "As assortis": [
+     54.0,
+     0.0
+    ],
+    "As dépareillés": [
+     0.0,
+     0.0
+    ],
+    "Kx assortis": [
+     -211.0,
+     0.0
+    ],
+    "Kx dépareillés": [
+     -228.0,
+     -0.0
+    ],
+    "autres assorties": [
+     186.0,
+     -0.0
+    ],
+    "autres dépareillées": [
+     14.0,
+     -0.0
+    ],
+    "broadways dépareillés": [
+     -169.0,
+     -1.0
+    ],
+    "connecteurs assortis": [
+     274.0,
+     -0.0
+    ],
+    "grosses paires": [
+     -80.0,
+     -0.0
+    ],
+    "paires moyennes": [
+     486.0,
+     -2.0
+    ],
+    "petites paires": [
+     133.0,
+     -1.0
+    ]
+   },
+   "exploitability_abstract_pct": 9.94,
+   "exploitability_exact_pct": 0.23
+  },
+  "hu_12-12 raise oop_caller": {
+   "spr": 2.5,
+   "flops": 8,
+   "rms_before_mbb": 232,
+   "rms_after_mbb": 83,
+   "families": {
+    "As assortis": [
+     0.0,
+     0.0
+    ],
+    "As dépareillés": [
+     0.0,
+     0.0
+    ],
+    "Kx assortis": [
+     381.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     372.0,
+     -1.0
+    ],
+    "autres assorties": [
+     241.0,
+     -0.0
+    ],
+    "autres dépareillées": [
+     118.0,
+     -1.0
+    ],
+    "broadways dépareillés": [
+     261.0,
+     -0.0
+    ],
+    "connecteurs assortis": [
+     253.0,
+     -1.0
+    ],
+    "grosses paires": [
+     -32.0,
+     0.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.12,
+   "exploitability_exact_pct": 0.26
+  },
+  "hu_12-12 raise ip_aggressor": {
+   "spr": 2.5,
+   "flops": 8,
+   "rms_before_mbb": 181,
+   "rms_after_mbb": 71,
+   "families": {
+    "As assortis": [
+     106.0,
+     0.0
+    ],
+    "As dépareillés": [
+     -9.0,
+     0.0
+    ],
+    "Kx assortis": [
+     -116.0,
+     -0.0
+    ],
+    "Kx dépareillés": [
+     -231.0,
+     0.0
+    ],
+    "autres assorties": [
+     189.0,
+     0.0
+    ],
+    "autres dépareillées": [
+     89.0,
+     0.0
+    ],
+    "broadways dépareillés": [
+     9.0,
+     0.0
+    ],
+    "connecteurs assortis": [
+     202.0,
+     0.0
+    ],
+    "grosses paires": [
+     369.0,
+     1.0
+    ],
+    "paires moyennes": [
+     350.0,
+     0.0
+    ],
+    "petites paires": [
+     154.0,
+     -0.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.12,
+   "exploitability_exact_pct": 0.26
+  }
+ },
+ "check": {
+  "hu_8-8 iso oop_aggressor": {
+   "spr": 0.83,
+   "flops": 6,
+   "rms_before_mbb": 168,
+   "rms_after_mbb": 168,
+   "families": {
+    "As assortis": [
+     27.0,
+     27.0
+    ],
+    "As dépareillés": [
+     13.0,
+     13.0
+    ],
+    "Kx assortis": [
+     66.0,
+     66.0
+    ],
+    "Kx dépareillés": [
+     31.0,
+     31.0
+    ],
+    "autres assorties": [
+     18.0,
+     18.0
+    ],
+    "autres dépareillées": [
+     133.0,
+     133.0
+    ],
+    "broadways dépareillés": [
+     108.0,
+     108.0
+    ],
+    "connecteurs assortis": [
+     37.0,
+     37.0
+    ],
+    "grosses paires": [
+     69.0,
+     69.0
+    ],
+    "paires moyennes": [
+     112.0,
+     112.0
+    ],
+    "petites paires": [
+     48.0,
+     48.0
+    ]
+   },
+   "exploitability_abstract_pct": 5.54,
+   "exploitability_exact_pct": 0.04
+  },
+  "hu_8-8 iso ip_caller": {
+   "spr": 0.83,
+   "flops": 6,
+   "rms_before_mbb": 81,
+   "rms_after_mbb": 81,
+   "families": {
+    "As assortis": [
+     0.0,
+     0.0
+    ],
+    "As dépareillés": [
+     0.0,
+     0.0
+    ],
+    "Kx assortis": [
+     0.0,
+     0.0
+    ],
+    "Kx dépareillés": [
+     0.0,
+     0.0
+    ],
+    "autres assorties": [
+     -14.0,
+     -14.0
+    ],
+    "autres dépareillées": [
+     -25.0,
+     -25.0
+    ],
+    "broadways dépareillés": [
+     0.0,
+     0.0
+    ],
+    "connecteurs assortis": [
+     -48.0,
+     -48.0
+    ],
+    "grosses paires": [
+     -100.0,
+     -100.0
+    ],
+    "paires moyennes": [
+     18.0,
+     18.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 5.54,
+   "exploitability_exact_pct": 0.04
+  },
+  "hu_8-8 raise oop_caller": {
+   "spr": 1.5,
+   "flops": 6,
+   "rms_before_mbb": 400,
+   "rms_after_mbb": 400,
+   "families": {
+    "As assortis": [
+     589.0,
+     589.0
+    ],
+    "As dépareillés": [
+     623.0,
+     623.0
+    ],
+    "Kx assortis": [
+     399.0,
+     399.0
+    ],
+    "Kx dépareillés": [
+     409.0,
+     409.0
+    ],
+    "autres assorties": [
+     244.0,
+     244.0
+    ],
+    "autres dépareillées": [
+     188.0,
+     188.0
+    ],
+    "broadways dépareillés": [
+     461.0,
+     461.0
+    ],
+    "connecteurs assortis": [
+     199.0,
+     199.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 13.07,
+   "exploitability_exact_pct": 0.16
+  },
+  "hu_8-8 raise ip_aggressor": {
+   "spr": 1.5,
+   "flops": 6,
+   "rms_before_mbb": 66,
+   "rms_after_mbb": 66,
+   "families": {
+    "As assortis": [
+     -29.0,
+     -29.0
+    ],
+    "As dépareillés": [
+     0.0,
+     0.0
+    ],
+    "Kx assortis": [
+     -31.0,
+     -31.0
+    ],
+    "Kx dépareillés": [
+     0.0,
+     0.0
+    ],
+    "autres assorties": [
+     -7.0,
+     -7.0
+    ],
+    "autres dépareillées": [
+     0.0,
+     0.0
+    ],
+    "broadways dépareillés": [
+     -292.0,
+     -292.0
+    ],
+    "connecteurs assortis": [
+     2.0,
+     2.0
+    ],
+    "grosses paires": [
+     0.0,
+     0.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 13.07,
+   "exploitability_exact_pct": 0.16
+  },
+  "hu_15-15 iso oop_aggressor": {
+   "spr": 2.0,
+   "flops": 6,
+   "rms_before_mbb": 405,
+   "rms_after_mbb": 277,
+   "families": {
+    "As assortis": [
+     161.0,
+     94.0
+    ],
+    "As dépareillés": [
+     0.0,
+     4.0
+    ],
+    "Kx assortis": [
+     -126.0,
+     -24.0
+    ],
+    "Kx dépareillés": [
+     -188.0,
+     -57.0
+    ],
+    "autres assorties": [
+     0.0,
+     -9.0
+    ],
+    "autres dépareillées": [
+     436.0,
+     254.0
+    ],
+    "broadways dépareillés": [
+     0.0,
+     7.0
+    ],
+    "connecteurs assortis": [
+     98.0,
+     68.0
+    ],
+    "grosses paires": [
+     -565.0,
+     -420.0
+    ],
+    "paires moyennes": [
+     265.0,
+     4.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 11.43,
+   "exploitability_exact_pct": 0.29
+  },
+  "hu_15-15 iso ip_caller": {
+   "spr": 2.0,
+   "flops": 6,
+   "rms_before_mbb": 227,
+   "rms_after_mbb": 202,
+   "families": {
+    "As assortis": [
+     211.0,
+     76.0
+    ],
+    "As dépareillés": [
+     0.0,
+     -118.0
+    ],
+    "Kx assortis": [
+     24.0,
+     115.0
+    ],
+    "Kx dépareillés": [
+     111.0,
+     173.0
+    ],
+    "autres assorties": [
+     99.0,
+     -20.0
+    ],
+    "autres dépareillées": [
+     4.0,
+     6.0
+    ],
+    "broadways dépareillés": [
+     -356.0,
+     -103.0
+    ],
+    "connecteurs assortis": [
+     194.0,
+     -22.0
+    ],
+    "grosses paires": [
+     -817.0,
+     -730.0
+    ],
+    "paires moyennes": [
+     287.0,
+     -8.0
+    ],
+    "petites paires": [
+     308.0,
+     56.0
+    ]
+   },
+   "exploitability_abstract_pct": 11.43,
+   "exploitability_exact_pct": 0.29
+  },
+  "hu_15-15 raise oop_caller": {
+   "spr": 3.25,
+   "flops": 6,
+   "rms_before_mbb": 144,
+   "rms_after_mbb": 141,
+   "families": {
+    "As assortis": [
+     0.0,
+     0.0
+    ],
+    "As dépareillés": [
+     0.0,
+     -58.0
+    ],
+    "Kx assortis": [
+     -41.0,
+     -240.0
+    ],
+    "Kx dépareillés": [
+     -46.0,
+     -224.0
+    ],
+    "autres assorties": [
+     186.0,
+     -3.0
+    ],
+    "autres dépareillées": [
+     107.0,
+     23.0
+    ],
+    "broadways dépareillés": [
+     -57.0,
+     -177.0
+    ],
+    "connecteurs assortis": [
+     252.0,
+     42.0
+    ],
+    "grosses paires": [
+     0.0,
+     16.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 14.39,
+   "exploitability_exact_pct": 0.39
+  },
+  "hu_15-15 raise ip_aggressor": {
+   "spr": 3.25,
+   "flops": 6,
+   "rms_before_mbb": 195,
+   "rms_after_mbb": 139,
+   "families": {
+    "As assortis": [
+     -9.0,
+     -76.0
+    ],
+    "As dépareillés": [
+     -44.0,
+     -26.0
+    ],
+    "Kx assortis": [
+     -210.0,
+     -158.0
+    ],
+    "Kx dépareillés": [
+     -222.0,
+     -91.0
+    ],
+    "autres assorties": [
+     150.0,
+     35.0
+    ],
+    "autres dépareillées": [
+     143.0,
+     96.0
+    ],
+    "broadways dépareillés": [
+     24.0,
+     -26.0
+    ],
+    "connecteurs assortis": [
+     148.0,
+     28.0
+    ],
+    "grosses paires": [
+     119.0,
+     -183.0
+    ],
+    "paires moyennes": [
+     361.0,
+     75.0
+    ],
+    "petites paires": [
+     140.0,
+     -5.0
+    ]
+   },
+   "exploitability_abstract_pct": 14.39,
+   "exploitability_exact_pct": 0.39
+  },
+  "hu_22-22 iso oop_aggressor": {
+   "spr": 3.17,
+   "flops": 6,
+   "rms_before_mbb": 235,
+   "rms_after_mbb": 154,
+   "families": {
+    "As assortis": [
+     -11.0,
+     71.0
+    ],
+    "As dépareillés": [
+     -26.0,
+     6.0
+    ],
+    "Kx assortis": [
+     -114.0,
+     22.0
+    ],
+    "Kx dépareillés": [
+     -155.0,
+     -6.0
+    ],
+    "autres assorties": [
+     71.0,
+     -6.0
+    ],
+    "autres dépareillées": [
+     195.0,
+     -7.0
+    ],
+    "broadways dépareillés": [
+     -18.0,
+     -26.0
+    ],
+    "connecteurs assortis": [
+     61.0,
+     -108.0
+    ],
+    "grosses paires": [
+     -249.0,
+     14.0
+    ],
+    "paires moyennes": [
+     114.0,
+     -143.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.59,
+   "exploitability_exact_pct": 0.32
+  },
+  "hu_22-22 iso ip_caller": {
+   "spr": 3.17,
+   "flops": 6,
+   "rms_before_mbb": 280,
+   "rms_after_mbb": 251,
+   "families": {
+    "As assortis": [
+     68.0,
+     9.0
+    ],
+    "As dépareillés": [
+     130.0,
+     -1.0
+    ],
+    "Kx assortis": [
+     -207.0,
+     -86.0
+    ],
+    "Kx dépareillés": [
+     -116.0,
+     -71.0
+    ],
+    "autres assorties": [
+     212.0,
+     126.0
+    ],
+    "autres dépareillées": [
+     85.0,
+     81.0
+    ],
+    "broadways dépareillés": [
+     -220.0,
+     -2.0
+    ],
+    "connecteurs assortis": [
+     345.0,
+     93.0
+    ],
+    "grosses paires": [
+     -563.0,
+     -167.0
+    ],
+    "paires moyennes": [
+     -201.0,
+     -403.0
+    ],
+    "petites paires": [
+     263.0,
+     -230.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.59,
+   "exploitability_exact_pct": 0.32
+  },
+  "hu_22-22 raise oop_caller": {
+   "spr": 5.0,
+   "flops": 6,
+   "rms_before_mbb": 252,
+   "rms_after_mbb": 144,
+   "families": {
+    "As assortis": [
+     374.0,
+     12.0
+    ],
+    "As dépareillés": [
+     380.0,
+     -43.0
+    ],
+    "Kx assortis": [
+     4.0,
+     167.0
+    ],
+    "Kx dépareillés": [
+     -27.0,
+     150.0
+    ],
+    "autres assorties": [
+     157.0,
+     -5.0
+    ],
+    "autres dépareillées": [
+     86.0,
+     26.0
+    ],
+    "broadways dépareillés": [
+     -316.0,
+     -218.0
+    ],
+    "connecteurs assortis": [
+     191.0,
+     1.0
+    ],
+    "grosses paires": [
+     0.0,
+     0.0
+    ],
+    "paires moyennes": [
+     0.0,
+     0.0
+    ],
+    "petites paires": [
+     0.0,
+     0.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.17,
+   "exploitability_exact_pct": 0.59
+  },
+  "hu_22-22 raise ip_aggressor": {
+   "spr": 5.0,
+   "flops": 6,
+   "rms_before_mbb": 266,
+   "rms_after_mbb": 202,
+   "families": {
+    "As assortis": [
+     -45.0,
+     -54.0
+    ],
+    "As dépareillés": [
+     -37.0,
+     -29.0
+    ],
+    "Kx assortis": [
+     -71.0,
+     -43.0
+    ],
+    "Kx dépareillés": [
+     -74.0,
+     -38.0
+    ],
+    "autres assorties": [
+     131.0,
+     10.0
+    ],
+    "autres dépareillées": [
+     186.0,
+     95.0
+    ],
+    "broadways dépareillés": [
+     -361.0,
+     -334.0
+    ],
+    "connecteurs assortis": [
+     205.0,
+     82.0
+    ],
+    "grosses paires": [
+     -508.0,
+     -610.0
+    ],
+    "paires moyennes": [
+     73.0,
+     -302.0
+    ],
+    "petites paires": [
+     206.0,
+     -50.0
+    ]
+   },
+   "exploitability_abstract_pct": 15.17,
+   "exploitability_exact_pct": 0.59
+  }
+ }
+}

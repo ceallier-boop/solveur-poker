@@ -38,3 +38,9 @@ def test_run_id_unchanged_without_correction():
     p = ds.SolveParams(outer=10, postflop=dataclasses.asdict(ds.PostflopConfig(**ds.PRESETS['ehs2_texture'])))
     assert ds.run_id(ds.TREES['v5'], p) == 'sf3dc2e6_48fa0906'     # banque 2026.11.02-s2
     assert ds.run_id(ds.TREES['v5'], dataclasses.replace(p, correction='g17-v1')) != 'sf3dc2e6_48fa0906'
+
+
+def test_min_stack():
+    d = table().data; d['min_stack'] = 12; t = corr.Table(d); G = np.ones(169)
+    assert t.apply(4.0, 16.0, 1, G, G, eff=8)[0] is G
+    assert not np.allclose(t.apply(4.0, 16.0, 1, G, G, eff=12)[0], G)

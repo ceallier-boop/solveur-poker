@@ -237,3 +237,28 @@ Options pour la suite (décision à prendre) :
 - Apprentissage : `tools/solver/learn_correction.py`. Sous-jeux tirés de la banque v5 (ranges réelles d'arrivée au flop) : relance payée (`SB-raise2_BB-call`) et iso payé (`SB-call_BB-raise3_SB-call`). Jeu d'apprentissage HU 25, 18, 12 (8 flops par pot) ; jeu de contrôle HU 22, 15, 8 (6 flops par pot, autre graine) : tapis et flops jamais vus à l'apprentissage. Écart par classe rapproché de la moyenne de sa famille selon la masse observée (classes peu jouées).
 - Coût mesuré : 1 308 s par flop pour la relance payée à 25 BB, 1 354 s pour l'iso payé (4 cœurs), mémoire 3,2 Go (`--low-memory`). Apprentissage 12 à 15 h : action O6 sur l'ordinateur du porteur ; contrôle dans la session cloud.
 - Premier flop (sonde, non retenu) : l'écart d'un flop isolé atteint 1,5 BB sur une famille (Kx de l'appelant sur un flop à roi) : la correction n'a de sens qu'en moyenne sur de nombreux flops, d'où le contrôle hors échantillon avant toute grille.
+
+### G17 : table `g17-v1` et contrôle hors échantillon (04/11/2026)
+
+Apprentissage : O6 (HU 25, 18, 12 ; relance payée et iso payé ; 8 flops chacun, 48 flops, 100 itérations, exploitabilité exacte ≤ 1,1 % du pot). Contrôle : HU 22, 15, 8, 6 flops chacun, autre graine (calcul cloud). Écart quadratique exact − abstrait par classe (mBB, pondéré par la range du joueur), **jeu de contrôle seul**, sans correction → avec :
+
+| Configuration | Pot | Rôle | Sans | Avec (min 0 BB) | Avec `g17-v1` (≥ 12 BB) |
+|---|---|---|---|---|---|
+| HU 22 | relance payée | OOP appelant | 252 | 144 | 144 |
+| HU 22 | relance payée | IP relanceur | 266 | 202 | 202 |
+| HU 22 | iso payé | OOP relanceur | 235 | 154 | 154 |
+| HU 22 | iso payé | IP appelant | 280 | 251 | 251 |
+| HU 15 | relance payée | OOP appelant | 144 | 141 | 141 |
+| HU 15 | relance payée | IP relanceur | 195 | 139 | 139 |
+| HU 15 | iso payé | OOP relanceur | 405 | 277 | 277 |
+| HU 15 | iso payé | IP appelant | 227 | 202 | 202 |
+| HU 8 | relance payée | OOP appelant | 400 | 351 | 400 |
+| HU 8 | relance payée | IP relanceur | **66** | **107** | 66 |
+| HU 8 | iso payé | OOP relanceur | 168 | 142 | 168 |
+| HU 8 | iso payé | IP appelant | **81** | **106** | 81 |
+
+- 15 et 22 BB : l'écart baisse dans les 8 cas (−2 % à −43 %). Le reste (140 à 280 mBB) comprend le bruit du contrôle lui-même (6 flops ; un flop isolé s'écarte de plus d'1 BB sur une famille), à comparer aux 47 à 89 mBB sur l'échantillon d'apprentissage.
+- 8 BB : deux rôles sur quatre se dégradent, et le plus gros défaut (l'appelant de la relance, As +600 mBB) n'est pas corrigé, faute d'As dans les ranges apprises à ce SPR. D'où `min_stack = 12` dans `g17-v1` : la correction ne s'applique qu'aux duels dont le plus petit tapis de départ atteint 12 BB. Le défaut à 8 BB reste ouvert.
+- Choix du lissage (`shrink`, équivalent flops vers la moyenne de la famille) : 4, 8, 20, 60 donnent des écarts de contrôle voisins (15-22 BB : 189 à 210) ; 8 retenu.
+- L'exploitabilité postflop abstraite (5,5 à 15,6 % du pot) ne change pas : la correction agit sur les valeurs transmises au préflop, pas sur le jeu postflop. Son effet se mesure en comparant les grilles 2026.11.02-s2 (sans) et 2026.11.04-s3 (avec, O7).
+- Essai rapide (HU 15, réglages réduits) : face à l'ouverture du SB, le BB passe de 58 % de fold à 88 % de call avec K5o, dans le sens des coachs.

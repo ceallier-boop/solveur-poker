@@ -119,7 +119,8 @@ def evaluate(rs, table):
         pot, stack, ag = any_r['pot'], any_r['stack'], any_r['aggressor']
         den = a['den']; ok = den > 0
         d = np.where(ok, a['d_num'] / np.where(ok, den, 1), 0)                  # BB : exact - abstrait
-        c = pot * table(corr.role(p, ag), stack / pot) if table else np.zeros(169)
+        eff = min(float(x) for x in cfg.split('_')[1].split('-'))           # tapis de départ effectif du duel
+        c = pot * table(corr.role(p, ag), stack / pot) if table and eff >= table.min_stack else np.zeros(169)
         w = den * W                                                              # masse observée (range x compatibilité)
         fams = {}
         for f in sorted(set(corr.FAMILY)):
@@ -135,13 +136,13 @@ def evaluate(rs, table):
     return out
 
 
-def report(out, name, shrink):
+def report(out, name, shrink, min_stack=0.0):
     learn = rows(out, SETS['learn']['configs']); check = rows(out, SETS['check']['configs'])
     if not learn: raise SystemExit('aucun flop du jeu learn')
     roles = corr.fit(list(samples(learn).values()), shrink=shrink)
     data = dict(name=name, method='exact - abstrait par classe, fraction du pot ; 0 à SPR nul, interpolation linéaire',
                 preset='ehs2_texture', bank=os.path.basename(BANK), learn=sorted({f"{r['config']} {r['subgame']}" for r in learn}),
-                flops=len(learn), shrink=shrink, roles=roles)
+                flops=len(learn), shrink=shrink, min_stack=min_stack, roles=roles)
     os.makedirs(corr.DIR, exist_ok=True)
     json.dump(data, open(os.path.join(corr.DIR, name + '.json'), 'w'), ensure_ascii=False, indent=0)
     table = corr.Table(data)
@@ -164,9 +165,10 @@ def main():
     ap.add_argument('--low-memory', action='store_true'); ap.add_argument('--min-weight', type=float, default=1e-3)
     ap.add_argument('--bank', default=BANK); ap.add_argument('--out', default=OUT)
     ap.add_argument('--report', action='store_true'); ap.add_argument('--name', default='g17-v1'); ap.add_argument('--shrink', type=float, default=8.0)
+    ap.add_argument('--min-stack', type=float, default=12.0, help='tapis effectif minimal (BB) où la correction s\'applique')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    if a.report: report(a.out, a.name, a.shrink); return
+    if a.report: report(a.out, a.name, a.shrink, a.min_stack); return
     if a.threads:
         import numba; numba.set_num_threads(a.threads)
     st = SETS[a.set]; configs = a.configs.split(',') if a.configs else st['configs']

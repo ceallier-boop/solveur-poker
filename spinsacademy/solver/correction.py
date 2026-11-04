@@ -48,7 +48,7 @@ class Table:
     """correction(role, spr) -> (169) en fraction du pot"""
 
     def __init__(self, data):
-        self.data = data; self.name = data['name']
+        self.data = data; self.name = data['name']; self.min_stack = float(data.get('min_stack', 0))
         self.knots = {r: sorted((float(k['spr']), np.array(k['delta'], float)) for k in data['roles'].get(r, [])) for r in ROLES}
 
     @classmethod
@@ -63,9 +63,11 @@ class Table:
         j = int(np.searchsorted(xs, spr)); t = (spr - xs[j - 1]) / (xs[j] - xs[j - 1])
         return (1 - t) * ys[j - 1] + t * ys[j]
 
-    def apply(self, pot, stack, aggressor, G0, G1):
-        """gains corrigés d'un duel ; aggressor : 0 OOP, 1 IP, -1 aucun (pot limpé, ou agresseur hors du duel) : inchangés"""
-        if aggressor not in (0, 1): return G0, G1
+    def apply(self, pot, stack, aggressor, G0, G1, eff=None):
+        """gains corrigés d'un duel ; aggressor : 0 OOP, 1 IP, -1 aucun (pot limpé, ou agresseur hors du duel) : inchangés.
+        eff : tapis de départ effectif du duel (le plus petit des deux, BB) ; sous min_stack, inchangés (le contrôle hors
+        échantillon dégradait deux rôles sur quatre à 8 BB)"""
+        if aggressor not in (0, 1) or (eff is not None and eff < self.min_stack): return G0, G1
         spr = stack / pot
         return G0 + pot * self(role(0, aggressor), spr), G1 + pot * self(role(1, aggressor), spr)
 

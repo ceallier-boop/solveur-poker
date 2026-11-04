@@ -52,14 +52,14 @@ def _init_pool(files):
 def _subgame(job):
     """un sous-jeu postflop ; state : regrets du même sous-jeu au tour précédent (reprise), ou None. La stratégie moyenne
     repart de zéro : elle ne doit refléter que les ranges de ce tour"""
-    pot, stack, w0, w1, iters, cfg, seed, aggressor, state, corr = job
+    pot, stack, w0, w1, iters, cfg, seed, aggressor, state, corr, eff = job
     g = HUPostflop(pot, stack, cfg, aggressor=aggressor); g._arrays()
     if state is not None:
         g.Rf[:] = state
     g.fast_solve(w0, w1, _POOL, iters=iters, seed=seed)
     G0, G1 = g.fast_evaluate(w0, w1, _POOL)
     if corr:                                                 # G17 : écart exact - abstrait appris (solver.correction)
-        G0, G1 = correction.get(corr).apply(pot, stack, aggressor, G0, G1)
+        G0, G1 = correction.get(corr).apply(pot, stack, aggressor, G0, G1, eff)
     return G0, G1, g.root_frequencies(w0, _POOL), g.Rf.astype(np.float32)
 
 
@@ -96,7 +96,8 @@ def solve(stacks, cfg=None, outer=3, pre_iters=1500, post_iters=3000, pf_cfg=Non
                 key = (nd.id, o, i); st = states.get(key) if warm else None
                 it = post_iters if st is None else post_warm
                 if mass[j] < rare_mass * tot: it = min(it, rare_iters if st is None else rare_iters // 2)
-                jobs.append((pot, stack, reach[nd.id][o], reach[nd.id][i], it, pf_cfg, seed + 17 * j + 1009 * k * warm, ag, st, correction))
+                jobs.append((pot, stack, reach[nd.id][o], reach[nd.id][i], it, pf_cfg, seed + 17 * j + 1009 * k * warm, ag, st, correction,
+                             min(stacks[o], stacks[i])))
             results = pool.map(_subgame, jobs)
             roots = {}
             for (nd, o, i, pot, stack, _), (G0, G1, rf, st) in zip(subs, results):

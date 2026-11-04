@@ -7,6 +7,7 @@ Les calculs de plusieurs heures ne tournent pas dans la session cloud : ils se l
 | O1 | Installation (une fois) | 10 minutes | — |
 | O3 | Résolution exacte au flop, pour comparer les réglages de regroupement après le flop (G13) | environ 4 h 15 | `docs/solver/exact_flop_hu25_raise_g13.json`, `docs/solver/exact_flop_hu25_iso_g13.json` |
 | O5 | Grille complète du solveur sur l'arbre v5 (58 configurations), après le choix du réglage (G16) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/<version>/` |
+| O7 | Grille v5 avec la correction des pots relancés (G17) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/2026.11.04-s3/` |
 | O6 | Calcul exact au flop pour apprendre la correction des pots relancés (G17) | 12 à 15 h | `data/solver/g17/hu_25-25_*.jsonl`, `hu_18-18_*.jsonl`, `hu_12-12_*.jsonl` |
 
 ## Matériel
@@ -125,6 +126,19 @@ python tools/solver/learn_correction.py --set learn --threads 4 --low-memory
 Le jeu de contrôle (8, 15 et 22 BB, d'autres flops) tourne dans la session cloud : ne pas le lancer.
 
 Fichiers à renvoyer : les fichiers `data/solver/g17/hu_25-25_*.jsonl`, `data/solver/g17/hu_18-18_*.jsonl` et `data/solver/g17/hu_12-12_*.jsonl` (branche `calculs/o6`, `git add data/solver/g17`, ou archive).
+
+## O7 : grille v5 avec la correction des pots relancés (G17)
+
+Même grille qu'O5, avec la table de correction `g17-v1` (apprise d'O6, limitée aux tapis effectifs de 12 BB et plus). Avant de lancer : `git pull`, et **désactiver la mise en veille** de l'ordinateur (réglages d'alimentation) pour toute la durée du calcul.
+
+```bash
+python -m spinsacademy.solver.dataset --version 2026.11.04-s3 --grid p1 --tree v5 --postflop ehs2_texture --correction g17-v1 --workers 4
+```
+
+- `--workers` : le nombre de cœurs de l'ordinateur.
+- Durée, mémoire et reprise : comme O5 (environ 5 h sur 4 cœurs, 1,2 Go ; relancer la même commande reprend aux configurations non faites). Les résultats d'O5 ne sont pas réutilisés : la correction change l'empreinte, un nouveau dossier `data/solver/runs/sf3dc2e6_<empreinte>/` est créé.
+
+Fichiers à renvoyer : ce nouveau dossier `data/solver/runs/sf3dc2e6_<empreinte>/` et `data/datasets/gto_preflop/2026.11.04-s3/` (branche `calculs/o7`).
 
 ## Renvoyer les résultats
 
