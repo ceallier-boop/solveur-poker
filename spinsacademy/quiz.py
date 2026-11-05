@@ -11,7 +11,7 @@ La question envoyée au joueur ne contient jamais la solution.
 import json, os, random, re
 from functools import lru_cache
 import threading
-from . import field, grading
+from . import coachs, field, grading
 from .cards import NAMES, W
 from .hrc import ROOT
 
@@ -978,6 +978,11 @@ def correct(version, spot_id, hand, action_id):
     base_id = 'F' if 'F' in ids else 'X'                     # référence : fold, ou check quand rien n'est à payer
     E_ = lambda a: ev[ids.index(a)]
     raw = 1000 * (E_(top) - E_(action_id))                   # regret non arrondi : montant et verdict concordent aux bornes
+    # relecture des experts (décision du 05/11) : une action qu'au moins un expert joue est acceptée, avec la nuance de leur désaccord
+    avis = coachs.lookup(sp, hand); forced = bool(avis) and action_id in avis['votes'] and g['verdict'] != 'correct'
+    _, coach_lines, avis_detail = coachs.judge(avis, action_id, labels, labels[top], top, gain_bb(raw / 1000) if forced else None)
+    solver_regret = g['regret_mbb']
+    if forced: g = dict(g, verdict='correct', points=grading.POINTS['correct'], regret_mbb=0.0, mixed=False)
     evb = E_(best) - E_(base_id); ref = 'fold' if base_id == 'F' else 'check'
     played = '' if best == top else f", jouée {shown.get(best, 0)} % du temps"
     # écart d'EV sous la tolérance : plusieurs bonnes décisions, sans détailler des centièmes de BB
@@ -987,7 +992,7 @@ def correct(version, spot_id, hand, action_id):
         names = [_low(labels[a]) for a in good]
         lines = [(f"Plusieurs bonnes décisions : {', '.join(names[:-1])} ou {names[-1]} (moins de {bb(GAIN_MIN_BB)} BB d'écart)." if action_id in good else
                   f"Les coups les plus rentables : {', '.join(names[:-1])} ou {names[-1]} (ils se valent à moins de {bb(GAIN_MIN_BB)} BB près). "
-                  + ("Ton choix est aussi joué par la théorie : accepté." if g['verdict'] == 'correct' else "Ton choix n'en fait pas partie."))]   # test joueurs 7 (KJo)
+                  + ("Ton choix est aussi joué par la théorie : accepté." if g['verdict'] == 'correct' and not forced else "Ton choix n'en fait pas partie."))]   # test joueurs 7 (KJo)
         never = [_low(labels[a]) for a in good if not shown.get(a)]       # test joueurs 6 : « ALL-IN ou CALL » avec CALL à 0 %
         if never: lines.append(f"La théorie ne joue pas {' ni '.join(never)}, mais l'écart est trop petit pour compter.")
     elif best == base_id or abs(evb) < 0.005 or evb < 0: lines = [f'Meilleur coup : {labels[best]}{played}.']
@@ -1004,6 +1009,7 @@ def correct(version, spot_id, hand, action_id):
                      f"{'coup jouable' if len(near) == 1 else 'coups jouables'}, même si la théorie ne {'le' if len(near) == 1 else 'les'} choisit pas.")
     grid = range_grid(sp); because = why(sp, hand, ev, best, labels, grid, action_id, g['verdict']); after = next_steps(sp, hand, best, action_id, labels)
     if action_id == best or (len(good) > 1 and action_id in good): pass       # le bandeau le dit déjà
+    elif forced: pass                                                          # accepté par les coachs : dit plus bas
     elif action_id == top:
         lines.append(f"Ton choix {_named(labels[action_id])} est le plus rentable en EV : réponse acceptée.")
     else:
@@ -1016,6 +1022,7 @@ def correct(version, spot_id, hand, action_id):
                          f"meilleur coup ({_low(labels[top]).split(' (')[0]}).")
             line = verdict_line(g['verdict'], raw, grading.PERTINENT_MBB if sp['ev_reference'] == 'hrc' else 3 * grading.TOLERANCE_MBB)
             if line: lines.append(line)
+    lines += coach_lines
     ce = call_equity(sp, hand)
     essential = (f"Il te faut {_pct1(ce[0])} d'équité pour payer, et {hand} en a {_pct_eq(ce[1], ce[0])} : "
                  + ('payer rapporte.' if ce[1] >= ce[0] else 'couche-toi.')) if ce else principle(sp, hand, best, labels)
@@ -1029,8 +1036,8 @@ def correct(version, spot_id, hand, action_id):
                 top_action=top, chosen_action=action_id, gto_action=None, gto_label=None,
                 good_actions=(good if len(good) > 1 else []), good_labels=([labels[a] for a in good] if len(good) > 1 else []),
                 chosen_label=labels[action_id], strategy=[dict(id=a, label_fr=labels[a], pct=shown.get(a, 0), chosen=a == action_id) for a in ids],
-                loss_fr=(None if action_id == best or (len(good) > 1 and action_id in good) else gain_bb(loss)),
-                ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
+                loss_fr=(None if action_id == best or forced or (len(good) > 1 and action_id in good) else gain_bb(loss)),
+                ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, avis=avis_detail, solver_regret_mbb=solver_regret, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.' and not REDUNDANT.match(l)] + because)   # le bandeau dit déjà le bon coup et le coût
 
 

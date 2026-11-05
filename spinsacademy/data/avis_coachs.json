@@ -1,0 +1,378 @@
+{
+ "avis": {
+  "3w-12-12-12-BTN-allin_SB-call|J6o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "3w-12-12-12-BTN-allin_SB-fold|K7o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-allin|73o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-call|96o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-call|K8o": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 2,
+    "RAISE TO 3 BB": 1
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-call|KJo": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 3 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-call|KJs": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 1,
+    "RAISE TO 3 BB": 2
+   }
+  },
+  "3w-12-12-12-BTN-fold_SB-call|T3o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold|76o": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold|ATo": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold|K9o": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold|Q5s": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-fold|Q8s": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-BTN-raise2.3|98o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "3w-12-12-12-root|87s": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-12-12-12-root|AA": {
+   "coachs": 3,
+   "votes": {
+    "CALL 1 BB": 1,
+    "RAISE TO 2,3 BB": 2
+   }
+  },
+  "3w-12-12-12-root|K6s": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 3
+   }
+  },
+  "3w-25-25-25-BTN-call_SB-call|J2s": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-call_SB-call|T9s": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold_SB-call|72o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold_SB-call|A3o": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 3 BB": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold_SB-call|K8s": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold_SB-call|Q4o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold_SB-call|Q5o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold|A2s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 1,
+    "RAISE TO 3,5 BB": 2
+   }
+  },
+  "3w-25-25-25-BTN-fold|AKs": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 3,5 BB": 3
+   }
+  },
+  "3w-25-25-25-BTN-fold|K2o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 2,
+    "RAISE TO 3,5 BB": 1
+   }
+  },
+  "3w-25-25-25-BTN-raise2.3_SB-fold|76o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 1,3 BB": 2,
+    "FOLD": 1
+   }
+  },
+  "3w-25-25-25-BTN-raise2.3_SB-fold|K6o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 1,3 BB": 2,
+    "FOLD": 1
+   }
+  },
+  "3w-25-25-25-BTN-raise2.3_SB-fold|KJo": {
+   "coachs": 3,
+   "votes": {
+    "CALL 1,3 BB": 3
+   }
+  },
+  "3w-25-25-25-BTN-raise2.3_SB-fold|KQo": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 25 BB": 1,
+    "RAISE TO 7,6 BB": 2
+   }
+  },
+  "3w-25-25-25-BTN-raise2.3|JTo": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "3w-25-25-25-root|44": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 2,3 BB": 3
+   }
+  },
+  "3w-25-25-25-root|A5s": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 2,3 BB": 3
+   }
+  },
+  "3w-25-25-25-root|A9s": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 2,3 BB": 3
+   }
+  },
+  "hu-12-12-SB-allin|A6s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 11 BB": 3
+   }
+  },
+  "hu-12-12-SB-allin|A9s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 11 BB": 3
+   }
+  },
+  "hu-12-12-SB-call|85s": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "hu-12-12-SB-call|88": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 2,
+    "RAISE TO 3 BB": 1
+   }
+  },
+  "hu-12-12-SB-call|98s": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "hu-12-12-root|52o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "hu-12-12-root|54s": {
+   "coachs": 3,
+   "votes": {
+    "ALL-IN 12 BB": 1,
+    "CALL 0,5 BB": 2
+   }
+  },
+  "hu-12-12-root|95o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  },
+  "hu-12-12-root|98s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  },
+  "hu-12-12-root|Q6s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  },
+  "hu-25-25-SB-call_BB-raise3|K4o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2 BB": 3
+   }
+  },
+  "hu-25-25-SB-call_BB-raise3|K5o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2 BB": 3
+   }
+  },
+  "hu-25-25-SB-call_BB-raise3|Q8o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2 BB": 3
+   }
+  },
+  "hu-25-25-SB-call|J8o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "hu-25-25-SB-call|K7o": {
+   "coachs": 3,
+   "votes": {
+    "RAISE TO 3 BB": 3
+   }
+  },
+  "hu-25-25-SB-call|T9o": {
+   "coachs": 3,
+   "votes": {
+    "CHECK": 3
+   }
+  },
+  "hu-25-25-SB-raise3.5_BB-allin|T2s": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "hu-25-25-SB-raise3.5_BB-raise8.75|J2o": {
+   "coachs": 3,
+   "votes": {
+    "FOLD": 3
+   }
+  },
+  "hu-25-25-SB-raise3.5|J8o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2,5 BB": 1,
+    "FOLD": 2
+   }
+  },
+  "hu-25-25-SB-raise3.5|KQo": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2,5 BB": 3
+   }
+  },
+  "hu-25-25-SB-raise3.5|Q8o": {
+   "coachs": 3,
+   "votes": {
+    "CALL 2,5 BB": 1,
+    "FOLD": 2
+   }
+  },
+  "hu-25-25-root|83s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  },
+  "hu-25-25-root|94s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  },
+  "hu-25-25-root|ATs": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 1,
+    "RAISE TO 3,5 BB": 2
+   }
+  },
+  "hu-25-25-root|J4s": {
+   "coachs": 3,
+   "votes": {
+    "CALL 0,5 BB": 3
+   }
+  }
+ },
+ "source": "relecture du 30/10/2026 (docs/relecture/solveur_2026-10-30)"
+}
