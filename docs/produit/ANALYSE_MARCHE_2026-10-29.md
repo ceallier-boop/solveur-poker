@@ -156,6 +156,43 @@ Nom retenu : **SpinXpresso**, sous-titre « Poker Trainer ». Le porteur du proj
 
 Conseils : tout prendre chez le même registraire (par exemple OVHcloud, français, pour le `.fr`), au nom du porteur du projet ou de sa société, avec le renouvellement automatique activé. Le `.poker` sert surtout à protéger le nom ; on peut s'en passer si le budget compte, au risque qu'un tiers le prenne.
 
+### Évaluation multicritère de SpinXpresso (05/11)
+
+Notes de 1 à 5 (jugement de l'analyste, pas une mesure), pondérées sur 100. Domaines vérifiés le 05/11 (RDAP).
+
+| Critère | Poids |
+|---|---|
+| Renvoi au format Expresso / Spin | 20 |
+| Renvoi au poker et à l'utilité | 15 |
+| Distinctivité | 15 |
+| Mémorisation et prononciation, FR et EN | 15 |
+| Domaines libres (.com .fr .app) | 10 |
+| Risque juridique (Winamax, tiers) | 15 |
+| Évolutivité (postflop, ICM, autres formats) | 10 |
+
+| Rang | Nom | Format | Poker | Distinct. | Mémo | Domaines | Juridique | Évol. | **Total** |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | **SpinXpresso** | 5 | 3 | 4 | 4 | 5 | 3 | 4 | **80** |
+| 2 | SpinDrill | 3 | 3 | 4 | 5 | 5 | 4 | 4 | **78** |
+| 3 | Spinkata | 3 | 2 | 5 | 4 | 4 | 4 | 4 | 73 |
+| 3 | Spinpresso | 4 | 2 | 3 | 4 | 5 | 4 | 4 | 73 |
+| 5 | TriShove | 3 | 4 | 4 | 3 | 5 | 4 | 2 | 71 |
+| 5 | SpinShove | 3 | 4 | 3 | 4 | 5 | 4 | 2 | 71 |
+| 7 | XpressoDrill | 4 | 2 | 4 | 3 | 5 | 3 | 4 | 70 |
+| 8 | ExpressoFold | 5 | 4 | 3 | 3 | 5 | 1 | 2 | 67 |
+| 9 | Shovio | 1 | 3 | 4 | 4 | 3 | 5 | 4 | 66 |
+| 10 | Ristretto | 2 | 1 | 3 | 5 | 1 | 3 | 5 | 56 |
+| 11 | ShoveLab | 1 | 3 | 3 | 4 | 3 | 3 | 3 | 55 |
+
+**Lecture.** SpinXpresso est premier, mais de 2 points seulement sur SpinDrill : l'écart n'est pas significatif. Le résultat dépend surtout du critère juridique : si son poids double, SpinDrill passe devant.
+
+**Forces de SpinXpresso** : seul nom qui porte les deux appellations du format (Spin, Xpresso) ; quatre domaines libres ; pas de produit concurrent trouvé.
+
+**Faiblesses** :
+- « Xpresso » est très proche de « Expresso », nom commercial de Winamax (note 3 en juridique, à confirmer par la recherche INPI / EUIPO) ;
+- le mot « poker » est absent : le sous-titre « Poker Trainer » est indispensable ;
+- l'orthographe avec X demande d'être épelée à l'oral.
+
 ## 4. Prochaines étapes de l'analyse de marché
 
 1. Taille du marché à partir des rapports annuels de l'ANJ et des données de trafic.
