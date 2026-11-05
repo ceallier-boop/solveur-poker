@@ -508,3 +508,8 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ch-box > summary h2 { margin: 0; } .ch-box > summary span { font-size: .9rem; color: var(--text); }
 .ch-next { display: block; color: var(--muted); font-size: .82rem; }
 .my-challenges li.lost { color: var(--muted); }
+/* décisions du 05/11 (I8) : mode Exploitant présenté comme payant ; état verrouillé prêt, désactivé */
+.ob-exploit { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); display: flex; flex-direction: column; gap: 6px; }
+.ob-exploit p { margin: 0; } .ob-exploit-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tag-paid { font-size: .75rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
+.mode-switch button.locked { opacity: .6; }
