@@ -1,0 +1,61 @@
+# Tests automatiques (T7, accordé par le porteur du projet le 05/11/2026, docs/produit/DECISIONS_2026-11-05.md).
+# Suite rapide à chaque envoi et à chaque demande de fusion ; tests lents (marqueur slow) chaque nuit et à la demande.
+# Détail des suites : docs/exploitation/TESTS.md
+name: Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '17 2 * * *'          # chaque nuit, 2 h 17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  rapides:
+    name: Suite rapide (-m "not slow")
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-app.lock
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-app.lock -r requirements.txt
+      - name: Tests rapides
+        run: python -m pytest -q -m "not slow" --durations=10
+
+  lents:
+    name: Tests lents (-m slow)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-app.lock
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-app.lock -r requirements.txt
+      - name: Tests lents
+        run: python -m pytest -q -m slow --durations=10
