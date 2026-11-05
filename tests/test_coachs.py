@@ -110,6 +110,21 @@ def test_every_coach_action_is_accepted_closed_test_bank():
     assert not refused, refused
 
 
+
+def test_server_avis_matches_expected_table():
+    """P13 suit attendu_correction.csv : action acceptée, recommandée ou non, partage et nuance « n experts sur 3 »"""
+    with open(EXPECTED, encoding='utf-8') as f: rows = list(csv.DictReader(f, delimiter=';'))
+    wrong = []
+    for r in rows:
+        sp = spot_in(PILOT, r['spot']); majority = int(r['nuance'][0])
+        for label in r['acceptees'].split(' | '):
+            res = quiz.correct(PILOT, sp['spot_id'], r['main'], action_id(sp, label)); a = res['avis'] or {}
+            n = majority if label == r['recommandee'] else 3 - majority
+            if (res['verdict'], a.get('recommended'), a.get('split'), a.get('nuance_fr')) != \
+                    ('correct', label == r['recommandee'], majority < 3, f"{n} expert{'s' if n > 1 else ''} sur 3"):
+                wrong.append((r['id'], label, res['verdict'], a))
+    assert not wrong, wrong
+
 if __name__ == '__main__':
     rows = expected_rows()
     with open(EXPECTED, 'w', encoding='utf-8', newline='') as f:
