@@ -14,7 +14,7 @@ Aucun niveau, objectif ni critère de séance ne dépend d'un défi : fermer un 
 **Zone « Défis avec publicité »**, sous les défis gratuits :
 - **Verrouillée** : les deux cartes gardent leur titre et leur règle, avec un cadenas ; un seul bouton pour la zone : « Débloquer les deux défis du jour (courte publicité) ». Pas de bouton « Relever » sur les cartes.
 - **Débloquée** : les cartes redeviennent normales (« Relever », résultat, réussite) jusqu'à minuit, heure de l'appareil ; la zone dit « Ouverts aujourd'hui ». Le lendemain, elle se reverrouille.
-- **Abonné** (offre payante, P8) : pas de zone séparée, les deux cartes reviennent parmi les défis, sans cadenas.
+- **Abonné** (offre payante, P14) : pas de zone séparée, les deux cartes reviennent parmi les défis, sans cadenas.
 
 Deux règles à ajouter au code, faute de quoi le cadenas se contourne :
 1. **Range au cordeau** se gagne aujourd'hui avec n'importe quel exercice de range de la semaine. Défi verrouillé : seules comptent les ranges faites un jour où la zone était ouverte (sinon une range réussie en jeu libre valide le défi sans publicité).
@@ -32,7 +32,7 @@ Deux règles à ajouter au code, faute de quoi le cadenas se contourne :
 | Cas | Comportement |
 |---|---|
 | Test fermé | Les deux défis ouverts, sans publicité ni cadenas |
-| Abonné (offre payante, P8) | Les deux défis ouverts, aucune publicité |
+| Abonné (offre payante, P14) | Les deux défis ouverts, aucune publicité |
 | Publicité vue jusqu'au bout | Les deux défis ouverts jusqu'à minuit |
 | Pas de publicité disponible, erreur de la régie | Les deux défis ouverts quand même : le joueur a fait la démarche |
 | Bloqueur de publicité, consentement refusé sans publicité possible | Zone fermée, message neutre : « Disponible avec une courte publicité ou avec l'offre payante. » Aucun reproche, aucune relance |
