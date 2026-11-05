@@ -58,3 +58,12 @@ def test_summary_does_not_count_an_accepted_answer_as_a_loss():
 def test_label_resolution_is_none_for_unknown_words_and_ambiguous_options():
     sp = spot_in(CLOSED_TEST, '3w-25-25-25-root-0be5e9')
     assert coachs.action_id(sp, 'SHRUG 2 BB') is None
+
+
+def test_a_choice_no_expert_played_still_shows_the_split_without_accepting_it():
+    """S035 : AA au BTN à 3 joueurs : relance (2 experts) ou limp (1) ; un FOLD n'est joué par personne : verdict du solveur, partage montré"""
+    sp = spot_in(PILOT, '3w-12-12-12-root-5ef802'); fold = next(a['id'] for a in sp['actions'] if a['type'] == 'fold')
+    r = quiz.correct(PILOT, sp['spot_id'], 'AA', fold)
+    assert r['verdict'] != 'correct' and r['avis']['split'] and r['avis']['nuance_fr'] is None and r['avis']['recommended'] is False
+    assert [o['experts'] for o in r['avis']['options']] == [2, 1] and r['avis']['experts'] == 3
+    assert 'ne sont pas d\'accord' not in r['explanation_fr']

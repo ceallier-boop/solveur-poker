@@ -62,8 +62,11 @@ def _n(n, total): return f"{n} expert{'s' if n > 1 else ''} sur {total}"      # 
 
 def judge(avis, chosen, labels, best_label, solver_best, solver_gain_bb):
     """ce que la correction dit d'une réponse quand des experts ont relu la main : (acceptée par les coachs, lignes, détail structuré)"""
-    if not avis or chosen not in avis['votes']: return False, [], None
+    if not avis: return False, [], None
     total, votes = avis['coachs'], avis['votes']; rec = avis['recommended']
+    if chosen not in votes:             # aucune action des experts : le joueur voit tout de même leur partage (Interface, 05/11), sans acceptation
+        return False, [], dict(split=avis['split'], experts=total, nuance_fr=None, recommended=False, recommended_label=labels[rec],
+                               options=[dict(id=a, label_fr=labels[a], experts=votes[a]) for a in sorted(votes, key=lambda a: (-votes[a], a))])
     others = sorted((a for a in votes if a != chosen), key=lambda a: -votes[a])
     detail = dict(split=avis['split'], experts=total, nuance_fr=_n(votes[chosen], total), recommended=chosen == rec,
                   recommended_label=labels[rec], options=[dict(id=a, label_fr=labels[a], experts=votes[a]) for a in sorted(votes, key=lambda a: (-votes[a], a))])
