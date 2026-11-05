@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, challenges, field, goals, levels, quiz, ranges, review, today
+from spinsacademy import adaptive, challenges, coachs, field, goals, levels, quiz, ranges, review, today
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -33,6 +33,7 @@ def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
             key = (sp['table'], quiz.stack_band(sp), quiz.situation_key(sp))
             hands = list(quiz.teachable(sp))                       # mêmes mains que l'application (bruit HRC, EV impossibles exclus)
             picked = sorted(set(rnd.choices(hands, [W[NAMES.index(h)] * sp['hands'][h]['reach'] ** 0.5 for h in hands], k=k)))
+            picked = sorted(set(picked) | {h for h in hands if coachs.lookup(sp, h)})   # I8 : toutes les mains relues par les experts (désaccords compris)
             for h in picked:
                 q = quiz.question(ref, sp['spot_id'], h)
                 out.append(dict(m=quiz.mode_of(ref), q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),

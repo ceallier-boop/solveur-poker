@@ -350,13 +350,15 @@ function renderAnswer(r) {
     : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
   const av = !r.field && r.avis && r.avis.split ? r.avis : null;      // décisions du 05/11 (I8, P13) : experts partagés, deux stratégies possibles
-  const subShown = av && !state.timedOut ? (av.recommended ? `Le coup le plus recommandé par les experts (${av.nuance_fr}).`
+  const subShown = av && av.nuance_fr && !state.timedOut ? (av.recommended ? `Le coup le plus recommandé par les experts (${av.nuance_fr}).`
     : `Une stratégie possible (${av.nuance_fr}) ; les experts recommandent plutôt ${av.recommended_label}.`) : sub;
   const onBest = state.timedOut && r.chosen_label === r.best_label;     // test joueurs 9 : le coup au temps tombait sur le bon coup
   v.innerHTML = title + `<small>${state.timedOut ? (onBest ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
     : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${onBest ? '' : subShown}</small>`;
   $('a-avis').hidden = !av;
-  if (av) $('a-avis').innerHTML = `<p class="avis-title">Les experts sont partagés : ${av.options.length > 2 ? 'plusieurs stratégies sont possibles' : 'les deux stratégies sont possibles'}</p>`
+  const names = av ? av.options.map((o) => o.label_fr) : [];
+  if (av) $('a-avis').innerHTML = `<p class="avis-title">${av.nuance_fr ? `Les experts sont partagés : ${av.options.length > 2 ? 'plusieurs stratégies sont possibles' : 'les deux stratégies sont possibles'}`
+    : `Les experts sont partagés entre ${escT(names.slice(0, -1).join(', '))} et ${escT(names[names.length - 1])} ; ton choix n'a été retenu par aucun.`}</p>`   // aucun expert n'a joué ce coup : le verdict reste celui du solveur
     + `<ul>${av.options.map((o, i) => `<li class="${i === 0 ? 'avis-rec' : ''}${o.id === r.chosen_action ? ' mine' : ''}"><b>${escT(o.label_fr)}</b>`
       + `<span>${o.experts} expert${o.experts > 1 ? 's' : ''} sur ${av.experts}${i === 0 ? ' · le plus recommandé' : ''}${o.id === r.chosen_action ? ' · ton choix' : ''}</span></li>`).join('')}</ul>`;
   stopTimer();
