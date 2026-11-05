@@ -12,6 +12,7 @@ Deux jeux disjoints (tapis et flops différents) :
 
 Usage :
   python tools/solver/learn_correction.py --set learn --threads 4 --low-memory
+  python tools/solver/learn_correction.py --set short --threads 4 --low-memory   # tapis courts 6 et 10 BB
   python tools/solver/learn_correction.py --set check --threads 4 --low-memory
   python tools/solver/learn_correction.py --report --name g17-v1      # table + contrôle
 """
@@ -34,6 +35,7 @@ ROOT = os.path.join(os.path.dirname(__file__), '..', '..')
 BANK = os.path.join(ROOT, 'data', 'solver', 'runs', 'sf3dc2e6_48fa0906')      # banque v5 2026.11.02-s2, ehs2_texture
 OUT = os.path.join(ROOT, 'data', 'solver', 'g17')
 SETS = {'learn': dict(configs=('hu_25-25', 'hu_18-18', 'hu_12-12'), seed=101, flops=8),
+        'short': dict(configs=('hu_10-10', 'hu_6-6'), seed=303, flops=8),     # tapis courts (G17, 05/11) ; 8 BB reste en contrôle
         'check': dict(configs=('hu_8-8', 'hu_15-15', 'hu_22-22'), seed=202, flops=6)}
 SUBGAMES = {'raise': 'SB-raise', 'iso': 'SB-call_BB-raise'}     # préfixe de la clé du nœud terminal (ligne préflop)
 
@@ -136,8 +138,8 @@ def evaluate(rs, table):
     return out
 
 
-def report(out, name, shrink, min_stack=0.0):
-    learn = rows(out, SETS['learn']['configs']); check = rows(out, SETS['check']['configs'])
+def report(out, name, shrink, min_stack=0.0, learn_sets=('learn',)):
+    learn = rows(out, [c for k in learn_sets for c in SETS[k]['configs']]); check = rows(out, SETS['check']['configs'])
     if not learn: raise SystemExit('aucun flop du jeu learn')
     roles = corr.fit(list(samples(learn).values()), shrink=shrink)
     data = dict(name=name, method='exact - abstrait par classe, fraction du pot ; 0 à SPR nul, interpolation linéaire',
@@ -164,11 +166,12 @@ def main():
     ap.add_argument('--preset', default='ehs2_texture'); ap.add_argument('--threads', type=int, default=0)
     ap.add_argument('--low-memory', action='store_true'); ap.add_argument('--min-weight', type=float, default=1e-3)
     ap.add_argument('--bank', default=BANK); ap.add_argument('--out', default=OUT)
+    ap.add_argument('--learn-sets', default='learn', help='jeux d\'apprentissage du rapport, séparés par des virgules (learn, short)')
     ap.add_argument('--report', action='store_true'); ap.add_argument('--name', default='g17-v1'); ap.add_argument('--shrink', type=float, default=8.0)
     ap.add_argument('--min-stack', type=float, default=12.0, help='tapis effectif minimal (BB) où la correction s\'applique')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    if a.report: report(a.out, a.name, a.shrink, a.min_stack); return
+    if a.report: report(a.out, a.name, a.shrink, a.min_stack, a.learn_sets.split(',')); return
     if a.threads:
         import numba; numba.set_num_threads(a.threads)
     st = SETS[a.set]; configs = a.configs.split(',') if a.configs else st['configs']
