@@ -1,4 +1,4 @@
-"""T8 (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §3) : les réponses des trois coachs (relecture du
+"""T9 (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §3) : les réponses des trois coachs (relecture du
 30/10, docs/relecture/solveur_2026-10-30) rejouées contre la correction servie, désaccords compris. Chaque action donnée par au
 moins un coach doit être acceptée ; quand ils se partagent 2 contre 1, la majorité est la recommandée (« 2 coachs sur 3 »).
 
@@ -96,7 +96,7 @@ def test_closed_test_bank_covers_most_situations():
     assert all(c[4] for c in cases), [c[:4] for c in cases if not c[4]]
 
 
-@pytest.mark.xfail(strict=True, reason="P7 (règle des désaccords) pas encore fusionnée : au 05/11, 53 actions sur 73 acceptées, 11 imprécisions, 9 erreurs")
+@pytest.mark.xfail(strict=True, reason="P13 (règle des désaccords) pas encore fusionnée : au 05/11, 53 actions sur 73 acceptées, 11 imprécisions, 9 erreurs")
 def test_every_coach_action_is_accepted_pilot_bank():
     cases, _ = coach_cases(PILOT)
     refused = [(sid, hand, label, quiz.correct(PILOT, spot, hand, aid)['verdict']) for sid, spot, hand, label, aid in cases
@@ -104,7 +104,7 @@ def test_every_coach_action_is_accepted_pilot_bank():
     assert not refused, refused
 
 
-@pytest.mark.xfail(strict=True, reason="P7 (règle des désaccords) pas encore fusionnée : au 05/11, 43 actions sur 56 acceptées, 12 imprécisions, 1 erreur")
+@pytest.mark.xfail(strict=True, reason="P13 (règle des désaccords) pas encore fusionnée : au 05/11, 43 actions sur 56 acceptées, 12 imprécisions, 1 erreur")
 def test_every_coach_action_is_accepted_closed_test_bank():
     cases, _ = coach_cases(CLOSED_TEST)
     refused = [(sid, hand, label, quiz.correct(CLOSED_TEST, spot, hand, aid)['verdict']) for sid, spot, hand, label, aid in cases
