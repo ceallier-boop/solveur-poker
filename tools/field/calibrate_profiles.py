@@ -5,8 +5,10 @@ Entrée : un tableau de comptages (un joueur ou un groupe de joueurs) :
 Modèle : k ~ Binomial(n, p),  logit(p) = logit(p_GTO) + beta_type,   type in {shove, call}
 Le facteur de cotes du profil est exp(beta) : c'est exactement le facteur utilisé par le moteur exploitant.
 p_GTO vient des stratégies HRC (fréquence globale de l'action à ce nœud et ce stack).
+Usage : python calibrate_profiles.py                    validation sur données synthétiques
+        python calibrate_profiles.py comptages.csv      facteurs du field mesurés (sortie de winamax_counts.py)
 """
-import os
+import os, sys
 import numpy as np
 import exploit_engine as ee
 
@@ -124,7 +126,41 @@ def validation(mean_ns=(0.5, 1, 2, 5, 10, 20, 50), reps=60, seed=7):
     return res
 
 
-if __name__ == '__main__':
+MAX_STACK = 15   # au-delà, la référence n'a plus de tapis en premier (18 BB et plus) et ses calls ne bougent plus
+
+
+def read_counts(path):
+    """comptages.csv de winamax_counts.py -> liste (kind, décision, stack, n, k) des décisions de DECISIONS, 4 à 15 BB"""
+    import csv, winamax_counts as wc
+    out = []
+    for r in csv.DictReader(open(path, encoding='utf-8')):
+        c = wc.CALIB.get((r['kind'], r['decision'], r['action']))
+        S = int(r['stack'])
+        if c and 4 <= S <= MAX_STACK and int(r['n']) > 0: out.append((r['kind'], c[1], S, int(r['n']), int(r['k'])))
+    return out
+
+
+def report(counts):
+    """facteurs du field (cotes par rapport à la référence) par type et par tapis, avec l'erreur-type, face au rec passif supposé"""
+    import profils_field as pf
+    lines = ['type  | tapis | occasions | facteur mesuré (IC 95 %) | rec passif supposé']
+    for typ in ('shove', 'call'):
+        for S in sorted({c[2] for c in counts}):
+            r = [x for x in rows_from_counts([c for c in counts if c[2] == S]) if x[0] == typ and 0 < x[1] < 1]
+            f = fit(r).get(typ)
+            if not f: continue
+            b, se = f['beta'][0], f['se'][0]
+            prior = round(pf.factors(pf.DEFAULT, S)[typ], 2)
+            lines.append(f"{typ:5s} | {S:5d} | {int(f['n']):9d} | {np.exp(b):.2f} ({np.exp(b - 1.96 * se):.2f} à {np.exp(b + 1.96 * se):.2f}) | {prior}")
+    r = rows_from_counts(counts)
+    for typ, f in fit(r, slope=True).items():
+        lines.append(f"{typ} : pente sur le tapis, facteur à 8 BB {np.exp(f['beta'][0]):.2f}, × {np.exp(f['beta'][1]):.2f} par 4 BB de plus ({int(f['n'])} occasions)")
+    return '\n'.join(lines)
+
+
+if __name__ == '__main__' and len(sys.argv) > 1:
+    print(report(read_counts(sys.argv[1])))
+elif __name__ == '__main__':
     import json
     res = validation()
     print("occasions par joueur | erreur (log-cotes) all-in / call | couverture IC 95 % | classement correct")

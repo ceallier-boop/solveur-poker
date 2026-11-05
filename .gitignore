@@ -4,3 +4,7 @@ __pycache__/
 data/app/
 .coverage
 htmlcov/
+
+# historique de mains Winamax : jamais versionné (docs/produit/HISTORIQUE_WINAMAX.md)
+historique_winamax/
+data/historique/

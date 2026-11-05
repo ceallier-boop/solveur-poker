@@ -10,6 +10,8 @@ l'application, et les exports de référence lus ici (`data/hrc/raw`) ne sont ja
     EXPRESSO_OUT=/tmp/x python3 quiz_generator.py         # banque quiz_field_v4_2.json / .csv
     EXPRESSO_QUIZ=/tmp/x/quiz_field_v4_2.json python3 verify_quiz.py
     python3 audit_quiz.py /tmp/x/quiz_field_v4_2.json /tmp/x/audit.csv   # grille des coachs (doctrine codée)
+    python3 winamax_counts.py <historique Winamax> --sortie /tmp/c   # comptages du field sans pseudo (stdlib, Windows)
+    python3 calibrate_profiles.py /tmp/c/comptages.csv    # facteurs du field mesurés, 4 à 15 BB
 
 Jeu de données de l'application : `python -m spinsacademy.field --version <version>` (depuis la racine du dépôt), puis
 contrôle et publication dans l'administration (`exploit_field`).
@@ -18,7 +20,7 @@ Données : `hrcdata.load` lit `data/hrc/raw/<dossier>/hand_<n>` (correspondance 
 `data/hrc/README.md`) ; la matrice d'équités est celle de l'application (`spinsacademy/data/equity_169.npy`). La
 variable `EXPRESSO_DATA` garde l'ancienne arborescence `hrc/x/<clé>/Hand_<n>` et `E3.npy`.
 
-Historique des versions v4.2 à v4.5 et état du moteur : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`,
+Historique de mains Winamax : `docs/produit/HISTORIQUE_WINAMAX.md`. Historique des versions v4.2 à v4.5 et état du moteur : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`,
 `docs/produit/MOTEUR_EXPLOITANT_2026-10-29.md`.
 
 ## Corrections v4.2
