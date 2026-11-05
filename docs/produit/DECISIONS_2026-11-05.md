@@ -27,3 +27,18 @@ Source de vérité pour toutes les interfaces. Chaque règle dit qui la met en �
 ## Non encore tranché
 
 T7 (tests automatiques sur GitHub, recommandé : oui), A18 (relecture de l'échantillon du 14/10, recommandé : la déclarer remplacée par l'audit du 22/10), achat des domaines SpinXpresso, format de l'historique de mains.
+
+## Fiabilité des banques du solveur (Moteur GTO, 05/11)
+
+| Banque | Arbre | Plage fiable | Remarques |
+|---|---|---|---|
+| `2026.10.29-s1` (pilote) | ouvertures 2,3 et 3,5 BB | 8 à 12 BB | calée sur la référence (12 mBB d'écart en heads-up 12 BB, 55 en heads-up 25 BB, 42 à 3 joueurs 12 BB, 100 à 3 joueurs 25 BB) ; ne correspond plus à l'arbre v5 |
+| `2026.11.02-s2` (v5, sans correction G17) | v5, ouvertures à 2 BB | 8 à 16 BB pour les décisions qui finissent à tapis ou face à un tapis | fragile, à toute profondeur, sur les décisions qui mènent au flop dans un pot relancé (140 à 400 mBB par main) ; à 8 BB, les As de celui qui paie la relance sont sous-évalués d'environ 600 mBB ; non fiable au-delà de 16 BB ; calée sur aucune référence v5 |
+| `2026.11.04-s3` (O7, avec g17-v1) | v5 | 8 à 25 BB attendus | meilleure que s2 sur les pots relancés dès 12 BB ; identique à s2 en dessous de 12 BB ; **à confirmer par comparaison avec s2** |
+
+## Filtre anti-bruit des questions (`quiz.REF_NOISE_MBB` = 150 mBB), pour P9
+
+Le filtre écarte les questions dont la leçon coûte moins de 150 mBB, parce que l'EV de la référence était bruitée. Une banque du solveur n'a pas ce bruit (pas de Monte-Carlo), mais elle a l'erreur d'abstraction de la ligne ci-dessus. Plan propose donc, sans le coder avant d'avoir la banque s3 :
+- décisions qui finissent à tapis ou face à un tapis : seuil abaissé (de l'ordre de 20 mBB, `grading.TOLERANCE_MBB`), le solveur y est précis ;
+- décisions qui mènent au flop : seuil de 150 mBB conservé tant que l'erreur d'abstraction mesurée est de cet ordre.
+Le champ d'écart d'EV entre actions existe déjà dans chaque spot (`hands[h].ev_hrc`, dans l'ordre de `actions`) : pas de nouveau champ à ajouter.
