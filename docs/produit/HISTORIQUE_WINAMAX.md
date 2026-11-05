@@ -16,11 +16,11 @@ Les fichiers bruts restent sur l'ordinateur du porteur du projet : ils ne sont n
 ## 2. Procédure (Windows)
 
 1. Installer Python 3.9 ou plus récent depuis python.org (cocher « Add python.exe to PATH »). Aucune autre installation.
-2. Télécharger le seul fichier `tools/field/winamax_counts.py` du dépôt, dans un dossier de travail.
-3. Dans ce dossier, ouvrir un terminal et lancer :
+2. Depuis le dépôt cloné (à jour), ouvrir un terminal à sa racine. Sans le dépôt, le seul fichier `tools/field/winamax_counts.py` suffit.
+3. Lancer :
 
    ```
-   py winamax_counts.py "C:/Users/<nom>/AppData/Roaming/winamax/documents/accounts" --sortie comptages_winamax
+   py tools/field/winamax_counts.py "C:/Users/<nom>/AppData/Roaming/winamax/documents/accounts" --sortie comptages_winamax
    ```
 
 4. Le terminal affiche le rapport. Le dossier `comptages_winamax` contient 5 fichiers sans aucun pseudo : `comptages.csv`, `volume.csv`, `adversaires.csv`, `rapport.txt`, `rapport.json`. Les envoyer au projet.
