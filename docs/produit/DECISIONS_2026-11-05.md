@@ -42,3 +42,30 @@ Le filtre écarte les questions dont la leçon coûte moins de 150 mBB, parce qu
 - décisions qui finissent à tapis ou face à un tapis : seuil abaissé (de l'ordre de 20 mBB, `grading.TOLERANCE_MBB`), le solveur y est précis ;
 - décisions qui mènent au flop : seuil de 150 mBB conservé tant que l'erreur d'abstraction mesurée est de cet ordre.
 Le champ d'écart d'EV entre actions existe déjà dans chaque spot (`hands[h].ev_hrc`, dans l'ordre de `actions`) : pas de nouveau champ à ajouter.
+
+## Réponses du 05/11 (suite) et propositions à valider
+
+Acquis : compte demandé seulement à l'achat ; réécriture de la politique de confidentialité avec bandeau de consentement avant toute publicité ; mode exploitant ouvert pendant le test fermé ; filtre anti-bruit abaissé pour les décisions qui finissent à tapis (code après la banque s3) ; tests automatiques sur GitHub (T7) ; relecture de l'échantillon du 14/10 déclarée remplacée par l'audit du 22/10 (A18) ; format de l'historique de mains : **Winamax**.
+
+### Défis : partage gratuit / publicité (demandé par le porteur, à valider)
+
+Aucun niveau ni objectif ne dépend d'un défi : fermer un défi ne bloque jamais la progression.
+
+| Catégorie | Défis | Raison |
+|---|---|---|
+| **Gratuits** | Défi du jour, Sous pression, Semaine complète | le défi du jour est le rendez-vous quotidien ; Semaine complète se gagne en s'entraînant et n'a pas de bouton |
+| **Avec publicité** (une publicité = les deux défis du jour) | Série parfaite, Range au cordeau | deux défis optionnels et exigeants ; au plus une publicité par jour, jamais pendant la séance |
+| **Payant** | Lecteur de vilain | fait partie du mode exploitant |
+
+Repli : abonné sans publicité ; pas de publicité disponible = ouvert ; bloqueur ou refus de consentement = fermé avec un message neutre. Risque connu (note de Défis) : fermer un défi qui était gratuit peut mal passer auprès des testeurs ; pendant le test fermé, tout reste ouvert sans publicité.
+
+### Frontière gratuit / payant (P8, à valider)
+
+| | Gratuit | Payant |
+|---|---|---|
+| Séance du jour (15 min), modes GTO | oui, avec des nouvelles questions et le thème le plus faible | oui, avec en plus la révision espacée de tes erreurs (rappel à 1, 3 et 7 jours) |
+| Progression | niveau, objectifs, série de jours, score par thème | statistiques détaillées : par famille de mains, position, profondeur, évolution dans le temps |
+| Bilan de série | questions ratées de la série | idem |
+| Mode exploitant | présenté à l'onboarding, verrouillé après le test fermé | oui |
+
+Conséquence : la révision espacée est aujourd'hui intégrée à la séance du jour (`today.REVIEW_CAP`) ; pour un joueur gratuit, ces places passent à des nouvelles questions.
