@@ -708,6 +708,21 @@ async function reviews() {
     $('review-note').hidden = false;
   }
 }
+// décisions du 05/11 (I8) : le mode Exploitant fait partie de l'offre payante, mais reste ouvert pendant le test fermé.
+// L'état « verrouillé » existe, désactivé : il s'allume avec window.SA_EXPLOIT_LOCKED = true, le jour où le droit d'accès (P8) existera.
+const exploitLocked = () => window.SA_EXPLOIT_LOCKED === true;
+const PAID_NOTE = { open: 'Offre payante, ouverte à tous pendant le test.', locked: "Fait partie de l'offre payante." };
+function renderExploitAccess() {
+  const locked = exploitLocked(), b = document.querySelector('.mode-switch [data-value="exploit"]');
+  b.classList.toggle('locked', locked);                               // pas d'aria-disabled : il masque les puces de filtre
+  b.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';
+  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, en haut de l\'accueil.';
+  if (locked && mode() === 'exploit') { setMode('gto'); onMode(); }
+}
+document.querySelector('.mode-switch').addEventListener('click', (e) => {     // verrouillé : le bouton ne change pas de mode
+  const b = e.target.closest('button'); if (!b || b.dataset.value !== 'exploit' || !exploitLocked()) return;
+  e.stopImmediatePropagation(); notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
+}, true);
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
 const FAMILIES_OF = { gto: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin'], exploit: ['', 'first_in', 'vs_limp', 'vs_raise', 'vs_allin', 'read'] };
@@ -717,7 +732,7 @@ function onMode(e) {
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
   reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); }   // séance, recommandations, objectifs et niveau suivent le mode
-  $('mode-note').textContent = MODE_NOTE[mode()];
+  $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
     for (const b of grp.querySelectorAll('button')) {
@@ -747,7 +762,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 function setMode(m) {                                                // choisir le mode par programme (niveau 4, préférence du serveur)
-  const btn = document.querySelector(`.mode-switch [data-value="${m}"]`); if (!btn || mode() === m) return false;
+  const btn = document.querySelector(`.mode-switch [data-value="${m}"]`); if (!btn || mode() === m || (m === 'exploit' && exploitLocked())) return false;
   for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn));
   return true;
 }
@@ -1064,7 +1079,7 @@ $('rg-home').addEventListener('click', home);
     if (b) for (const x of grp.querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
   }
   for (const c of document.querySelectorAll('.chips[data-name="chrono"] button')) c.setAttribute('aria-pressed', String(Number(c.dataset.value) === chrono()));
-  onMode();
+  onMode(); renderExploitAccess();
 }());
 home();
 
