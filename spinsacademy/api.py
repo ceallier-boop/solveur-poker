@@ -295,6 +295,10 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
+        if body.challenge == 'daily':                                      # deux lancements simultanés : un seul passe
+            if not con.in_transaction: con.execute('BEGIN IMMEDIATE')       # verrou d'écriture avant de revérifier
+            if challenges.daily_attempt([dict(r) for r in con.execute('SELECT created_at, plan FROM sessions WHERE player_id = ? AND plan = ?', (pid, plan))], utc_day):
+                raise HTTPException(409, "défi du jour déjà tenté aujourd'hui : nouveau défi demain")
         con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     (sid, _now(), version, body.filters.model_dump_json(exclude_none=True), body.seed if fixed_seed is None else fixed_seed, len(series), pid, plan))
         con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand, purpose, purpose_fr) VALUES (?, ?, ?, ?, ?, ?)',
