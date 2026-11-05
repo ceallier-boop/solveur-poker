@@ -1,6 +1,6 @@
-"""Banques du solveur en test fermé (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §4 ; P9) : chaque banque
+"""Banques du solveur en test fermé (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §4 ; P15) : chaque banque
 porte sa version et son empreinte, reste en « staging » tant qu'elle n'est pas publiée, et n'est jamais servie avant.
-Non-régression préparée avant P9 : quand Plan publiera la banque du test fermé, test_served_version_is_the_default_reference
+Non-régression préparée avant P15 : quand Plan publiera la banque du test fermé, test_served_version_is_the_default_reference
 devra suivre la version servie (et vérifier qu'elle porte le manifeste et l'empreinte attendus)."""
 import hashlib, json, os, sqlite3
 import pytest

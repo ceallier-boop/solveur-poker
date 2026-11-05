@@ -1,4 +1,4 @@
-"""T8 (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §3) : les réponses des trois coachs (relecture du
+"""T9 (décision du porteur du 05/11, docs/produit/DECISIONS_2026-11-05.md §3) : les réponses des trois coachs (relecture du
 30/10, docs/relecture/solveur_2026-10-30) rejouées contre la correction servie, désaccords compris. Chaque action donnée par au
 moins un coach doit être acceptée ; quand ils se partagent 2 contre 1, la majorité est la recommandée (« 2 coachs sur 3 »).
 
