@@ -174,6 +174,38 @@ def showdown(ranks, opp, CC):
 
 
 @njit(cache=True)
+def strength_vs(board, k, full_board, rollouts, CC, seed, opp, squared=False):
+    """force de chaque combo contre la range adverse opp (poids par combo) sur les k premières cartes du board : équité à la
+    river contre opp, moyennée sur `rollouts` suites tirées au hasard (k = 5 : la river du board). Contrairement à strength
+    (contre une main au hasard), elle situe la main dans le pot réel : dans un pot relancé, une petite paire vaut beaucoup
+    moins contre la range adverse que contre n'importe quoi (G17, 03/11/2026). -1 : combo bloqué par le board visible."""
+    np.random.seed(seed)
+    used = np.zeros(52, np.bool_)
+    for i in range(k): used[board[i]] = True
+    acc = np.zeros(1326); cnt = np.zeros(1326); b5 = np.zeros(5, np.int64)
+    for i in range(k): b5[i] = board[i]
+    n = 1 if k == 5 else rollouts
+    for r in range(n):
+        if k == 5:
+            for i in range(5): b5[i] = full_board[i]
+        else:
+            m = k; u2 = used.copy()
+            while m < 5:
+                x = np.random.randint(52)
+                if not u2[x]: u2[x] = True; b5[m] = x; m += 1
+        ranks = combo_ranks(b5, CC)
+        win, tie, tot = showdown(ranks, opp, CC)
+        for c in range(1326):
+            if ranks[c] < 0: continue
+            e = (win[c] + 0.5 * tie[c]) / tot[c] if tot[c] > 0 else 0.5
+            acc[c] += e * e if squared else e; cnt[c] += 1.0
+    out = np.full(1326, -1.0)
+    for c in range(1326):
+        if not (used[CC[c, 0]] or used[CC[c, 1]]) and cnt[c] > 0: out[c] = acc[c] / cnt[c]
+    return out
+
+
+@njit(cache=True)
 def compatible(opp, valid, CC):
     """masse adverse compatible (sans carte commune) avec chaque combo valide"""
     total = 0.0; allc = np.zeros(52)

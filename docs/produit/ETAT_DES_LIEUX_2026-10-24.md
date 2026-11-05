@@ -1,5 +1,7 @@
 # État des lieux de SpinsAcademy (24/10/2026)
 
+> Remplacé par `ETAT_DES_LIEUX_2026-10-29.md`.
+
 Sources : plan en trois lots du 23/10 (`PLAN_LOTS_2026-10-23.md`), quatre tests joueurs (`RETEST*_JOUEURS_*.md`), lot 1 « table du client » (`LOT1_TABLE_CLIENT_2026-10-24.md`), plan d'évaluation du MVP (`PLAN_EVALUATION_MVP_2026-10-14.md`).
 
 ## 1. L'application aujourd'hui

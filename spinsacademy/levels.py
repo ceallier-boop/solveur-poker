@@ -15,24 +15,25 @@ d'après ses résultats.
 from . import progress, quiz
 
 LEVELS = {
-    1: dict(name='Tapis courts', depth=(0, 9.5), depth_fr='à moins de 10 BB', mode='gto', themes=(
+    1: dict(name='Tapis courts', depth=(0, 9.5), mode='gto', themes=(
         ('Premier à parler, moins de 10 BB', dict(family='first_in', min_stack=0, max_stack=9.5)),
         ('Face à un tapis, moins de 10 BB', dict(family='vs_allin', min_stack=0, max_stack=9.5)))),
-    2: dict(name='Le jeu à 10-16 BB', depth=(9.5, 16.5), depth_fr='de 10 à 16 BB', mode='gto', themes=(
+    2: dict(name='Le jeu à 10-16 BB', depth=(9.5, 16.5), mode='gto', themes=(
         ('Premier à parler, 10 à 16 BB', dict(family='first_in', min_stack=9.5, max_stack=16.5)),
         ('Face à un limp, 10 à 16 BB', dict(family='vs_limp', min_stack=9.5, max_stack=16.5)),
         ('Face à une relance, 10 à 16 BB', dict(family='vs_raise', min_stack=9.5, max_stack=16.5)),
         ('Face à un tapis, 10 à 16 BB', dict(family='vs_allin', min_stack=9.5, max_stack=16.5)))),
-    3: dict(name='Le jeu à 17-25 BB', depth=(16.5, 99), depth_fr='de 17 à 25 BB', mode='gto', themes=(
+    3: dict(name='Le jeu à 17-25 BB', depth=(16.5, 99), mode='gto', themes=(
         ('Premier à parler, 17 à 25 BB', dict(family='first_in', min_stack=16.5, max_stack=99)),
         ('Face à une relance, 17 à 25 BB', dict(family='vs_raise', min_stack=16.5, max_stack=99)),
         ('Face à un limp, 17 à 25 BB', dict(family='vs_limp', min_stack=16.5, max_stack=99)))),
-    4: dict(name='Exploiter le field', depth=(0, 99), depth_fr='de 4 à 25 BB, contre les joueurs réels', mode='exploit', themes=(
+    4: dict(name='Exploiter le field', depth=(0, 99), mode='exploit', themes=(
         ('Premier à parler contre le field', dict(family='first_in')),
         ('Face à un limp contre le field', dict(family='vs_limp')),
         ('Face à un tapis contre le field', dict(family='vs_allin')),
         ('Lire le vilain', dict(family='read')))),
 }
+DEPTH_FR = {1: 'moins de 10 BB', 2: '10 à 16 BB', 3: '17 à 25 BB', 4: '4 à 25 BB, contre le field'}   # test joueurs 9 : la profondeur dite partout
 DECISIONS = {1: 100, 2: 150, 3: 150}
 BB_TARGET = {1: 15.0, 2: 12.0, 3: 10.0}
 RANGES_L1 = 3
@@ -63,7 +64,7 @@ def status(level, rows, range_rows, range_spots):
     mine = [r for r in rows if quiz.mode_of(r['dataset_version']) == 'gto' and in_level(level, quiz.load(r['dataset_version'])[1][r['spot_id']])][-RECENT:]
     st = progress.compute(mine) if mine else {}
     dec, bb = st.get('ev_questions', 0), st.get('bb_per_100')
-    crit = [dict(kind='decisions', label_fr=f"{DECISIONS[level]} décisions {LEVELS[level]['depth_fr']}", value=dec, target=DECISIONS[level], ok=dec >= DECISIONS[level]),
+    crit = [dict(kind='decisions', label_fr=f"{DECISIONS[level]} décisions à {DEPTH_FR[level]}", depth_fr=DEPTH_FR[level], value=dec, target=DECISIONS[level], ok=dec >= DECISIONS[level]),
             dict(kind='bb', label_fr=f"Moins de {BB_TARGET[level]:g} BB perdus pour 100 décisions".replace('.', ','), value=bb, target=BB_TARGET[level],
                  ok=bb is not None and dec >= DECISIONS[level] and bb < BB_TARGET[level])]
     if level == 1:
@@ -73,6 +74,13 @@ def status(level, rows, range_rows, range_spots):
         weak = (st.get('focus') or {}).get('kind') == 'weak'
         crit.append(dict(kind='fragile', label_fr='Aucun thème du niveau fragile', value=(st.get('focus') or {}).get('label') if weak else None, target=None, ok=dec > 0 and not weak))
     return dict(level=level, ready=all(c['ok'] for c in crit), criteria=crit, final=False)
+
+
+def depth_filters(level):
+    """filtres de profondeur du niveau (complément de la révision dans la séance) ; rien pour le niveau exploitant"""
+    if level >= 4: return {}
+    lo, hi = LEVELS[level]['depth']
+    return dict(min_stack=lo, max_stack=hi)
 
 
 def level_spots(version, level):

@@ -15,7 +15,7 @@ Mode invité au MVP : pas d'authentification (cahier des charges §19, question 
 identifiant anonyme envoyé dans l'en-tête X-Player-Id ; il relie les séries d'un même joueur pour les statistiques.
 Base : SPINSACADEMY_DB (par défaut data/app/spinsacademy.sqlite) ; dataset : SPINSACADEMY_DATASET.
 """
-import threading, datetime, hmac, json, os, re, sqlite3, uuid
+import threading, datetime, hmac, json, os, random, re, sqlite3, uuid
 from contextlib import closing
 from typing import Optional
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS goals(player_id TEXT NOT NULL, mode TEXT NOT NULL, we
   target REAL NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(player_id, mode, week, kind));
 CREATE TABLE IF NOT EXISTS player_level(player_id TEXT PRIMARY KEY, level INTEGER NOT NULL, experience TEXT, goal TEXT,
   onboarded_at TEXT, promoted_at TEXT, updated_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS day_plan(player_id TEXT NOT NULL, mode TEXT NOT NULL, day TEXT NOT NULL, level INTEGER, theme_fr TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS daily_plan(player_id TEXT NOT NULL, mode TEXT NOT NULL, day TEXT NOT NULL, theme_fr TEXT NOT NULL,
   filters TEXT NOT NULL, range_filters TEXT NOT NULL, range_spot TEXT, created_at TEXT NOT NULL, PRIMARY KEY(player_id, mode, day));
 CREATE TABLE IF NOT EXISTS admin_log(id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
   action TEXT NOT NULL, details TEXT NOT NULL);
@@ -75,7 +75,7 @@ def connect():
         con.execute('ALTER TABLE attempts ADD COLUMN timed_out INTEGER NOT NULL DEFAULT 0')
     if 'plan' not in {r[1] for r in con.execute('PRAGMA table_info(sessions)')}:           # migration : étape de la séance du jour
         con.execute('ALTER TABLE sessions ADD COLUMN plan TEXT')
-    if 'mode' not in {r[1] for r in con.execute('PRAGMA table_info(preferences)')}:        # migration : mode gardé côté serveur (test joueurs 9)
+    if 'mode' not in {r[1] for r in con.execute('PRAGMA table_info(preferences)')}:        # migration : mode gardé sur le serveur (test joueurs 9)
         con.execute('ALTER TABLE preferences ADD COLUMN mode TEXT')
     con.execute('CREATE INDEX IF NOT EXISTS sessions_player ON sessions(player_id)')
     catalog.sync(con); con.commit()
@@ -122,7 +122,7 @@ class NewSession(BaseModel):
     review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
     plan: Optional[str] = Field(None, pattern='^(review|theme)$')   # étape de la séance du jour (spinsacademy.today)
     challenge: Optional[str] = Field(None, pattern='^(daily|perfect|pressure|reader)$')   # défi (spinsacademy.challenges)
-    tz: int = 0                           # décalage de l'appareil en minutes : jour du joueur (révision, thème de la séance du jour)
+    tz: int = 0                           # décalage horaire de l'appareil (minutes) : thème de la séance du jour pour la série parfaite
 
 
 class Attempt(BaseModel):
@@ -250,27 +250,29 @@ def _least_repeated(draw, seed, recent):
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=body.review or bool(body.challenge)); filters = body.filters.model_dump(exclude_none=True); info = None
-    plan = body.plan; fixed_seed = None; tz = max(-840, min(840, body.tz))
+    plan = body.plan; fixed_seed = None
+    reader = False
     if body.challenge:                                                     # étape 5 : la série du défi
         plan = challenges.SERIES[body.challenge]; utc_day = datetime.datetime.now(datetime.timezone.utc).date()
-        if body.challenge == 'daily':                                      # les mêmes mains pour tous ; une seule tentative par jour, tous modes
+        if body.challenge == 'daily':                                      # les mêmes mains pour tous ; une seule tentative par jour UTC, tous modes
             with closing(connect()) as con:
-                if con.execute("SELECT 1 FROM sessions WHERE player_id = ? AND plan = 'challenge_daily' AND substr(created_at, 1, 10) = ?",
-                               (pid, utc_day.isoformat())).fetchone():
-                    raise HTTPException(409, "Tu as déjà relevé le défi du jour : un nouveau défi t'attend demain.")
+                prev = challenges.daily_attempt([dict(r) for r in con.execute('SELECT created_at, plan FROM sessions WHERE player_id = ? AND plan = ?',
+                                                                              (pid, plan))], utc_day)
+            if prev: raise HTTPException(409, "défi du jour déjà tenté aujourd'hui : nouveau défi demain")
             filters, fixed_seed = {}, challenges.daily_seed(utc_day)
-        elif body.challenge == 'perfect': filters = dict(my_today(body.mode, tz, x_player_id)['steps'][1]['filters'])   # le thème de la séance du jour
+        elif body.challenge == 'perfect':                                  # test joueurs 9 : le thème de la séance du jour du joueur
+            filters = dict(my_today(body.mode, body.tz, x_player_id)['steps'][1]['filters'])
         elif body.challenge == 'pressure': filters = {}
         elif body.challenge == 'reader':
             if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
-            filters = dict(family='read')
+            filters = dict(family='read'); reader = True
         body.filters = Filters(**filters); body.size = quiz.SERIES_SIZE
     try:
         with closing(connect()) as con:
             version = serving_version(con, body.mode); excluded = _excluded(con)
             want = pid is not None and not filters and not body.review and not body.challenge and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
             info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
-            due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=tz)['due_items'] if body.review else None
+            due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
             recent = _recent(con, pid)
         if due is not None:
             series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
@@ -285,13 +287,8 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
                       for s, h, slot, ok in drawn]
         elif fixed_seed is not None:
             series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, fixed_seed, excluded)]
-        elif body.challenge == 'reader':                                   # test joueurs 9 : au moins READER_PASTILLES « Quelle pastille ? »
-            spots = quiz.load(version)[1]; npast = lambda ser: sum(spots[s]['field']['type'] == 'profil' for s, _ in ser); best = None
-            for k in range(40):
-                ser = quiz.draw_series(version, filters, body.size, None if body.seed is None else body.seed * 100 + k, excluded)
-                if best is None or npast(ser) > npast(best): best = ser
-                if npast(best) >= challenges.READER_PASTILLES: break
-            series = [(s, h, None, None) for s, h in best]
+        elif reader:                                                       # test joueurs 9 : au moins READER_PROFILES « Quelle pastille ? »
+            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded, min_profil=challenges.READER_PROFILES)]
         else:
             series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded), body.seed, recent)]
     except ValueError as e:
@@ -325,7 +322,7 @@ def next_question(session_id: str):
             con.execute('UPDATE questions SET served_at = ? WHERE session_id = ? AND idx = ?', (_now(), session_id, row['idx']))
         q = quiz.question(s['dataset_version'], row['spot_id'], row['hand'])
         return dict(done=False, session_id=session_id, question_index=row['idx'], size=s['size'], question=q,
-                    purpose=row['purpose'], purpose_fr=row['purpose_fr'])
+                    purpose=row['purpose'], purpose_fr=row['purpose_fr'], plan=s['plan'])      # défi : l'interface reprend son chrono imposé
 
 
 @app.post('/attempts')
@@ -423,7 +420,7 @@ def range_answer(body: RangeAnswer, x_player_id: Optional[str] = Header(None)):
 
 class Preferences(BaseModel):
     adaptive: Optional[bool] = None
-    mode: Optional[str] = Field(None, pattern='^(gto|exploit)$')     # test joueurs 9 : le mode choisi suit le joueur, pas seulement le navigateur
+    mode: Optional[str] = Field(None, pattern='^(gto|exploit)$')      # test joueurs 9 : le mode choisi, gardé sur le serveur
 
 
 @app.get('/users/me/preferences')
@@ -437,10 +434,10 @@ def put_preferences(body: Preferences, x_player_id: Optional[str] = Header(None)
     pid = player(x_player_id, required=True)
     with closing(connect()) as con, con:
         cur = _prefs(con, pid)
-        adaptive = cur['adaptive'] if body.adaptive is None else body.adaptive; mode = body.mode or cur['mode']
+        adaptive_ = cur['adaptive'] if body.adaptive is None else body.adaptive; mode_ = body.mode or cur['mode']
         con.execute('INSERT INTO preferences(player_id, adaptive, mode, updated_at) VALUES (?, ?, ?, ?) '
                     'ON CONFLICT(player_id) DO UPDATE SET adaptive = excluded.adaptive, mode = excluded.mode, updated_at = excluded.updated_at',
-                    (pid, int(adaptive), mode, _now()))
+                    (pid, int(adaptive_), mode_, _now()))
         return _prefs(con, pid)
 
 
@@ -461,63 +458,54 @@ def my_reviews(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Head
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     with closing(connect()) as con:
-        res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode), tz=max(-840, min(840, tz)))
+        res = review.summary(_mode_rows(con, pid, mode, None), serving_version(con, mode), tz=max(-840, min(840, tz)))   # échéances en jours du joueur
     return dict(res, mode=mode, due_items=res['due_items'][:quiz.SERIES_SIZE * 4])
-
-
-def _active_days(con, pid, tz):
-    """jours d'activité du joueur, tous modes confondus : une série finie ou une range (série de jours, semaine pleine)"""
-    sess = con.execute('SELECT s.created_at, s.size, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
-                       'FROM sessions s WHERE s.player_id = ?', (pid,)).fetchall()
-    rng = con.execute('SELECT answered_at FROM range_attempts WHERE player_id = ?', (pid,)).fetchall()
-    return {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r[0], tz) for r in rng}
 
 
 @app.get('/users/me/today')
 def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
     """séance du jour (programme de travail, étape 1) : révision, thème du jour, range du jour ; série de jours ; BB perdus sur 7 jours.
-    Le thème et la range sont figés au premier affichage de la journée (table day_plan), tant que le niveau ne change pas."""
+    Test joueurs 9 : le thème et la range sont fixés au premier affichage de la journée (table daily_plan)"""
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     tz = max(-840, min(840, tz))
-    now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)
-    with closing(connect()) as con, con:
+    with closing(connect()) as con:
         version = serving_version(con, mode)
-        sess = [dict(r) for r in con.execute(
+        every = [dict(r) for r in con.execute(
             'SELECT s.created_at, s.plan, s.filters, s.size, s.dataset_version, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
             'FROM sessions s WHERE s.player_id = ?', (pid,))]
-        sess = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+        sess = [x for x in every if quiz.mode_of(x['dataset_version']) == mode]
         rngs = [r[0] for r in con.execute('SELECT answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
         rows = _mode_rows(con, pid, mode, None)
-        due = review.summary(rows, version, now, tz)['due']
+        rv = review.summary(rows, version, tz=tz)
         gto = serving_version(con, 'gto')                                  # l'exercice de range est toujours sur la référence GTO
-        lv = _level_row(con, pid)['level'] if mode == 'gto' else 4         # étape 4 : thèmes du niveau
-        active = _active_days(con, pid, tz)
-        fixed = con.execute('SELECT * FROM day_plan WHERE player_id = ? AND mode = ? AND day = ?', (pid, mode, day.isoformat())).fetchone()
-        if fixed and fixed['level'] != lv:                                 # niveau changé dans la journée : nouveau thème du niveau
-            con.execute('DELETE FROM day_plan WHERE player_id = ? AND mode = ? AND day = ?', (pid, mode, day.isoformat())); fixed = None
+        excluded = _excluded(con)
+    now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)
     week = lambda a, b: [r for r in rows if (now - datetime.timedelta(days=b)).isoformat() < (r['answered_at'] or '') <= (now - datetime.timedelta(days=a)).isoformat()]
-    stats = progress.compute(rows) if rows else {}
-    focus = stats.get('focus')
-    if focus and focus.get('filters') and not levels.fits(lv, focus['filters']): focus = None          # un thème fragile hors du niveau attend
-    out = today.build(sess, rngs, due, focus, day, tz,
+    with closing(connect()) as con, con:
+        lv = _level_row(con, pid)['level'] if mode == 'gto' else 4        # étape 4 : thèmes du niveau
+        fixed = con.execute('SELECT * FROM daily_plan WHERE player_id = ? AND mode = ? AND day = ?', (pid, mode, day.isoformat())).fetchone()
+        if fixed is None:                                                  # premier affichage du jour : thème et range fixés pour la journée
+            stats = progress.compute(rows) if rows else {}
+            focus = stats.get('focus')
+            if focus and focus.get('filters') and not levels.fits(lv, focus['filters']): focus = None      # un thème fragile hors du niveau attend
+            label, f = today.choose(sess, rngs, focus, day, tz, levels.LEVELS[lv]['themes'])
+            rf = today.range_filters(f)
+            for cand in (rf, {k: v for k, v in rf.items() if k != 'hero'}, {k: v for k, v in rf.items() if k in ('family', 'table')}, {}):
+                t = ranges.pick(gto, cand or None, seed=int(day.strftime('%Y%m%d')), exclude=set(excluded))
+                if t: rf = cand; break
+            fixed = dict(theme_fr=label, filters=json.dumps(f), range_filters=json.dumps(rf), range_spot=t['spot_id'] if t else None)
+            con.execute('INSERT OR IGNORE INTO daily_plan(player_id, mode, day, theme_fr, filters, range_filters, range_spot, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                        (pid, mode, day.isoformat(), label, fixed['filters'], fixed['range_filters'], fixed['range_spot'], _now()))
+        plan = dict(theme_fr=fixed['theme_fr'], filters=json.loads(fixed['filters']), range_filters=json.loads(fixed['range_filters']), range_spot=fixed['range_spot'])
+    done_all = [x for x in every if x['answered'] >= x['size']]
+    active = {today.local_day(x['created_at'], tz) for x in done_all} | {today.local_day(r, tz) for r in rngs}      # série de jours : tous modes
+    out = today.build(sess, rngs, rv['due'], None, day, tz,
                       progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
                       progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None,
-                      themes=levels.LEVELS[lv]['themes'], level=dict(number=lv, name=levels.LEVELS[lv]['name']),
-                      theme=(fixed['theme_fr'], json.loads(fixed['filters'])) if fixed else None, active=active)
-    rs = out['steps'][2]
-    if fixed:
-        rs['filters'] = json.loads(fixed['range_filters']); rs['spot_id'] = fixed['range_spot']
-    else:
-        for f in (rs['filters'], {k: v for k, v in rs['filters'].items() if k != 'hero'},          # range du thème, sinon la plus proche
-                  {k: v for k, v in rs['filters'].items() if k in ('family', 'table')}, {}):
-            if ranges.pick(gto, f or None, seed=0): rs['filters'] = f; break
-        t = ranges.pick(gto, rs['filters'] or None, seed=day.toordinal())  # la même situation toute la journée
-        rs['spot_id'] = t['spot_id'] if t else None
-        with closing(connect()) as con, con:
-            con.execute('INSERT OR IGNORE INTO day_plan(player_id, mode, day, level, theme_fr, filters, range_filters, range_spot, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (pid, mode, day.isoformat(), lv, out['theme_fr'], json.dumps(out['steps'][1]['filters']), json.dumps(rs['filters']), rs['spot_id'], _now()))
-    return dict(out, mode=mode, has_history=bool(active))
+                      level=dict(number=lv, name=levels.LEVELS[lv]['name'], depth_fr=levels.DEPTH_FR[lv]), plan=plan, active=active,
+                      next_due=(rv['next_due_at'], rv['pending']), review_filters=levels.depth_filters(lv), played_before=bool(done_all or rngs), mode=mode)
+    return dict(out, mode=mode)
 
 
 @app.get('/users/me/recommendations')
@@ -535,7 +523,7 @@ def my_recommendations(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str
     if mode == 'gto':
         with closing(connect()) as con, con: lvl = _level_info(con, pid)
         msg = levels.almost(lvl['status'])
-    return dict(mode=mode, items=recommend.build(stats, review.items(rows, version, tz=max(-840, min(840, tz))), last, rows, t['steps'][1]['filters'], level_msg=msg))
+    return dict(mode=mode, items=recommend.build(stats, review.items(rows, version), last, rows, t['steps'][1]['filters'], level_msg=msg))
 
 
 # ------------------------------------------------------------------ niveaux et premier lancement (programme de travail, étape 4)
@@ -549,6 +537,13 @@ def _level_row(con, pid):
     return dict(player_id=pid, level=1, experience=None, goal=None, onboarded_at=None, promoted_at=None)
 
 
+def _reset_plan(con, pid):
+    """le niveau change : la séance du jour (mode GTO) est recalculée sur le nouveau niveau, sauf si son thème est déjà commencé"""
+    since = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)).date().isoformat()
+    started = con.execute("SELECT 1 FROM sessions WHERE player_id = ? AND plan = 'theme' AND created_at >= ? LIMIT 1", (pid, since)).fetchone()
+    if not started: con.execute("DELETE FROM daily_plan WHERE player_id = ? AND mode = 'gto' AND day >= ?", (pid, since))
+
+
 def _level_info(con, pid):
     """niveau du joueur, passage automatique au suivant quand les critères sont tenus, avancement"""
     row = _level_row(con, pid); promoted = None
@@ -558,11 +553,11 @@ def _level_info(con, pid):
     while True:
         st = levels.status(row['level'], rows, rr, levels.level_spots(gto, row['level']) if row['level'] == 1 else set())
         if not st['ready'] or not row['onboarded_at']: break
-        row['level'] += 1; promoted = row['level']
+        row['level'] += 1; promoted = row['level']; _reset_plan(con, pid)
         con.execute('UPDATE player_level SET level = ?, promoted_at = ?, updated_at = ? WHERE player_id = ?', (row['level'], _now(), _now(), pid))
     lv = levels.LEVELS[row['level']]
     return dict(level=row['level'], name=lv['name'], onboarded=bool(row['onboarded_at']), experience=row['experience'], goal=row['goal'],
-                promoted_to=promoted, status=st, levels=[dict(number=k, name=v['name'], mode=v['mode'], depth_fr=v['depth_fr']) for k, v in levels.LEVELS.items()],
+                promoted_to=promoted, status=st, levels=[dict(number=k, name=v['name'], mode=v['mode'], depth_fr=levels.DEPTH_FR[k]) for k, v in levels.LEVELS.items()], depth_fr=levels.DEPTH_FR[row['level']],
                 experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR)
 
 
@@ -587,6 +582,7 @@ def onboarding(body: Onboarding, x_player_id: Optional[str] = Header(None)):
         con.execute('INSERT INTO player_level(player_id, level, experience, goal, onboarded_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) '
                     'ON CONFLICT(player_id) DO UPDATE SET level = excluded.level, experience = excluded.experience, goal = excluded.goal, '
                     'onboarded_at = excluded.onboarded_at, updated_at = excluded.updated_at', (pid, lv, body.experience, body.goal, _now(), _now()))
+        _reset_plan(con, pid)
         return _level_info(con, pid)
 
 
@@ -602,6 +598,7 @@ def set_level(body: LevelChange, x_player_id: Optional[str] = Header(None)):
         _level_row(con, pid)
         con.execute('INSERT INTO player_level(player_id, level, onboarded_at, updated_at) VALUES (?, ?, ?, ?) '
                     'ON CONFLICT(player_id) DO UPDATE SET level = excluded.level, updated_at = excluded.updated_at', (pid, body.level, _now(), _now()))
+        _reset_plan(con, pid)
         return _level_info(con, pid)
 
 
@@ -631,21 +628,22 @@ def my_goals(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
         vals = lambda k: goals.week_values(rows, sess, rgs, wk(k), tz)
         cur = _targets(con, pid, mode, start.isoformat())
         prev_t = _targets(con, pid, mode, wk(1).isoformat()); prev_v = vals(1)
+        v0 = vals(0); cap = goals.days_cap(v0, day)
         if len(cur) < len(goals.KINDS):                                    # première visite de la semaine : cibles proposées, puis gardées
-            hist = [vals(k) for k in (1, 2, 3, 4)]
-            prop = goals.propose(prev_t, prev_v if prev_t else None, [v['precision'] if v['decisions'] >= goals.MIN_DECISIONS else None for v in hist],
-                                 new=not prev_t and not any(v['decisions'] for v in hist), days_cap=goals.days_cap(vals(0), day))
+            new = not con.execute('SELECT 1 FROM goals WHERE player_id = ? AND mode = ? LIMIT 1', (pid, mode)).fetchone() and not any(
+                (r['answered_at'] or '') < start.isoformat() for r in rows)          # test joueurs 9 : premier passage, cibles plus basses
+            prop = goals.propose(prev_t, prev_v if prev_t else None, [vals(k)['precision'] if vals(k)['decisions'] >= goals.MIN_DECISIONS else None for k in (1, 2, 3, 4)], new=new)
+            prop['days'] = min(prop['days'], cap)                          # jamais plus de jours qu'il n'en reste dans la semaine
             for k, t in prop.items():
                 if k not in cur:
                     con.execute('INSERT OR IGNORE INTO goals(player_id, mode, week, kind, target, updated_at) VALUES (?, ?, ?, ?, ?, ?)', (pid, mode, start.isoformat(), k, t, _now()))
                     cur[k] = t
     last = None
-    if prev_t and (prev_v['days'] or prev_v['ranges'] or prev_v['decisions']):     # bilan seulement s'il y avait des objectifs et que la semaine a servi
-        items = goals.view({k: prev_t.get(k, goals.DEFAULT.get(k, goals.DEFAULT_BB)) for k in goals.KINDS}, prev_v)
+    if len(prev_t) == len(goals.KINDS) and (prev_v['days'] or prev_v['ranges'] or prev_v['decisions']):   # test joueurs 9 : seulement s'il y avait des objectifs
+        items = goals.view(prev_t, prev_v)
         last = dict(week=wk(1).isoformat(), done=sum(x['done'] for x in items), total=len(items), bb=prev_v['precision'],
                     bb_before=vals(2)['precision'], days=prev_v['days'], decisions=prev_v['decisions'])
-    v0 = vals(0)
-    return dict(mode=mode, week=start.isoformat(), days_left=6 - day.weekday(), items=goals.view(cur, v0, goals.days_cap(v0, day)), last_week=last)
+    return dict(mode=mode, week=start.isoformat(), days_left=6 - day.weekday(), items=goals.view(cur, v0, cap), last_week=last)
 
 
 class GoalChange(BaseModel):
@@ -661,12 +659,12 @@ def set_goal(body: GoalChange, x_player_id: Optional[str] = Header(None)):
     pid = player(x_player_id, required=True)
     lo, hi = goals.BOUNDS[body.kind]
     t = round(body.target * 2) / 2 if body.kind == 'precision' else round(body.target)
-    if not lo <= t <= hi: raise HTTPException(422, f'cible hors des bornes ({lo} à {hi})')
-    day = today.local_day(datetime.datetime.now(datetime.timezone.utc).isoformat(), max(-840, min(840, body.tz)))
+    tz = max(-840, min(840, body.tz)); day = today.local_day(datetime.datetime.now(datetime.timezone.utc).isoformat(), tz)
     with closing(connect()) as con, con:
-        if body.kind == 'days':                                            # test joueurs 9 : pas plus de séances que de jours restants
-            rows, sess, rgs = _goal_data(con, pid, body.mode); cap = goals.days_cap(goals.week_values(rows, sess, rgs, goals.week_start(day), max(-840, min(840, body.tz))), day)
-            if t > cap: raise HTTPException(422, f"au plus {cap} séance{'s' if cap > 1 else ''} : c'est ce qu'il reste possible cette semaine")
+        if body.kind == 'days':                                            # test joueurs 9 : pas plus de jours qu'il n'en reste
+            rows, sess, rgs = _goal_data(con, pid, body.mode)
+            hi = goals.days_cap(goals.week_values(rows, sess, rgs, goals.week_start(day), tz), day)
+        if not lo <= t <= hi: raise HTTPException(422, f'cible hors des bornes ({lo} à {hi})')
         con.execute('INSERT INTO goals(player_id, mode, week, kind, target, updated_at) VALUES (?, ?, ?, ?, ?, ?) '
                     'ON CONFLICT(player_id, mode, week, kind) DO UPDATE SET target = excluded.target, updated_at = excluded.updated_at',
                     (pid, body.mode, goals.week_start(day).isoformat(), body.kind, t, _now()))
@@ -679,18 +677,18 @@ def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = H
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     tz = max(-840, min(840, tz)); now = datetime.datetime.now(datetime.timezone.utc); day = today.local_day(now.isoformat(), tz)
-    t = my_today(mode, tz, x_player_id)                                  # série parfaite : le thème de la séance du jour
     with closing(connect()) as con:
         sess = [dict(r) for r in con.execute(
             'SELECT s.id, s.created_at, s.plan, s.size, s.dataset_version, '
             '(SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered, '
             "(SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id AND a.verdict = 'correct') AS correct, "
             '(SELECT COALESCE(SUM(a.timed_out), 0) FROM attempts a WHERE a.session_id = s.id) AS timeouts '
-            "FROM sessions s WHERE s.player_id = ? AND s.plan LIKE 'challenge_%'", (pid,))]
+            'FROM sessions s WHERE s.player_id = ?', (pid,))]
         rgs = [dict(r) for r in con.execute('SELECT answered_at, bb_per_100, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
-        active = _active_days(con, pid, tz)
-    for x in sess: x['mode'] = quiz.mode_of(x['dataset_version'])
-    return dict(mode=mode, **challenges.build(sess, rgs, active, day, tz, mode, now.date(), (t['theme_fr'], t['steps'][1]['filters'])))
+    mine = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+    active = {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r['answered_at'], tz) for r in rgs}
+    theme = my_today(mode, tz, x_player_id)['theme_fr']                   # série parfaite : le thème de la séance du jour
+    return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date(), theme_fr=theme, all_sessions=sess))
 
 
 @app.post('/users/me/adaptation/reset')
@@ -711,8 +709,8 @@ def my_export(x_player_id: Optional[str] = Header(None)):
         sessions = [dict(r) for r in con.execute('SELECT id, created_at, dataset_version, filters, seed, size FROM sessions WHERE player_id = ?', (pid,))]
         ranges_done = [dict(r) for r in con.execute('SELECT dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
         goals_set = [dict(r) for r in con.execute('SELECT mode, week, kind, target, updated_at FROM goals WHERE player_id = ?', (pid,))]
-        plans = [dict(r) for r in con.execute('SELECT mode, day, level, theme_fr, filters, range_filters, range_spot FROM day_plan WHERE player_id = ?', (pid,))]
-        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set, day_plans=plans,
+        plans = [dict(r) for r in con.execute('SELECT mode, day, theme_fr, filters, range_filters, range_spot FROM daily_plan WHERE player_id = ?', (pid,))]
+        return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set, daily_plans=plans,
                     level=dict(r) if (r := con.execute('SELECT level, experience, goal, onboarded_at, promoted_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()) else None)
 
 
@@ -729,7 +727,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
         con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM goals WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM player_level WHERE player_id = ?', (pid,))
-        con.execute('DELETE FROM day_plan WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM daily_plan WHERE player_id = ?', (pid,))
 
 
 # ------------------------------------------------------------------ signalements (cahier des charges §7 et §14)

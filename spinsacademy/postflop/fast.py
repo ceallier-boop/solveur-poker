@@ -2,28 +2,58 @@
 réservoir de boards précalculés (valeurs des combos à la river, groupes de force par rue)."""
 import numpy as np
 from numba import njit
-from .kernels import CC, combo_ranks, strength, texture
+from .kernels import CC, CLASS_OF, combo_ranks, strength, strength_vs, texture
 
 
-def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False):
+def groups(s, B, metric, nc, board=None, textured=False):
+    """groupe de chaque combo à partir de sa force s (-1 : combo bloqué) sur un board de nc cartes visibles.
+    metric 'ehs2' (flop et turn) : groupes d'effectifs égaux, EHS² n'étant pas uniforme sur [0, 1] ; sinon tranches égales.
+    textured : + B * classe de texture du board visible (kernels.texture)."""
+    if metric == 'ehs2' and nc < 5:
+        v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, B + 1)[1:-1]); g = np.where(v, np.searchsorted(q, s), 0)
+    else:
+        g = np.clip((s * B).astype(np.int64), 0, B - 1)
+    g = np.where(s >= 0, g, 0)
+    return g + B * texture(board, nc) if textured else g
+
+
+def groups_weighted(s, B, w, nc, board=None, textured=False):
+    """groupes d'effectifs égaux pondérés par w (la range du joueur) : les groupes découpent les mains qu'il a vraiment"""
+    v = (s >= 0) & (w > 0)
+    if v.sum() < B:
+        g = np.clip((np.maximum(s, 0) * B).astype(np.int64), 0, B - 1)
+    else:
+        o = np.argsort(s[v]); cw = np.cumsum(w[v][o]); cw /= cw[-1]
+        q = s[v][o][np.minimum(np.searchsorted(cw, np.linspace(0, 1, B + 1)[1:-1]), len(o) - 1)]
+        g = np.searchsorted(q, s, side='right')
+    g = np.where(s >= 0, np.clip(g, 0, B - 1), 0)
+    return g + B * texture(board, nc) if textured else g
+
+
+def board_pool(n, buckets, rollouts, seed, metric='ehs', textured=False, flop_buckets=0, ranges=None):
     """n boards tirés au hasard : valeurs à la river (n, 1326), ordre de tri, validité, groupes de force (n, 3, 1326).
     metric : 'ehs' (force moyenne) ou 'ehs2' (moyenne du carré, flop et turn ; la river reste le rang exact).
-    textured : groupe = force + buckets * classe de texture du board visible (kernels.texture), buckets * 8 groupes en tout."""
+    textured : groupe = force + B * classe de texture du board visible (kernels.texture), B * 8 groupes en tout.
+    flop_buckets : nombre de groupes au flop (0 : comme aux autres rues).
+    ranges : (poids par classe d'OOP, d'IP) : groupes propres à chaque joueur, selon sa force contre la range adverse
+    (strength_vs), découpés en effectifs égaux de sa propre range ; groupes alors de forme (n, 2, 3, 1326)."""
     rng = np.random.default_rng(seed)
     ranks = np.zeros((n, 1326), np.int64); order = np.zeros((n, 1326), np.int64)
-    bucket = np.zeros((n, 3, 1326), np.int64); valid = np.zeros((n, 1326), np.bool_)
+    bucket = np.zeros((n, 3, 1326) if ranges is None else (n, 2, 3, 1326), np.int64); valid = np.zeros((n, 1326), np.bool_)
+    rw = None if ranges is None else [np.asarray(x, float)[CLASS_OF] for x in ranges]
     for i in range(n):
         board = rng.choice(52, 5, replace=False).astype(np.int64)
         r = combo_ranks(board, CC); ranks[i] = r; order[i] = np.argsort(r); valid[i] = r >= 0
         s0 = int(rng.integers(1 << 30))
         for k, nc in enumerate((3, 4, 5)):
-            s = strength(board, nc, board, rollouts, CC, s0 + nc, metric == 'ehs2' and nc < 5)
-            if metric == 'ehs2' and nc < 5:                  # groupes d'effectifs égaux : EHS² n'est pas uniforme sur [0, 1]
-                v = s >= 0; q = np.quantile(s[v], np.linspace(0, 1, buckets + 1)[1:-1])
-                bucket[i, k] = np.where(v, np.searchsorted(q, s), 0)
+            B = flop_buckets if nc == 3 and flop_buckets else buckets
+            if rw is None:
+                s = strength(board, nc, board, rollouts, CC, s0 + nc, metric == 'ehs2' and nc < 5)
+                bucket[i, k] = groups(s, B, metric, nc, board, textured)
             else:
-                bucket[i, k] = np.clip((s * buckets).astype(np.int64), 0, buckets - 1)
-            if textured: bucket[i, k] += buckets * texture(board, nc)
+                for p in (0, 1):
+                    s = strength_vs(board, nc, board, rollouts, CC, s0 + nc, rw[1 - p], metric == 'ehs2' and nc < 5)
+                    bucket[i, p, k] = groups_weighted(s, B, rw[p], nc, board, textured)
     return ranks, order, valid, bucket
 
 
@@ -70,7 +100,8 @@ def _compat(opp, valid, CC, out):
 @njit(cache=True)
 def iterate(kind, player, street, c0, c1, winner, nch, child, P, R, Sg, t, ranks, order, valid, bucket,
             r0, r1, update, use_avg, V, reach, CC):
-    """un parcours complet sur un board ; V (nœuds, 2, 1326) reçoit les valeurs ; R et Sg mis à jour si update"""
+    """un parcours complet sur un board ; V (nœuds, 2, 1326) reçoit les valeurs ; R et Sg mis à jour si update.
+    bucket (2, 3, 1326) : groupe de chaque combo, par joueur et par rue"""
     N = kind.shape[0]; B = R.shape[1]
     sig = np.zeros((N, B, R.shape[2]))
     for n in range(N):
@@ -93,7 +124,7 @@ def iterate(kind, player, street, c0, c1, winner, nch, child, P, R, Sg, t, ranks
             ch = child[n, k]
             for c in range(1326):
                 reach[ch, 1 - a, c] = reach[n, 1 - a, c]
-                reach[ch, a, c] = reach[n, a, c] * sig[n, bucket[st, c], k]
+                reach[ch, a, c] = reach[n, a, c] * sig[n, bucket[a, st, c], k]
     win = np.zeros(1326); tie = np.zeros(1326); tot = np.zeros(1326)
     for n in range(N - 1, -1, -1):
         if kind[n] == 1:                                 # fold
@@ -109,14 +140,14 @@ def iterate(kind, player, street, c0, c1, winner, nch, child, P, R, Sg, t, ranks
         else:
             a = player[n]; st = street[n]; k = nch[n]
             for c in range(1326):
-                va = 0.0; vo = 0.0; b = bucket[st, c]
+                va = 0.0; vo = 0.0; b = bucket[a, st, c]
                 for j in range(k):
                     ch = child[n, j]; va += sig[n, b, j] * V[ch, a, c]; vo += V[ch, 1 - a, c]
                 V[n, a, c] = va; V[n, 1 - a, c] = vo
             if update:
                 for c in range(1326):
                     if not valid[c]: continue
-                    b = bucket[st, c]
+                    b = bucket[a, st, c]
                     for j in range(k):
                         ch = child[n, j]
                         R[n, b, j] += V[ch, a, c] - V[n, a, c]

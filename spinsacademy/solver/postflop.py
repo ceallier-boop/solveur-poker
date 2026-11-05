@@ -28,6 +28,7 @@ class Showdown:
 
 def fit_offsets(P, w0, w1, G0, G1, iters=200):
     """deltas (d0, d1) tels que le modèle P*E + d0[i] - d1[j] reproduise G0 (contre w1) et G1 (contre w0)"""
+    G0 = np.nan_to_num(G0); G1 = np.nan_to_num(G1)             # classe sans adversaire compatible : sans effet, mais nan * 0 = nan
     m1 = D @ w1; m0 = D.T @ w0
     E0 = (D * E) @ w1 / np.maximum(m1, 1e-12)                   # équité moyenne de i contre la range 1
     E1 = (D * (1 - E)).T @ w0 / np.maximum(m0, 1e-12)           # équité moyenne de j contre la range 0
@@ -97,10 +98,15 @@ class Realization:
         acc.setdefault(o, []).append(d0); acc.setdefault(i, []).append(d1)
 
     def commit(self, damping):
+        """damping : poids de l'ancienne correction (0 à 1), ou 'linear' : moyenne de tous les tours, le tour k pesant k
+        (comme la moyenne des stratégies de CFR+) ; elle fait converger le point fixe quand les tours oscillent"""
+        self._round = getattr(self, '_round', 0) + 1; wsum = getattr(self, '_wsum', 0)
+        a = wsum / (wsum + self._round) if damping == 'linear' else damping
         for nid, acc in self._pending.items():
             new = {p: np.mean(v, axis=0) for p, v in acc.items()}
             old = self.offsets.get(nid)
-            if old is not None and damping > 0:
-                new = {p: damping * old[p] + (1 - damping) * new[p] for p in new}
+            if old is not None and a > 0:
+                new = {p: a * old[p] + (1 - a) * new[p] for p in new}
             self.offsets[nid] = new
+        self._wsum = wsum + self._round
         self._pending = {}

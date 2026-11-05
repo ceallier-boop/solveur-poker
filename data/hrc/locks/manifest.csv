@@ -1,136 +1,181 @@
-priority,solve_id,profile,table,stacks,hero,gto_source,nodes_locked,lock_file
-P1,fish_3w_12-12-12_heroBB,fish,3-handed,12 / 12 / 12,BB,data/hrc/raw/v2/hand_3,5,fish/3w_12-12-12/hero_BB/locks.json
-P1,fish_3w_12-12-12_heroBTN,fish,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v2/hand_3,10,fish/3w_12-12-12/hero_BTN/locks.json
-P1,fish_3w_12-12-12_heroSB,fish,3-handed,12 / 12 / 12,SB,data/hrc/raw/v2/hand_3,7,fish/3w_12-12-12/hero_SB/locks.json
-P1,maniac_3w_12-12-12_heroBB,maniac,3-handed,12 / 12 / 12,BB,data/hrc/raw/v2/hand_3,5,maniac/3w_12-12-12/hero_BB/locks.json
-P1,maniac_3w_12-12-12_heroBTN,maniac,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v2/hand_3,10,maniac/3w_12-12-12/hero_BTN/locks.json
-P1,maniac_3w_12-12-12_heroSB,maniac,3-handed,12 / 12 / 12,SB,data/hrc/raw/v2/hand_3,7,maniac/3w_12-12-12/hero_SB/locks.json
-P1,nit_3w_12-12-12_heroBB,nit,3-handed,12 / 12 / 12,BB,data/hrc/raw/v2/hand_3,5,nit/3w_12-12-12/hero_BB/locks.json
-P1,nit_3w_12-12-12_heroBTN,nit,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v2/hand_3,10,nit/3w_12-12-12/hero_BTN/locks.json
-P1,nit_3w_12-12-12_heroSB,nit,3-handed,12 / 12 / 12,SB,data/hrc/raw/v2/hand_3,7,nit/3w_12-12-12/hero_SB/locks.json
-P1,fish_3w_15-15-15_heroBB,fish,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,fish/3w_15-15-15/hero_BB/locks.json
-P1,fish_3w_15-15-15_heroBTN,fish,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,fish/3w_15-15-15/hero_BTN/locks.json
-P1,fish_3w_15-15-15_heroSB,fish,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,fish/3w_15-15-15/hero_SB/locks.json
-P1,maniac_3w_15-15-15_heroBB,maniac,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,maniac/3w_15-15-15/hero_BB/locks.json
-P1,maniac_3w_15-15-15_heroBTN,maniac,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,maniac/3w_15-15-15/hero_BTN/locks.json
-P1,maniac_3w_15-15-15_heroSB,maniac,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,maniac/3w_15-15-15/hero_SB/locks.json
-P1,nit_3w_15-15-15_heroBB,nit,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,nit/3w_15-15-15/hero_BB/locks.json
-P1,nit_3w_15-15-15_heroBTN,nit,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,nit/3w_15-15-15/hero_BTN/locks.json
-P1,nit_3w_15-15-15_heroSB,nit,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,nit/3w_15-15-15/hero_SB/locks.json
-P1,fish_3w_20-20-20_heroBB,fish,3-handed,20 / 20 / 20,BB,data/hrc/raw/complement2/hand_14,4,fish/3w_20-20-20/hero_BB/locks.json
-P1,fish_3w_20-20-20_heroBTN,fish,3-handed,20 / 20 / 20,BTN,data/hrc/raw/complement2/hand_14,7,fish/3w_20-20-20/hero_BTN/locks.json
-P1,fish_3w_20-20-20_heroSB,fish,3-handed,20 / 20 / 20,SB,data/hrc/raw/complement2/hand_14,5,fish/3w_20-20-20/hero_SB/locks.json
-P1,maniac_3w_20-20-20_heroBB,maniac,3-handed,20 / 20 / 20,BB,data/hrc/raw/complement2/hand_14,4,maniac/3w_20-20-20/hero_BB/locks.json
-P1,maniac_3w_20-20-20_heroBTN,maniac,3-handed,20 / 20 / 20,BTN,data/hrc/raw/complement2/hand_14,7,maniac/3w_20-20-20/hero_BTN/locks.json
-P1,maniac_3w_20-20-20_heroSB,maniac,3-handed,20 / 20 / 20,SB,data/hrc/raw/complement2/hand_14,5,maniac/3w_20-20-20/hero_SB/locks.json
-P1,nit_3w_20-20-20_heroBB,nit,3-handed,20 / 20 / 20,BB,data/hrc/raw/complement2/hand_14,4,nit/3w_20-20-20/hero_BB/locks.json
-P1,nit_3w_20-20-20_heroBTN,nit,3-handed,20 / 20 / 20,BTN,data/hrc/raw/complement2/hand_14,7,nit/3w_20-20-20/hero_BTN/locks.json
-P1,nit_3w_20-20-20_heroSB,nit,3-handed,20 / 20 / 20,SB,data/hrc/raw/complement2/hand_14,5,nit/3w_20-20-20/hero_SB/locks.json
-P1,fish_hu_12-12_heroBB,fish,heads-up,12 / 12,BB,data/hrc/raw/complement2/hand_12,1,fish/hu_12-12/hero_BB/locks.json
-P1,fish_hu_12-12_heroSB,fish,heads-up,12 / 12,SB,data/hrc/raw/complement2/hand_12,3,fish/hu_12-12/hero_SB/locks.json
-P1,maniac_hu_12-12_heroBB,maniac,heads-up,12 / 12,BB,data/hrc/raw/complement2/hand_12,1,maniac/hu_12-12/hero_BB/locks.json
-P1,maniac_hu_12-12_heroSB,maniac,heads-up,12 / 12,SB,data/hrc/raw/complement2/hand_12,3,maniac/hu_12-12/hero_SB/locks.json
-P1,nit_hu_12-12_heroBB,nit,heads-up,12 / 12,BB,data/hrc/raw/complement2/hand_12,1,nit/hu_12-12/hero_BB/locks.json
-P1,nit_hu_12-12_heroSB,nit,heads-up,12 / 12,SB,data/hrc/raw/complement2/hand_12,3,nit/hu_12-12/hero_SB/locks.json
-P1,fish_hu_15-15_heroBB,fish,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,fish/hu_15-15/hero_BB/locks.json
-P1,fish_hu_15-15_heroSB,fish,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,fish/hu_15-15/hero_SB/locks.json
-P1,maniac_hu_15-15_heroBB,maniac,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,maniac/hu_15-15/hero_BB/locks.json
-P1,maniac_hu_15-15_heroSB,maniac,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,maniac/hu_15-15/hero_SB/locks.json
-P1,nit_hu_15-15_heroBB,nit,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,nit/hu_15-15/hero_BB/locks.json
-P1,nit_hu_15-15_heroSB,nit,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,nit/hu_15-15/hero_SB/locks.json
-P1,fish_hu_20-20_heroBB,fish,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,fish/hu_20-20/hero_BB/locks.json
-P1,fish_hu_20-20_heroSB,fish,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,fish/hu_20-20/hero_SB/locks.json
-P1,maniac_hu_20-20_heroBB,maniac,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,maniac/hu_20-20/hero_BB/locks.json
-P1,maniac_hu_20-20_heroSB,maniac,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,maniac/hu_20-20/hero_SB/locks.json
-P1,nit_hu_20-20_heroBB,nit,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,nit/hu_20-20/hero_BB/locks.json
-P1,nit_hu_20-20_heroSB,nit,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,nit/hu_20-20/hero_SB/locks.json
-P2,fish_3w_10-10-10_heroBB,fish,3-handed,10 / 10 / 10,BB,data/hrc/raw/v2/hand_2,5,fish/3w_10-10-10/hero_BB/locks.json
-P2,fish_3w_10-10-10_heroBTN,fish,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v2/hand_2,10,fish/3w_10-10-10/hero_BTN/locks.json
-P2,fish_3w_10-10-10_heroSB,fish,3-handed,10 / 10 / 10,SB,data/hrc/raw/v2/hand_2,7,fish/3w_10-10-10/hero_SB/locks.json
-P2,maniac_3w_10-10-10_heroBB,maniac,3-handed,10 / 10 / 10,BB,data/hrc/raw/v2/hand_2,5,maniac/3w_10-10-10/hero_BB/locks.json
-P2,maniac_3w_10-10-10_heroBTN,maniac,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v2/hand_2,10,maniac/3w_10-10-10/hero_BTN/locks.json
-P2,maniac_3w_10-10-10_heroSB,maniac,3-handed,10 / 10 / 10,SB,data/hrc/raw/v2/hand_2,7,maniac/3w_10-10-10/hero_SB/locks.json
-P2,nit_3w_10-10-10_heroBB,nit,3-handed,10 / 10 / 10,BB,data/hrc/raw/v2/hand_2,5,nit/3w_10-10-10/hero_BB/locks.json
-P2,nit_3w_10-10-10_heroBTN,nit,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v2/hand_2,10,nit/3w_10-10-10/hero_BTN/locks.json
-P2,nit_3w_10-10-10_heroSB,nit,3-handed,10 / 10 / 10,SB,data/hrc/raw/v2/hand_2,7,nit/3w_10-10-10/hero_SB/locks.json
-P2,fish_3w_14-14-14_heroBB,fish,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,fish/3w_14-14-14/hero_BB/locks.json
-P2,fish_3w_14-14-14_heroBTN,fish,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,fish/3w_14-14-14/hero_BTN/locks.json
-P2,fish_3w_14-14-14_heroSB,fish,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,fish/3w_14-14-14/hero_SB/locks.json
-P2,maniac_3w_14-14-14_heroBB,maniac,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,maniac/3w_14-14-14/hero_BB/locks.json
-P2,maniac_3w_14-14-14_heroBTN,maniac,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,maniac/3w_14-14-14/hero_BTN/locks.json
-P2,maniac_3w_14-14-14_heroSB,maniac,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,maniac/3w_14-14-14/hero_SB/locks.json
-P2,nit_3w_14-14-14_heroBB,nit,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,nit/3w_14-14-14/hero_BB/locks.json
-P2,nit_3w_14-14-14_heroBTN,nit,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,nit/3w_14-14-14/hero_BTN/locks.json
-P2,nit_3w_14-14-14_heroSB,nit,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,nit/3w_14-14-14/hero_SB/locks.json
-P2,fish_3w_16-16-16_heroBB,fish,3-handed,16 / 16 / 16,BB,data/hrc/raw/v2/hand_4,5,fish/3w_16-16-16/hero_BB/locks.json
-P2,fish_3w_16-16-16_heroBTN,fish,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v2/hand_4,9,fish/3w_16-16-16/hero_BTN/locks.json
-P2,fish_3w_16-16-16_heroSB,fish,3-handed,16 / 16 / 16,SB,data/hrc/raw/v2/hand_4,6,fish/3w_16-16-16/hero_SB/locks.json
-P2,maniac_3w_16-16-16_heroBB,maniac,3-handed,16 / 16 / 16,BB,data/hrc/raw/v2/hand_4,5,maniac/3w_16-16-16/hero_BB/locks.json
-P2,maniac_3w_16-16-16_heroBTN,maniac,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v2/hand_4,9,maniac/3w_16-16-16/hero_BTN/locks.json
-P2,maniac_3w_16-16-16_heroSB,maniac,3-handed,16 / 16 / 16,SB,data/hrc/raw/v2/hand_4,6,maniac/3w_16-16-16/hero_SB/locks.json
-P2,nit_3w_16-16-16_heroBB,nit,3-handed,16 / 16 / 16,BB,data/hrc/raw/v2/hand_4,5,nit/3w_16-16-16/hero_BB/locks.json
-P2,nit_3w_16-16-16_heroBTN,nit,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v2/hand_4,9,nit/3w_16-16-16/hero_BTN/locks.json
-P2,nit_3w_16-16-16_heroSB,nit,3-handed,16 / 16 / 16,SB,data/hrc/raw/v2/hand_4,6,nit/3w_16-16-16/hero_SB/locks.json
-P2,fish_3w_18-18-18_heroBB,fish,3-handed,18 / 18 / 18,BB,data/hrc/raw/v2/hand_5,5,fish/3w_18-18-18/hero_BB/locks.json
-P2,fish_3w_18-18-18_heroBTN,fish,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v2/hand_5,9,fish/3w_18-18-18/hero_BTN/locks.json
-P2,fish_3w_18-18-18_heroSB,fish,3-handed,18 / 18 / 18,SB,data/hrc/raw/v2/hand_5,6,fish/3w_18-18-18/hero_SB/locks.json
-P2,maniac_3w_18-18-18_heroBB,maniac,3-handed,18 / 18 / 18,BB,data/hrc/raw/v2/hand_5,5,maniac/3w_18-18-18/hero_BB/locks.json
-P2,maniac_3w_18-18-18_heroBTN,maniac,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v2/hand_5,9,maniac/3w_18-18-18/hero_BTN/locks.json
-P2,maniac_3w_18-18-18_heroSB,maniac,3-handed,18 / 18 / 18,SB,data/hrc/raw/v2/hand_5,6,maniac/3w_18-18-18/hero_SB/locks.json
-P2,nit_3w_18-18-18_heroBB,nit,3-handed,18 / 18 / 18,BB,data/hrc/raw/v2/hand_5,5,nit/3w_18-18-18/hero_BB/locks.json
-P2,nit_3w_18-18-18_heroBTN,nit,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v2/hand_5,9,nit/3w_18-18-18/hero_BTN/locks.json
-P2,nit_3w_18-18-18_heroSB,nit,3-handed,18 / 18 / 18,SB,data/hrc/raw/v2/hand_5,6,nit/3w_18-18-18/hero_SB/locks.json
-P2,fish_3w_22-22-22_heroBB,fish,3-handed,22 / 22 / 22,BB,data/hrc/raw/v2/hand_6,4,fish/3w_22-22-22/hero_BB/locks.json
-P2,fish_3w_22-22-22_heroBTN,fish,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v2/hand_6,7,fish/3w_22-22-22/hero_BTN/locks.json
-P2,fish_3w_22-22-22_heroSB,fish,3-handed,22 / 22 / 22,SB,data/hrc/raw/v2/hand_6,5,fish/3w_22-22-22/hero_SB/locks.json
-P2,maniac_3w_22-22-22_heroBB,maniac,3-handed,22 / 22 / 22,BB,data/hrc/raw/v2/hand_6,4,maniac/3w_22-22-22/hero_BB/locks.json
-P2,maniac_3w_22-22-22_heroBTN,maniac,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v2/hand_6,7,maniac/3w_22-22-22/hero_BTN/locks.json
-P2,maniac_3w_22-22-22_heroSB,maniac,3-handed,22 / 22 / 22,SB,data/hrc/raw/v2/hand_6,5,maniac/3w_22-22-22/hero_SB/locks.json
-P2,nit_3w_22-22-22_heroBB,nit,3-handed,22 / 22 / 22,BB,data/hrc/raw/v2/hand_6,4,nit/3w_22-22-22/hero_BB/locks.json
-P2,nit_3w_22-22-22_heroBTN,nit,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v2/hand_6,7,nit/3w_22-22-22/hero_BTN/locks.json
-P2,nit_3w_22-22-22_heroSB,nit,3-handed,22 / 22 / 22,SB,data/hrc/raw/v2/hand_6,5,nit/3w_22-22-22/hero_SB/locks.json
-P2,fish_3w_25-25-25_heroBB,fish,3-handed,25 / 25 / 25,BB,data/hrc/raw/v2/hand_7,4,fish/3w_25-25-25/hero_BB/locks.json
-P2,fish_3w_25-25-25_heroBTN,fish,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v2/hand_7,7,fish/3w_25-25-25/hero_BTN/locks.json
-P2,fish_3w_25-25-25_heroSB,fish,3-handed,25 / 25 / 25,SB,data/hrc/raw/v2/hand_7,5,fish/3w_25-25-25/hero_SB/locks.json
-P2,maniac_3w_25-25-25_heroBB,maniac,3-handed,25 / 25 / 25,BB,data/hrc/raw/v2/hand_7,4,maniac/3w_25-25-25/hero_BB/locks.json
-P2,maniac_3w_25-25-25_heroBTN,maniac,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v2/hand_7,7,maniac/3w_25-25-25/hero_BTN/locks.json
-P2,maniac_3w_25-25-25_heroSB,maniac,3-handed,25 / 25 / 25,SB,data/hrc/raw/v2/hand_7,5,maniac/3w_25-25-25/hero_SB/locks.json
-P2,nit_3w_25-25-25_heroBB,nit,3-handed,25 / 25 / 25,BB,data/hrc/raw/v2/hand_7,4,nit/3w_25-25-25/hero_BB/locks.json
-P2,nit_3w_25-25-25_heroBTN,nit,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v2/hand_7,7,nit/3w_25-25-25/hero_BTN/locks.json
-P2,nit_3w_25-25-25_heroSB,nit,3-handed,25 / 25 / 25,SB,data/hrc/raw/v2/hand_7,5,nit/3w_25-25-25/hero_SB/locks.json
-P2,fish_hu_10-10_heroBB,fish,heads-up,10 / 10,BB,data/hrc/raw/min_raise_hu/hand_18,4,fish/hu_10-10/hero_BB/locks.json
-P2,fish_hu_10-10_heroSB,fish,heads-up,10 / 10,SB,data/hrc/raw/min_raise_hu/hand_18,3,fish/hu_10-10/hero_SB/locks.json
-P2,maniac_hu_10-10_heroBB,maniac,heads-up,10 / 10,BB,data/hrc/raw/min_raise_hu/hand_18,4,maniac/hu_10-10/hero_BB/locks.json
-P2,maniac_hu_10-10_heroSB,maniac,heads-up,10 / 10,SB,data/hrc/raw/min_raise_hu/hand_18,3,maniac/hu_10-10/hero_SB/locks.json
-P2,nit_hu_10-10_heroBB,nit,heads-up,10 / 10,BB,data/hrc/raw/min_raise_hu/hand_18,4,nit/hu_10-10/hero_BB/locks.json
-P2,nit_hu_10-10_heroSB,nit,heads-up,10 / 10,SB,data/hrc/raw/min_raise_hu/hand_18,3,nit/hu_10-10/hero_SB/locks.json
-P2,fish_hu_14-14_heroBB,fish,heads-up,14 / 14,BB,data/hrc/raw/v2/hand_8,1,fish/hu_14-14/hero_BB/locks.json
-P2,fish_hu_14-14_heroSB,fish,heads-up,14 / 14,SB,data/hrc/raw/v2/hand_8,3,fish/hu_14-14/hero_SB/locks.json
-P2,maniac_hu_14-14_heroBB,maniac,heads-up,14 / 14,BB,data/hrc/raw/v2/hand_8,1,maniac/hu_14-14/hero_BB/locks.json
-P2,maniac_hu_14-14_heroSB,maniac,heads-up,14 / 14,SB,data/hrc/raw/v2/hand_8,3,maniac/hu_14-14/hero_SB/locks.json
-P2,nit_hu_14-14_heroBB,nit,heads-up,14 / 14,BB,data/hrc/raw/v2/hand_8,1,nit/hu_14-14/hero_BB/locks.json
-P2,nit_hu_14-14_heroSB,nit,heads-up,14 / 14,SB,data/hrc/raw/v2/hand_8,3,nit/hu_14-14/hero_SB/locks.json
-P2,fish_hu_16-16_heroBB,fish,heads-up,16 / 16,BB,data/hrc/raw/v2/hand_9,1,fish/hu_16-16/hero_BB/locks.json
-P2,fish_hu_16-16_heroSB,fish,heads-up,16 / 16,SB,data/hrc/raw/v2/hand_9,2,fish/hu_16-16/hero_SB/locks.json
-P2,maniac_hu_16-16_heroBB,maniac,heads-up,16 / 16,BB,data/hrc/raw/v2/hand_9,1,maniac/hu_16-16/hero_BB/locks.json
-P2,maniac_hu_16-16_heroSB,maniac,heads-up,16 / 16,SB,data/hrc/raw/v2/hand_9,2,maniac/hu_16-16/hero_SB/locks.json
-P2,nit_hu_16-16_heroBB,nit,heads-up,16 / 16,BB,data/hrc/raw/v2/hand_9,1,nit/hu_16-16/hero_BB/locks.json
-P2,nit_hu_16-16_heroSB,nit,heads-up,16 / 16,SB,data/hrc/raw/v2/hand_9,2,nit/hu_16-16/hero_SB/locks.json
-P2,fish_hu_18-18_heroBB,fish,heads-up,18 / 18,BB,data/hrc/raw/min_raise_hu/hand_16,3,fish/hu_18-18/hero_BB/locks.json
-P2,fish_hu_18-18_heroSB,fish,heads-up,18 / 18,SB,data/hrc/raw/min_raise_hu/hand_16,2,fish/hu_18-18/hero_SB/locks.json
-P2,maniac_hu_18-18_heroBB,maniac,heads-up,18 / 18,BB,data/hrc/raw/min_raise_hu/hand_16,3,maniac/hu_18-18/hero_BB/locks.json
-P2,maniac_hu_18-18_heroSB,maniac,heads-up,18 / 18,SB,data/hrc/raw/min_raise_hu/hand_16,2,maniac/hu_18-18/hero_SB/locks.json
-P2,nit_hu_18-18_heroBB,nit,heads-up,18 / 18,BB,data/hrc/raw/min_raise_hu/hand_16,3,nit/hu_18-18/hero_BB/locks.json
-P2,nit_hu_18-18_heroSB,nit,heads-up,18 / 18,SB,data/hrc/raw/min_raise_hu/hand_16,2,nit/hu_18-18/hero_SB/locks.json
-P2,fish_hu_22-22_heroBB,fish,heads-up,22 / 22,BB,data/hrc/raw/v2/hand_10,1,fish/hu_22-22/hero_BB/locks.json
-P2,fish_hu_22-22_heroSB,fish,heads-up,22 / 22,SB,data/hrc/raw/v2/hand_10,2,fish/hu_22-22/hero_SB/locks.json
-P2,maniac_hu_22-22_heroBB,maniac,heads-up,22 / 22,BB,data/hrc/raw/v2/hand_10,1,maniac/hu_22-22/hero_BB/locks.json
-P2,maniac_hu_22-22_heroSB,maniac,heads-up,22 / 22,SB,data/hrc/raw/v2/hand_10,2,maniac/hu_22-22/hero_SB/locks.json
-P2,nit_hu_22-22_heroBB,nit,heads-up,22 / 22,BB,data/hrc/raw/v2/hand_10,1,nit/hu_22-22/hero_BB/locks.json
-P2,nit_hu_22-22_heroSB,nit,heads-up,22 / 22,SB,data/hrc/raw/v2/hand_10,2,nit/hu_22-22/hero_SB/locks.json
-P2,fish_hu_25-25_heroBB,fish,heads-up,25 / 25,BB,data/hrc/raw/min_raise_hu/hand_15,1,fish/hu_25-25/hero_BB/locks.json
-P2,fish_hu_25-25_heroSB,fish,heads-up,25 / 25,SB,data/hrc/raw/min_raise_hu/hand_15,2,fish/hu_25-25/hero_SB/locks.json
-P2,maniac_hu_25-25_heroBB,maniac,heads-up,25 / 25,BB,data/hrc/raw/min_raise_hu/hand_15,1,maniac/hu_25-25/hero_BB/locks.json
-P2,maniac_hu_25-25_heroSB,maniac,heads-up,25 / 25,SB,data/hrc/raw/min_raise_hu/hand_15,2,maniac/hu_25-25/hero_SB/locks.json
-P2,nit_hu_25-25_heroBB,nit,heads-up,25 / 25,BB,data/hrc/raw/min_raise_hu/hand_15,1,nit/hu_25-25/hero_BB/locks.json
-P2,nit_hu_25-25_heroSB,nit,heads-up,25 / 25,SB,data/hrc/raw/min_raise_hu/hand_15,2,nit/hu_25-25/hero_SB/locks.json
+priority,solve_id,profile,engine_profile,table,stacks,hero,gto_source,nodes_locked,lock_file
+P1,degene_3w_12-12-12_heroBB,degene,Dégène,3-handed,12 / 12 / 12,BB,data/hrc/raw/v3/hand_3,28,degene/3w_12-12-12/hero_BB/locks.json
+P1,degene_3w_12-12-12_heroBTN,degene,Dégène,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v3/hand_3,31,degene/3w_12-12-12/hero_BTN/locks.json
+P1,degene_3w_12-12-12_heroSB,degene,Dégène,3-handed,12 / 12 / 12,SB,data/hrc/raw/v3/hand_3,29,degene/3w_12-12-12/hero_SB/locks.json
+P1,nit_3w_12-12-12_heroBB,nit,Nit,3-handed,12 / 12 / 12,BB,data/hrc/raw/v3/hand_3,28,nit/3w_12-12-12/hero_BB/locks.json
+P1,nit_3w_12-12-12_heroBTN,nit,Nit,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v3/hand_3,31,nit/3w_12-12-12/hero_BTN/locks.json
+P1,nit_3w_12-12-12_heroSB,nit,Nit,3-handed,12 / 12 / 12,SB,data/hrc/raw/v3/hand_3,29,nit/3w_12-12-12/hero_SB/locks.json
+P1,rec_passif_3w_12-12-12_heroBB,rec_passif,Rec passif (défaut),3-handed,12 / 12 / 12,BB,data/hrc/raw/v3/hand_3,28,rec_passif/3w_12-12-12/hero_BB/locks.json
+P1,rec_passif_3w_12-12-12_heroBTN,rec_passif,Rec passif (défaut),3-handed,12 / 12 / 12,BTN,data/hrc/raw/v3/hand_3,31,rec_passif/3w_12-12-12/hero_BTN/locks.json
+P1,rec_passif_3w_12-12-12_heroSB,rec_passif,Rec passif (défaut),3-handed,12 / 12 / 12,SB,data/hrc/raw/v3/hand_3,29,rec_passif/3w_12-12-12/hero_SB/locks.json
+P1,station_3w_12-12-12_heroBB,station,Calling station,3-handed,12 / 12 / 12,BB,data/hrc/raw/v3/hand_3,28,station/3w_12-12-12/hero_BB/locks.json
+P1,station_3w_12-12-12_heroBTN,station,Calling station,3-handed,12 / 12 / 12,BTN,data/hrc/raw/v3/hand_3,31,station/3w_12-12-12/hero_BTN/locks.json
+P1,station_3w_12-12-12_heroSB,station,Calling station,3-handed,12 / 12 / 12,SB,data/hrc/raw/v3/hand_3,29,station/3w_12-12-12/hero_SB/locks.json
+P1,degene_3w_15-15-15_heroBB,degene,Dégène,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,degene/3w_15-15-15/hero_BB/locks.json
+P1,degene_3w_15-15-15_heroBTN,degene,Dégène,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,degene/3w_15-15-15/hero_BTN/locks.json
+P1,degene_3w_15-15-15_heroSB,degene,Dégène,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,degene/3w_15-15-15/hero_SB/locks.json
+P1,nit_3w_15-15-15_heroBB,nit,Nit,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,nit/3w_15-15-15/hero_BB/locks.json
+P1,nit_3w_15-15-15_heroBTN,nit,Nit,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,nit/3w_15-15-15/hero_BTN/locks.json
+P1,nit_3w_15-15-15_heroSB,nit,Nit,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,nit/3w_15-15-15/hero_SB/locks.json
+P1,rec_passif_3w_15-15-15_heroBB,rec_passif,Rec passif (défaut),3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,rec_passif/3w_15-15-15/hero_BB/locks.json
+P1,rec_passif_3w_15-15-15_heroBTN,rec_passif,Rec passif (défaut),3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,rec_passif/3w_15-15-15/hero_BTN/locks.json
+P1,rec_passif_3w_15-15-15_heroSB,rec_passif,Rec passif (défaut),3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,rec_passif/3w_15-15-15/hero_SB/locks.json
+P1,station_3w_15-15-15_heroBB,station,Calling station,3-handed,15 / 15 / 15,BB,data/hrc/raw/complement/hand_3,5,station/3w_15-15-15/hero_BB/locks.json
+P1,station_3w_15-15-15_heroBTN,station,Calling station,3-handed,15 / 15 / 15,BTN,data/hrc/raw/complement/hand_3,10,station/3w_15-15-15/hero_BTN/locks.json
+P1,station_3w_15-15-15_heroSB,station,Calling station,3-handed,15 / 15 / 15,SB,data/hrc/raw/complement/hand_3,7,station/3w_15-15-15/hero_SB/locks.json
+P1,degene_3w_20-20-20_heroBB,degene,Dégène,3-handed,20 / 20 / 20,BB,data/hrc/raw/v3/hand_8,38,degene/3w_20-20-20/hero_BB/locks.json
+P1,degene_3w_20-20-20_heroBTN,degene,Dégène,3-handed,20 / 20 / 20,BTN,data/hrc/raw/v3/hand_8,40,degene/3w_20-20-20/hero_BTN/locks.json
+P1,degene_3w_20-20-20_heroSB,degene,Dégène,3-handed,20 / 20 / 20,SB,data/hrc/raw/v3/hand_8,38,degene/3w_20-20-20/hero_SB/locks.json
+P1,nit_3w_20-20-20_heroBB,nit,Nit,3-handed,20 / 20 / 20,BB,data/hrc/raw/v3/hand_8,38,nit/3w_20-20-20/hero_BB/locks.json
+P1,nit_3w_20-20-20_heroBTN,nit,Nit,3-handed,20 / 20 / 20,BTN,data/hrc/raw/v3/hand_8,40,nit/3w_20-20-20/hero_BTN/locks.json
+P1,nit_3w_20-20-20_heroSB,nit,Nit,3-handed,20 / 20 / 20,SB,data/hrc/raw/v3/hand_8,38,nit/3w_20-20-20/hero_SB/locks.json
+P1,rec_passif_3w_20-20-20_heroBB,rec_passif,Rec passif (défaut),3-handed,20 / 20 / 20,BB,data/hrc/raw/v3/hand_8,38,rec_passif/3w_20-20-20/hero_BB/locks.json
+P1,rec_passif_3w_20-20-20_heroBTN,rec_passif,Rec passif (défaut),3-handed,20 / 20 / 20,BTN,data/hrc/raw/v3/hand_8,40,rec_passif/3w_20-20-20/hero_BTN/locks.json
+P1,rec_passif_3w_20-20-20_heroSB,rec_passif,Rec passif (défaut),3-handed,20 / 20 / 20,SB,data/hrc/raw/v3/hand_8,38,rec_passif/3w_20-20-20/hero_SB/locks.json
+P1,station_3w_20-20-20_heroBB,station,Calling station,3-handed,20 / 20 / 20,BB,data/hrc/raw/v3/hand_8,38,station/3w_20-20-20/hero_BB/locks.json
+P1,station_3w_20-20-20_heroBTN,station,Calling station,3-handed,20 / 20 / 20,BTN,data/hrc/raw/v3/hand_8,40,station/3w_20-20-20/hero_BTN/locks.json
+P1,station_3w_20-20-20_heroSB,station,Calling station,3-handed,20 / 20 / 20,SB,data/hrc/raw/v3/hand_8,38,station/3w_20-20-20/hero_SB/locks.json
+P1,degene_hu_12-12_heroBB,degene,Dégène,heads-up,12 / 12,BB,data/hrc/raw/v3/hand_13,4,degene/hu_12-12/hero_BB/locks.json
+P1,degene_hu_12-12_heroSB,degene,Dégène,heads-up,12 / 12,SB,data/hrc/raw/v3/hand_13,4,degene/hu_12-12/hero_SB/locks.json
+P1,nit_hu_12-12_heroBB,nit,Nit,heads-up,12 / 12,BB,data/hrc/raw/v3/hand_13,4,nit/hu_12-12/hero_BB/locks.json
+P1,nit_hu_12-12_heroSB,nit,Nit,heads-up,12 / 12,SB,data/hrc/raw/v3/hand_13,4,nit/hu_12-12/hero_SB/locks.json
+P1,rec_passif_hu_12-12_heroBB,rec_passif,Rec passif (défaut),heads-up,12 / 12,BB,data/hrc/raw/v3/hand_13,4,rec_passif/hu_12-12/hero_BB/locks.json
+P1,rec_passif_hu_12-12_heroSB,rec_passif,Rec passif (défaut),heads-up,12 / 12,SB,data/hrc/raw/v3/hand_13,4,rec_passif/hu_12-12/hero_SB/locks.json
+P1,station_hu_12-12_heroBB,station,Calling station,heads-up,12 / 12,BB,data/hrc/raw/v3/hand_13,4,station/hu_12-12/hero_BB/locks.json
+P1,station_hu_12-12_heroSB,station,Calling station,heads-up,12 / 12,SB,data/hrc/raw/v3/hand_13,4,station/hu_12-12/hero_SB/locks.json
+P1,degene_hu_15-15_heroBB,degene,Dégène,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,degene/hu_15-15/hero_BB/locks.json
+P1,degene_hu_15-15_heroSB,degene,Dégène,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,degene/hu_15-15/hero_SB/locks.json
+P1,nit_hu_15-15_heroBB,nit,Nit,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,nit/hu_15-15/hero_BB/locks.json
+P1,nit_hu_15-15_heroSB,nit,Nit,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,nit/hu_15-15/hero_SB/locks.json
+P1,rec_passif_hu_15-15_heroBB,rec_passif,Rec passif (défaut),heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,rec_passif/hu_15-15/hero_BB/locks.json
+P1,rec_passif_hu_15-15_heroSB,rec_passif,Rec passif (défaut),heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,rec_passif/hu_15-15/hero_SB/locks.json
+P1,station_hu_15-15_heroBB,station,Calling station,heads-up,15 / 15,BB,data/hrc/raw/complement2/hand_11,1,station/hu_15-15/hero_BB/locks.json
+P1,station_hu_15-15_heroSB,station,Calling station,heads-up,15 / 15,SB,data/hrc/raw/complement2/hand_11,3,station/hu_15-15/hero_SB/locks.json
+P1,degene_hu_20-20_heroBB,degene,Dégène,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,degene/hu_20-20/hero_BB/locks.json
+P1,degene_hu_20-20_heroSB,degene,Dégène,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,degene/hu_20-20/hero_SB/locks.json
+P1,nit_hu_20-20_heroBB,nit,Nit,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,nit/hu_20-20/hero_BB/locks.json
+P1,nit_hu_20-20_heroSB,nit,Nit,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,nit/hu_20-20/hero_SB/locks.json
+P1,rec_passif_hu_20-20_heroBB,rec_passif,Rec passif (défaut),heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,rec_passif/hu_20-20/hero_BB/locks.json
+P1,rec_passif_hu_20-20_heroSB,rec_passif,Rec passif (défaut),heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,rec_passif/hu_20-20/hero_SB/locks.json
+P1,station_hu_20-20_heroBB,station,Calling station,heads-up,20 / 20,BB,data/hrc/raw/complement2/hand_13,1,station/hu_20-20/hero_BB/locks.json
+P1,station_hu_20-20_heroSB,station,Calling station,heads-up,20 / 20,SB,data/hrc/raw/complement2/hand_13,2,station/hu_20-20/hero_SB/locks.json
+P2,degene_3w_10-10-10_heroBB,degene,Dégène,3-handed,10 / 10 / 10,BB,data/hrc/raw/v3/hand_2,20,degene/3w_10-10-10/hero_BB/locks.json
+P2,degene_3w_10-10-10_heroBTN,degene,Dégène,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v3/hand_2,23,degene/3w_10-10-10/hero_BTN/locks.json
+P2,degene_3w_10-10-10_heroSB,degene,Dégène,3-handed,10 / 10 / 10,SB,data/hrc/raw/v3/hand_2,21,degene/3w_10-10-10/hero_SB/locks.json
+P2,nit_3w_10-10-10_heroBB,nit,Nit,3-handed,10 / 10 / 10,BB,data/hrc/raw/v3/hand_2,20,nit/3w_10-10-10/hero_BB/locks.json
+P2,nit_3w_10-10-10_heroBTN,nit,Nit,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v3/hand_2,23,nit/3w_10-10-10/hero_BTN/locks.json
+P2,nit_3w_10-10-10_heroSB,nit,Nit,3-handed,10 / 10 / 10,SB,data/hrc/raw/v3/hand_2,21,nit/3w_10-10-10/hero_SB/locks.json
+P2,rec_passif_3w_10-10-10_heroBB,rec_passif,Rec passif (défaut),3-handed,10 / 10 / 10,BB,data/hrc/raw/v3/hand_2,20,rec_passif/3w_10-10-10/hero_BB/locks.json
+P2,rec_passif_3w_10-10-10_heroBTN,rec_passif,Rec passif (défaut),3-handed,10 / 10 / 10,BTN,data/hrc/raw/v3/hand_2,23,rec_passif/3w_10-10-10/hero_BTN/locks.json
+P2,rec_passif_3w_10-10-10_heroSB,rec_passif,Rec passif (défaut),3-handed,10 / 10 / 10,SB,data/hrc/raw/v3/hand_2,21,rec_passif/3w_10-10-10/hero_SB/locks.json
+P2,station_3w_10-10-10_heroBB,station,Calling station,3-handed,10 / 10 / 10,BB,data/hrc/raw/v3/hand_2,20,station/3w_10-10-10/hero_BB/locks.json
+P2,station_3w_10-10-10_heroBTN,station,Calling station,3-handed,10 / 10 / 10,BTN,data/hrc/raw/v3/hand_2,23,station/3w_10-10-10/hero_BTN/locks.json
+P2,station_3w_10-10-10_heroSB,station,Calling station,3-handed,10 / 10 / 10,SB,data/hrc/raw/v3/hand_2,21,station/3w_10-10-10/hero_SB/locks.json
+P2,degene_3w_14-14-14_heroBB,degene,Dégène,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,degene/3w_14-14-14/hero_BB/locks.json
+P2,degene_3w_14-14-14_heroBTN,degene,Dégène,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,degene/3w_14-14-14/hero_BTN/locks.json
+P2,degene_3w_14-14-14_heroSB,degene,Dégène,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,degene/3w_14-14-14/hero_SB/locks.json
+P2,nit_3w_14-14-14_heroBB,nit,Nit,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,nit/3w_14-14-14/hero_BB/locks.json
+P2,nit_3w_14-14-14_heroBTN,nit,Nit,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,nit/3w_14-14-14/hero_BTN/locks.json
+P2,nit_3w_14-14-14_heroSB,nit,Nit,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,nit/3w_14-14-14/hero_SB/locks.json
+P2,rec_passif_3w_14-14-14_heroBB,rec_passif,Rec passif (défaut),3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,rec_passif/3w_14-14-14/hero_BB/locks.json
+P2,rec_passif_3w_14-14-14_heroBTN,rec_passif,Rec passif (défaut),3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,rec_passif/3w_14-14-14/hero_BTN/locks.json
+P2,rec_passif_3w_14-14-14_heroSB,rec_passif,Rec passif (défaut),3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,rec_passif/3w_14-14-14/hero_SB/locks.json
+P2,station_3w_14-14-14_heroBB,station,Calling station,3-handed,14 / 14 / 14,BB,data/hrc/raw/complement2/hand_15,5,station/3w_14-14-14/hero_BB/locks.json
+P2,station_3w_14-14-14_heroBTN,station,Calling station,3-handed,14 / 14 / 14,BTN,data/hrc/raw/complement2/hand_15,10,station/3w_14-14-14/hero_BTN/locks.json
+P2,station_3w_14-14-14_heroSB,station,Calling station,3-handed,14 / 14 / 14,SB,data/hrc/raw/complement2/hand_15,7,station/3w_14-14-14/hero_SB/locks.json
+P2,degene_3w_16-16-16_heroBB,degene,Dégène,3-handed,16 / 16 / 16,BB,data/hrc/raw/v3/hand_6,33,degene/3w_16-16-16/hero_BB/locks.json
+P2,degene_3w_16-16-16_heroBTN,degene,Dégène,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v3/hand_6,36,degene/3w_16-16-16/hero_BTN/locks.json
+P2,degene_3w_16-16-16_heroSB,degene,Dégène,3-handed,16 / 16 / 16,SB,data/hrc/raw/v3/hand_6,35,degene/3w_16-16-16/hero_SB/locks.json
+P2,nit_3w_16-16-16_heroBB,nit,Nit,3-handed,16 / 16 / 16,BB,data/hrc/raw/v3/hand_6,33,nit/3w_16-16-16/hero_BB/locks.json
+P2,nit_3w_16-16-16_heroBTN,nit,Nit,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v3/hand_6,36,nit/3w_16-16-16/hero_BTN/locks.json
+P2,nit_3w_16-16-16_heroSB,nit,Nit,3-handed,16 / 16 / 16,SB,data/hrc/raw/v3/hand_6,35,nit/3w_16-16-16/hero_SB/locks.json
+P2,rec_passif_3w_16-16-16_heroBB,rec_passif,Rec passif (défaut),3-handed,16 / 16 / 16,BB,data/hrc/raw/v3/hand_6,33,rec_passif/3w_16-16-16/hero_BB/locks.json
+P2,rec_passif_3w_16-16-16_heroBTN,rec_passif,Rec passif (défaut),3-handed,16 / 16 / 16,BTN,data/hrc/raw/v3/hand_6,36,rec_passif/3w_16-16-16/hero_BTN/locks.json
+P2,rec_passif_3w_16-16-16_heroSB,rec_passif,Rec passif (défaut),3-handed,16 / 16 / 16,SB,data/hrc/raw/v3/hand_6,35,rec_passif/3w_16-16-16/hero_SB/locks.json
+P2,station_3w_16-16-16_heroBB,station,Calling station,3-handed,16 / 16 / 16,BB,data/hrc/raw/v3/hand_6,33,station/3w_16-16-16/hero_BB/locks.json
+P2,station_3w_16-16-16_heroBTN,station,Calling station,3-handed,16 / 16 / 16,BTN,data/hrc/raw/v3/hand_6,36,station/3w_16-16-16/hero_BTN/locks.json
+P2,station_3w_16-16-16_heroSB,station,Calling station,3-handed,16 / 16 / 16,SB,data/hrc/raw/v3/hand_6,35,station/3w_16-16-16/hero_SB/locks.json
+P2,degene_3w_18-18-18_heroBB,degene,Dégène,3-handed,18 / 18 / 18,BB,data/hrc/raw/v3/hand_7,33,degene/3w_18-18-18/hero_BB/locks.json
+P2,degene_3w_18-18-18_heroBTN,degene,Dégène,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v3/hand_7,36,degene/3w_18-18-18/hero_BTN/locks.json
+P2,degene_3w_18-18-18_heroSB,degene,Dégène,3-handed,18 / 18 / 18,SB,data/hrc/raw/v3/hand_7,35,degene/3w_18-18-18/hero_SB/locks.json
+P2,nit_3w_18-18-18_heroBB,nit,Nit,3-handed,18 / 18 / 18,BB,data/hrc/raw/v3/hand_7,33,nit/3w_18-18-18/hero_BB/locks.json
+P2,nit_3w_18-18-18_heroBTN,nit,Nit,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v3/hand_7,36,nit/3w_18-18-18/hero_BTN/locks.json
+P2,nit_3w_18-18-18_heroSB,nit,Nit,3-handed,18 / 18 / 18,SB,data/hrc/raw/v3/hand_7,35,nit/3w_18-18-18/hero_SB/locks.json
+P2,rec_passif_3w_18-18-18_heroBB,rec_passif,Rec passif (défaut),3-handed,18 / 18 / 18,BB,data/hrc/raw/v3/hand_7,33,rec_passif/3w_18-18-18/hero_BB/locks.json
+P2,rec_passif_3w_18-18-18_heroBTN,rec_passif,Rec passif (défaut),3-handed,18 / 18 / 18,BTN,data/hrc/raw/v3/hand_7,36,rec_passif/3w_18-18-18/hero_BTN/locks.json
+P2,rec_passif_3w_18-18-18_heroSB,rec_passif,Rec passif (défaut),3-handed,18 / 18 / 18,SB,data/hrc/raw/v3/hand_7,35,rec_passif/3w_18-18-18/hero_SB/locks.json
+P2,station_3w_18-18-18_heroBB,station,Calling station,3-handed,18 / 18 / 18,BB,data/hrc/raw/v3/hand_7,33,station/3w_18-18-18/hero_BB/locks.json
+P2,station_3w_18-18-18_heroBTN,station,Calling station,3-handed,18 / 18 / 18,BTN,data/hrc/raw/v3/hand_7,36,station/3w_18-18-18/hero_BTN/locks.json
+P2,station_3w_18-18-18_heroSB,station,Calling station,3-handed,18 / 18 / 18,SB,data/hrc/raw/v3/hand_7,35,station/3w_18-18-18/hero_SB/locks.json
+P2,degene_3w_22-22-22_heroBB,degene,Dégène,3-handed,22 / 22 / 22,BB,data/hrc/raw/v3/hand_9,39,degene/3w_22-22-22/hero_BB/locks.json
+P2,degene_3w_22-22-22_heroBTN,degene,Dégène,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v3/hand_9,42,degene/3w_22-22-22/hero_BTN/locks.json
+P2,degene_3w_22-22-22_heroSB,degene,Dégène,3-handed,22 / 22 / 22,SB,data/hrc/raw/v3/hand_9,39,degene/3w_22-22-22/hero_SB/locks.json
+P2,nit_3w_22-22-22_heroBB,nit,Nit,3-handed,22 / 22 / 22,BB,data/hrc/raw/v3/hand_9,39,nit/3w_22-22-22/hero_BB/locks.json
+P2,nit_3w_22-22-22_heroBTN,nit,Nit,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v3/hand_9,42,nit/3w_22-22-22/hero_BTN/locks.json
+P2,nit_3w_22-22-22_heroSB,nit,Nit,3-handed,22 / 22 / 22,SB,data/hrc/raw/v3/hand_9,39,nit/3w_22-22-22/hero_SB/locks.json
+P2,rec_passif_3w_22-22-22_heroBB,rec_passif,Rec passif (défaut),3-handed,22 / 22 / 22,BB,data/hrc/raw/v3/hand_9,39,rec_passif/3w_22-22-22/hero_BB/locks.json
+P2,rec_passif_3w_22-22-22_heroBTN,rec_passif,Rec passif (défaut),3-handed,22 / 22 / 22,BTN,data/hrc/raw/v3/hand_9,42,rec_passif/3w_22-22-22/hero_BTN/locks.json
+P2,rec_passif_3w_22-22-22_heroSB,rec_passif,Rec passif (défaut),3-handed,22 / 22 / 22,SB,data/hrc/raw/v3/hand_9,39,rec_passif/3w_22-22-22/hero_SB/locks.json
+P2,station_3w_22-22-22_heroBB,station,Calling station,3-handed,22 / 22 / 22,BB,data/hrc/raw/v3/hand_9,39,station/3w_22-22-22/hero_BB/locks.json
+P2,station_3w_22-22-22_heroBTN,station,Calling station,3-handed,22 / 22 / 22,BTN,data/hrc/raw/v3/hand_9,42,station/3w_22-22-22/hero_BTN/locks.json
+P2,station_3w_22-22-22_heroSB,station,Calling station,3-handed,22 / 22 / 22,SB,data/hrc/raw/v3/hand_9,39,station/3w_22-22-22/hero_SB/locks.json
+P2,degene_3w_25-25-25_heroBB,degene,Dégène,3-handed,25 / 25 / 25,BB,data/hrc/raw/v3/hand_10,40,degene/3w_25-25-25/hero_BB/locks.json
+P2,degene_3w_25-25-25_heroBTN,degene,Dégène,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v3/hand_10,46,degene/3w_25-25-25/hero_BTN/locks.json
+P2,degene_3w_25-25-25_heroSB,degene,Dégène,3-handed,25 / 25 / 25,SB,data/hrc/raw/v3/hand_10,42,degene/3w_25-25-25/hero_SB/locks.json
+P2,nit_3w_25-25-25_heroBB,nit,Nit,3-handed,25 / 25 / 25,BB,data/hrc/raw/v3/hand_10,40,nit/3w_25-25-25/hero_BB/locks.json
+P2,nit_3w_25-25-25_heroBTN,nit,Nit,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v3/hand_10,46,nit/3w_25-25-25/hero_BTN/locks.json
+P2,nit_3w_25-25-25_heroSB,nit,Nit,3-handed,25 / 25 / 25,SB,data/hrc/raw/v3/hand_10,42,nit/3w_25-25-25/hero_SB/locks.json
+P2,rec_passif_3w_25-25-25_heroBB,rec_passif,Rec passif (défaut),3-handed,25 / 25 / 25,BB,data/hrc/raw/v3/hand_10,40,rec_passif/3w_25-25-25/hero_BB/locks.json
+P2,rec_passif_3w_25-25-25_heroBTN,rec_passif,Rec passif (défaut),3-handed,25 / 25 / 25,BTN,data/hrc/raw/v3/hand_10,46,rec_passif/3w_25-25-25/hero_BTN/locks.json
+P2,rec_passif_3w_25-25-25_heroSB,rec_passif,Rec passif (défaut),3-handed,25 / 25 / 25,SB,data/hrc/raw/v3/hand_10,42,rec_passif/3w_25-25-25/hero_SB/locks.json
+P2,station_3w_25-25-25_heroBB,station,Calling station,3-handed,25 / 25 / 25,BB,data/hrc/raw/v3/hand_10,40,station/3w_25-25-25/hero_BB/locks.json
+P2,station_3w_25-25-25_heroBTN,station,Calling station,3-handed,25 / 25 / 25,BTN,data/hrc/raw/v3/hand_10,46,station/3w_25-25-25/hero_BTN/locks.json
+P2,station_3w_25-25-25_heroSB,station,Calling station,3-handed,25 / 25 / 25,SB,data/hrc/raw/v3/hand_10,42,station/3w_25-25-25/hero_SB/locks.json
+P2,degene_hu_10-10_heroBB,degene,Dégène,heads-up,10 / 10,BB,data/hrc/raw/v3/hand_12,4,degene/hu_10-10/hero_BB/locks.json
+P2,degene_hu_10-10_heroSB,degene,Dégène,heads-up,10 / 10,SB,data/hrc/raw/v3/hand_12,4,degene/hu_10-10/hero_SB/locks.json
+P2,nit_hu_10-10_heroBB,nit,Nit,heads-up,10 / 10,BB,data/hrc/raw/v3/hand_12,4,nit/hu_10-10/hero_BB/locks.json
+P2,nit_hu_10-10_heroSB,nit,Nit,heads-up,10 / 10,SB,data/hrc/raw/v3/hand_12,4,nit/hu_10-10/hero_SB/locks.json
+P2,rec_passif_hu_10-10_heroBB,rec_passif,Rec passif (défaut),heads-up,10 / 10,BB,data/hrc/raw/v3/hand_12,4,rec_passif/hu_10-10/hero_BB/locks.json
+P2,rec_passif_hu_10-10_heroSB,rec_passif,Rec passif (défaut),heads-up,10 / 10,SB,data/hrc/raw/v3/hand_12,4,rec_passif/hu_10-10/hero_SB/locks.json
+P2,station_hu_10-10_heroBB,station,Calling station,heads-up,10 / 10,BB,data/hrc/raw/v3/hand_12,4,station/hu_10-10/hero_BB/locks.json
+P2,station_hu_10-10_heroSB,station,Calling station,heads-up,10 / 10,SB,data/hrc/raw/v3/hand_12,4,station/hu_10-10/hero_SB/locks.json
+P2,degene_hu_14-14_heroBB,degene,Dégène,heads-up,14 / 14,BB,data/hrc/raw/v3/hand_14,4,degene/hu_14-14/hero_BB/locks.json
+P2,degene_hu_14-14_heroSB,degene,Dégène,heads-up,14 / 14,SB,data/hrc/raw/v3/hand_14,4,degene/hu_14-14/hero_SB/locks.json
+P2,nit_hu_14-14_heroBB,nit,Nit,heads-up,14 / 14,BB,data/hrc/raw/v3/hand_14,4,nit/hu_14-14/hero_BB/locks.json
+P2,nit_hu_14-14_heroSB,nit,Nit,heads-up,14 / 14,SB,data/hrc/raw/v3/hand_14,4,nit/hu_14-14/hero_SB/locks.json
+P2,rec_passif_hu_14-14_heroBB,rec_passif,Rec passif (défaut),heads-up,14 / 14,BB,data/hrc/raw/v3/hand_14,4,rec_passif/hu_14-14/hero_BB/locks.json
+P2,rec_passif_hu_14-14_heroSB,rec_passif,Rec passif (défaut),heads-up,14 / 14,SB,data/hrc/raw/v3/hand_14,4,rec_passif/hu_14-14/hero_SB/locks.json
+P2,station_hu_14-14_heroBB,station,Calling station,heads-up,14 / 14,BB,data/hrc/raw/v3/hand_14,4,station/hu_14-14/hero_BB/locks.json
+P2,station_hu_14-14_heroSB,station,Calling station,heads-up,14 / 14,SB,data/hrc/raw/v3/hand_14,4,station/hu_14-14/hero_SB/locks.json
+P2,degene_hu_16-16_heroBB,degene,Dégène,heads-up,16 / 16,BB,data/hrc/raw/v3/hand_15,3,degene/hu_16-16/hero_BB/locks.json
+P2,degene_hu_16-16_heroSB,degene,Dégène,heads-up,16 / 16,SB,data/hrc/raw/v3/hand_15,3,degene/hu_16-16/hero_SB/locks.json
+P2,nit_hu_16-16_heroBB,nit,Nit,heads-up,16 / 16,BB,data/hrc/raw/v3/hand_15,3,nit/hu_16-16/hero_BB/locks.json
+P2,nit_hu_16-16_heroSB,nit,Nit,heads-up,16 / 16,SB,data/hrc/raw/v3/hand_15,3,nit/hu_16-16/hero_SB/locks.json
+P2,rec_passif_hu_16-16_heroBB,rec_passif,Rec passif (défaut),heads-up,16 / 16,BB,data/hrc/raw/v3/hand_15,3,rec_passif/hu_16-16/hero_BB/locks.json
+P2,rec_passif_hu_16-16_heroSB,rec_passif,Rec passif (défaut),heads-up,16 / 16,SB,data/hrc/raw/v3/hand_15,3,rec_passif/hu_16-16/hero_SB/locks.json
+P2,station_hu_16-16_heroBB,station,Calling station,heads-up,16 / 16,BB,data/hrc/raw/v3/hand_15,3,station/hu_16-16/hero_BB/locks.json
+P2,station_hu_16-16_heroSB,station,Calling station,heads-up,16 / 16,SB,data/hrc/raw/v3/hand_15,3,station/hu_16-16/hero_SB/locks.json
+P2,degene_hu_18-18_heroBB,degene,Dégène,heads-up,18 / 18,BB,data/hrc/raw/v3/hand_16,3,degene/hu_18-18/hero_BB/locks.json
+P2,degene_hu_18-18_heroSB,degene,Dégène,heads-up,18 / 18,SB,data/hrc/raw/v3/hand_16,3,degene/hu_18-18/hero_SB/locks.json
+P2,nit_hu_18-18_heroBB,nit,Nit,heads-up,18 / 18,BB,data/hrc/raw/v3/hand_16,3,nit/hu_18-18/hero_BB/locks.json
+P2,nit_hu_18-18_heroSB,nit,Nit,heads-up,18 / 18,SB,data/hrc/raw/v3/hand_16,3,nit/hu_18-18/hero_SB/locks.json
+P2,rec_passif_hu_18-18_heroBB,rec_passif,Rec passif (défaut),heads-up,18 / 18,BB,data/hrc/raw/v3/hand_16,3,rec_passif/hu_18-18/hero_BB/locks.json
+P2,rec_passif_hu_18-18_heroSB,rec_passif,Rec passif (défaut),heads-up,18 / 18,SB,data/hrc/raw/v3/hand_16,3,rec_passif/hu_18-18/hero_SB/locks.json
+P2,station_hu_18-18_heroBB,station,Calling station,heads-up,18 / 18,BB,data/hrc/raw/v3/hand_16,3,station/hu_18-18/hero_BB/locks.json
+P2,station_hu_18-18_heroSB,station,Calling station,heads-up,18 / 18,SB,data/hrc/raw/v3/hand_16,3,station/hu_18-18/hero_SB/locks.json
+P2,degene_hu_22-22_heroBB,degene,Dégène,heads-up,22 / 22,BB,data/hrc/raw/v3/hand_17,5,degene/hu_22-22/hero_BB/locks.json
+P2,degene_hu_22-22_heroSB,degene,Dégène,heads-up,22 / 22,SB,data/hrc/raw/v3/hand_17,5,degene/hu_22-22/hero_SB/locks.json
+P2,nit_hu_22-22_heroBB,nit,Nit,heads-up,22 / 22,BB,data/hrc/raw/v3/hand_17,5,nit/hu_22-22/hero_BB/locks.json
+P2,nit_hu_22-22_heroSB,nit,Nit,heads-up,22 / 22,SB,data/hrc/raw/v3/hand_17,5,nit/hu_22-22/hero_SB/locks.json
+P2,rec_passif_hu_22-22_heroBB,rec_passif,Rec passif (défaut),heads-up,22 / 22,BB,data/hrc/raw/v3/hand_17,5,rec_passif/hu_22-22/hero_BB/locks.json
+P2,rec_passif_hu_22-22_heroSB,rec_passif,Rec passif (défaut),heads-up,22 / 22,SB,data/hrc/raw/v3/hand_17,5,rec_passif/hu_22-22/hero_SB/locks.json
+P2,station_hu_22-22_heroBB,station,Calling station,heads-up,22 / 22,BB,data/hrc/raw/v3/hand_17,5,station/hu_22-22/hero_BB/locks.json
+P2,station_hu_22-22_heroSB,station,Calling station,heads-up,22 / 22,SB,data/hrc/raw/v3/hand_17,5,station/hu_22-22/hero_SB/locks.json
+P2,degene_hu_25-25_heroBB,degene,Dégène,heads-up,25 / 25,BB,data/hrc/raw/v3/hand_18,5,degene/hu_25-25/hero_BB/locks.json
+P2,degene_hu_25-25_heroSB,degene,Dégène,heads-up,25 / 25,SB,data/hrc/raw/v3/hand_18,5,degene/hu_25-25/hero_SB/locks.json
+P2,nit_hu_25-25_heroBB,nit,Nit,heads-up,25 / 25,BB,data/hrc/raw/v3/hand_18,5,nit/hu_25-25/hero_BB/locks.json
+P2,nit_hu_25-25_heroSB,nit,Nit,heads-up,25 / 25,SB,data/hrc/raw/v3/hand_18,5,nit/hu_25-25/hero_SB/locks.json
+P2,rec_passif_hu_25-25_heroBB,rec_passif,Rec passif (défaut),heads-up,25 / 25,BB,data/hrc/raw/v3/hand_18,5,rec_passif/hu_25-25/hero_BB/locks.json
+P2,rec_passif_hu_25-25_heroSB,rec_passif,Rec passif (défaut),heads-up,25 / 25,SB,data/hrc/raw/v3/hand_18,5,rec_passif/hu_25-25/hero_SB/locks.json
+P2,station_hu_25-25_heroBB,station,Calling station,heads-up,25 / 25,BB,data/hrc/raw/v3/hand_18,5,station/hu_25-25/hero_BB/locks.json
+P2,station_hu_25-25_heroSB,station,Calling station,heads-up,25 / 25,SB,data/hrc/raw/v3/hand_18,5,station/hu_25-25/hero_SB/locks.json

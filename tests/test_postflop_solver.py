@@ -30,7 +30,7 @@ def test_numba_iteration_equals_python(pool):
     r = w[K.CLASS_OF]; i = 5
     g1.t = 1; out = g1._walk(g1.root, [r * valid[i], r * valid[i]], dict(ranks=ranks[i], valid=valid[i], bucket=list(bucket[i])), False, True)
     arr = g2._arrays(); g2.t = 1
-    fast.iterate(*arr, g2.P, g2.Rf, g2.Sf, 1.0, ranks[i], order[i], valid[i], bucket[i], r, r, True, False, g2.V, g2.reach, K.CC)
+    fast.iterate(*arr, g2.P, g2.Rf, g2.Sf, 1.0, ranks[i], order[i], valid[i], np.stack([bucket[i], bucket[i]]), r, r, True, False, g2.V, g2.reach, K.CC)
     assert np.abs(out[0] - g2.V[0, 0]).max() < 1e-9 and np.abs(out[1] - g2.V[0, 1]).max() < 1e-9
     assert max(np.abs(g1.R[n.id] - g2.Rf[n.id, :, :len(n.actions)]).max() for n in g1.dec) < 1e-9
 
@@ -57,6 +57,7 @@ def test_fit_offsets_reproduces_marginals():
     assert np.abs((D * Gh) @ w1 / (D @ w1) - G0).max() < 1e-6 and np.abs((D * (P - Gh)).T @ w0 / (D.T @ w0) - G1).max() < 1e-6
 
 
+@pytest.mark.slow
 def test_pipeline_three_handed_runs_and_stays_consistent():
     """chaîne complète à 3 joueurs (petits réglages) : pas d'erreur, ranges postflop prises en compte, exploitabilité faible"""
     from spinsacademy.solver.pipeline import solve

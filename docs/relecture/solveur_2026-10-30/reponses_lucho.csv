@@ -1,0 +1,61 @@
+id;coach;meilleure_action;calcul_le_plus_juste;confiance;commentaire
+S001;Lucho;CALL 2,5 BB;les deux;faible;KQo face au 3,5x d'un SB qui limpe beaucoup : call ou 3-bet se valent, EV proches dans les deux calculs
+S002;Lucho;CHECK;B;moyenne;T9o ne domine rien dans un range de limp : on check, pas d'iso « pour punir »
+S003;Lucho;FOLD;les deux;forte;J6o face à tapis + call : fold évident
+S004;Lucho;RAISE TO 2,3 BB;B;moyenne;A5s au BTN à 25 BB : clic, le limp à 98 % me paraît bizarre
+S005;Lucho;FOLD;les deux;forte;98o au SB face à l'open BTN à 12 BB : fold
+S006;Lucho;CHECK;B;moyenne;96o au BB contre le limp SB : check, iso avec du trash n'apporte rien
+S007;Lucho;CALL 0,5 BB;A;faible;54s HU 12 BB : le limp joue très bien, mais le jam reste correct
+S008;Lucho;RAISE TO 2,3 BB;B;faible;44 au BTN à 25 BB est la charnière ; si on joue, c'est en clic, pas en limp
+S009;Lucho;CHECK;A;moyenne;J8o contre le limp : check, pas une main d'iso
+S010;Lucho;RAISE TO 3 BB;A;faible;K7o domine les Kx faibles du limp : iso se défend
+S011;Lucho;FOLD;les deux;forte;73o face au tapis SB : fold
+S012;Lucho;CALL 11 BB;les deux;forte;A9s contre le tapis HU 12 BB : call, folder serait une catastrophe
+S013;Lucho;RAISE TO 3 BB;B;moyenne;A3o contre limp : iso pour isoler les As et Rois dominés
+S014;Lucho;ALL-IN 12 BB;A;faible;Q8s SB contre BB à 12 BB : on est en zone push, le jam est simple et bon
+S015;Lucho;CALL 2 BB;B;forte;K5o en position, 2 BB pour 6 : fold beaucoup trop serré
+S016;Lucho;CALL 0,5 BB;les deux;forte;95o HU 12 BB : limp
+S017;Lucho;ALL-IN 12 BB;les deux;forte;K9o SB à 12 BB : jam
+S018;Lucho;CHECK;les deux;forte;T9s au BB dans un pot limpé à 3 : check
+S019;Lucho;ALL-IN 12 BB;B;faible;K6s au BTN à 12 BB : push, le limp n'a pas de sens 3-handed
+S020;Lucho;ALL-IN 12 BB;B;faible;87s au BTN à 12 BB : push, le field overfold
+S021;Lucho;CHECK;les deux;forte;J2s dans un pot limpé à 3 : check
+S022;Lucho;CHECK;les deux;forte;72o contre le limp : check
+S023;Lucho;ALL-IN 12 BB;B;moyenne;88 à 12 BB contre le limp : jam, l'iso 3 BB se fait repousser
+S024;Lucho;CALL 0,5 BB;B;moyenne;K2o SB contre BB à 25 BB : limp, pas d'open 3,5 BB avec ça
+S025;Lucho;CHECK;les deux;forte;K8s contre limp à 25 BB : check confortable
+S026;Lucho;RAISE TO 3 BB;A;moyenne;KJo domine le range de limp : iso
+S027;Lucho;CALL 0,5 BB;B;faible;A2s SB contre BB : limp pour protéger le range de limp
+S028;Lucho;CHECK;les deux;forte;T3o : check
+S029;Lucho;FOLD;les deux;forte;52o : fold
+S030;Lucho;FOLD;les deux;forte;J2o face au 3-bet : fold
+S031;Lucho;CALL 2,5 BB;A;faible;Q8o au BB HU : défense large, le fold à 100 % me paraît trop serré
+S032;Lucho;CALL 2,5 BB;A;faible;J8o au BB HU : défendre, comme Q8o
+S033;Lucho;CALL 1,3 BB;les deux;forte;KJo contre l'open BTN : call
+S034;Lucho;FOLD;B;moyenne;JTo au SB hors de position avec le BB derrière : fold ou 3-bet, pas de flat
+S035;Lucho;CALL 1 BB;les deux;moyenne;AA au BTN à 12 BB : limp-trap ou clic, les deux gagnent gros
+S036;Lucho;RAISE TO 3,5 BB;les deux;forte;AKs : raise
+S037;Lucho;CALL 2 BB;B;forte;Q8o en position pour 2 BB : call, fold trop serré
+S038;Lucho;RAISE TO 3 BB;B;faible;KJs domine le limp : je l'iso plus souvent que A
+S039;Lucho;RAISE TO 2,3 BB;B;moyenne;A9s au BTN : clic
+S040;Lucho;CHECK;A;moyenne;Q4o contre limp : check
+S041;Lucho;ALL-IN 12 BB;B;faible;76o SB à 12 BB : push, le field overfold
+S042;Lucho;CALL 11 BB;les deux;forte;A6s contre tapis HU 12 BB : call
+S043;Lucho;CALL 0,5 BB;B;moyenne;94s HU : limp
+S044;Lucho;ALL-IN 12 BB;les deux;forte;ATo SB à 12 BB : jam
+S045;Lucho;CALL 0,5 BB;les deux;forte;J4s HU : limp
+S046;Lucho;CALL 0,5 BB;les deux;faible;ATs HU 25 BB : limp pour protéger, ou raise, ça se vaut
+S047;Lucho;FOLD;les deux;forte;T2s face au tapis : fold
+S048;Lucho;CALL 2 BB;B;moyenne;K4o en position pour 2 BB : call
+S049;Lucho;CHECK;B;moyenne;Q5o contre limp : check
+S050;Lucho;CALL 0,5 BB;A;moyenne;83s HU : limp, pas d'open avec ça
+S051;Lucho;CALL 0,5 BB;B;faible;98s HU 12 BB : limp, le jam se défend aussi
+S052;Lucho;ALL-IN 12 BB;B;faible;Q5s SB à 12 BB : push
+S053;Lucho;RAISE TO 7,6 BB;B;moyenne;KQo contre le clic BTN : 3-bet ou call, le jam de 25 BB sur 2,3 est trop gros
+S054;Lucho;CHECK;B;moyenne;98s contre le limp : check, garder le pot petit
+S055;Lucho;ALL-IN 12 BB;B;faible;K8o domine le limp à 12 BB : jam
+S056;Lucho;FOLD;les deux;forte;K7o face au tapis BTN : fold
+S057;Lucho;CALL 1,3 BB;B;moyenne;76o contre le clic : défense avec la cote
+S058;Lucho;CALL 1,3 BB;B;moyenne;K6o contre le clic : défense
+S059;Lucho;CHECK;B;moyenne;85s contre le limp : check
+S060;Lucho;CALL 0,5 BB;les deux;faible;Q6s HU 12 BB : limp ou jam, EV très proches

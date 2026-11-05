@@ -1,0 +1,167 @@
+# Calculs longs du solveur sur ton ordinateur (actions O1, O3, O5)
+
+Les calculs de plusieurs heures ne tournent pas dans la session cloud : ils se lancent sur ton ordinateur, puis tu renvoies les fichiers produits. Rien ici ne touche la référence ni l'application.
+
+| Action | Ce que ça calcule | Durée sur 4 cœurs | Fichiers à renvoyer |
+|---|---|---|---|
+| O1 | Installation (une fois) | 10 minutes | — |
+| O3 | Résolution exacte au flop, pour comparer les réglages de regroupement après le flop (G13) | environ 4 h 15 | `docs/solver/exact_flop_hu25_raise_g13.json`, `docs/solver/exact_flop_hu25_iso_g13.json` |
+| O5 | Grille complète du solveur sur l'arbre v5 (58 configurations), après le choix du réglage (G16) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/<version>/` |
+| O7 | Grille v5 avec la correction des pots relancés (G17) | environ 5 h | `data/solver/runs/<dossier>/` et `data/datasets/gto_preflop/2026.11.04-s3/` |
+| O6 | Calcul exact au flop pour apprendre la correction des pots relancés (G17) | 12 à 15 h | `data/solver/g17/hu_25-25_*.jsonl`, `hu_18-18_*.jsonl`, `hu_12-12_*.jsonl` |
+
+## Matériel
+
+- 4 cœurs au moins ; plus il y en a, plus c'est court (le calcul exact et les sous-jeux postflop se répartissent sur tous les cœurs).
+- **16 Go de mémoire** (Python 64 bits). Mémoire maximale mesurée pour O3 (5 réglages) : voir le tableau d'O3.
+- 2 Go d'espace disque.
+- Linux, macOS ou Windows. L'ordinateur doit rester allumé et ne pas se mettre en veille pendant le calcul (réglages d'alimentation).
+
+## O1 : installation (une fois)
+
+1. Installer Python 3.11 ou plus récent (testé avec 3.13) : <https://www.python.org/downloads/> ; sous Windows, cocher « Add python.exe to PATH ». Installer git : <https://git-scm.com/downloads>.
+2. Dans un terminal (sous Windows : « Invite de commandes » ou PowerShell) :
+
+```bash
+git clone https://github.com/ceallier-boop/solveur-poker.git
+```
+
+```bash
+cd solveur-poker
+```
+
+```bash
+git checkout claude/poker-expresso-training-app-b63kf9
+```
+
+```bash
+python -m venv .venv
+```
+
+3. Activer l'environnement, à refaire à chaque nouveau terminal. Linux et macOS :
+
+```bash
+source .venv/bin/activate
+```
+
+Windows :
+
+```bash
+.venv\Scripts\activate
+```
+
+4. Installer les dépendances, puis vérifier l'installation (deux minutes, tout doit être « passed ») :
+
+```bash
+pip install -r requirements.txt
+```
+
+```bash
+python -m pytest -q tests/test_exact_flop.py tests/test_solver_dataset.py
+```
+
+Avant chaque calcul, mettre le code à jour :
+
+```bash
+git pull
+```
+
+## O3 : mesurer les réglages de regroupement après le flop (après G13)
+
+Deux commandes, l'une après l'autre (dans le dossier `solveur-poker`, environnement activé). Chacune résout exactement 5 flops (les mêmes que la mesure G9 du 30/10) et y rejoue la stratégie des 5 réglages de regroupement : `production`, `ehs2`, `ehs2_flop32`, `ehs2_texture`, `ehs2_flop32_texture`.
+
+```bash
+python tools/solver/exact_flop_check.py --spot raise --flops 5 --iters 100 --variants all --out docs/solver/exact_flop_hu25_raise_g13.json
+```
+
+```bash
+python tools/solver/exact_flop_check.py --spot iso --flops 5 --iters 100 --variants all --low-memory --threads 4 --out docs/solver/exact_flop_hu25_iso_g13.json
+```
+
+Mémoire maximale mesurée (31/10/2026) :
+
+| Commande | 4 fils de calcul | 2 fils de calcul |
+|---|---|---|
+| relance payée (`--spot raise`) | 2,5 Go | 2,2 Go |
+| iso payé, mode normal | 6,2 Go | 5,5 Go |
+| **iso payé, `--low-memory`** | **4,0 Go** | 3,3 Go |
+
+- `--low-memory` : pas de stratégie moyenne aux rues turn et river ; les valeurs utilisent la stratégie courante du calcul exact. Vérifié sur le premier flop de G9 : écart avec notre solveur +0,141 BB contre +0,142 avec la stratégie moyenne, exploitabilité 0,38 % du pot contre 0,61 %.
+- `--threads` : nombre de fils de calcul. Sans cette option, tous les cœurs sont utilisés et chaque fil ajoute 0,2 à 0,4 Go : c'est ce qui faisait déborder la mémoire sur un ordinateur à beaucoup de cœurs. Avec 2 fils au lieu de 4, le calcul est deux fois plus long.
+
+Durées sur 4 cœurs : environ 1 h 20 pour la première, 2 h 55 pour la seconde. Chaque flop affiche une ligne de progression ; à la fin, un tableau compare les réglages (écart avec l'exact, transfert de valeur entre familles de mains, exploitabilité). Si un calcul s'arrête, relancer la même commande : elle repart du début de cette situation.
+
+Fichiers à renvoyer : `docs/solver/exact_flop_hu25_raise_g13.json` et `docs/solver/exact_flop_hu25_iso_g13.json`.
+
+## O5 : grille complète sur l'arbre v5 (après G16)
+
+G16 choisit le réglage de regroupement d'après O3 ; la commande exacte, avec ce réglage et le numéro de version, sera donnée à ce moment-là. Sa forme :
+
+```bash
+python -m spinsacademy.solver.dataset --version 2026.11.JJ-s2 --grid p1 --tree v5 --postflop <réglage choisi> --workers <nombre de cœurs>
+```
+
+- `--tree v5` : ouvertures à 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé.
+- `--workers` : mettre le nombre de cœurs de l'ordinateur.
+- Environ 5 h sur 4 cœurs depuis les accélérations du 02/11/2026 (12 h avant) : 1 à 3 minutes par configuration heads-up, 4 à 10 minutes à 3 joueurs. Une ligne s'affiche pour chaque configuration terminée.
+- Mémoire : environ 0,25 Go par processus et 0,2 Go pour le processus principal, soit 1,2 Go avec `--workers 4` (mesuré sous Linux) ; 8 Go suffisent largement.
+- **Reprise** : chaque configuration terminée est enregistrée tout de suite (`data/solver/runs/`). Si le calcul s'arrête, relancer exactement la même commande : les configurations déjà faites ne sont pas recalculées.
+- À la fin : « N spots publiés en staging ». La banque n'est pas servie aux joueurs : elle passe ensuite les contrôles du catalogue.
+
+Fichiers à renvoyer : le dossier `data/solver/runs/<dossier>/` créé par le calcul (son nom commence par l'empreinte de l'arbre) et le dossier `data/datasets/gto_preflop/<version>/`.
+
+## O6 : apprendre la correction des pots relancés (G17)
+
+Résout exactement 8 flops au hasard dans les deux pots relancés les plus fréquents (le SB ouvre et le BB paie ; le SB limpe, le BB isole et le SB paie), à 25, 18 et 12 BB, avec les ranges de notre banque v5, et y compare notre solveur. Une seule commande (dans le dossier `solveur-poker`, environnement activé, après `git pull`) :
+
+```bash
+python tools/solver/learn_correction.py --set learn --threads 4 --low-memory
+```
+
+- Durée : environ 22 minutes par flop à 25 BB sur 4 cœurs (mesuré le 03/11/2026), moins aux tapis plus courts ; 48 flops en tout, 12 à 15 h. Avec plus de cœurs, mettre `--threads` au nombre de cœurs : plus court, et environ 0,3 Go de plus par fil.
+- Mémoire maximale : 3,2 Go avec `--threads 4 --low-memory` (mesuré) ; 8 Go suffisent.
+- **Reprise** : chaque flop terminé est écrit tout de suite (une ligne dans `data/solver/g17/<configuration>_<pot>.jsonl`). Si le calcul s'arrête (coupure, mise en veille), relancer exactement la même commande : il repart au flop suivant. On peut aussi l'arrêter volontairement (Ctrl+C) et le reprendre plus tard.
+- Une ligne s'affiche par flop terminé ; « FIN » à la fin.
+
+Le jeu de contrôle (8, 15 et 22 BB, d'autres flops) tourne dans la session cloud : ne pas le lancer.
+
+Fichiers à renvoyer : les fichiers `data/solver/g17/hu_25-25_*.jsonl`, `data/solver/g17/hu_18-18_*.jsonl` et `data/solver/g17/hu_12-12_*.jsonl` (branche `calculs/o6`, `git add data/solver/g17`, ou archive).
+
+## O7 : grille v5 avec la correction des pots relancés (G17)
+
+Même grille qu'O5, avec la table de correction `g17-v1` (apprise d'O6, limitée aux tapis effectifs de 12 BB et plus). Avant de lancer : `git pull`, et **désactiver la mise en veille** de l'ordinateur (réglages d'alimentation) pour toute la durée du calcul.
+
+```bash
+python -m spinsacademy.solver.dataset --version 2026.11.04-s3 --grid p1 --tree v5 --postflop ehs2_texture --correction g17-v1 --workers 4
+```
+
+- `--workers` : le nombre de cœurs de l'ordinateur.
+- Durée, mémoire et reprise : comme O5 (environ 5 h sur 4 cœurs, 1,2 Go ; relancer la même commande reprend aux configurations non faites). Les résultats d'O5 ne sont pas réutilisés : la correction change l'empreinte, un nouveau dossier `data/solver/runs/sf3dc2e6_<empreinte>/` est créé.
+
+Fichiers à renvoyer : ce nouveau dossier `data/solver/runs/sf3dc2e6_<empreinte>/` et `data/datasets/gto_preflop/2026.11.04-s3/` (branche `calculs/o7`).
+
+## Renvoyer les résultats
+
+Au choix.
+
+**Par git** (si ton compte GitHub a accès au dépôt). Après O3 :
+
+```bash
+git checkout -b calculs/o3
+```
+
+```bash
+git add docs/solver/exact_flop_hu25_raise_g13.json docs/solver/exact_flop_hu25_iso_g13.json
+```
+
+```bash
+git commit -m "O3 : mesure exacte des réglages de regroupement"
+```
+
+```bash
+git push -u origin calculs/o3
+```
+
+Après O5, de même sur une branche `calculs/o5`, avec `git add data/solver/runs data/datasets/gto_preflop`.
+
+**Par archive** : compresser les fichiers ou dossiers indiqués (clic droit, « Compresser » ou « Envoyer vers > Dossier compressé ») et joindre le `.zip` à la conversation.

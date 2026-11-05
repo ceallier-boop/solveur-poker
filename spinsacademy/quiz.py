@@ -360,16 +360,17 @@ def _use(sp, items, used):
     used.add(sp['spot_id'])
 
 
-def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset()):
+def draw_series(version=DEFAULT_VERSION, filters=None, size=SERIES_SIZE, seed=None, excluded=frozenset(), min_profil=0):
     """[(spot_id, main)] ; ValueError si les filtres ne laissent pas assez de spots.
-    Mode Field : tirage propre aux questions fixes (spinsacademy.field.draw).
+    Mode Field : tirage propre aux questions fixes (spinsacademy.field.draw), avec au moins min_profil « Quelle pastille ? »
+    quand la série est en lecture du vilain.
     excluded : spots désactivés par l'administration.
     Tirage : format (heads-up HU_SHARE du temps quand les filtres le permettent), tranche de tapis à parts égales, puis
     situation selon sa fréquence réelle (situation_weights) ; une main ne revient pas deux fois dans la série."""
     rnd = random.Random(seed); items = pool(version, filters, excluded)
     if len(items) < size: raise ValueError(f'{len(items)} spots disponibles pour ces filtres, {size} demandés')
     if is_field(version):
-        out = field.draw(items, size, seed)
+        out = field.draw(items, size, seed, min_profil=min_profil)
         if len(out) < size: raise ValueError(f'{len(out)} questions du field disponibles pour ces filtres, {size} demandées')
         return out
     weights = situation_weights(version)

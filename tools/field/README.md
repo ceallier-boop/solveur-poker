@@ -1,4 +1,4 @@
-# Moteur exploitant « field » (v4.2)
+# Moteur exploitant « field » (v4.5)
 
 Porté du moteur exploitant v4.1 (stratégie exploitante v1, grilles Lucho / PA / Lucky) et corrigé après l'audit des coachs
 du 20/10/2026 : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`. Outil de construction : rien de ce dossier n'est servi par
@@ -6,7 +6,7 @@ l'application, et les exports de référence lus ici (`data/hrc/raw`) ne sont ja
 
 ## Lancer (depuis ce dossier)
 
-    python3 tests_exploit_v3.py                          # mécanique, monde synthétique (sans exports de référence)
+    python3 tests_exploit_v3.py                          # mécanique, monde synthétique de 4 à 12 BB (sans exports de référence ; demande numba)
     EXPRESSO_OUT=/tmp/x python3 quiz_generator.py         # banque quiz_field_v4_2.json / .csv
     EXPRESSO_QUIZ=/tmp/x/quiz_field_v4_2.json python3 verify_quiz.py
     python3 audit_quiz.py /tmp/x/quiz_field_v4_2.json /tmp/x/audit.csv   # grille des coachs (doctrine codée)
@@ -17,6 +17,9 @@ contrôle et publication dans l'administration (`exploit_field`).
 Données : `hrcdata.load` lit `data/hrc/raw/<dossier>/hand_<n>` (correspondance des clés `3w`, `hu`, `3wc`, `huc`, `c2` :
 `data/hrc/README.md`) ; la matrice d'équités est celle de l'application (`spinsacademy/data/equity_169.npy`). La
 variable `EXPRESSO_DATA` garde l'ancienne arborescence `hrc/x/<clé>/Hand_<n>` et `E3.npy`.
+
+Historique des versions v4.2 à v4.5 et état du moteur : `docs/audit/AUDIT_COACHS_FIELD_2026-10-20.md`,
+`docs/produit/MOTEUR_EXPLOITANT_2026-10-29.md`.
 
 ## Corrections v4.2
 

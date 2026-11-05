@@ -1,0 +1,10 @@
+Source GTO : data/hrc/raw/complement2/hand_11
+Profil : Rec passif (défaut) (rec_passif) : shove 0.60, call 0.60, iso 0.40, limp_k 2.00
+Héros (nœuds libres) : BB
+
+=== Nœud root (joue : SB)
+  F: (aucune main)
+  C: 22,32o,42o,52o,62o,72o,82o,92o,T2o,J2o,Q2o,K2o,32s,43o,53o,63o,73o,83o,93o,T3o,J3o,Q3o,K3o,A3o:0.63,42s,43s,44,54o,64o,74o,84o,94o,T4o,J4o,Q4o,K4o:0.91,52s,53s,54s,55,65o,75o,85o,95o,T5o,J5o,Q5o,K5o,A5o:0.05,62s,63s,64s,65s,66,76o,86o,96o,T6o,J6o,Q6o,K6o,72s,73s,74s,75s,76s,77,87o,97o,T7o,J7o,Q7o:0.97,K7o,A7o:0.29,82s,83s,84s,85s,86s,87s,88,98o,T8o,J8o:0.82,Q8o,K8o:0.99,A8o:0.15,92s,93s,94s,95s,96s,97s,98s,99,T9o:0.97,J9o:0.99,Q9o,K9o,A9o:0.43,T2s,T3s,T4s,T5s,T6s,T7s,T8s:0.23,T9s:0.96,TT,JTo:0.94,QTo,KTo,ATo,J2s,J3s,J4s,J5s,J6s,J7s:0.54,J8s:0.32,J9s:0.88,JTs,JJ,QJo,KJo,AJo,Q2s,Q3s,Q4s,Q5s:0.71,Q6s,Q7s:0.45,Q8s:0.91,Q9s,QTs,QJs,QQ,KQo,AQo,K2s:0.99,K3s:0.93,K4s:0.99,K5s,K6s,K7s,K8s,K9s,KTs,KJs,KQs,KK,AKo,A2s:0.02,A3s:0.73,A4s:0.97,A5s:0.95,A6s:0.99,A7s:0.94,A8s:0.66,A9s,ATs,AJs,AQs,AKs,AA
+  R3.5: K4o:0.09,A6o:0.04,Q7o:0.03,A7o:0.13,J8o:0.18,A8o:0.29,T9o:0.02,A9o:0.56,T8s:0.77,T9s:0.03,JTo:0.06,J7s:0.04,J8s:0.35,J9s:0.12,K3s:0.01,A2s:0.06,A3s:0.09,A4s:0.02,A5s:0.04,A6s:0.01,A7s:0.06,A8s:0.31
+  A: A2o,33,A3o:0.37,A4o,A5o:0.95,A6o:0.95,A7o:0.58,K8o:0.01,A8o:0.56,T9o:0.01,J9o:0.01,A9o:0.01,J7s:0.41,J8s:0.33,Q5s:0.28,Q7s:0.55,Q8s:0.09,K3s:0.06,K4s:0.01,A2s:0.91,A3s:0.18,A4s:0.01,A5s:0.01,A8s:0.02
+
