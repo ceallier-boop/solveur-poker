@@ -349,9 +349,16 @@ function renderAnswer(r) {
     : r.verdict === 'correct' ? `Presque aussi bon que le meilleur coup : ${short(r.best_label)}.`
     : (r.good_labels || []).length > 1 ? `Les bons coups : ${r.good_labels.join(' ou ')}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`   // analyse des écrans : une seule formulation
     : `Le bon coup : ${r.best_label}.${r.loss_fr ? ` Ton choix coûte ${r.loss_fr}.` : ''}`;   // message essentiel : le bon coup, le coût
+  const av = !r.field && r.avis && r.avis.split ? r.avis : null;      // décisions du 05/11 (I8, P13) : experts partagés, deux stratégies possibles
+  const subShown = av && !state.timedOut ? (av.recommended ? `Le coup le plus recommandé par les experts (${av.nuance_fr}).`
+    : `Une stratégie possible (${av.nuance_fr}) ; les experts recommandent plutôt ${av.recommended_label}.`) : sub;
   const onBest = state.timedOut && r.chosen_label === r.best_label;     // test joueurs 9 : le coup au temps tombait sur le bon coup
   v.innerHTML = title + `<small>${state.timedOut ? (onBest ? `Temps écoulé : ${state.timedOut} automatique. C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix.\n`
-    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${onBest ? '' : sub}</small>`;
+    : `Temps écoulé : ${state.timedOut} automatique, compté comme une erreur.\n`) : ''}${onBest ? '' : subShown}</small>`;
+  $('a-avis').hidden = !av;
+  if (av) $('a-avis').innerHTML = `<p class="avis-title">Les experts sont partagés : ${av.options.length > 2 ? 'plusieurs stratégies sont possibles' : 'les deux stratégies sont possibles'}</p>`
+    + `<ul>${av.options.map((o, i) => `<li class="${i === 0 ? 'avis-rec' : ''}${o.id === r.chosen_action ? ' mine' : ''}"><b>${escT(o.label_fr)}</b>`
+      + `<span>${o.experts} expert${o.experts > 1 ? 's' : ''} sur ${av.experts}${i === 0 ? ' · le plus recommandé' : ''}${o.id === r.chosen_action ? ' · ton choix' : ''}</span></li>`).join('')}</ul>`;
   stopTimer();
   renderCards(state.q.hand_display, 'a-cards'); $('a-cards').hidden = !state.q.hand || !!(state.q.field && state.q.field.ask_fr);
   $('a-choice').hidden = true;                                       // ton choix et son coût sont dans l'explication (pas de redite)
@@ -375,7 +382,7 @@ function renderAnswer(r) {
   $('a-remember').hidden = !rem; $('a-remember').innerHTML = rem ? `<b>À retenir</b><span class="eline">${escT(rem.charAt(0).toUpperCase() + rem.slice(1))}</span>` : '';
   const det = r.details_fr || []; $('a-more').open = false;
   const full = state.q.prompt_fr.replace(' Que fais-tu ?', '').replace(/\n(Quelle pastille lui donnes-tu|Quel est le défaut de ce vilain) \?$/, '');
-  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(full)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
+  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(full)}</p>` + det.filter((l) => !(av && /^Les experts ne sont pas d'accord/.test(l))).map((l) => `<p class="eline">${escT(l)}</p>`).join('');   // le bloc des experts le dit déjà
   $('a-recap').innerHTML = recapLine(state.q);                       // analyse des écrans : rappel en une ligne, l'énoncé complet dans les précisions
   renderNext(r.next);
   $('a-grid-box').hidden = !r.range; $('a-grid-box').open = false; if (r.range) renderGrid(r.range, state.q.hand, false);

@@ -513,3 +513,10 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ob-exploit p { margin: 0; } .ob-exploit-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .tag-paid { font-size: .75rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); }
 .mode-switch button.locked { opacity: .6; }
+/* décisions du 05/11 (I8, P13) : experts partagés, deux stratégies possibles, sans dramatiser */
+.avis { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.avis p { margin: 0; } .avis-title { font-weight: 650; font-size: .95rem; }
+.avis ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.avis li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .92rem; padding: 4px 0; border-top: 1px solid var(--line); }
+.avis li:first-child { border-top: 0; } .avis li span { color: var(--muted); font-size: .85rem; } .avis li.avis-rec b { color: var(--accent); }
+.avis li.mine { font-weight: 600; }
