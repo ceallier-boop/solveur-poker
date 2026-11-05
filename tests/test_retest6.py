@@ -36,6 +36,7 @@ def test_polarized_range_is_said():
     assert 'les très grosses mains' in g['rule_fr'] and 'relancent' in g['rule_fr']
 
 
+@pytest.mark.slow
 def test_rule_says_when_hand_is_an_exception():
     v = quiz.DEFAULT_VERSION; _, spots = quiz.load(v); n = 0
     for sp in list(spots.values())[:400]:

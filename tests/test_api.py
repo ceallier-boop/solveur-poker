@@ -51,6 +51,7 @@ def test_filters_and_reproducibility(client):
     assert client.post('/sessions', json={'filters': {'table': 'six-max'}}).status_code == 422
 
 
+@pytest.mark.slow
 def test_series_coverage_across_seeds():
     """répartition réellement servie sur 300 séries : toutes les familles et les deux tables apparaissent, premières décisions en tête"""
     import collections
@@ -97,6 +98,7 @@ def test_gains_are_shown_in_bb_with_floor():
     assert seen_small
 
 
+@pytest.mark.slow
 def test_correction_has_grid_and_why():
     _, spots = quiz.load()
     seen = {'exact': 0, 'hrc': 0}
@@ -140,6 +142,7 @@ def test_lexique_is_served_and_well_formed(client):
         assert any(x.startswith(needed) for x in terms), needed
 
 
+@pytest.mark.slow
 def test_equity_gap_bands_and_next_steps():
     _, spots = quiz.load(); bands = set(); kinds = set()
     for sp in spots.values():
@@ -164,6 +167,7 @@ def test_flop_profiles_match_known_probabilities():
     assert 0.32 <= quiz.postflop_profile('K7o')['pair_plus'] <= 0.34                          # paire ou mieux avec une main non pairée
 
 
+@pytest.mark.slow
 def test_review_fixes_on_texts():
     """relecture joueur : chiffres justes et textes cohérents avec la correction"""
     assert abs(quiz.overcard_prob('TT') - 0.695) < 1e-3 and quiz.overcard_prob('AA') == 0     # au moins une carte au-dessus de la paire

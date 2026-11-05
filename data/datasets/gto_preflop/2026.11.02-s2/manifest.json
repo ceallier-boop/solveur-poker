@@ -1,0 +1,3043 @@
+{
+ "dataset": "gto_preflop",
+ "version": "2026.11.02-s2",
+ "created_at": "2026-11-03T17:06:28+00:00",
+ "source": "solveur",
+ "solver": "1.0.0",
+ "importer": "1.5.0",
+ "reference_preflop_tree": "sf3dc2e6",
+ "tree_config": {
+  "open_btn": 2.0,
+  "open_sb": 2.0,
+  "iso_bb_vs_sb": 3.0,
+  "iso_base": 3.5,
+  "iso_per_limper": 1.0,
+  "threebet_vs_btn": 3.3,
+  "threebet_bb_vs_sb": 2.5,
+  "threebet_sb_vs_bb": 2.6,
+  "threebet_ip": 2.5,
+  "threebet_per_caller": 1.0,
+  "allin_fraction": 0.4,
+  "max_raises": 4,
+  "flats_per_level": 1,
+  "allow_limp": true,
+  "allow_cold_calls": false,
+  "unopened_allin_max": 0
+ },
+ "params": {
+  "model": "realization",
+  "pre_iters": 1500,
+  "outer": 10,
+  "tol_mbb": 0.6,
+  "post_iters": 3000,
+  "boards": 1000,
+  "damping": "linear",
+  "seed": 1,
+  "postflop": {
+   "bet_fraction": 0.66,
+   "allin_fraction": 0.67,
+   "buckets": 16,
+   "rollouts": 24,
+   "raise_fraction": 0.66,
+   "max_raises": 2,
+   "metric": "ehs2",
+   "allin_spr": 0.0,
+   "textured": true,
+   "flop_buckets": 0,
+   "donk": false
+  },
+  "warm": true,
+  "post_warm": 1000,
+  "rare_mass": 0.001,
+  "rare_iters": 500
+ },
+ "run": "sf3dc2e6_48fa0906",
+ "model": "chip_ev",
+ "spots": 1780,
+ "spots_sha256": "4656a71d3f2cff0a6b0a4bdf2a8bdab8ee3fd2277ee6b0a414e469234bed4a12",
+ "ev_reference_rule": "EV exacte si chaque action autre que fold en a une, sinon EV du solveur",
+ "min_reach_for_questions": 0.05,
+ "max_self_regret_mbb": 60.0,
+ "mixed_min": 0.1,
+ "max_mixed_regret_mbb": 60.0,
+ "max_exploitability_mbb": 5.0,
+ "max_drift_mbb": 1.0,
+ "questions_eligible": 151205,
+ "configs": [
+  {
+   "config": "3w_4-4-4",
+   "stacks": [
+    4,
+    4,
+    4
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_4-4-4.json",
+   "spots": 13,
+   "seconds": 156.6,
+   "exploitability_mbb": [
+    0.002,
+    0.001,
+    0.002
+   ],
+   "shift_pts": 1.399,
+   "drift_mbb": 0.002,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.00 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.002 mBB par main (seuil 1), variation des fréquences 1.399 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_6-6-6",
+   "stacks": [
+    6,
+    6,
+    6
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_6-6-6.json",
+   "spots": 22,
+   "seconds": 323.0,
+   "exploitability_mbb": [
+    0.006,
+    0.014,
+    0.012
+   ],
+   "shift_pts": 1.6,
+   "drift_mbb": 0.217,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.01 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.217 mBB par main (seuil 1), variation des fréquences 1.6 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_8-8-8",
+   "stacks": [
+    8,
+    8,
+    8
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_8-8-8.json",
+   "spots": 24,
+   "seconds": 579.2,
+   "exploitability_mbb": [
+    0.03,
+    0.046,
+    0.049
+   ],
+   "shift_pts": 1.435,
+   "drift_mbb": 0.148,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.05 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.148 mBB par main (seuil 1), variation des fréquences 1.435 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_10-10-10",
+   "stacks": [
+    10,
+    10,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_10-10-10.json",
+   "spots": 32,
+   "seconds": 532.1,
+   "exploitability_mbb": [
+    0.04,
+    0.059,
+    0.087
+   ],
+   "shift_pts": 2.175,
+   "drift_mbb": 0.485,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.09 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.485 mBB par main (seuil 1), variation des fréquences 2.175 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_12-12-12",
+   "stacks": [
+    12,
+    12,
+    12
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_12-12-12.json",
+   "spots": 44,
+   "seconds": 734.1,
+   "exploitability_mbb": [
+    0.077,
+    0.111,
+    0.103
+   ],
+   "shift_pts": 2.108,
+   "drift_mbb": 0.598,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.11 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.598 mBB par main (seuil 1), variation des fréquences 2.108 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_14-14-14",
+   "stacks": [
+    14,
+    14,
+    14
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_14-14-14.json",
+   "spots": 56,
+   "seconds": 1649.9,
+   "exploitability_mbb": [
+    0.483,
+    0.363,
+    0.375
+   ],
+   "shift_pts": 0.55,
+   "drift_mbb": 0.534,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.48 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.534 mBB par main (seuil 1), variation des fréquences 0.55 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_15-15-15",
+   "stacks": [
+    15,
+    15,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_15-15-15.json",
+   "spots": 56,
+   "seconds": 1374.8,
+   "exploitability_mbb": [
+    0.349,
+    0.292,
+    0.315
+   ],
+   "shift_pts": 0.984,
+   "drift_mbb": 0.522,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.35 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.522 mBB par main (seuil 1), variation des fréquences 0.984 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_16-16-16",
+   "stacks": [
+    16,
+    16,
+    16
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_16-16-16.json",
+   "spots": 54,
+   "seconds": 1166.2,
+   "exploitability_mbb": [
+    0.216,
+    0.225,
+    0.242
+   ],
+   "shift_pts": 1.157,
+   "drift_mbb": 0.402,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.402 mBB par main (seuil 1), variation des fréquences 1.157 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_18-18-18",
+   "stacks": [
+    18,
+    18,
+    18
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_18-18-18.json",
+   "spots": 62,
+   "seconds": 1437.5,
+   "exploitability_mbb": [
+    0.18,
+    0.249,
+    0.234
+   ],
+   "shift_pts": 0.813,
+   "drift_mbb": 0.503,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.25 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.503 mBB par main (seuil 1), variation des fréquences 0.813 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_20-20-20",
+   "stacks": [
+    20,
+    20,
+    20
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_20-20-20.json",
+   "spots": 54,
+   "seconds": 1724.9,
+   "exploitability_mbb": [
+    0.189,
+    0.263,
+    0.271
+   ],
+   "shift_pts": 0.511,
+   "drift_mbb": 0.421,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.27 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.421 mBB par main (seuil 1), variation des fréquences 0.511 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_22-22-22",
+   "stacks": [
+    22,
+    22,
+    22
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_22-22-22.json",
+   "spots": 63,
+   "seconds": 2114.2,
+   "exploitability_mbb": [
+    0.185,
+    0.279,
+    0.296
+   ],
+   "shift_pts": 0.621,
+   "drift_mbb": 0.4,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.30 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.4 mBB par main (seuil 1), variation des fréquences 0.621 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_25-25-25",
+   "stacks": [
+    25,
+    25,
+    25
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_25-25-25.json",
+   "spots": 65,
+   "seconds": 1973.3,
+   "exploitability_mbb": [
+    0.174,
+    0.215,
+    0.229
+   ],
+   "shift_pts": 0.678,
+   "drift_mbb": 0.527,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.23 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.527 mBB par main (seuil 1), variation des fréquences 0.678 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_2-2",
+   "stacks": [
+    2,
+    2
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_2-2.json",
+   "spots": 4,
+   "seconds": 4.3,
+   "exploitability_mbb": [
+    0.003,
+    0.001
+   ],
+   "shift_pts": 0.593,
+   "drift_mbb": 0.047,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.00 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.047 mBB par main (seuil 1), variation des fréquences 0.593 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_4-4",
+   "stacks": [
+    4,
+    4
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_4-4.json",
+   "spots": 3,
+   "seconds": 10.9,
+   "exploitability_mbb": [
+    0.001,
+    0.001
+   ],
+   "shift_pts": 3.5,
+   "drift_mbb": 0.001,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.00 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.001 mBB par main (seuil 1), variation des fréquences 3.5 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_6-6",
+   "stacks": [
+    6,
+    6
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_6-6.json",
+   "spots": 5,
+   "seconds": 25.8,
+   "exploitability_mbb": [
+    0.021,
+    0.016
+   ],
+   "shift_pts": 1.389,
+   "drift_mbb": 0.292,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.02 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.292 mBB par main (seuil 1), variation des fréquences 1.389 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_8-8",
+   "stacks": [
+    8,
+    8
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_8-8.json",
+   "spots": 7,
+   "seconds": 57.4,
+   "exploitability_mbb": [
+    0.056,
+    0.044
+   ],
+   "shift_pts": 2.263,
+   "drift_mbb": 0.503,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.06 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.503 mBB par main (seuil 1), variation des fréquences 2.263 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_10-10",
+   "stacks": [
+    10,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_10-10.json",
+   "spots": 7,
+   "seconds": 76.7,
+   "exploitability_mbb": [
+    0.138,
+    0.078
+   ],
+   "shift_pts": 1.355,
+   "drift_mbb": 0.295,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.14 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.295 mBB par main (seuil 1), variation des fréquences 1.355 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_12-12",
+   "stacks": [
+    12,
+    12
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_12-12.json",
+   "spots": 8,
+   "seconds": 76.9,
+   "exploitability_mbb": [
+    0.242,
+    0.216
+   ],
+   "shift_pts": 1.29,
+   "drift_mbb": 0.485,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.485 mBB par main (seuil 1), variation des fréquences 1.29 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_14-14",
+   "stacks": [
+    14,
+    14
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_14-14.json",
+   "spots": 10,
+   "seconds": 97.6,
+   "exploitability_mbb": [
+    0.333,
+    0.28
+   ],
+   "shift_pts": 0.956,
+   "drift_mbb": 0.468,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.33 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.468 mBB par main (seuil 1), variation des fréquences 0.956 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_15-15",
+   "stacks": [
+    15,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_15-15.json",
+   "spots": 10,
+   "seconds": 99.6,
+   "exploitability_mbb": [
+    0.367,
+    0.312
+   ],
+   "shift_pts": 1.327,
+   "drift_mbb": 0.573,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.573 mBB par main (seuil 1), variation des fréquences 1.327 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_16-16",
+   "stacks": [
+    16,
+    16
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_16-16.json",
+   "spots": 10,
+   "seconds": 157.4,
+   "exploitability_mbb": [
+    0.372,
+    0.305
+   ],
+   "shift_pts": 1.067,
+   "drift_mbb": 0.553,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.553 mBB par main (seuil 1), variation des fréquences 1.067 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_18-18",
+   "stacks": [
+    18,
+    18
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_18-18.json",
+   "spots": 10,
+   "seconds": 188.5,
+   "exploitability_mbb": [
+    0.405,
+    0.385
+   ],
+   "shift_pts": 1.372,
+   "drift_mbb": 0.575,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.41 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.575 mBB par main (seuil 1), variation des fréquences 1.372 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_20-20",
+   "stacks": [
+    20,
+    20
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_20-20.json",
+   "spots": 11,
+   "seconds": 244.8,
+   "exploitability_mbb": [
+    0.477,
+    0.452
+   ],
+   "shift_pts": 0.735,
+   "drift_mbb": 0.524,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.48 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.524 mBB par main (seuil 1), variation des fréquences 0.735 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_22-22",
+   "stacks": [
+    22,
+    22
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_22-22.json",
+   "spots": 11,
+   "seconds": 314.3,
+   "exploitability_mbb": [
+    0.553,
+    0.508
+   ],
+   "shift_pts": 0.682,
+   "drift_mbb": 0.6,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.55 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.6 mBB par main (seuil 1), variation des fréquences 0.682 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_25-25",
+   "stacks": [
+    25,
+    25
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_25-25.json",
+   "spots": 11,
+   "seconds": 351.9,
+   "exploitability_mbb": [
+    0.549,
+    0.482
+   ],
+   "shift_pts": 0.541,
+   "drift_mbb": 0.587,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.55 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.587 mBB par main (seuil 1), variation des fréquences 0.541 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_4-8",
+   "stacks": [
+    4,
+    8
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_4-8.json",
+   "spots": 3,
+   "seconds": 13.0,
+   "exploitability_mbb": [
+    0.001,
+    0.001
+   ],
+   "shift_pts": 3.5,
+   "drift_mbb": 0.001,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.00 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.001 mBB par main (seuil 1), variation des fréquences 3.5 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_8-4",
+   "stacks": [
+    8,
+    4
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_8-4.json",
+   "spots": 3,
+   "seconds": 11.0,
+   "exploitability_mbb": [
+    0.001,
+    0.001
+   ],
+   "shift_pts": 3.5,
+   "drift_mbb": 0.001,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.00 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.001 mBB par main (seuil 1), variation des fréquences 3.5 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_10-20",
+   "stacks": [
+    10,
+    20
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_10-20.json",
+   "spots": 7,
+   "seconds": 75.1,
+   "exploitability_mbb": [
+    0.138,
+    0.078
+   ],
+   "shift_pts": 1.355,
+   "drift_mbb": 0.295,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.14 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.295 mBB par main (seuil 1), variation des fréquences 1.355 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_20-10",
+   "stacks": [
+    20,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_20-10.json",
+   "spots": 7,
+   "seconds": 75.9,
+   "exploitability_mbb": [
+    0.138,
+    0.078
+   ],
+   "shift_pts": 1.355,
+   "drift_mbb": 0.295,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.14 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.295 mBB par main (seuil 1), variation des fréquences 1.355 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_12-18",
+   "stacks": [
+    12,
+    18
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_12-18.json",
+   "spots": 8,
+   "seconds": 77.4,
+   "exploitability_mbb": [
+    0.242,
+    0.216
+   ],
+   "shift_pts": 1.29,
+   "drift_mbb": 0.485,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.485 mBB par main (seuil 1), variation des fréquences 1.29 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_18-12",
+   "stacks": [
+    18,
+    12
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_18-12.json",
+   "spots": 8,
+   "seconds": 77.1,
+   "exploitability_mbb": [
+    0.242,
+    0.216
+   ],
+   "shift_pts": 1.29,
+   "drift_mbb": 0.485,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.485 mBB par main (seuil 1), variation des fréquences 1.29 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_15-25",
+   "stacks": [
+    15,
+    25
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_15-25.json",
+   "spots": 10,
+   "seconds": 100.7,
+   "exploitability_mbb": [
+    0.367,
+    0.312
+   ],
+   "shift_pts": 1.327,
+   "drift_mbb": 0.573,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.573 mBB par main (seuil 1), variation des fréquences 1.327 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_25-15",
+   "stacks": [
+    25,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_25-15.json",
+   "spots": 10,
+   "seconds": 99.3,
+   "exploitability_mbb": [
+    0.367,
+    0.312
+   ],
+   "shift_pts": 1.327,
+   "drift_mbb": 0.573,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.573 mBB par main (seuil 1), variation des fréquences 1.327 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_20-30",
+   "stacks": [
+    20,
+    30
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_20-30.json",
+   "spots": 11,
+   "seconds": 244.2,
+   "exploitability_mbb": [
+    0.477,
+    0.452
+   ],
+   "shift_pts": 0.735,
+   "drift_mbb": 0.524,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.48 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.524 mBB par main (seuil 1), variation des fréquences 0.735 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_30-20",
+   "stacks": [
+    30,
+    20
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_30-20.json",
+   "spots": 11,
+   "seconds": 245.1,
+   "exploitability_mbb": [
+    0.477,
+    0.452
+   ],
+   "shift_pts": 0.735,
+   "drift_mbb": 0.524,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.48 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.524 mBB par main (seuil 1), variation des fréquences 0.735 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_35-15",
+   "stacks": [
+    35,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_35-15.json",
+   "spots": 10,
+   "seconds": 99.4,
+   "exploitability_mbb": [
+    0.367,
+    0.312
+   ],
+   "shift_pts": 1.327,
+   "drift_mbb": 0.573,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.573 mBB par main (seuil 1), variation des fréquences 1.327 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "hu_15-35",
+   "stacks": [
+    15,
+    35
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/hu_15-35.json",
+   "spots": 10,
+   "seconds": 100.1,
+   "exploitability_mbb": [
+    0.367,
+    0.312
+   ],
+   "shift_pts": 1.327,
+   "drift_mbb": 0.573,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.37 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.573 mBB par main (seuil 1), variation des fréquences 1.327 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_35-25-15",
+   "stacks": [
+    35,
+    25,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_35-25-15.json",
+   "spots": 57,
+   "seconds": 1443.3,
+   "exploitability_mbb": [
+    0.154,
+    0.237,
+    0.202
+   ],
+   "shift_pts": 0.934,
+   "drift_mbb": 0.442,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.442 mBB par main (seuil 1), variation des fréquences 0.934 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_25-35-15",
+   "stacks": [
+    25,
+    35,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_25-35-15.json",
+   "spots": 57,
+   "seconds": 1446.4,
+   "exploitability_mbb": [
+    0.154,
+    0.237,
+    0.202
+   ],
+   "shift_pts": 0.934,
+   "drift_mbb": 0.442,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.442 mBB par main (seuil 1), variation des fréquences 0.934 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_15-25-35",
+   "stacks": [
+    15,
+    25,
+    35
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_15-25-35.json",
+   "spots": 79,
+   "seconds": 1936.5,
+   "exploitability_mbb": [
+    0.187,
+    0.316,
+    0.303
+   ],
+   "shift_pts": 0.825,
+   "drift_mbb": 0.592,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.32 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.592 mBB par main (seuil 1), variation des fréquences 0.825 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_35-15-25",
+   "stacks": [
+    35,
+    15,
+    25
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_35-15-25.json",
+   "spots": 63,
+   "seconds": 1557.4,
+   "exploitability_mbb": [
+    0.123,
+    0.191,
+    0.236
+   ],
+   "shift_pts": 1.252,
+   "drift_mbb": 0.464,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.464 mBB par main (seuil 1), variation des fréquences 1.252 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_40-20-15",
+   "stacks": [
+    40,
+    20,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_40-20-15.json",
+   "spots": 63,
+   "seconds": 1436.2,
+   "exploitability_mbb": [
+    0.221,
+    0.246,
+    0.233
+   ],
+   "shift_pts": 1.072,
+   "drift_mbb": 0.39,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.25 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.39 mBB par main (seuil 1), variation des fréquences 1.072 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_20-40-15",
+   "stacks": [
+    20,
+    40,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_20-40-15.json",
+   "spots": 63,
+   "seconds": 25398.1,
+   "exploitability_mbb": [
+    0.221,
+    0.246,
+    0.233
+   ],
+   "shift_pts": 1.072,
+   "drift_mbb": 0.39,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.25 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.39 mBB par main (seuil 1), variation des fréquences 1.072 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_15-20-40",
+   "stacks": [
+    15,
+    20,
+    40
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_15-20-40.json",
+   "spots": 66,
+   "seconds": 2484.6,
+   "exploitability_mbb": [
+    0.23,
+    0.294,
+    0.276
+   ],
+   "shift_pts": 0.449,
+   "drift_mbb": 0.427,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.29 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.427 mBB par main (seuil 1), variation des fréquences 0.449 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_30-30-15",
+   "stacks": [
+    30,
+    30,
+    15
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_30-30-15.json",
+   "spots": 58,
+   "seconds": 1695.6,
+   "exploitability_mbb": [
+    0.15,
+    0.241,
+    0.202
+   ],
+   "shift_pts": 0.868,
+   "drift_mbb": 0.526,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.526 mBB par main (seuil 1), variation des fréquences 0.868 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_45-20-10",
+   "stacks": [
+    45,
+    20,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_45-20-10.json",
+   "spots": 46,
+   "seconds": 1225.5,
+   "exploitability_mbb": [
+    0.088,
+    0.096,
+    0.069
+   ],
+   "shift_pts": 1.518,
+   "drift_mbb": 0.58,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.10 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.58 mBB par main (seuil 1), variation des fréquences 1.518 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_20-45-10",
+   "stacks": [
+    20,
+    45,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_20-45-10.json",
+   "spots": 46,
+   "seconds": 1229.6,
+   "exploitability_mbb": [
+    0.088,
+    0.096,
+    0.069
+   ],
+   "shift_pts": 1.518,
+   "drift_mbb": 0.58,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.10 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.58 mBB par main (seuil 1), variation des fréquences 1.518 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_10-20-45",
+   "stacks": [
+    10,
+    20,
+    45
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_10-20-45.json",
+   "spots": 56,
+   "seconds": 6481.2,
+   "exploitability_mbb": [
+    0.065,
+    0.236,
+    0.186
+   ],
+   "shift_pts": 0.943,
+   "drift_mbb": 0.562,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.24 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.562 mBB par main (seuil 1), variation des fréquences 0.943 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_30-25-20",
+   "stacks": [
+    30,
+    25,
+    20
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_30-25-20.json",
+   "spots": 60,
+   "seconds": 2293.9,
+   "exploitability_mbb": [
+    0.256,
+    0.302,
+    0.265
+   ],
+   "shift_pts": 0.474,
+   "drift_mbb": 0.415,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.30 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.415 mBB par main (seuil 1), variation des fréquences 0.474 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_50-15-10",
+   "stacks": [
+    50,
+    15,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_50-15-10.json",
+   "spots": 39,
+   "seconds": 847.0,
+   "exploitability_mbb": [
+    0.131,
+    0.101,
+    0.087
+   ],
+   "shift_pts": 1.834,
+   "drift_mbb": 0.58,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.13 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.58 mBB par main (seuil 1), variation des fréquences 1.834 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_15-50-10",
+   "stacks": [
+    15,
+    50,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_15-50-10.json",
+   "spots": 39,
+   "seconds": 846.5,
+   "exploitability_mbb": [
+    0.131,
+    0.101,
+    0.087
+   ],
+   "shift_pts": 1.834,
+   "drift_mbb": 0.58,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.13 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.58 mBB par main (seuil 1), variation des fréquences 1.834 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_20-30-25",
+   "stacks": [
+    20,
+    30,
+    25
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_20-30-25.json",
+   "spots": 72,
+   "seconds": 2019.9,
+   "exploitability_mbb": [
+    0.189,
+    0.247,
+    0.315
+   ],
+   "shift_pts": 0.882,
+   "drift_mbb": 0.577,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.32 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.577 mBB par main (seuil 1), variation des fréquences 0.882 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_6-10-14",
+   "stacks": [
+    6,
+    10,
+    14
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_6-10-14.json",
+   "spots": 26,
+   "seconds": 481.8,
+   "exploitability_mbb": [
+    0.01,
+    0.041,
+    0.054
+   ],
+   "shift_pts": 2.173,
+   "drift_mbb": 0.388,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.05 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.388 mBB par main (seuil 1), variation des fréquences 2.173 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_6-14-10",
+   "stacks": [
+    6,
+    14,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_6-14-10.json",
+   "spots": 26,
+   "seconds": 481.6,
+   "exploitability_mbb": [
+    0.01,
+    0.041,
+    0.054
+   ],
+   "shift_pts": 2.173,
+   "drift_mbb": 0.388,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.05 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.388 mBB par main (seuil 1), variation des fréquences 2.173 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_10-6-14",
+   "stacks": [
+    10,
+    6,
+    14
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_10-6-14.json",
+   "spots": 28,
+   "seconds": 434.2,
+   "exploitability_mbb": [
+    0.027,
+    0.02,
+    0.026
+   ],
+   "shift_pts": 2.261,
+   "drift_mbb": 0.268,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.03 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.268 mBB par main (seuil 1), variation des fréquences 2.261 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_10-14-6",
+   "stacks": [
+    10,
+    14,
+    6
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_10-14-6.json",
+   "spots": 29,
+   "seconds": 437.0,
+   "exploitability_mbb": [
+    0.025,
+    0.026,
+    0.022
+   ],
+   "shift_pts": 2.591,
+   "drift_mbb": 0.303,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.03 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.303 mBB par main (seuil 1), variation des fréquences 2.591 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_14-6-10",
+   "stacks": [
+    14,
+    6,
+    10
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_14-6-10.json",
+   "spots": 28,
+   "seconds": 445.3,
+   "exploitability_mbb": [
+    0.027,
+    0.02,
+    0.026
+   ],
+   "shift_pts": 2.261,
+   "drift_mbb": 0.268,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.03 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.268 mBB par main (seuil 1), variation des fréquences 2.261 points"
+    }
+   ],
+   "calibration": null
+  },
+  {
+   "config": "3w_14-10-6",
+   "stacks": [
+    14,
+    10,
+    6
+   ],
+   "run": "data/solver/runs/sf3dc2e6_48fa0906/3w_14-10-6.json",
+   "spots": 29,
+   "seconds": 421.3,
+   "exploitability_mbb": [
+    0.025,
+    0.026,
+    0.022
+   ],
+   "shift_pts": 2.591,
+   "drift_mbb": 0.303,
+   "controls": [
+    {
+     "id": "exploitability",
+     "label_fr": "Exploitabilité de la stratégie",
+     "ok": true,
+     "details_fr": "0.03 mBB par main au pire (seuil 5)"
+    },
+    {
+     "id": "stability",
+     "label_fr": "Stabilité préflop / postflop",
+     "ok": true,
+     "details_fr": "dérive au dernier tour 0.303 mBB par main (seuil 1), variation des fréquences 2.591 points"
+    }
+   ],
+   "calibration": null
+  }
+ ],
+ "sources": [
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_4-4-4.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_6-6-6.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_8-8-8.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_10-10-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_12-12-12.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_14-14-14.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_15-15-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_16-16-16.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_18-18-18.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_20-20-20.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_22-22-22.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_25-25-25.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_2-2.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_4-4.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_6-6.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_8-8.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_10-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_12-12.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_14-14.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_15-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_16-16.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_18-18.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_20-20.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_22-22.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_25-25.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_4-8.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_8-4.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_10-20.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_20-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_12-18.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_18-12.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_15-25.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_25-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_20-30.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_30-20.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_35-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/hu_15-35.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_35-25-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_25-35-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_15-25-35.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_35-15-25.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_40-20-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_20-40-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_15-20-40.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_30-30-15.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_45-20-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_20-45-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_10-20-45.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_30-25-20.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_50-15-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_15-50-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_20-30-25.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_6-10-14.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_6-14-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_10-6-14.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_10-14-6.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_14-6-10.json",
+  "data/solver/runs/sf3dc2e6_48fa0906/3w_14-10-6.json"
+ ],
+ "skipped": [
+  {
+   "export": "3w_4-4-4",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_4-4-4",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_4-4-4",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_4-4-4",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_4-4-4",
+   "reason": "BTN-fold_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-raise2_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-raise2_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-raise2_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-6-6",
+   "reason": "BTN-raise2_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-raise2_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-raise2_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-raise2_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_8-8-8",
+   "reason": "BTN-raise2_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_16-16-16",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_16-16-16",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_18-18-18",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_18-18-18",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-20-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-raise2_SB-call_BB-raise8.6_BTN-allin_SB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_22-22-22",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-25-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "hu_4-4",
+   "reason": "SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_6-6",
+   "reason": "SB-raise2_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_8-8",
+   "reason": "SB-raise2_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_10-10",
+   "reason": "SB-raise2_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_20-20",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_22-22",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_25-25",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_4-8",
+   "reason": "SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_8-4",
+   "reason": "SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_10-20",
+   "reason": "SB-raise2_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_20-10",
+   "reason": "SB-raise2_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_20-30",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "hu_30-20",
+   "reason": "SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-25-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_25-35-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_15-25-35",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_15-25-35",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_15-25-35",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-allin_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_35-15-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_40-20-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-40-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_15-20-40",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_15-20-40",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-20-40",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_15-20-40",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-raise4.5_BB-fold_BTN-raise11.25_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-30-15",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_45-20-10",
+   "reason": "BTN-raise2_SB-raise6.6_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-45-10",
+   "reason": "BTN-raise2_SB-raise6.6_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-allin_SB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-20-45",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-fold_SB-call_BB-raise3_SB-raise7.8_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_30-25-20",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_50-15-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_15-50-10",
+   "reason": "BTN-call_SB-raise4.5_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-fold_BB-raise4.5 : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-raise4.5_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-raise4.5_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-raise4.5_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-raise4.5_BB-call_BTN-allin_SB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_20-30-25",
+   "reason": "BTN-call_SB-call_BB-raise5.5_BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-raise2_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-raise2_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-raise2_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-10-14",
+   "reason": "BTN-raise2_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-raise2_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-raise2_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-raise2_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_6-14-10",
+   "reason": "BTN-raise2_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-call_SB-allin_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-6-14",
+   "reason": "BTN-raise2_SB-allin_BB-call_BTN-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-14-6",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_10-14-6",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_10-14-6",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-14-6",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_10-14-6",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-call_SB-allin_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-6-10",
+   "reason": "BTN-raise2_SB-allin_BB-call_BTN-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-10-6",
+   "reason": "BTN-call_SB-allin_BB-call : aucune main proposable"
+  },
+  {
+   "export": "3w_14-10-6",
+   "reason": "BTN-call_SB-allin_BB-fold : aucune main proposable"
+  },
+  {
+   "export": "3w_14-10-6",
+   "reason": "BTN-call_SB-call_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-10-6",
+   "reason": "BTN-call_SB-fold_BB-allin : aucune main proposable"
+  },
+  {
+   "export": "3w_14-10-6",
+   "reason": "BTN-call_SB-call_BB-allin_BTN-call_SB-allin : aucune main proposable"
+  }
+ ],
+ "status": "staging"
+}

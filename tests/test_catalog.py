@@ -20,6 +20,7 @@ def client(tmp_path, monkeypatch):
 def post(c, path, **body): return c.post(path, json=dict(actor='Expert test', **body), headers=ADMIN)
 
 
+@pytest.mark.slow
 def test_reports_on_real_datasets():
     assert catalog.validate(GTO)['ok'] and catalog.validate(EXP)['ok']
     old = catalog.validate(OLD)
@@ -39,16 +40,28 @@ def copy(tmp_path, monkeypatch):
 from conftest import needs_raw
 
 
+@pytest.fixture()
+def fresh(tmp_path, monkeypatch):
+    """dataset GTO publié par l'importeur actuel : sa reconstruction est comparable (la 2026.10.13-3 date de l'importeur 1.4.0)"""
+    from spinsacademy import importer
+    root = tmp_path / 'datasets'; importer.publish('test-1', str(root / 'gto_preflop'))
+    monkeypatch.setattr(quiz, 'DATASETS', str(root)); quiz.load.cache_clear()
+    yield root / 'gto_preflop' / 'test-1'
+    quiz.load.cache_clear()
+
+
+@pytest.mark.slow
 @needs_raw
-def test_tampered_file_is_rejected(copy):
+def test_tampered_file_is_rejected(fresh):
+    copy, ref = fresh, 'gto_preflop/test-1'
     lines = open(copy / 'spots.jsonl').read().splitlines()
     sp = json.loads(lines[0]); sp['hands']['AA']['freq'] = [0.2, 0.2]; lines[0] = json.dumps(sp)
     open(copy / 'spots.jsonl', 'w').write('\n'.join(lines) + '\n')
-    rep = catalog.validate(GTO); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
+    rep = catalog.validate(ref); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
     assert not rep['ok'] and {'integrity', 'spots', 'rebuild'} <= fails
     m = json.load(open(copy / 'manifest.json')); m['spots_sha256'] = catalog._sha(copy / 'spots.jsonl')     # même avec une empreinte recalculée
     json.dump(m, open(copy / 'manifest.json', 'w'))
-    rep = catalog.validate(GTO); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
+    rep = catalog.validate(ref); fails = {c['id'] for c in rep['checks'] if c['level'] == 'fail'}
     assert 'integrity' not in fails and 'spots' in fails and 'rebuild' in fails
 
 
@@ -60,6 +73,7 @@ def test_nothing_is_served_before_publication(client):
     assert post(client, f'/admin/datasets/{GTO}/publish', reason='trop tôt').status_code == 409     # pas encore contrôlé
 
 
+@pytest.mark.slow
 def test_full_lifecycle(client):
     assert post(client, f'/admin/datasets/{OLD}/validate').json()['status'] == 'rejected'
     assert post(client, f'/admin/datasets/{OLD}/publish', reason='forcer').status_code == 409
@@ -82,6 +96,7 @@ def test_full_lifecycle(client):
     assert client.get('/admin/datasets').status_code == 403
 
 
+@pytest.mark.slow
 def test_new_publication_retires_previous_and_rollback(tmp_path, monkeypatch, client):
     root = tmp_path / 'datasets'; new = 'gto_preflop/2026.10.13-9'
     shutil.copytree(quiz.ref_path(GTO), root / GTO); shutil.copytree(quiz.ref_path(GTO), root / new)

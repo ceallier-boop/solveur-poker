@@ -13,6 +13,7 @@ def rows_for(theme, verdicts):
             for i, v in enumerate(verdicts)]
 
 
+@pytest.mark.slow
 def test_thresholds_do_not_conclude_on_few_answers():
     avail = {adaptive.theme_of(sp) for sp in quiz.pool(quiz.DEFAULT_VERSION)}
     assert not adaptive.plan(rows_for(THEME, ['erreur', 'erreur']), avail, 5, 1)['active']                 # 2 réponses : pas de conclusion
@@ -74,7 +75,7 @@ def test_api_targets_weak_theme_and_respects_preferences(client):
     assert client.get('/users/me/stats', headers=ME).json()['questions'] == 20                      # l'historique est conservé
     assert client.get('/users/me/export', headers=ME).json()['preferences']['adaptation_reset_at'] == r['adaptation_reset_at']
     client.delete('/users/me', headers=ME)
-    assert client.get('/users/me/preferences', headers=ME).json() == {'adaptive': True, 'adaptation_reset_at': None}
+    assert client.get('/users/me/preferences', headers=ME).json() == {'adaptive': True, 'adaptation_reset_at': None, 'mode': None}
 
 
 def test_correction_is_unchanged_by_adaptation(client):

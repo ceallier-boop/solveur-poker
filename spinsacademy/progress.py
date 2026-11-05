@@ -28,7 +28,8 @@ RANK = {'fold': 0, 'check': 1, 'limp': 1, 'call': 2, 'call_allin': 2, 'raise': 3
 
 
 def direction(sp, r):
-    """'tight' si le coup joué engage moins que le meilleur coup (se coucher, payer au lieu de relancer), 'loose' s'il engage plus"""
+    """'tight' si le coup joué engage moins que le meilleur coup (se coucher, payer au lieu de relancer), 'loose' s'il engage plus ;
+    entre deux relances (relance et tapis), c'est une question de taille : 'small' (relance au lieu du tapis) ou 'big' (test joueurs 9)"""
     if sp.get('field'):
         opts = {o['id']: o.get('type') for o in sp['field']['options']}; best = sp['field']['correct']
     else:
@@ -38,6 +39,7 @@ def direction(sp, r):
         except ValueError: return None
     a, b = RANK.get(opts.get(r['action_id'])), RANK.get(opts.get(best))
     if a is None or b is None or a == b: return None
+    if a >= RANK['raise'] and b >= RANK['raise']: return 'small' if a < b else 'big'
     return 'tight' if a < b else 'loose'
 
 
@@ -67,7 +69,7 @@ def compute(rows):
     total = _bucket(); verdicts = defaultdict(int); timeouts = 0
     dims = {'mode': defaultdict(_bucket), 'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
     sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None, ev_questions=0, regret=0.0))
-    themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[], tight=0, loose=0))
+    themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[], tight=0, loose=0, small=0, big=0))
     rows = [r for r in rows if quiz.mode_of(r['dataset_version']) in MODE_FR]      # l'ancien mode des profils fictifs (retiré) ne compte plus
     for r in rows:
         _, spots = quiz.load(r['dataset_version']); sp = spots[r['spot_id']]
@@ -97,7 +99,7 @@ def compute(rows):
     reliable = [x for k, v in by.items() if k != 'mode' for x in v if x['reliable']]      # A8 : un thème de jeu, jamais « GTO » seul
     weakest = min(reliable, key=lambda x: x['score_pct']) if reliable else None
     recurring = sorted(([dict(label=f"{MODE_FR[m]} · {FAMILY_FR[f]} · {h} · {depth_label[d]}", errors=t['errors'], questions=t['questions'],
-                              regret_mbb=round(t['regret']), examples=t['examples'], tight=t['tight'], loose=t['loose'],
+                              regret_mbb=round(t['regret']), examples=t['examples'], tight=t['tight'], loose=t['loose'], small=t['small'], big=t['big'],
                               filters=dict(mode=m, hero=h, **depth_filter[d], family=f))
                          for (m, f, h, d), t in themes.items() if t['errors'] >= 2]), key=lambda x: (-x['errors'], -x['regret_mbb']))[:3]
     evolution = [dict(session_id=k, date=v['date'], questions=v['questions'], score_pct=round(100 * v['points'] / v['questions'], 1), bb_per_100=bb_per_100(v))

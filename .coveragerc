@@ -1,0 +1,5 @@
+[run]
+source = spinsacademy
+
+[report]
+skip_empty = true

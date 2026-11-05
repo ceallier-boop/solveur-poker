@@ -12,8 +12,8 @@ Valeurs comptées comme dans hu_solver : gain net à partir du début du sous-je
 """
 import numpy as np
 from numba import njit
-from .kernels import CC, CLASS_OF, combo_ranks, strength, texture, _percentile
-from .fast import _showdown2, _compat
+from .kernels import CC, CLASS_OF, combo_ranks, strength, strength_vs, texture, _percentile
+from .fast import _showdown2, _compat, groups_weighted
 from .hu_solver import HUPostflop
 
 ACT, FOLD, SHOW, CHANCE = 0, 1, 2, 3
@@ -159,10 +159,12 @@ class ExactHU:
         return self
 
     def set_abstract(self, sigma_buckets, buckets):
-        """stratégie abstraite : sigma_buckets (nœud original, groupe, action) ; buckets[(contexte, rue)] -> groupe de chaque combo"""
+        """stratégie abstraite : sigma_buckets (nœud original, groupe, action) ; buckets[(contexte, rue)] -> groupe de chaque
+        combo (1326), ou par joueur (2, 1326) pour des groupes calculés contre la range adverse"""
         for n in np.where(self.kind == ACT)[0]:
-            o = self.orig[n]; st = self.tree.nodes[o].street
-            k = self.nch[n]; self.sig[n, :, :k] = sigma_buckets[o][buckets[(self.ctx[n], st)]][:, :k]
+            o = self.orig[n]; st = self.tree.nodes[o].street; g = buckets[(self.ctx[n], st)]
+            if g.ndim == 2: g = g[self.player[n]]
+            k = self.nch[n]; self.sig[n, :, :k] = sigma_buckets[o][g][:, :k]
 
     def values(self, r0, r1, br=-1):
         """valeur de chaque combo à la racine pour les deux joueurs (avec self.sig), et masses compatibles"""
@@ -182,11 +184,18 @@ class ExactHU:
         return (u / M - self.P) / 2 / self.P
 
 
-def abstract_buckets(ex, B, rollouts, seed, metric='ehs', textured=False):
-    """groupes de force de chaque combo sur chaque contexte du sous-jeu, calculés comme dans fast.board_pool"""
+def abstract_buckets(ex, B, rollouts, seed, metric='ehs', textured=False, ranges=None):
+    """groupes de force de chaque combo sur chaque contexte du sous-jeu, calculés comme dans fast.board_pool ; ranges
+    (poids par classe d'OOP, d'IP) : groupes par joueur contre la range adverse (fast.board_pool, même option)"""
     out = {}
+    if ranges is not None:
+        rw = [np.asarray(x, float)[CLASS_OF] for x in ranges]
     for i, b in enumerate(ex.boards):
         b5 = np.array(b + [0] * (5 - len(b)), np.int64); k = len(b)
+        if ranges is not None:
+            out[(i, k - 3)] = np.stack([groups_weighted(strength_vs(b5, k, b5, rollouts, CC, seed + k, rw[1 - p], metric == 'ehs2' and k < 5),
+                                                        B, rw[p], k, b5, textured) for p in (0, 1)])
+            continue
         if k == 5: s = _percentile(combo_ranks(b5, CC))
         else: s = strength(b5, k, b5, rollouts, CC, seed + k, metric == 'ehs2')
         if metric == 'ehs2' and k < 5:

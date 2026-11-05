@@ -26,12 +26,24 @@ class PostflopConfig:
     metric: str = 'ehs'               # groupes de force : 'ehs' (force moyenne) ou 'ehs2' (favorise le potentiel)
     allin_spr: float = 0.0            # > 0 : le tapis n'est proposé que si tapis restant / pot <= allin_spr (règle HRC : 5)
     textured: bool = False            # groupes croisés force x texture du board visible (8 classes, kernels.texture)
+    flop_buckets: int = 0             # groupes au flop (0 : comme aux autres rues) ; le flop concentre les erreurs (G9, 30/10/2026)
     donk: bool = False                # False (règle HRC, par défaut) : OOP ne peut pas ouvrir les mises d'une rue si IP a été l'agresseur de la rue
                                       # précédente (le relanceur préflop pour le flop) : règle HRC POSTFLOP_ALLOW_DONK = False
 
 
     @property
-    def n_buckets(self): return self.buckets * (N_TEXTURES if self.textured else 1)
+    def n_buckets(self): return max(self.buckets, self.flop_buckets) * (N_TEXTURES if self.textured else 1)
+
+
+# Réglages de regroupement nommés (G13, 30/10/2026) : comparés à la résolution exacte par tools/solver/exact_flop_check.py,
+# choisis pour une banque par python -m spinsacademy.solver.dataset --postflop <nom>
+PRESETS = {
+    'production': dict(),
+    'ehs2': dict(metric='ehs2'),
+    'ehs2_flop32': dict(metric='ehs2', flop_buckets=32),
+    'ehs2_texture': dict(metric='ehs2', textured=True),
+    'ehs2_flop32_texture': dict(metric='ehs2', flop_buckets=32, textured=True),
+}
 
 
 class _N:
@@ -133,10 +145,10 @@ class HUPostflop:
     def _context(self, rng):
         board = rng.choice(52, 5, replace=False).astype(np.int64)
         ranks = combo_ranks(board, CC); valid = ranks >= 0
-        B = self.cfg.buckets; seed = int(rng.integers(1 << 30)); bucket = []
+        cfg = self.cfg; seed = int(rng.integers(1 << 30)); bucket = []
         for k in (3, 4, 5):
-            s = strength(board, k, board, self.cfg.rollouts, CC, seed + k)
-            bucket.append(np.clip((s * B).astype(np.int64), 0, B - 1) + (B * texture(board, k) if self.cfg.textured else 0))
+            s = strength(board, k, board, cfg.rollouts, CC, seed + k, cfg.metric == 'ehs2' and k < 5)
+            bucket.append(fast.groups(s, cfg.flop_buckets if k == 3 and cfg.flop_buckets else cfg.buckets, cfg.metric, k, board, cfg.textured))
         return dict(board=board, ranks=ranks, valid=valid, bucket=bucket)
 
     # ---------------------------------------------------------------- version numba
@@ -156,8 +168,13 @@ class HUPostflop:
         self._arr = (kind, player, street, c0, c1, winner, nch, child)
         return self._arr
 
+    @staticmethod
+    def _per_player(bucket):
+        """groupes (n, 2, 3, 1326) : un réservoir à groupes communs (n, 3, 1326) sert aux deux joueurs"""
+        return bucket if bucket.ndim == 4 else np.ascontiguousarray(np.stack([bucket, bucket], axis=1))
+
     def fast_solve(self, w_oop, w_ip, pool, iters=4000, seed=0):
-        arr = self._arrays(); ranks, order, valid, bucket = pool
+        arr = self._arrays(); ranks, order, valid, bucket = pool; bucket = self._per_player(bucket)
         r0 = np.asarray(w_oop, float)[CLASS_OF]; r1 = np.asarray(w_ip, float)[CLASS_OF]
         rng = np.random.default_rng(seed); idx = rng.integers(len(ranks), size=iters)
         for i in idx:
@@ -167,7 +184,7 @@ class HUPostflop:
 
     def fast_evaluate(self, w_oop, w_ip, pool, boards=None):
         """G par classe (169) des deux joueurs avec la stratégie moyenne, sur les boards du réservoir"""
-        arr = self._arrays(); ranks, order, valid, bucket = pool
+        arr = self._arrays(); ranks, order, valid, bucket = pool; bucket = self._per_player(bucket)
         r0 = np.asarray(w_oop, float)[CLASS_OF]; r1 = np.asarray(w_ip, float)[CLASS_OF]
         Vs = [np.zeros(1326), np.zeros(1326)]; Ms = [np.zeros(1326), np.zeros(1326)]; m = np.zeros(1326)
         for i in range(len(ranks) if boards is None else boards):
@@ -185,7 +202,7 @@ class HUPostflop:
         arr = self._arrays(); ranks, order, valid, bucket = pool; r0 = np.asarray(w_oop, float)[CLASS_OF]
         acc = np.zeros(len(self.root.actions)); tot = 0.0
         for i in range(min(boards, len(ranks))):
-            b = bucket[i, 0]; S = np.maximum(self.Sf[0], 0); s = S.sum(1, keepdims=True)
+            b = bucket[i, 0] if bucket.ndim == 3 else bucket[i, 0, 0]; S = np.maximum(self.Sf[0], 0); s = S.sum(1, keepdims=True)
             sg = np.where(s > 0, S / np.where(s > 0, s, 1), 1.0 / len(self.root.actions))[:, :len(self.root.actions)]
             w = r0 * valid[i]; acc += (w[:, None] * sg[b]).sum(0); tot += w.sum()
         return dict(zip(self.root.actions, acc / tot))

@@ -103,3 +103,35 @@ Sofiane paierait toujours 10 € par mois, et 15 € avec un défi du jour compa
   - bilan de la semaine passée seulement si des objectifs existaient.
 - **Divers (20-24)** : chrono en pause pendant une erreur réseau, message dans les blocs vides, textes des écrans d'accueil et du Lexique.
 - **Plus tard** : classement du défi du jour et partage (avec les comptes).
+
+## 5. Corrections faites (29/10/2026)
+
+Branche `claude/eloquent-shannon-5afovj`. Contrôles : `tests/test_retest9.py` (13 tests), `tools/web/e2e_retest9.cjs`, parcours existants mis à jour (application et démo).
+
+| N° | Correction |
+|---|---|
+| 1 | Défi du jour : une seule tentative par jour UTC, tous modes confondus, comptée dès la création de la série ; le serveur refuse la deuxième (409). Une tentative abandonnée se reprend (« Reprendre », chrono 15 s imposé de nouveau) mais ne se refait pas. |
+| 2 | Bilan : « Défi du jour : 3/5. Nouveau défi demain. » ; les autres défis disent « Tu peux le retenter ». |
+| 3 | Série parfaite sur le thème de la séance du jour du joueur. |
+| 4 | Semaine pleine comptée comme la série de jours (un jour manqué par semaine pardonné), et la règle le dit ; la série de jours compte tous les modes. |
+| 5 | Range au cordeau : moins de 2 BB perdus pour 100 mains et au moins 85 % de mains bien classées. |
+| 6 | Sous pression à 4/5 ; Lecteur de vilain avec au moins 2 « Quelle pastille ? » par série. « Défaut du vilain » plus difficile : confié au Moteur exploitant (E1 du document de suivi). |
+| 7 | « Mes défis » montre les tentatives (✓ réussie, ✗ pas réussie). |
+| 8-9 | Thème et situation de la range fixés au premier affichage de la journée (table `daily_plan`) ; un thème tiré du diagnostic doit avoir une situation et une profondeur ; le libellé de fin est celui de la séance. Si le niveau change avant le début du thème, la séance est recalculée sur le nouveau niveau. |
+| 10 | Révision cochée seulement quand plus aucune main n'est due ; « rien à revoir pour l'instant (23 mains à partir de 18 h 30) » quand des mains reviennent plus tard dans la journée. |
+| 11 | En Exploitant, l'écran de range dit « corrigé sur la stratégie théorique (GTO), pas contre les joueurs du field ». |
+| 12 | Niveau 4 affiché en Exploitant (accueil et progression), niveaux 1 à 4 proposés ; choisir le niveau 4 passe en Exploitant ; niveau rafraîchi au changement de mode. |
+| 13 | « 16/100 décisions à moins de 10 BB » ; la révision de la séance est complétée dans la profondeur du niveau. |
+| 14 | Mode en haut de l'accueil, gardé sur le serveur (repris sur un nouvel appareil du même joueur) ; « Pas encore de série aujourd'hui » au lieu de « Première séance » pour un joueur qui a déjà joué. |
+| 15 | Défis repliés en une ligne (« Défi du jour : à relever · + 4 autres ») ; l'accueil passe d'environ 3 à 1,9 écran de téléphone. |
+| 16 | Un seul chiffre BB sur l'accueil : l'objectif de précision de la semaine, avec sa cible et l'aide au toucher (Lexique). Les BB sur 7 jours restent sur l'écran de fin de séance, le critère BB du niveau dans « Ma progression ». |
+| 17 | Cible de jours plafonnée aux jours restants (serveur et boutons − / +) ; nouveau joueur : 3 jours et 1 range à 85 %. |
+| 18 | Bilan de la semaine passée seulement s'il y avait des objectifs. |
+| 19 | « Jours d'entraînement » : séance, jeu libre et ranges comptent ; titre « Objectifs de la semaine · GTO / Exploitant ». |
+| 20 | Chrono en pause tant que le message d'erreur est affiché, reprise du temps restant à la fermeture ; le coup joué au temps garde son statut au réessai ; messages « indisponibles pour l'instant, Réessayer » dans les blocs Objectifs et Défis. |
+| 21 | « C'était le bon coup, mais il compte comme une erreur : à la table, laisser filer le temps n'est jamais un choix. » |
+| 22 | Erreurs de taille nommées comme telles (« tu relances petit quand il fallait aller à tapis ») ; un sens n'est annoncé que s'il couvre au moins la moitié des erreurs. |
+| 23 | « 3 mois ou plus » ; niveaux du premier lancement avec leur profondeur ; « Field » au Lexique (1.12.2, 83 termes). |
+| 24 | Non traité : écarts de pourcentages énoncé / correction et A8s payé « avec 76 % des mains », à reproduire avec la main exacte. |
+
+Reste pour plus tard : classement et partage du défi du jour (D2, D7 du document de suivi).

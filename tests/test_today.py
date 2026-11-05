@@ -35,6 +35,11 @@ def test_newcomer_starts_with_short_stacks():
     assert not t['started'] and not t['done'] and t['streak'] == 0
 
 
+def test_range_step_says_theory_in_exploit_mode():
+    assert today.build([], [], 0, None, D, 0)['steps'][2]['label_fr'] == today.RANGE_FR
+    assert today.build([], [], 0, None, D, 0, mode='exploit')['steps'][2]['label_fr'] == today.RANGE_EXPLOIT_FR     # test 9 (Léa)
+
+
 def _series(client, filters, plan):
     s = client.post('/sessions', json={'mode': 'gto', 'filters': filters, 'plan': plan}, headers=H).json()
     for i in range(s['size']):

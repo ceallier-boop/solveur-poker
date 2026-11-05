@@ -1,0 +1,61 @@
+id;coach;meilleure_action;calcul_le_plus_juste;confiance;commentaire
+S001;PA;CALL 2,5 BB;B;faible;Un 3,5x HU est une range forte : KQo n'est pas dominée, le call la réalise bien ; le 3-bet sizé à 65 % me surprend
+S002;PA;CHECK;B;moyenne;T9o contre le limp HU : check, pas de domination pour isoler
+S003;PA;FOLD;les deux;forte;J6o face à tapis + call : fold
+S004;PA;RAISE TO 2,3 BB;B;forte;Pas de stratégie de limp au BTN 3-way à plus de 20 BB : A5s s'ouvre
+S005;PA;FOLD;les deux;forte;98o au SB contre l'open BTN : fold
+S006;PA;CHECK;B;moyenne;96o contre le limp : check, l'iso « pour voler » n'a pas d'intérêt
+S007;PA;CALL 0,5 BB;A;moyenne;HU 12 BB : très peu de shoves au bouton, on limpe l'essentiel ; 54s joue bien postflop
+S008;PA;RAISE TO 2,3 BB;B;moyenne;Pas de limp BTN 3-way ; 44 en open (ou open-shove à plus court)
+S009;PA;CHECK;A;moyenne;J8o contre le limp HU : check
+S010;PA;RAISE TO 3 BB;A;faible;K7o domine les Kx faibles du limp : l'iso se justifie
+S011;PA;FOLD;les deux;forte;73o : fold
+S012;PA;CALL 11 BB;les deux;forte;A9s contre tapis HU 12 BB : call
+S013;PA;RAISE TO 3 BB;B;moyenne;A3o domine la range de limp : iso
+S014;PA;ALL-IN 12 BB;A;moyenne;BvB à 12 BB : le limp se fait iso-shover, le raise gâche ; shove (même logique que 87s)
+S015;PA;CALL 2 BB;B;moyenne;En position face à un iso 3 BB, K5o paie ; fold seulement contre un iso très serré
+S016;PA;CALL 0,5 BB;les deux;forte;95o HU : limp
+S017;PA;ALL-IN 12 BB;les deux;forte;K9o : shove
+S018;PA;CHECK;les deux;forte;T9s : check
+S019;PA;ALL-IN 12 BB;B;moyenne;À 12 BB au BTN, l'open-shove est la stratégie simple ; pas de limp
+S020;PA;ALL-IN 12 BB;B;faible;87s à 12 BB : shove ou fold, le limp au BTN 3-way n'a pas sa place
+S021;PA;CHECK;les deux;forte;J2s : check
+S022;PA;CHECK;les deux;forte;72o : check
+S023;PA;RAISE TO 3 BB;A;faible;Sous 15 BB, iso petit avec une grosse main pour laisser défendre une range dominée ; le shove reste correct
+S024;PA;CALL 0,5 BB;B;moyenne;K2o BvB à 25 BB : trop fort pour fold, mal jouable contre un iso : limp
+S025;PA;CHECK;les deux;forte;K8s : check
+S026;PA;RAISE TO 3 BB;A;moyenne;KJo : iso-call, domine la range de limp
+S027;PA;RAISE TO 3,5 BB;A;faible;A2s : raise-fold, l'As bloque et domine la défense
+S028;PA;CHECK;les deux;forte;T3o : check
+S029;PA;FOLD;les deux;forte;52o : fold
+S030;PA;FOLD;les deux;forte;J2o : fold
+S031;PA;FOLD;B;moyenne;Open 3,5x HU = range forte : fold des mains dominées comme Q8o
+S032;PA;FOLD;B;moyenne;J8o face au 3,5x : fold, main dominée
+S033;PA;CALL 1,3 BB;les deux;forte;KJo contre l'open BTN : call
+S034;PA;FOLD;B;forte;SB face à l'open BTN à plus de 20 BB : très peu de flat (range capée, squeeze du BB) ; JTo fold
+S035;PA;RAISE TO 2,3 BB;A;faible;AA au BTN : min-raise ; le limp-trap seulement avec deux récréatifs
+S036;PA;RAISE TO 3,5 BB;les deux;forte;AKs : open
+S037;PA;CALL 2 BB;B;moyenne;Q8o en position face à l'iso 3 BB : call
+S038;PA;CHECK;les deux;faible;KJs à 12 BB contre le limp : check jouable (top pairs), iso aussi
+S039;PA;RAISE TO 2,3 BB;B;forte;Pas de limp BTN à 25 BB : A9s s'ouvre
+S040;PA;CHECK;A;moyenne;Q4o : check
+S041;PA;ALL-IN 12 BB;B;faible;SB à 12 BB : ne pas trop folder la SB ; 76o se shove plutôt que limp-fold
+S042;PA;CALL 11 BB;les deux;forte;A6s : call
+S043;PA;CALL 0,5 BB;B;moyenne;HU : 100 % des boutons, gros biais limp avec les mains faibles
+S044;PA;ALL-IN 12 BB;les deux;forte;ATo : shove
+S045;PA;CALL 0,5 BB;les deux;forte;J4s : limp
+S046;PA;RAISE TO 3,5 BB;B;faible;HU 25 BB : on commence par min-raise pour tester, ATs est une main d'open
+S047;PA;FOLD;les deux;forte;T2s : fold
+S048;PA;CALL 2 BB;B;moyenne;K4o en position contre l'iso 3 BB : call
+S049;PA;CHECK;B;moyenne;Q5o : check
+S050;PA;CALL 0,5 BB;A;moyenne;83s HU : limp
+S051;PA;CALL 0,5 BB;B;moyenne;HU 12 BB : on limpe l'essentiel, chaque shove est une occasion perdue de jouer en position
+S052;PA;ALL-IN 12 BB;B;moyenne;BvB 12 BB : Q5s se shove, le limp se fait iso
+S053;PA;RAISE TO 7,6 BB;B;moyenne;KQo contre le clic : call ou 3-bet non all-in, le jam de 25 BB isole contre mieux
+S054;PA;CHECK;B;moyenne;98s contre le limp : check, réaliser son équité
+S055;PA;RAISE TO 3 BB;aucun;faible;K8o à 12 BB : je l'iso petit (iso-call) ; le shove n'est pas une erreur, le check est trop passif
+S056;PA;FOLD;les deux;forte;K7o face au tapis BTN : fold
+S057;PA;FOLD;A;faible;76o hors de position contre l'open BTN : défense marginale, très chère à la moindre erreur
+S058;PA;FOLD;A;faible;K6o dominé par la range d'open : fold acceptable
+S059;PA;CHECK;B;moyenne;85s : check
+S060;PA;CALL 0,5 BB;B;moyenne;HU 12 BB : limp plutôt que shove, la main joue bien
