@@ -1,0 +1,61 @@
+id;spot;main;acceptees;recommandee;nuance;minoritaire
+S001;hu-25-25-SB-raise3.5-b8a863;KQo;CALL 2,5 BB;CALL 2,5 BB;3 coachs sur 3;
+S002;hu-25-25-SB-call-ec4d1b;T9o;CHECK;CHECK;3 coachs sur 3;
+S003;3w-12-12-12-BTN-allin_SB-call-4b25b7;J6o;FOLD;FOLD;3 coachs sur 3;
+S004;3w-25-25-25-root-94d268;A5s;RAISE TO 2,3 BB;RAISE TO 2,3 BB;3 coachs sur 3;
+S005;3w-12-12-12-BTN-raise2.3-11a89f;98o;FOLD;FOLD;3 coachs sur 3;
+S006;3w-12-12-12-BTN-fold_SB-call-36f31e;96o;CHECK;CHECK;3 coachs sur 3;
+S007;hu-12-12-root-dc47aa;54s;ALL-IN 12 BB | CALL 0,5 BB;CALL 0,5 BB;2 coachs sur 3;ALL-IN 12 BB (Lucky)
+S008;3w-25-25-25-root-94d268;44;RAISE TO 2,3 BB;RAISE TO 2,3 BB;3 coachs sur 3;
+S009;hu-25-25-SB-call-ec4d1b;J8o;CHECK;CHECK;3 coachs sur 3;
+S010;hu-25-25-SB-call-ec4d1b;K7o;RAISE TO 3 BB;RAISE TO 3 BB;3 coachs sur 3;
+S011;3w-12-12-12-BTN-fold_SB-allin-d83dbd;73o;FOLD;FOLD;3 coachs sur 3;
+S012;hu-12-12-SB-allin-9ca5ba;A9s;CALL 11 BB;CALL 11 BB;3 coachs sur 3;
+S013;3w-25-25-25-BTN-fold_SB-call-19f99f;A3o;RAISE TO 3 BB;RAISE TO 3 BB;3 coachs sur 3;
+S014;3w-12-12-12-BTN-fold-bfaf68;Q8s;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S015;hu-25-25-SB-call_BB-raise3-4adaf1;K5o;CALL 2 BB;CALL 2 BB;3 coachs sur 3;
+S016;hu-12-12-root-dc47aa;95o;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;
+S017;3w-12-12-12-BTN-fold-bfaf68;K9o;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S018;3w-25-25-25-BTN-call_SB-call-adf49a;T9s;CHECK;CHECK;3 coachs sur 3;
+S019;3w-12-12-12-root-5ef802;K6s;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S020;3w-12-12-12-root-5ef802;87s;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S021;3w-25-25-25-BTN-call_SB-call-adf49a;J2s;CHECK;CHECK;3 coachs sur 3;
+S022;3w-25-25-25-BTN-fold_SB-call-19f99f;72o;CHECK;CHECK;3 coachs sur 3;
+S023;hu-12-12-SB-call-22e2fa;88;ALL-IN 12 BB | RAISE TO 3 BB;ALL-IN 12 BB;2 coachs sur 3;RAISE TO 3 BB (PA)
+S024;3w-25-25-25-BTN-fold-f9ec91;K2o;CALL 0,5 BB | RAISE TO 3,5 BB;CALL 0,5 BB;2 coachs sur 3;RAISE TO 3,5 BB (Lucky)
+S025;3w-25-25-25-BTN-fold_SB-call-19f99f;K8s;CHECK;CHECK;3 coachs sur 3;
+S026;3w-12-12-12-BTN-fold_SB-call-36f31e;KJo;RAISE TO 3 BB;RAISE TO 3 BB;3 coachs sur 3;
+S027;3w-25-25-25-BTN-fold-f9ec91;A2s;CALL 0,5 BB | RAISE TO 3,5 BB;RAISE TO 3,5 BB;2 coachs sur 3;CALL 0,5 BB (Lucho)
+S028;3w-12-12-12-BTN-fold_SB-call-36f31e;T3o;CHECK;CHECK;3 coachs sur 3;
+S029;hu-12-12-root-dc47aa;52o;FOLD;FOLD;3 coachs sur 3;
+S030;hu-25-25-SB-raise3.5_BB-raise8.75-dd1d5c;J2o;FOLD;FOLD;3 coachs sur 3;
+S031;hu-25-25-SB-raise3.5-b8a863;Q8o;CALL 2,5 BB | FOLD;FOLD;2 coachs sur 3;CALL 2,5 BB (Lucho)
+S032;hu-25-25-SB-raise3.5-b8a863;J8o;CALL 2,5 BB | FOLD;FOLD;2 coachs sur 3;CALL 2,5 BB (Lucho)
+S033;3w-25-25-25-BTN-raise2.3_SB-fold-237efd;KJo;CALL 1,3 BB;CALL 1,3 BB;3 coachs sur 3;
+S034;3w-25-25-25-BTN-raise2.3-a00245;JTo;FOLD;FOLD;3 coachs sur 3;
+S035;3w-12-12-12-root-5ef802;AA;CALL 1 BB | RAISE TO 2,3 BB;RAISE TO 2,3 BB;2 coachs sur 3;CALL 1 BB (Lucho)
+S036;3w-25-25-25-BTN-fold-f9ec91;AKs;RAISE TO 3,5 BB;RAISE TO 3,5 BB;3 coachs sur 3;
+S037;hu-25-25-SB-call_BB-raise3-4adaf1;Q8o;CALL 2 BB;CALL 2 BB;3 coachs sur 3;
+S038;3w-12-12-12-BTN-fold_SB-call-36f31e;KJs;CHECK | RAISE TO 3 BB;RAISE TO 3 BB;2 coachs sur 3;CHECK (PA)
+S039;3w-25-25-25-root-94d268;A9s;RAISE TO 2,3 BB;RAISE TO 2,3 BB;3 coachs sur 3;
+S040;3w-25-25-25-BTN-fold_SB-call-19f99f;Q4o;CHECK;CHECK;3 coachs sur 3;
+S041;3w-12-12-12-BTN-fold-bfaf68;76o;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S042;hu-12-12-SB-allin-9ca5ba;A6s;CALL 11 BB;CALL 11 BB;3 coachs sur 3;
+S043;hu-25-25-root-a42799;94s;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;
+S044;3w-12-12-12-BTN-fold-bfaf68;ATo;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S045;hu-25-25-root-a42799;J4s;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;
+S046;hu-25-25-root-a42799;ATs;CALL 0,5 BB | RAISE TO 3,5 BB;RAISE TO 3,5 BB;2 coachs sur 3;CALL 0,5 BB (Lucho)
+S047;hu-25-25-SB-raise3.5_BB-allin-be5c97;T2s;FOLD;FOLD;3 coachs sur 3;
+S048;hu-25-25-SB-call_BB-raise3-4adaf1;K4o;CALL 2 BB;CALL 2 BB;3 coachs sur 3;
+S049;3w-25-25-25-BTN-fold_SB-call-19f99f;Q5o;CHECK;CHECK;3 coachs sur 3;
+S050;hu-25-25-root-a42799;83s;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;
+S051;hu-12-12-root-dc47aa;98s;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;
+S052;3w-12-12-12-BTN-fold-bfaf68;Q5s;ALL-IN 12 BB;ALL-IN 12 BB;3 coachs sur 3;
+S053;3w-25-25-25-BTN-raise2.3_SB-fold-237efd;KQo;ALL-IN 25 BB | RAISE TO 7,6 BB;RAISE TO 7,6 BB;2 coachs sur 3;ALL-IN 25 BB (Lucky)
+S054;hu-12-12-SB-call-22e2fa;98s;CHECK;CHECK;3 coachs sur 3;
+S055;3w-12-12-12-BTN-fold_SB-call-36f31e;K8o;ALL-IN 12 BB | RAISE TO 3 BB;ALL-IN 12 BB;2 coachs sur 3;RAISE TO 3 BB (PA)
+S056;3w-12-12-12-BTN-allin_SB-fold-0f5186;K7o;FOLD;FOLD;3 coachs sur 3;
+S057;3w-25-25-25-BTN-raise2.3_SB-fold-237efd;76o;CALL 1,3 BB | FOLD;CALL 1,3 BB;2 coachs sur 3;FOLD (PA)
+S058;3w-25-25-25-BTN-raise2.3_SB-fold-237efd;K6o;CALL 1,3 BB | FOLD;CALL 1,3 BB;2 coachs sur 3;FOLD (PA)
+S059;hu-12-12-SB-call-22e2fa;85s;CHECK;CHECK;3 coachs sur 3;
+S060;hu-12-12-root-dc47aa;Q6s;CALL 0,5 BB;CALL 0,5 BB;3 coachs sur 3;

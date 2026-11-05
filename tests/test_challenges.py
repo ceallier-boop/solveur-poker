@@ -47,3 +47,14 @@ def test_challenges_api(client):
     assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'reader'}, headers=A).status_code == 422
     assert [x['kind'] for x in client.get('/users/me/challenges?mode=exploit&tz=60', headers=A).json()['weekly']] == ['pressure', 'range', 'reader']
     assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'daily'}).status_code == 400             # joueur identifié
+
+
+def test_daily_concurrent_launches(client):
+    """deux lancements simultanés du défi du jour : un seul passe (le second reçoit 409)"""
+    import threading
+    client.get('/users/me/today?mode=gto&tz=60', headers=A)
+    codes = []
+    ts = [threading.Thread(target=lambda: codes.append(client.post('/sessions', json={'mode': 'gto', 'challenge': 'daily'}, headers=A).status_code)) for _ in range(6)]
+    for t in ts: t.start()
+    for t in ts: t.join()
+    assert sorted(codes) == [201, 409, 409, 409, 409, 409]
