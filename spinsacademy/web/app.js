@@ -580,7 +580,7 @@ async function stats() {
     : '<span>L\'évolution s\'affiche après ta première série.</span>';
   let f = s.focus || { kind: 'none', reason_fr: '' };                  // un seul diagnostic (même règle que les séries adaptées)
   if (f.kind === 'none' && !f.label) f = earlyFocus(s) || f;            // AU6 : un premier retour, provisoire et dit comme tel
-  renderWins(s.wins);
+  if (!offline) loadWins().then(renderWins); else renderWins(null);
   $('st-focus').className = `focus ${f.kind}`;
   $('st-focus').innerHTML = `<p class="focus-title">${f.early ? 'Premier aperçu · provisoire' : 'À travailler maintenant'}</p>`
     + (f.label ? `<p><b>${f.label}</b></p>` : '') + `<p>${f.reason_fr}</p>`
@@ -769,7 +769,7 @@ function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); }   // séance, recommandations, objectifs et niveau suivent le mode
+  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -813,7 +813,7 @@ async function home() {
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
-  progress(''); show('home'); homeSummary(); renderGoalCard(); lightHome(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
+  progress(''); show('home'); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -858,19 +858,14 @@ async function todayContinue() {
   const t = await loadToday(); if (!t) { home(); return; }
   if (t.done) showTodayDone(t); else todayGo();
 }
-// AU5 : la progression dite en positif : BB récupérés par rapport à la semaine passée ; rien de rouge sinon
-function gainLine(t) {
-  if (t.bb7 == null || t.bb7_prev == null) return '';
-  const d = t.bb7_prev - t.bb7;
-  return d >= 0.05 ? ` <span class="gain">· ${bb(d)} BB récupérés par rapport à la semaine passée</span>` : '';
-}
 function showTodayDone(t) {
   state.inToday = false; progress('');
   $('td-score').innerHTML = `✓<small>${t.minutes} minutes de travail · ${t.streak} jour${t.streak > 1 ? 's' : ''} de suite</small>`;
   $('td-lines').innerHTML = [`Thème travaillé : <b>${escT(t.theme_fr)}</b>`,
-    t.bb7 != null ? `BB perdus pour 100 décisions, sur tes décisions des 7 derniers jours en mode ${t.mode === 'exploit' ? 'Exploitant' : 'GTO'} : <b>${bb(t.bb7)}</b>${gainLine(t)}` : '',
+    t.bb7 != null ? `BB perdus pour 100 décisions, sur tes décisions des 7 derniers jours en mode ${t.mode === 'exploit' ? 'Exploitant' : 'GTO'} : <b>${bb(t.bb7)}</b>` : '',
     'Demain : tes mains ratées reviennent en révision, et la séance choisit ton thème le plus fragile.'].filter(Boolean).map((l) => `<li>${l}</li>`).join('');
   show('today'); refreshStats();
+  loadWins().then((w) => { const x = winsOf(w)[0]; if (x) $('td-lines').insertAdjacentHTML('afterbegin', `<li class="gain">✓ ${escT(x.text_fr)}</li>`); });   // AU5 : un progrès d'abord
   loadGoals().then((g) => { if (!g) return;                          // étape 3 : où en sont les objectifs de la semaine
     $('td-lines').insertAdjacentHTML('beforeend', `<li>Objectifs de la semaine : ${g.items.filter((x) => x.kind !== 'precision').map((x) => `${escT(/^[A-Z]{2}/.test(x.label_fr) ? x.label_fr : x.label_fr.charAt(0).toLowerCase() + x.label_fr.slice(1))} ${escT(x.text_fr.split(' · ')[0])}${x.done ? ' ✓' : ''}`).join(' ; ')}</li>`); });
 }
@@ -926,7 +921,7 @@ $('ob-skip').addEventListener('click', () => obFinish(true));
 async function loadLevel() {
   let lv; try { lv = await api('/users/me/level'); } catch (e) { $('today-level').hidden = true; return null; }
   state.level = lv;
-  if (lv.promoted_to || state.promo) { state.promo = null; celebrate(lv); }     // AU5 : le passage de niveau est fêté, pas un simple message
+  if (lv.promoted_to || state.promo) { state.promo = null; celebrateOnce(lv.level, lv.name, lv.depth_fr); }     // AU5 : le passage de niveau est fêté, une fois
   const b = $('today-level'), m = mode() === 'gto';
   b.hidden = false;                                                  // test joueurs 9 : pas de chiffre BB ici (celui de l'accueil est l'objectif)
   b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.filter((c) => c.kind !== 'bb').map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
@@ -938,18 +933,30 @@ function celebrate(lv) {
   box.innerHTML = `<p class="celebrate-title">Bravo, niveau ${lv.level} débloqué !</p><p>« ${escT(lv.name)} »${lv.depth_fr ? `, ${escT(lv.depth_fr)}` : ''} : tes résultats le montrent. Ta séance du jour suit ce nouveau niveau.</p><button class="secondary small" id="celebrate-ok">Super</button>`;
   $('celebrate-ok').onclick = () => { box.hidden = true; };
 }
-// AU5 : « Tes progrès » en positif, d'après les indicateurs du serveur (champ `wins` de /users/me/stats) ; rien de négatif n'y est écrit
+// AU5 : « Tes progrès » en positif, d'après GET /users/me/wins (Défis et rétention) : le serveur n'envoie que des gains, déjà
+// rédigés et dans l'ordre d'affichage ; au plus deux sur l'accueil, tous dans « Ma progression » ; un passage de niveau est fêté
+// une seule fois par appareil. Sans la route (démo autonome pour l'instant), rien ne s'affiche.
+async function loadWins() { try { return await api(`/users/me/wins?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { return null; } }
+const winsOf = (w) => ((w && w.wins) || []).filter((x) => x.kind !== 'level_up');
+function celebrateOnce(level, name, depth) {
+  const k = `celebrated_level_${level}`; if (store.get(k)) return;
+  store.set(k, '1'); celebrate({ level, name, depth_fr: depth });
+}
+async function homeWins() {
+  const w = await loadWins(), box = $('home-wins');
+  const up = ((w && w.wins) || []).find((x) => x.kind === 'level_up');
+  if (up) celebrateOnce(up.to_level, up.level_name_fr);
+  const lines = winsOf(w).slice(0, 2);
+  box.hidden = !lines.length; $('home-wins-list').innerHTML = lines.map((x) => `<li>✓ ${escT(x.text_fr)}</li>`).join('');
+  return w;
+}
 function renderWins(w) {
-  const lines = [];
-  if (w) {
-    const a = w.week || {}, b = w.prev_week || {};
-    if (a.bb_per_100 != null && b.bb_per_100 != null && b.bb_per_100 - a.bb_per_100 >= 0.05) lines.push(`<b>${bb(b.bb_per_100 - a.bb_per_100)} BB récupérés</b> pour 100 décisions par rapport à la semaine passée`);
-    if (a.errors_per_100 != null && b.errors_per_100 != null && b.errors_per_100 - a.errors_per_100 >= 1) lines.push(`<b>${Math.round(b.errors_per_100 - a.errors_per_100)} erreurs de moins</b> pour 100 décisions que la semaine passée`);
-    if (w.reviews_mastered_7d) lines.push(`<b>${w.reviews_mastered_7d} main${w.reviews_mastered_7d > 1 ? 's' : ''} ratée${w.reviews_mastered_7d > 1 ? 's' : ''} puis réussie${w.reviews_mastered_7d > 1 ? 's' : ''}</b> en révision`);
-    if (w.promoted) lines.push(`<b>Niveau ${w.promoted.level} atteint</b> le ${new Date(w.promoted.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`);
-  }
-  $('st-wins').hidden = !w;
-  $('st-wins-list').innerHTML = lines.length ? lines.map((l) => `<li>✓ ${l}</li>`).join('') : '<li class="note">Tes progrès s\'afficheront ici au fil des semaines : continue ta séance du jour.</li>';
+  $('st-wins').hidden = !w; if (!w) return;
+  const lines = ((w.wins) || []).map((x) => escT(x.text_fr));
+  const wait = (w.not_enough || []).map((x) => (x.decisions_now < x.needed ? `Encore ${x.needed - x.decisions_now} décisions sur ${x.window_days} jours pour mesurer ${x.kind === 'bb_recovered' ? 'tes BB récupérés' : 'tes erreurs en moins'}.` : ''))
+    .filter(Boolean);
+  $('st-wins-list').innerHTML = lines.length ? lines.map((l) => `<li>✓ ${l}</li>`).join('') : `<li class="note">${escT(wait[0] || 'Tes progrès s\'afficheront ici au fil des semaines : continue ta séance du jour.')}</li>`;
+  $('st-wins-effort').textContent = (w.effort && w.effort.text_fr) || '';
 }
 function critText(c) {
   if (c.kind === 'decisions') return `${Math.min(c.value, c.target)}/${c.target} décisions à ${c.depth_fr || 'ce niveau'}`;   // test joueurs 9 : seules les mains du palier comptent

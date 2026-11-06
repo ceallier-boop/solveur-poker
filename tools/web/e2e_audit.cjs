@@ -62,6 +62,27 @@ const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'ar
   ok('AU6 : diagnostic provisoire signalé', /provisoire|diagnostic/i.test(foc), foc);
   ok('AU5 : pas de bloc « Tes progrès » sans indicateurs du serveur', !(await p.isVisible('#st-wins')) || /Tes progrès/.test(await p.innerText('#st-wins')));
   await p.screenshot({ path: `${OUT}/audit_stats_first.png`, fullPage: true });
+  // AU5 (application) : réponse de GET /users/me/wins injectée, au format de Défis et rétention
+  if (!BASE.startsWith('file:')) {
+    const W = { mode: 'gto', as_of: '2026-11-06', wins: [
+      { kind: 'level_up', from_level: 1, to_level: 2, level_name_fr: 'Le jeu à 10-16 BB', at: '2026-11-06T10:00:00+00:00', text_fr: 'Niveau 2 atteint : Le jeu à 10-16 BB.' },
+      { kind: 'bb_recovered', window_days: 7, text_fr: 'Tu perds 6,5 BB de moins pour 100 décisions que la semaine passée : environ 4,5 BB récupérés sur tes 70 décisions.' },
+      { kind: 'fewer_errors', window_days: 15, text_fr: '20 erreurs de moins pour 100 décisions qu\'il y a 15 jours.' },
+      { kind: 'review_recovered', window_days: 7, stage_ups: 6, mastered: 2, paid_feature: true, text_fr: '6 mains ratées réussies en révision, dont 2 acquises.' }],
+      effort: { window_days: 7, decisions: 70, active_days: 1, text_fr: '70 décisions sur 1 jour cette semaine.' }, not_enough: [] };
+    await p.route('**/users/me/wins*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(W) }));
+    await p.click('#st-back'); await p.waitForSelector('#screen-home:not([hidden])'); await p.waitForTimeout(1200);
+    ok('AU5 : passage de niveau fêté', /niveau 2 débloqué/.test(await p.innerText('#celebrate')), await p.innerText('#celebrate'));
+    const hw = await p.$$eval('#home-wins li', (xs) => xs.map((x) => x.textContent));
+    ok('AU5 : au plus deux gains sur l\'accueil', hw.length === 2 && /récupérés/.test(hw[0]), hw);
+    await p.click('#celebrate-ok'); await p.click('#home-btn'); await p.waitForTimeout(1200);
+    ok('AU5 : fêté une seule fois', !(await p.isVisible('#celebrate')));
+    await p.click('#stats-btn'); await p.waitForSelector('#st-wins:not([hidden])', { timeout: 10000 });
+    const sw = await p.innerText('#st-wins');
+    ok('AU5 : tous les gains et l\'effort dans « Ma progression »', (sw.match(/✓/g) || []).length === 4 && /70 décisions sur 1 jour/.test(sw), sw);
+    await p.screenshot({ path: `${OUT}/audit_wins.png`, fullPage: true });
+    await p.unroute('**/users/me/wins*');
+  }
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
   await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);

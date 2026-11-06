@@ -535,3 +535,4 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .wins { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
 .wins h3 { margin: 0 0 6px; } .wins ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: .93rem; } .wins b { color: var(--ok); }
 .actions button small.en { font-size: .66rem; letter-spacing: .08em; opacity: .8; }
+.home-wins { padding: 8px 12px; } .home-wins ul { gap: 2px; } .home-wins li { color: var(--ok); font-weight: 600; }
