@@ -53,8 +53,10 @@ def theme_stats(rows):
     return out
 
 
-def plan(rows, available, size, seed=None):
-    """composition d'une série : dict(active, rule_fr, reason_fr, slots=[dict(kind, theme)] ou None, weak, review)"""
+def plan(rows, available, size, seed=None, near=None):
+    """composition d'une série : dict(active, rule_fr, reason_fr, slots=[dict(kind, theme)] ou None, weak, review).
+    near (audit AU3) : thèmes de la profondeur du niveau, seuls proposés en découverte ; les thèmes à retravailler et à réviser
+    viennent de tout le catalogue (le joueur peut les avoir travaillés hors de son niveau)."""
     st = theme_stats(rows); rnd = random.Random(seed)
     weak = sorted((t for t, s in st.items() if s['answers'] >= MIN_ANSWERS and s['errors'] >= MIN_ERRORS and difficulty(s) >= WEAK_RATE and t in available),
                   key=lambda t: -difficulty(st[t]))
@@ -69,8 +71,9 @@ def plan(rows, available, size, seed=None):
     n_disc = size - n_weak - n_review
     slots = [dict(kind='weak', theme=t) for t in rnd.choices(weak, weights=[difficulty(st[t]) for t in weak], k=n_weak)]
     slots += [dict(kind='review', theme=t) for t in review[:n_review]]
-    fresh = [t for t in available if t not in st]; rnd.shuffle(fresh)
-    seen = sorted((t for t in available if t in st and t not in weak), key=lambda t: st[t]['answers'])
+    disc_pool = available if near is None else near
+    fresh = [t for t in disc_pool if t not in st]; rnd.shuffle(fresh)
+    seen = sorted((t for t in disc_pool if t in st and t not in weak), key=lambda t: st[t]['answers'])
     disc = (fresh + seen)[:n_disc]
     slots += [dict(kind='discovery', theme=t) for t in disc] + [dict(kind='discovery', theme=None)] * (n_disc - len(disc))
     rnd.shuffle(slots)

@@ -549,8 +549,11 @@ const DEMO = (() => {
         const prof = (xs) => xs.filter((i) => ITEMS[i].q.field && ITEMS[i].q.field.type === 'profil').length;
         for (let k = 0; k < 40 && !(picked && prof(picked) >= CH.reader_profiles); k++) picked = draw(mode, f, size);
       } else {
-        picked = draw(mode, f, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
-        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
+        let g = f;                                                     // audit AU3 : une série libre reste dans la profondeur du niveau
+        if (mode === 'gto' && !body.review && !plan && !Object.keys(f).length) { const L = LV.levels[levelRow().level]; if (L.depth[1] < 99 || L.depth[0] > 0) g = { min_stack: L.depth[0], max_stack: L.depth[1] }; }
+        if (g !== f && !draw(mode, g, size)) g = f;                    // tranche trop pauvre : série libre
+        picked = draw(mode, g, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
+        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, g, size); if (o && score(o) < score(picked)) picked = o; }
       }
       if (body.review) {
         const due = reviewItems(mode).filter((x) => dayOf(new Date(x.due_at).toISOString()) <= dayBack(0)).slice(0, size);
