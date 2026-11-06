@@ -348,6 +348,7 @@ def answer(body: Attempt):
             return dict(json.loads(prev['result']), already_answered=True)
         try:
             r = quiz.correct(s['dataset_version'], q['spot_id'], q['hand'], body.action_id)
+            if s['player_id'] and quiz.mode_of(s['dataset_version']) == 'gto' and _level_row(con, s['player_id'])['level'] == 1: r = quiz.simplify(r)   # audit AU8 : mots français au niveau 1
         except ValueError as e:
             raise HTTPException(422, str(e))
         if body.timed_out:                                    # décision du porteur du projet : à la table, le temps dépassé n'est jamais un choix

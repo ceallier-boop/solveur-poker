@@ -1045,6 +1045,43 @@ def correct(version, spot_id, hand, action_id):
                 core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.' and not REDUNDANT.match(l)] + because)   # le bandeau dit déjà le bon coup et le coût
 
 
+# audit AU8 (06/11/2026) : au niveau 1 (mode GTO), les phrases de la correction disent les mots français d'abord, le terme du client
+# de jeu entre parenthèses à sa première apparition. Les libellés (best_label, options, stratégie) restent ceux du client : l'interface
+# les convertit elle-même, pour ses boutons.
+SIMPLE_VERB = {'FOLD': 'Se coucher', 'CHECK': 'Parole', 'CALL': 'Payer', 'RAISE TO': 'Relancer à', 'ALL-IN': 'Tapis'}
+_VERB_RE = re.compile(r"\b(FOLD|CHECK|CALL|RAISE TO|ALL-IN)\b(?: (\d[\d,]*(?: BB)?))?")
+_NOUN_FR = ((re.compile(r"\bau fold\b"), 'au fait de se coucher'), (re.compile(r"\ble fold\b"), 'le fait de se coucher'),
+            (re.compile(r"\bau check\b"), 'à la parole'), (re.compile(r"\ble check\b"), 'la parole'))
+_EQUITY = ((re.compile(r"\bd'équité"), 'de chances de gagner'), (re.compile(r"\bton équité"), 'tes chances de gagner'),
+           (re.compile(r"\bl'équité"), 'les chances de gagner'), (re.compile(r"\béquité"), 'chances de gagner'))
+
+
+def _plain_terms(text, seen):
+    """« ALL-IN 4 BB » -> « Tapis 4 BB (ALL-IN) » à la première apparition d'un terme, « Tapis 4 BB » ensuite"""
+    def sub(m):
+        v = m.group(1); out = SIMPLE_VERB[v] + (f' {m.group(2)}' if m.group(2) else '')
+        if v in seen: return out
+        seen.add(v); return f'{out} ({v})'
+    for rx, fr in _NOUN_FR: text = rx.sub(fr, text)
+    return _VERB_RE.sub(sub, text)
+
+
+def _plain_equity(text):
+    for rx, fr in _EQUITY: text = rx.sub(fr, text)
+    return text
+
+
+def simplify(r):
+    """correction du niveau 1 : mots français, « équité » hors de la phrase principale (elle reste dans les précisions)"""
+    if r.get('field') or 'explanation_fr' not in r: return r
+    ess_old = r['essential_fr']; ess_new = _plain_equity(ess_old); seen = set(); out = dict(r)
+    for k in ('explanation_fr', 'core_fr', 'essential_fr'): out[k] = _plain_terms(r[k].replace(ess_old, ess_new), set())
+    out['remember_fr'] = _plain_terms(r['remember_fr'], set()) if r.get('remember_fr') else r.get('remember_fr')
+    for k in ('details_fr', 'why_fr'):
+        seen = set(); out[k] = [_plain_terms(x, seen) for x in r[k]]
+    return out
+
+
 def call_equity(sp, hand):
     """(équité requise, équité de la main) pour payer un tapis à EV exacte, ou None"""
     ids = [a['id'] for a in sp['actions']]; types = {a['id']: a['type'] for a in sp['actions']}
