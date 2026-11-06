@@ -59,7 +59,7 @@ const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'ar
   ok('AU2 progression : pas de second chiffre BB (niveau, thèmes)', !/BB\/100/.test(st) && /pour 100 décisions à moins de 10 BB/.test(await p.innerText('#st-level')), await p.innerText('#st-level'));
   ok('AU6 : courbe dès la première série', (await p.$$('#st-evolution i')).length === 1);
   const foc = await p.innerText('#st-focus');
-  ok('AU6 : diagnostic provisoire signalé', /provisoire|diagnostic/i.test(foc), foc);
+  ok('AU6 : un premier retour dès la première série', /Premier aperçu · provisoire|À travailler maintenant\s+\S/i.test(foc), foc);   // aperçu provisoire, ou déjà le diagnostic du serveur (3 erreurs sur un thème)
   ok('AU5 : pas de bloc « Tes progrès » sans indicateurs du serveur', !(await p.isVisible('#st-wins')) || /Tes progrès/.test(await p.innerText('#st-wins')));
   await p.screenshot({ path: `${OUT}/audit_stats_first.png`, fullPage: true });
   // AU5 (application) : réponse de GET /users/me/wins injectée, au format de Défis et rétention
