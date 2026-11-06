@@ -40,6 +40,7 @@
         <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
       </div>
       <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
+      <section class="celebrate" id="celebrate" hidden role="status"></section>
       <section class="today" id="today" hidden aria-labelledby="today-title">
         <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
         <button class="level-line" id="today-level" hidden></button>
@@ -47,11 +48,15 @@
         <ol class="today-steps" id="today-steps"></ol>
         <p class="note" id="today-note" hidden></p>
         <button class="primary big" id="today-go">Commencer la séance</button>
+        <p class="note" id="today-explain" hidden>15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.</p>
       </section>
       <section class="recs" id="recs" hidden aria-labelledby="recs-title">
         <h2 class="free-title" id="recs-title">Recommandé pour toi</h2>
         <ul id="recs-list"></ul>
       </section>
+      <section class="goal-card" id="goal-card" hidden aria-live="polite"></section>
+      <details class="extras" id="extras" open>                       <!-- AU4 : objectifs et défis repliés pour un nouveau joueur -->
+        <summary id="extras-sum">Objectifs de la semaine et défis</summary>
       <section class="goals" id="goals" hidden aria-labelledby="goals-title">
         <div class="goals-head"><h2 class="free-title" id="goals-title">Objectifs de la semaine <span id="goals-mode"></span></h2><button class="link" id="goals-edit">modifier</button></div>
         <p class="block-error" id="goals-error" hidden>Objectifs indisponibles pour l'instant. <button class="link" id="goals-retry">Réessayer</button></p>
@@ -65,6 +70,7 @@
         </details>
         <p class="block-error" id="ch-error" hidden>Défis indisponibles pour l'instant. <button class="link" id="ch-retry">Réessayer</button></p>
       </section>
+      </details>
       <h2 class="free-title" id="free-title" hidden>Jouer librement</h2>
       <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
         <div class="chips" data-name="chrono">
@@ -73,6 +79,7 @@
           <button type="button" data-value="8" aria-pressed="false">8 s</button>
         </div></div>
       <button class="primary big" id="quick-start">Série recommandée</button>
+      <p class="note" id="quick-explain" hidden>Une série de 5 décisions, en dehors de ta séance du jour : pour jouer un peu plus quand tu veux.</p>
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
       <button class="secondary review-btn" id="review-btn" hidden>Revoir mes mains</button>
       <button class="secondary" id="range-btn">Construis ta range</button>
@@ -269,6 +276,7 @@
       <p class="offline-note" id="st-offline" role="status" hidden></p>
       <div class="score" id="st-score"></div>
       <div class="focus" id="st-focus" role="status"></div>
+      <section class="wins" id="st-wins" hidden aria-labelledby="st-wins-title"><h3 id="st-wins-title">Tes progrès cette semaine</h3><ul id="st-wins-list"></ul></section>
       <section class="my-level" id="st-level" hidden aria-labelledby="st-level-title">
         <h3 id="st-level-title">Mon niveau</h3>
         <p id="st-level-name"></p>

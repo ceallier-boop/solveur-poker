@@ -7,7 +7,9 @@ const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = proce
 (async () => {
   const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
-  await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#challenges:not([hidden])', { timeout: 15000 });
+  await p.goto(BASE); await skipOnboarding(p);
+  await p.waitForSelector('#screen-home:not([hidden]) #extras'); await p.evaluate(() => { document.getElementById('extras').open = true; });   // AU4 : repliés pour un nouveau joueur
+  await p.waitForSelector('#challenges:not([hidden])', { timeout: 15000 });
   const list = () => p.$$eval('#ch-list li', (x) => x.map((y) => y.innerText.replace(/\n+/g, ' | ')));
   const res = { folded: await p.innerText('#ch-box summary'), before: await list() };          // test joueurs 9 : défis repliés en une ligne
   await p.click('#ch-box summary');
