@@ -474,6 +474,15 @@ def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset(), filters
     return out
 
 
+def draw_placement(version, seed=None, excluded=frozenset()):
+    """10 mains du test de placement (audit AU7) : 4 à moins de 10 BB, 3 à 10-16 BB, 3 à 17-25 BB, dans cet ordre"""
+    from . import levels
+    out = []; base = random.Random(seed).randrange(1 << 30)
+    for lv, n in levels.PLACEMENT_BANDS:
+        out += draw_series(version, levels.depth_filters(lv), n, base + lv, excluded)
+    return out
+
+
 def question(version, spot_id, hand):
     """ce que voit le joueur : état du jeu et options, sans solution"""
     _, spots = load(version); sp = spots[spot_id]
