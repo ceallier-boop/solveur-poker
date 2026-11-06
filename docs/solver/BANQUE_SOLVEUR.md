@@ -262,3 +262,18 @@ Apprentissage : O6 (HU 25, 18, 12 ; relance payée et iso payé ; 8 flops chacun
 - Choix du lissage (`shrink`, équivalent flops vers la moyenne de la famille) : 4, 8, 20, 60 donnent des écarts de contrôle voisins (15-22 BB : 189 à 210) ; 8 retenu.
 - L'exploitabilité postflop abstraite (5,5 à 15,6 % du pot) ne change pas : la correction agit sur les valeurs transmises au préflop, pas sur le jeu postflop. Son effet se mesure en comparant les grilles 2026.11.02-s2 (sans) et 2026.11.04-s3 (avec, O7).
 - Essai rapide (HU 15, réglages réduits) : face à l'ouverture du SB, le BB passe de 58 % de fold à 88 % de call avec K5o, dans le sens des coachs.
+
+### G17 : table `g17-v2`, tapis courts (06/11/2026)
+
+Apprentissage ajouté : HU 10 (relance payée et iso payé) et HU 6 (relance payée ; pas d'iso à 6 BB dans la banque), 8 flops chacun, 5 minutes par flop, calculés dans la session cloud (`learn_correction.py --set short`). 8 BB reste en contrôle, jamais appris. Table `g17-v2` : apprentissage `learn` + `short`, appliquée dès 6 BB de tapis effectif (`min_stack = 6`). Contrôle seul, écart quadratique sans correction → `g17-v2` (mBB) :
+
+| Configuration | Pot | Rôle | Sans | `g17-v1` (≥ 12 BB) | `g17-v2` |
+|---|---|---|---|---|---|
+| HU 8 | relance payée | OOP appelant | 400 | 400 | **322** |
+| HU 8 | relance payée | IP relanceur | 66 | 66 | **57** |
+| HU 8 | iso payé | OOP relanceur | 168 | 168 | **131** |
+| HU 8 | iso payé | IP appelant | 81 | 81 | **71** |
+| HU 15, 22 | tous | tous | | | identique à `g17-v1` |
+
+- À 8 BB, les quatre rôles s'améliorent (−9 % à −22 %) au lieu de deux qui se dégradaient avec une correction appliquée partout.
+- Reste : l'appelant d'une relance à 8 BB garde des As sous-évalués (As assortis +513, As dépareillés +533 mBB, contre +589 et +623 sans correction) et les broadways dépareillés (+450). Les ranges apprises à 6 et 10 BB ne contiennent pas ces mains comme le fait la range à 8 BB ; un apprentissage supplémentaire à 7 ou 9 BB, ou une mesure à 8 BB elle-même, les corrigerait, au prix d'un contrôle de moins.
