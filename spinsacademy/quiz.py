@@ -452,17 +452,21 @@ def situation_weights(version):
     return {(t, b, k): v for (t, b, k), v in out.items()}
 
 
-def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
+def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset(), filters=None):
     """série suivant un plan (spinsacademy.adaptive) : [(spot_id, main, emplacement, thème respecté)].
-    Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False)."""
+    Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False).
+    filters (profondeur du niveau, audit AU3) : les découvertes et les compléments restent dans la tranche ; un thème à
+    retravailler garde tout le catalogue, le joueur peut l'avoir travaillé hors de son niveau."""
     rnd = random.Random(seed); items = pool(version, None, excluded)
+    near = pool(version, filters, excluded) if filters else items
     if len(items) < len(slots): raise ValueError(f'{len(items)} spots disponibles, {len(slots)} demandés')
     used = set(); seen = set(); out = []
     for slot in slots:
         t = tuple(slot['theme']) if slot.get('theme') else None
-        choices = [sp for sp in items if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
+        src = items if slot.get('kind') in ('weak', 'review') else near
+        choices = [sp for sp in src if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
         ok = bool(choices) and t is not None
-        if not choices: choices = [sp for sp in items if sp['spot_id'] not in used]
+        if not choices: choices = [sp for sp in near if sp['spot_id'] not in used] or [sp for sp in items if sp['spot_id'] not in used]
         if not choices: break
         sp = rnd.choice(choices); _use(sp, items, used)
         h = _pick_hand(sp, rnd, seen); seen.add(h)
