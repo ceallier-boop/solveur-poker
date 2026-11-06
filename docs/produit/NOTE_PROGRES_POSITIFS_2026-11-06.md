@@ -62,3 +62,10 @@ Ordre d'affichage proposé : passage de niveau, BB récupérés, erreurs en moin
 ## Questions à Plan
 1. Route séparée `GET /users/me/wins` (proposée), ou un bloc `wins` dans `GET /users/me/stats` ?
 2. Fenêtres de 7 et 15 jours, minimums de 50 et 60 décisions : d'accord, ou à caler sur les données de la bêta ?
+
+## Réalisé (06/11/2026, après accord de Plan)
+- Route séparée `GET /users/me/wins?mode=&tz=` (`spinsacademy/wins.py`), fenêtres de 7 et 15 jours, minimums de 50 et 60 décisions, format ci-dessus.
+- Révision rattrapée renvoyée à tous pendant le test fermé, avec `"paid_feature": true` pour pouvoir la masquer quand la frontière P14 sera décidée.
+- Changement de niveau : passage automatique (`promoted_at`) ou changement manuel (`updated_at` différent d'`onboarded_at`, pour ne pas compter l'arrivée d'un ancien joueur au niveau 1).
+- Tests : `tests/test_wins.py` (joueur sans historique, moins de 50 décisions, changement de niveau dans les 14 jours, recul sans chiffre négatif, bruit sous le seuil, révision, fuseau).
+- Pas encore : la même logique dans la démo autonome (à faire avec l'écran d'Interface).

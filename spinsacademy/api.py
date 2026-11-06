@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today
+from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins
 from .hrc import ROOT
 
 SCHEMA = """
@@ -680,6 +680,19 @@ def set_goal(body: GoalChange, x_player_id: Optional[str] = Header(None)):
                     'ON CONFLICT(player_id, mode, week, kind) DO UPDATE SET target = excluded.target, updated_at = excluded.updated_at',
                     (pid, body.mode, goals.week_start(day).isoformat(), body.kind, t, _now()))
     return my_goals(body.mode, body.tz, x_player_id)
+
+
+@app.get('/users/me/wins')
+def my_wins(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """progression présentée en positif (chantier AU5) : BB récupérés, erreurs en moins, mains rattrapées en révision, passage de
+    niveau, et l'effort de la semaine, toujours renvoyé (spinsacademy.wins)"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    tz = max(-840, min(840, tz)); day = today.local_day(_now(), tz)
+    with closing(connect()) as con:
+        rows = _mode_rows(con, pid, mode, None)
+        lv = con.execute('SELECT level, promoted_at, updated_at, onboarded_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()
+    return wins.build(rows, mode, day, tz, dict(lv) if lv else None)
 
 
 @app.get('/users/me/challenges')
