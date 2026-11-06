@@ -1,0 +1,39 @@
+"""Aide de tools/web/e2e_audit_recette.cjs : prépare et contrôle côté serveur ce que le navigateur ne voit pas.
+
+  python tools/web/e2e_audit_helper.py seed <player_id>       historique réel dans la base (SPINSACADEMY_DB) : 4 séries sur
+                                                              4 jours, la semaine passée à 15 BB perdus pour 100, celle-ci à 5
+  python tools/web/e2e_audit_helper.py depth <level> <spot_id>…  tapis effectif et tranche du niveau de chaque spot servi (JSON)
+"""
+import datetime, json, os, sqlite3, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from spinsacademy import levels, quiz
+
+V = quiz.DEFAULT_VERSION
+
+
+def seed(player_id):
+    spots = [sp for sp in quiz.pool(V) if levels.in_level(1, sp)]
+    now = datetime.datetime.now(datetime.timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    con = sqlite3.connect(os.environ['SPINSACADEMY_DB'])
+    for k, (days_ago, regret) in enumerate(((10, 150), (9, 150), (3, 50), (2, 50))):     # 15 puis 5 BB perdus pour 100 décisions
+        at = (now - datetime.timedelta(days=days_ago)).isoformat(timespec='seconds'); sid = f'seed-{player_id[:8]}-{k}'
+        con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                    (sid, at, V, '{}', k, 30, player_id))
+        for i in range(30):
+            sp = spots[(30 * k + i) % len(spots)]; hand = quiz.teachable(sp)[0]
+            con.execute('INSERT INTO questions(session_id, idx, spot_id, hand, served_at) VALUES (?, ?, ?, ?, ?)', (sid, i, sp['spot_id'], hand, at))
+            con.execute('INSERT INTO attempts(session_id, idx, action_id, verdict, points, regret_mbb, result, answered_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                        (sid, i, sp['actions'][0]['id'], 'imprécision', 0.5, regret, '{}', at))
+    con.commit(); con.close()
+    print(json.dumps({'player_id': player_id, 'sessions': 4, 'decisions': 120}))
+
+
+def depth(level, spot_ids):
+    _, all_spots = quiz.load(V); lo, hi = levels.LEVELS[level]['depth']
+    out = [dict(spot_id=s, effective_stack_bb=all_spots[s]['effective_stack_bb'], in_band=lo <= all_spots[s]['effective_stack_bb'] < hi) for s in spot_ids]
+    print(json.dumps({'band': [lo, hi], 'spots': out}))
+
+
+if __name__ == '__main__':
+    if sys.argv[1] == 'seed': seed(sys.argv[2])
+    else: depth(int(sys.argv[2]), sys.argv[3:])
