@@ -603,7 +603,9 @@ async function stats() {
 // AU6 : avant 10 questions, la situation où tu as fait le plus d'erreurs, présentée comme un aperçu provisoire
 function earlyFocus(s) {
   const rows = ((s.by || {}).family || []).filter((x) => x.errors > 0).sort((a, b) => b.errors / b.questions - a.errors / a.questions || b.errors - a.errors);
-  const x = rows[0]; if (!x) return null;
+  const x = rows[0];
+  if (!x) return s.questions ? { kind: 'early', early: true, label: null, filters: null, examples: [],          // aucune erreur : un premier retour aussi
+    reason_fr: `Aucune erreur sur tes ${s.questions} première${s.questions > 1 ? 's' : ''} réponse${s.questions > 1 ? 's' : ''} : un bon début. Le diagnostic se précise à partir de ${s.min_sample} questions sur un thème.` } : null;
   return { kind: 'early', early: true, label: x.label, filters: x.filters, examples: [],
     reason_fr: `${x.errors} erreur${x.errors > 1 ? 's' : ''} sur ${x.questions} question${x.questions > 1 ? 's' : ''}. C'est un premier aperçu, sur ${s.questions} réponse${s.questions > 1 ? 's' : ''} : le diagnostic se confirme à partir de ${s.min_sample} questions sur un thème.` };
 }
