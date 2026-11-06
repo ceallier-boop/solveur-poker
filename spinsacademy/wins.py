@@ -68,8 +68,8 @@ def bb_recovered(rows, day, tz, level=None):
     rec = gain * len(now) / 100
     return dict(kind='bb_recovered', window_days=BB_DAYS, bb_per_100_now=round(b0, 2), bb_per_100_before=round(b1, 2), gain_per_100=round(gain, 2),
                 bb_recovered=round(rec, 1), decisions_now=len(now), decisions_before=len(before), level_only=level is not None,
-                text_fr=(f"Tu perds {fr(gain)} BB de moins pour 100 décisions que la semaine passée : environ {fr(rec)} BB récupérés "
-                         f"sur tes {fr(len(now), 0)} décisions" + (" de ton niveau" if level is not None else '') + '.')), None
+                text_fr=(f"Environ {fr(rec)} BB récupérés sur tes {fr(len(now), 0)} décisions" + (" de ton niveau" if level is not None else '')
+                         + " par rapport à la semaine passée.")), None     # AU2 : un seul chiffre de BB dans la phrase
 
 
 def fewer_errors(rows, day, tz):

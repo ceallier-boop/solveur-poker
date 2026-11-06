@@ -41,7 +41,7 @@ Ordre d'affichage proposé : passage de niveau, BB récupérés, erreurs en moin
      "text_fr": "Niveau 2 atteint : Le jeu à 10-16 BB."},
     {"kind": "bb_recovered", "window_days": 7, "bb_per_100_now": 8.4, "bb_per_100_before": 11.2, "gain_per_100": 2.8,
      "bb_recovered": 9.5, "decisions_now": 340, "decisions_before": 290,
-     "text_fr": "Tu perds 2,8 BB de moins pour 100 décisions que la semaine passée : environ 9,5 BB récupérés sur tes 340 décisions."},
+     "text_fr": "Environ 9,5 BB récupérés sur tes 340 décisions par rapport à la semaine passée."},
     {"kind": "fewer_errors", "window_days": 15, "errors_per_100_now": 9.0, "errors_per_100_before": 14.0, "fewer_per_100": 5.0,
      "decisions_now": 410, "decisions_before": 380,
      "text_fr": "5 erreurs de moins pour 100 décisions qu'il y a 15 jours."},
@@ -55,7 +55,7 @@ Ordre d'affichage proposé : passage de niveau, BB récupérés, erreurs en moin
 
 - `wins` : seulement les indicateurs qui passent leur seuil, dans l'ordre d'affichage ; liste vide possible.
 - `not_enough` : indicateurs 1 et 2 sous leur minimum, pour un texte du type « Encore 19 décisions pour comparer tes erreurs » ; jamais d'indicateur en recul dans cette liste.
-- `text_fr` : phrase prête à afficher (chiffres arrondis, virgule décimale) ; les champs chiffrés restent pour une mise en forme propre à Interface.
+- `text_fr` : phrase prête à afficher (chiffres arrondis, virgule décimale ; un seul chiffre de BB par phrase, règle AU2) ; les champs chiffrés restent pour une mise en forme propre à Interface.
 - Célébration du passage de niveau : une seule fois par appareil, côté page (clé locale avec la date `at`), sans écriture serveur.
 - Démo autonome : même calcul dans le navigateur, comme les objectifs.
 
@@ -68,4 +68,4 @@ Ordre d'affichage proposé : passage de niveau, BB récupérés, erreurs en moin
 - Révision rattrapée renvoyée à tous pendant le test fermé, avec `"paid_feature": true` pour pouvoir la masquer quand la frontière P14 sera décidée.
 - Changement de niveau : passage automatique (`promoted_at`) ou changement manuel (`updated_at` différent d'`onboarded_at`, pour ne pas compter l'arrivée d'un ancien joueur au niveau 1).
 - Tests : `tests/test_wins.py` (joueur sans historique, moins de 50 décisions, changement de niveau dans les 14 jours, recul sans chiffre négatif, bruit sous le seuil, révision, fuseau).
-- Pas encore : la même logique dans la démo autonome (à faire avec l'écran d'Interface).
+- Démo autonome : même calcul dans le navigateur (`winsOf` dans `tools/web/build_offline.py`), avec la date de passage de niveau et celle d'un changement manuel désormais gardées. Phrase des BB réduite à un seul chiffre (règle AU2).
