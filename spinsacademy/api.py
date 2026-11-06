@@ -120,7 +120,7 @@ class NewSession(BaseModel):
     seed: Optional[int] = None
     adaptive: Optional[bool] = None       # None : préférence du joueur ; ignoré si des filtres sont choisis
     review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
-    plan: Optional[str] = Field(None, pattern='^(review|theme)$')   # étape de la séance du jour (spinsacademy.today)
+    plan: Optional[str] = Field(None, pattern='^(review|theme|placement)$')   # étape de la séance du jour (spinsacademy.today)
     challenge: Optional[str] = Field(None, pattern='^(daily|perfect|pressure|reader)$')   # défi (spinsacademy.challenges)
     tz: int = 0                           # décalage horaire de l'appareil (minutes) : thème de la séance du jour pour la série parfaite
 
@@ -250,7 +250,7 @@ def _least_repeated(draw, seed, recent):
 
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id, required=body.review or bool(body.challenge)); filters = body.filters.model_dump(exclude_none=True); info = None
+    pid = player(x_player_id, required=body.review or bool(body.challenge) or body.plan == 'placement'); filters = body.filters.model_dump(exclude_none=True); info = None
     plan = body.plan; fixed_seed = None
     reader = False
     if body.challenge:                                                     # étape 5 : la série du défi
@@ -279,7 +279,10 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
                 info = _adaptation(con, pid, body.mode, version, body.size, body.seed, depth) if want else None
                 due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
                 recent = _recent(con, pid)
-            if due is not None:
+            if plan == 'placement':                                            # audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
+                if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue en mode GTO')
+                series = [(s, h, None, None) for s, h in quiz.draw_placement(version, body.seed, excluded)]
+            elif due is not None:
                 series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
                 taken = {(s, h) for s, h, _, _ in series}
                 for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded):
@@ -373,7 +376,7 @@ def _player_rows(con, pid):
     return [dict(r) for r in con.execute(
         'SELECT s.id AS session_id, s.created_at AS session_created_at, s.dataset_version, q.spot_id, q.hand, a.action_id, a.verdict, '
         'a.points, a.regret_mbb, a.answered_at, a.timed_out FROM sessions s JOIN questions q ON q.session_id = s.id '
-        'JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx WHERE s.player_id = ? ORDER BY a.answered_at', (pid,))]
+        'JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx WHERE s.player_id = ? AND COALESCE(s.plan, \'\') != \'placement\' ORDER BY a.answered_at', (pid,))]   # le placement ne compte pas dans la progression
 
 
 @app.get('/users/me/stats')
@@ -612,6 +615,23 @@ def set_level(body: LevelChange, x_player_id: Optional[str] = Header(None)):
                     'ON CONFLICT(player_id) DO UPDATE SET level = excluded.level, updated_at = excluded.updated_at', (pid, body.level, _now(), _now()))
         _reset_plan(con, pid)
         return _level_info(con, pid)
+
+
+@app.get('/users/me/placement')
+def placement_result(session_id: str, x_player_id: Optional[str] = Header(None)):
+    """résultat du test de placement (audit AU7) : score par tranche et niveau proposé ; le joueur le change avec PUT /users/me/level"""
+    pid = player(x_player_id, required=True)
+    with closing(connect()) as con:
+        s = _session(con, session_id)
+        if s['player_id'] != pid or s['plan'] != 'placement': raise HTTPException(404, 'test de placement inconnu')
+        _, spots = quiz.load(s['dataset_version'])
+        rows = con.execute('SELECT q.spot_id, a.points FROM questions q JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx WHERE q.session_id = ?', (session_id,)).fetchall()
+        res = levels.placement_result([(spots[r['spot_id']]['effective_stack_bb'], r['points']) for r in rows])
+        cur = _level_row(con, pid)['level']
+    lv = levels.LEVELS[res['proposed_level']]
+    return dict(res, session_id=session_id, current_level=cur, proposed_name=lv['name'], proposed_depth_fr=levels.DEPTH_FR[res['proposed_level']],
+                text_fr=(f"Niveau proposé : {res['proposed_level']}, {lv['name']} ({levels.DEPTH_FR[res['proposed_level']]}). Tu peux le changer à tout moment dans « Ma progression »."
+                         if res['complete'] else 'Termine les 10 questions pour connaître le niveau proposé.'))
 
 
 def _goal_data(con, pid, mode):
