@@ -49,7 +49,7 @@ def test_bb_recovered_and_minimum():
     better = rows(60, 2, regret=50) + rows(60, 9, regret=150)        # 5 puis 15 BB perdus pour 100 décisions
     out = wins.build(better, 'gto', D, 0)
     w = next(x for x in out['wins'] if x['kind'] == 'bb_recovered')
-    assert w['gain_per_100'] == 10 and w['bb_recovered'] == 6 and 'environ 6 BB récupérés sur tes 60 décisions' in w['text_fr']
+    assert w['gain_per_100'] == 10 and w['bb_recovered'] == 6 and w['text_fr'] == 'Environ 6 BB récupérés sur tes 60 décisions par rapport à la semaine passée.'
     out = wins.build(rows(49, 2, regret=50) + rows(60, 9, regret=150), 'gto', D, 0)      # moins de 50 décisions : rien
     assert 'bb_recovered' not in kinds(out)
     s = next(x for x in out['not_enough'] if x['kind'] == 'bb_recovered')
