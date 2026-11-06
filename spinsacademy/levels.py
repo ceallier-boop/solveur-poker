@@ -103,3 +103,21 @@ def almost(st):
     if c['kind'] == 'bb' and c['value'] is not None and c['value'] - c['target'] <= 3:
         return f"Encore {str(round(c['value'] - c['target'], 1)).replace('.', ',')} BB pour 100 décisions à gagner pour passer au niveau {st['level'] + 1}."
     return None
+
+# audit AU7 (06/11/2026) : test de placement de 10 mains pour les joueurs qui ne commencent pas au niveau 1
+PLACEMENT_BANDS = ((1, 4), (2, 3), (3, 3))        # (niveau, nombre de mains) : de moins de 10 BB à 17-25 BB
+PLACEMENT_PASS = {1: 0.75, 2: 0.66}               # part des points sur la tranche pour viser le niveau suivant (3 sur 4, 2 sur 3)
+
+
+def placement_result(answers):
+    """answers : [(tapis effectif, points)] -> dict(bands, proposed_level, complete). Le niveau proposé monte tant que la tranche
+    du niveau est réussie : tranche 1 à 75 % pour viser le niveau 2, puis tranche 2 à 66 % pour viser le niveau 3."""
+    bands = []
+    for lv, n in PLACEMENT_BANDS:
+        lo, hi = LEVELS[lv]['depth']; got = [pts for eff, pts in answers if lo <= eff < hi]
+        bands.append(dict(level=lv, name=LEVELS[lv]['name'], depth_fr=DEPTH_FR[lv], questions=len(got), expected=n, points=round(sum(got), 1),
+                          rate_pct=round(100 * sum(got) / len(got)) if got else None, passed=bool(got) and sum(got) / len(got) >= PLACEMENT_PASS.get(lv, 2)))
+    level = 1
+    for b in bands[:-1]:
+        if b['level'] == level and b['passed']: level += 1
+    return dict(bands=bands, proposed_level=level, complete=all(b['questions'] >= b['expected'] for b in bands))

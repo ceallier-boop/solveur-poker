@@ -171,7 +171,7 @@ const DEMO = (() => {
     const per100 = (b) => (b.evq ? Math.round(b.regret / 1000 * 100 / b.evq * 100) / 100 : null);
     const total = bucket(); const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 };
     const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {}; let untracked = 0;
-    const sess = Object.values(load().sessions).sort((a, b) => a.created_at.localeCompare(b.created_at));
+    const sess = Object.values(load().sessions).filter((s) => s.plan !== 'placement').sort((a, b) => a.created_at.localeCompare(b.created_at));   // AU7 : le placement ne compte pas dans la progression
     for (const s of sess) {
       const rows = answered(s); if (!rows.length) continue;
       let sp = 0; const sb = bucket();
@@ -352,7 +352,7 @@ const DEMO = (() => {
     const fr = (x, d = 1) => (d ? String(Math.round(x * 10 ** d) / 10 ** d) : String(Math.round(x))).replace('.', ',');
     const pl = (n, w, p) => `${fr(n, 0)} ${n < 2 ? w : (p || w + 's')}`;
     const all = [];
-    for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s)) s.items.forEach((i, k) => { const r = s.answers[k]; const it = ITEMS[i]; if (!r || !r.at || !it) return;
+    for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s) && s.plan !== 'placement') s.items.forEach((i, k) => { const r = s.answers[k]; const it = ITEMS[i]; if (!r || !r.at || !it) return;
       const m = r.meta || metaOf(it); all.push({ at: r.at, verdict: r.verdict, regret: 10 * Math.round((r.regret_mbb || 0) / 10), ev: !(r.field && r.field.read) && !it.rd, key: it.q.spot_id + '|' + it.q.hand, eff: m.eff, family: m.family }); });
     all.sort((a, b) => (a.at < b.at ? -1 : 1));
     const win = (xs, days) => [xs.filter((r) => ago(r.at) >= 0 && ago(r.at) < days), xs.filter((r) => ago(r.at) >= days && ago(r.at) < 2 * days)];
@@ -386,7 +386,7 @@ const DEMO = (() => {
   }
 
   // niveaux et premier lancement : mêmes règles que spinsacademy.levels
-  const LV = __LEVELS__;
+  const LV = __LEVELS__; const PL = __PLACEMENT__;
   function levelRow() {
     const db = load();
     if (!db.level) { if (!Object.keys(db.sessions).length) return { level: 1, onboarded_at: null }; db.level = { level: 1, onboarded_at: now() }; save(); }
@@ -472,7 +472,7 @@ const DEMO = (() => {
     const days = new Set((db.ranges || []).filter((r) => inw(r.at)).map((r) => dayOf(r.at))); let n = 0, lost = 0;   // jours d'entraînement : séries finies et ranges
     for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s)) {
       if (Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));
-      for (const r of Object.values(s.answers)) if (r.at && inw(r.at) && !(r.field && r.field.read)) { n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10); }
+      for (const r of (s.plan === 'placement' ? [] : Object.values(s.answers))) if (r.at && inw(r.at) && !(r.field && r.field.read)) { n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10); }
     }
     const good = (db.ranges || []).filter((r) => inw(r.at) && r.accuracy_pct >= G.range_good).length;
     return { days: days.size, day_set: days, precision: n ? Math.round(lost / 1000 * 100 / n * 100) / 100 : null, decisions: n, ranges: good };
@@ -581,7 +581,11 @@ const DEMO = (() => {
       const first = last.length && ITEMS[last[0].items[0]] ? ITEMS[last[0].items[0]].q.hand : null;
       const score = (xs) => xs.reduce((a, i) => a + 2 * rSpots.has(ITEMS[i].q.spot_id) + rHands.has(ITEMS[i].q.hand), 0) + (xs.length && ITEMS[xs[0]].q.hand === first ? 3 : 0);
       let picked;
-      if (seeded !== null) {                                           // défi du jour : tirage fixé par la date, le même pour tous
+      if (plan === 'placement') {                                      // audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
+        if (mode !== 'gto') return [422, { detail: 'le test de placement se joue en mode GTO' }];
+        picked = [];
+        for (const [lv, n] of PL.bands) { const L = LV.levels[lv]; const part = draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, n); if (!part) return [422, { detail: 'pas assez de situations' }]; picked = picked.concat(part); }
+      } else if (seeded !== null) {                                           // défi du jour : tirage fixé par la date, le même pour tous
         const rnd0 = Math.random; let t = seeded >>> 0;
         Math.random = () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
         try { picked = draw(mode, f, size); } finally { Math.random = rnd0; }
@@ -674,6 +678,16 @@ const DEMO = (() => {
       if (method === 'PUT' && body.mode) { db.prefs = Object.assign(db.prefs || {}, { mode: body.mode }); save(); }
       return [200, { adaptive: false, adaptation_reset_at: null, mode: (db.prefs || {}).mode || null }];
     }
+    if (p === '/users/me/placement' && method === 'GET') {            // audit AU7 : mêmes règles que levels.placement_result
+      const s = db.sessions[url.searchParams.get('session_id')]; if (!s || !own(s) || s.plan !== 'placement') return [404, { detail: 'test de placement inconnu' }];
+      const ans = s.items.map((i, k) => [ITEMS[i], s.answers[k]]).filter(([it, a]) => it && a).map(([it, a]) => [Math.min(...it.q.stacks_bb), a.points]);
+      const bands = PL.bands.map(([lv, n]) => { const L = LV.levels[lv], got = ans.filter(([e]) => e >= L.depth[0] && e < L.depth[1]).map((x) => x[1]), sum = got.reduce((a, b) => a + b, 0);
+        return { level: lv, name: L.name, depth_fr: LV.depth_fr[lv], questions: got.length, expected: n, points: Math.round(sum * 10) / 10, rate_pct: got.length ? Math.round(100 * sum / got.length) : null, passed: got.length > 0 && sum / got.length >= (PL.passes[lv] ?? 2) }; });
+      let level = 1; for (const b of bands.slice(0, -1)) if (b.level === level && b.passed) level += 1;
+      const complete = bands.every((b) => b.questions >= b.expected), L = LV.levels[level];
+      return [200, { bands, proposed_level: level, complete, session_id: s.id, current_level: levelRow().level, proposed_name: L.name, proposed_depth_fr: LV.depth_fr[level],
+        text_fr: complete ? `Niveau proposé : ${level}, ${L.name} (${LV.depth_fr[level]}). Tu peux le changer à tout moment dans « Ma progression ».` : 'Termine les 10 questions pour connaître le niveau proposé.' }];
+    }
     if (p === '/users/me/level' && method === 'PUT') return setLevel(body, false);
     if (p === '/users/me/onboarding' && method === 'POST') return setLevel(body, true);
     if (p === '/users/me/level') return [200, levelInfo()];
@@ -726,7 +740,7 @@ def build(out, k_gto, exploit_max=2500):
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES), ensure_ascii=False)).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 
