@@ -132,7 +132,7 @@ Fichiers à renvoyer : les fichiers `data/solver/g17/hu_25-25_*.jsonl`, `data/so
 Même grille qu'O5, avec la table de correction `g17-v1` (apprise d'O6, limitée aux tapis effectifs de 12 BB et plus). Avant de lancer : `git pull`, et **désactiver la mise en veille** de l'ordinateur (réglages d'alimentation) pour toute la durée du calcul.
 
 ```bash
-python -m spinsacademy.solver.dataset --version 2026.11.04-s3 --grid p1 --tree v5 --postflop ehs2_texture --correction g17-v1 --workers 4
+python -m spinsacademy.solver.dataset --version 2026.11.04-s3 --grid p1 --tree v5 --postflop ehs2_texture --correction g17-v2 --workers 4
 ```
 
 - `--workers` : le nombre de cœurs de l'ordinateur.
