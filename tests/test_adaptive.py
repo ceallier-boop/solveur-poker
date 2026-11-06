@@ -84,5 +84,5 @@ def test_correction_is_unchanged_by_adaptation(client):
     summ = client.get(f'/sessions/{sid}/summary').json()
     for q in qs:
         r = client.post('/attempts', json={'session_id': sid, 'question_index': q['question_index'], 'action_id': q['question']['options'][0]['id']}).json()
-        assert r == dict(quiz.correct(quiz.DEFAULT_VERSION, q['question']['spot_id'], q['question']['hand'], q['question']['options'][0]['id']), already_answered=True)
+        assert r == dict(quiz.simplify(quiz.correct(quiz.DEFAULT_VERSION, q['question']['spot_id'], q['question']['hand'], q['question']['options'][0]['id'])), already_answered=True)   # niveau 1 : mots français (AU8), l'adaptation n'y change rien
     assert summ['complete']

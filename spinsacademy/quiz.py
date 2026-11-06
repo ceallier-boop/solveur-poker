@@ -452,17 +452,21 @@ def situation_weights(version):
     return {(t, b, k): v for (t, b, k), v in out.items()}
 
 
-def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset()):
+def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset(), filters=None):
     """série suivant un plan (spinsacademy.adaptive) : [(spot_id, main, emplacement, thème respecté)].
-    Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False)."""
+    Un emplacement sans spot libre pour son thème est complété par un spot quelconque (thème respecté = False).
+    filters (profondeur du niveau, audit AU3) : les découvertes et les compléments restent dans la tranche ; un thème à
+    retravailler garde tout le catalogue, le joueur peut l'avoir travaillé hors de son niveau."""
     rnd = random.Random(seed); items = pool(version, None, excluded)
+    near = pool(version, filters, excluded) if filters else items
     if len(items) < len(slots): raise ValueError(f'{len(items)} spots disponibles, {len(slots)} demandés')
     used = set(); seen = set(); out = []
     for slot in slots:
         t = tuple(slot['theme']) if slot.get('theme') else None
-        choices = [sp for sp in items if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
+        src = items if slot.get('kind') in ('weak', 'review') else near
+        choices = [sp for sp in src if sp['spot_id'] not in used and (t is None or theme_of(sp) == t)]
         ok = bool(choices) and t is not None
-        if not choices: choices = [sp for sp in items if sp['spot_id'] not in used]
+        if not choices: choices = [sp for sp in near if sp['spot_id'] not in used] or [sp for sp in items if sp['spot_id'] not in used]
         if not choices: break
         sp = rnd.choice(choices); _use(sp, items, used)
         h = _pick_hand(sp, rnd, seen); seen.add(h)
@@ -1039,6 +1043,43 @@ def correct(version, spot_id, hand, action_id):
                 loss_fr=(None if action_id == best or forced or (len(good) > 1 and action_id in good) else gain_bb(loss)),
                 ev_source={'hrc': 'solveur'}.get(g['ev_source'], g['ev_source']), exploit=None, avis=avis_detail, solver_regret_mbb=solver_regret, why_fr=because, next=after, range=grid, explanation_fr='\n'.join(lines),   # une phrase par ligne
                 core_fr='\n'.join(core), essential_fr=essential, remember_fr=remember, details_fr=[l for l in core[:-1 - bool(remember)] if not l.startswith('Tu perds ') and l != f'Meilleur coup : {labels[best]}.' and not REDUNDANT.match(l)] + because)   # le bandeau dit déjà le bon coup et le coût
+
+
+# audit AU8 (06/11/2026) : au niveau 1 (mode GTO), les phrases de la correction disent les mots français d'abord, le terme du client
+# de jeu entre parenthèses à sa première apparition. Les libellés (best_label, options, stratégie) restent ceux du client : l'interface
+# les convertit elle-même, pour ses boutons.
+SIMPLE_VERB = {'FOLD': 'Se coucher', 'CHECK': 'Parole', 'CALL': 'Payer', 'RAISE TO': 'Relancer à', 'ALL-IN': 'Tapis'}
+_VERB_RE = re.compile(r"\b(FOLD|CHECK|CALL|RAISE TO|ALL-IN)\b(?: (\d[\d,]*(?: BB)?))?")
+_NOUN_FR = ((re.compile(r"\bau fold\b"), 'au fait de se coucher'), (re.compile(r"\ble fold\b"), 'le fait de se coucher'),
+            (re.compile(r"\bau check\b"), 'à la parole'), (re.compile(r"\ble check\b"), 'la parole'))
+_EQUITY = ((re.compile(r"\bd'équité"), 'de chances de gagner'), (re.compile(r"\bton équité"), 'tes chances de gagner'),
+           (re.compile(r"\bl'équité"), 'les chances de gagner'), (re.compile(r"\béquité"), 'chances de gagner'))
+
+
+def _plain_terms(text, seen):
+    """« ALL-IN 4 BB » -> « Tapis 4 BB (ALL-IN) » à la première apparition d'un terme, « Tapis 4 BB » ensuite"""
+    def sub(m):
+        v = m.group(1); out = SIMPLE_VERB[v] + (f' {m.group(2)}' if m.group(2) else '')
+        if v in seen: return out
+        seen.add(v); return f'{out} ({v})'
+    for rx, fr in _NOUN_FR: text = rx.sub(fr, text)
+    return _VERB_RE.sub(sub, text)
+
+
+def _plain_equity(text):
+    for rx, fr in _EQUITY: text = rx.sub(fr, text)
+    return text
+
+
+def simplify(r):
+    """correction du niveau 1 : mots français, « équité » hors de la phrase principale (elle reste dans les précisions)"""
+    if r.get('field') or 'explanation_fr' not in r: return r
+    ess_old = r['essential_fr']; ess_new = _plain_equity(ess_old); seen = set(); out = dict(r)
+    for k in ('explanation_fr', 'core_fr', 'essential_fr'): out[k] = _plain_terms(r[k].replace(ess_old, ess_new), set())
+    out['remember_fr'] = _plain_terms(r['remember_fr'], set()) if r.get('remember_fr') else r.get('remember_fr')
+    for k in ('details_fr', 'why_fr'):
+        seen = set(); out[k] = [_plain_terms(x, seen) for x in r[k]]
+    return out
 
 
 def call_equity(sp, hand):

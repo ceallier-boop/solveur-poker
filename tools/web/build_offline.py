@@ -549,8 +549,11 @@ const DEMO = (() => {
         const prof = (xs) => xs.filter((i) => ITEMS[i].q.field && ITEMS[i].q.field.type === 'profil').length;
         for (let k = 0; k < 40 && !(picked && prof(picked) >= CH.reader_profiles); k++) picked = draw(mode, f, size);
       } else {
-        picked = draw(mode, f, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
-        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, f, size); if (o && score(o) < score(picked)) picked = o; }
+        let g = f;                                                     // audit AU3 : une série libre reste dans la profondeur du niveau
+        if (mode === 'gto' && !body.review && !plan && !Object.keys(f).length) { const L = LV.levels[levelRow().level]; if (L.depth[1] < 99 || L.depth[0] > 0) g = { min_stack: L.depth[0], max_stack: L.depth[1] }; }
+        if (g !== f && !draw(mode, g, size)) g = f;                    // tranche trop pauvre : série libre
+        picked = draw(mode, g, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
+        for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, g, size); if (o && score(o) < score(picked)) picked = o; }
       }
       if (body.review) {
         const due = reviewItems(mode).filter((x) => dayOf(new Date(x.due_at).toISOString()) <= dayBack(0)).slice(0, size);
@@ -572,12 +575,26 @@ const DEMO = (() => {
       return [200, { done: false, session_id: s.id, question_index: k, size: s.items.length, question: ITEMS[s.items[k]].q,
         purpose: (s.purposes || {})[k] ? 'spaced' : null, purpose_fr: (s.purposes || {})[k] || null, plan: s.plan || null }];
     }
+    // audit AU8 : mêmes règles que quiz.simplify (serveur) pour les champs que la démo embarque
+    const SV = { FOLD: 'Se coucher', CHECK: 'Parole', CALL: 'Payer', 'RAISE TO': 'Relancer à', 'ALL-IN': 'Tapis' };
+    const NOUN_FR = [[/\bau fold\b/g, 'au fait de se coucher'], [/\ble fold\b/g, 'le fait de se coucher'], [/\bau check\b/g, 'à la parole'], [/\ble check\b/g, 'la parole']];
+    const EQ_FR = [[/\bd'équité/g, 'de chances de gagner'], [/\bton équité/g, 'tes chances de gagner'], [/\bl'équité/g, 'les chances de gagner'], [/(?<!\p{L})équité/gu, 'chances de gagner']];
+    const plainTerms = (t, seen) => { for (const [rx, fr] of NOUN_FR) t = t.replace(rx, fr);
+      return t.replace(/\b(FOLD|CHECK|CALL|RAISE TO|ALL-IN)\b(?: (\d[\d,]*(?: BB)?))?/g, (m, v, a) => { const o = SV[v] + (a ? ' ' + a : ''); if (seen.has(v)) return o; seen.add(v); return `${o} (${v})`; }); };
+    const plainEq = (t) => EQ_FR.reduce((x, [rx, fr]) => x.replace(rx, fr), t);
+    function plainCorrection(r) {
+      if (!r || r.field || !r.essential_fr) return r;
+      const out = Object.assign({}, r); out.essential_fr = plainTerms(plainEq(r.essential_fr), new Set());
+      if (r.remember_fr) out.remember_fr = plainTerms(r.remember_fr, new Set());
+      const seen = new Set(); out.details_fr = (r.details_fr || []).map((x) => plainTerms(x, seen)); return out;
+    }
     if (p === '/attempts' && method === 'POST') {
       const s = db.sessions[body.session_id]; if (!s || !own(s)) return [404, { detail: 'session inconnue' }];
       const it = ITEMS[s.items[body.question_index]]; if (!it) return [404, { detail: 'question inconnue' }];
       const prev = s.answers[body.question_index];
       if (prev) return prev.action_id === body.action_id ? [200, Object.assign({}, prev, { range: GRIDS[it.q.spot_id] || null, already_answered: true })] : [409, { detail: 'question déjà répondue' }];
       let r0 = it.c[body.action_id]; if (!r0) return [422, { detail: 'action non proposée' }];
+      if (it.m === 'gto' && levelRow().level === 1) r0 = plainCorrection(r0);                          // audit AU8 : mots français au niveau 1, comme le serveur
       if (body.timed_out) r0 = Object.assign({}, r0, { verdict: 'erreur', points: 0, timed_out: true });     // chrono écoulé : erreur
       const r = Object.assign({}, r0, { range: GRIDS[it.q.spot_id] || null });
       s.answers[body.question_index] = Object.assign({ action_id: body.action_id, at: now(), meta: metaOf(it) }, r0); save();       // sans la grille : stockage léger

@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today
+from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins
 from .hrc import ROOT
 
 SCHEMA = """
@@ -215,10 +215,11 @@ def _excluded(con):
     return frozenset(r[0] for r in con.execute('SELECT spot_id FROM disabled_spots'))
 
 
-def _adaptation(con, pid, mode, version, size, seed):
+def _adaptation(con, pid, mode, version, size, seed, depth=None):
     rows = _mode_rows(con, pid, mode, _prefs(con, pid)['adaptation_reset_at'])
-    available = {adaptive.theme_of(sp) for sp in quiz.pool(version, None, _excluded(con))}
-    return adaptive.plan(rows, available, size, seed)
+    ex = _excluded(con); available = {adaptive.theme_of(sp) for sp in quiz.pool(version, None, ex)}
+    near = {adaptive.theme_of(sp) for sp in quiz.pool(version, depth, ex)} if depth else None
+    return adaptive.plan(rows, available, size, seed, near)
 
 
 RECENT_QUESTIONS = 30      # test joueurs 6 : une série évite les situations et les mains des dernières séries du joueur
@@ -267,32 +268,38 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
             filters = dict(family='read'); reader = True
         body.filters = Filters(**filters); body.size = quiz.SERIES_SIZE
-    try:
-        with closing(connect()) as con:
-            version = serving_version(con, body.mode); excluded = _excluded(con)
-            want = pid is not None and not filters and not body.review and not body.challenge and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
-            info = _adaptation(con, pid, body.mode, version, body.size, body.seed) if want else None
-            due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
-            recent = _recent(con, pid)
-        if due is not None:
-            series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
-            taken = {(s, h) for s, h, _, _ in series}
-            for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded):
-                if len(series) < body.size and (s, h) not in taken: series.append((s, h, None, None)); taken.add((s, h))
-        elif info and info['active']:
-            drawn = _least_repeated(lambda sd: quiz.draw_plan(version, info['slots'], adaptive.theme_of, sd, excluded), body.seed, recent)
-            series = [(s, h, slot['kind'] if ok or slot['kind'] == 'discovery' else 'complement',
-                       (f"{adaptive.PURPOSE_FR[slot['kind']]} : {adaptive.label(tuple(slot['theme']))}" if ok else
-                        adaptive.PURPOSE_FR['discovery'] if slot['kind'] == 'discovery' else 'Complément : plus de situation libre sur ce thème'))
-                      for s, h, slot, ok in drawn]
-        elif fixed_seed is not None:
-            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, fixed_seed, excluded)]
-        elif reader:                                                       # test joueurs 9 : au moins READER_PROFILES « Quelle pastille ? »
-            series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded, min_profil=challenges.READER_PROFILES)]
-        else:
-            series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, filters, body.size, sd, excluded), body.seed, recent)]
-    except ValueError as e:
-        raise HTTPException(422, str(e))
+    depth = {}
+    for attempt in (0, 1):                                                 # 2e essai sans la profondeur du niveau si la tranche manque de situations
+        try:
+            with closing(connect()) as con:
+                version = serving_version(con, body.mode); excluded = _excluded(con)
+                depth = {}                                                     # audit AU3 : une série libre reste dans la profondeur du niveau
+                if attempt == 0 and pid and body.mode == 'gto' and not filters and not body.review and not plan: depth = levels.depth_filters(_level_row(con, pid)['level'])
+                want = pid is not None and not filters and not body.review and not body.challenge and body.mode != 'exploit' and (body.adaptive if body.adaptive is not None else _prefs(con, pid)['adaptive'])
+                info = _adaptation(con, pid, body.mode, version, body.size, body.seed, depth) if want else None
+                due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
+                recent = _recent(con, pid)
+            if due is not None:
+                series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
+                taken = {(s, h) for s, h, _, _ in series}
+                for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded):
+                    if len(series) < body.size and (s, h) not in taken: series.append((s, h, None, None)); taken.add((s, h))
+            elif info and info['active']:
+                drawn = _least_repeated(lambda sd: quiz.draw_plan(version, info['slots'], adaptive.theme_of, sd, excluded, depth), body.seed, recent)
+                series = [(s, h, slot['kind'] if ok or slot['kind'] == 'discovery' else 'complement',
+                           (f"{adaptive.PURPOSE_FR[slot['kind']]} : {adaptive.label(tuple(slot['theme']))}" if ok else
+                            adaptive.PURPOSE_FR['discovery'] if slot['kind'] == 'discovery' else 'Complément : plus de situation libre sur ce thème'))
+                          for s, h, slot, ok in drawn]
+            elif fixed_seed is not None:
+                series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, fixed_seed, excluded)]
+            elif reader:                                                       # test joueurs 9 : au moins READER_PROFILES « Quelle pastille ? »
+                series = [(s, h, None, None) for s, h in quiz.draw_series(version, filters, body.size, body.seed, excluded, min_profil=challenges.READER_PROFILES)]
+            else:
+                series = [(s, h, None, None) for s, h in _least_repeated(lambda sd: quiz.draw_series(version, depth or filters, body.size, sd, excluded), body.seed, recent)]
+            break
+        except ValueError as e:
+            if attempt == 0 and depth: continue
+            raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
         if body.challenge == 'daily':                                      # deux lancements simultanés : un seul passe
@@ -341,6 +348,7 @@ def answer(body: Attempt):
             return dict(json.loads(prev['result']), already_answered=True)
         try:
             r = quiz.correct(s['dataset_version'], q['spot_id'], q['hand'], body.action_id)
+            if s['player_id'] and quiz.mode_of(s['dataset_version']) == 'gto' and _level_row(con, s['player_id'])['level'] == 1: r = quiz.simplify(r)   # audit AU8 : mots français au niveau 1
         except ValueError as e:
             raise HTTPException(422, str(e))
         if body.timed_out:                                    # décision du porteur du projet : à la table, le temps dépassé n'est jamais un choix
@@ -673,6 +681,19 @@ def set_goal(body: GoalChange, x_player_id: Optional[str] = Header(None)):
                     'ON CONFLICT(player_id, mode, week, kind) DO UPDATE SET target = excluded.target, updated_at = excluded.updated_at',
                     (pid, body.mode, goals.week_start(day).isoformat(), body.kind, t, _now()))
     return my_goals(body.mode, body.tz, x_player_id)
+
+
+@app.get('/users/me/wins')
+def my_wins(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """progression présentée en positif (chantier AU5) : BB récupérés, erreurs en moins, mains rattrapées en révision, passage de
+    niveau, et l'effort de la semaine, toujours renvoyé (spinsacademy.wins)"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    tz = max(-840, min(840, tz)); day = today.local_day(_now(), tz)
+    with closing(connect()) as con:
+        rows = _mode_rows(con, pid, mode, None)
+        lv = con.execute('SELECT level, promoted_at, updated_at, onboarded_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()
+    return wins.build(rows, mode, day, tz, dict(lv) if lv else None)
 
 
 @app.get('/users/me/challenges')
