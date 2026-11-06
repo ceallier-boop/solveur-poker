@@ -9,7 +9,9 @@ const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = proce
 (async () => {
   const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
-  await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#goals:not([hidden])', { timeout: 15000 });
+  await p.goto(BASE); await skipOnboarding(p);
+  await p.waitForSelector('#screen-home:not([hidden]) #extras'); await p.evaluate(() => { document.getElementById('extras').open = true; });   // AU4 : repliés pour un nouveau joueur
+  await p.waitForSelector('#goals:not([hidden])', { timeout: 15000 });
   const goals = () => p.$$eval('#goals-list li', (x) => x.map((y) => y.innerText.replace(/\n+/g, ' | ')));
   const res = { before: await goals() };
   await p.click('#goals-edit'); await p.click('#goals-list button[data-k="days"][data-d="-1"]'); await p.waitForTimeout(600);
