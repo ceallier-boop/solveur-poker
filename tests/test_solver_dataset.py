@@ -127,3 +127,21 @@ def test_v5_tree_runs_with_two_bb_opens(tmp_path):
 def hrc_labels(node):
     from spinsacademy import hrc
     return hrc.labels(node, [25.0, 25.0])
+
+
+def test_reliability_follows_the_tree():
+    r = ds.reliability_of(Tree((8.0, 8.0), ds.TREES['v5']))
+    assert r['SB-allin'] == dict(reliability='tapis', flop_pot=None)                  # payer un tapis : pas de flop
+    assert r['SB-raise2_BB-allin']['reliability'] == 'tapis'
+    assert r['SB-raise2'] == dict(reliability='flop', flop_pot='relance')              # payer l'ouverture mène au flop
+    assert r['root']['reliability'] == 'flop'
+    assert set(r) == {n.key for n in Tree((8.0, 8.0), ds.TREES['v5']).decisions()}
+
+
+def test_published_bank_carries_reliability(tmp_path):
+    runs = os.path.join(quiz.ROOT, 'data', 'solver', 'runs')
+    m = ds.publish('test-rel', str(tmp_path / 'out'), [(8.0, 4.0)], params=FAST, runs=runs, log=None)
+    assert m['reliability']['tapis']['reliable_bb'] == [8, 16] and m['reliability']['spot_field'] == 'reliability'
+    spots = [json.loads(l) for l in open(tmp_path / 'out' / 'test-rel' / 'spots.jsonl')]
+    assert all(sp['reliability'] in ('tapis', 'flop') for sp in spots)
+    assert {sp['reliability'] for sp in spots if sp['node_key'].endswith('allin')} == {'tapis'}

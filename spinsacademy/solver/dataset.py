@@ -32,7 +32,7 @@ from ..postflop.hu_solver import PRESETS, PostflopConfig
 from . import calibration, correction
 from .cfr import Solver
 from .postflop import Showdown
-from .tree import POS, TreeConfig
+from .tree import POS, Tree, TreeConfig
 
 SOLVER_VERSION = '1.0.0'
 RUNS = os.path.join(hrc.ROOT, 'data', 'solver', 'runs')
@@ -226,22 +226,62 @@ def calibrate(res, raw=None):
     return out and dict(out, exports=ref['exports'])
 
 
+# ------------------------------------------------------------------ fiabilité par type de décision (G18, 07/11/2026)
+# Mesures du contrôle exact (docs/solver/BANQUE_SOLVEUR.md, G17), sans correction : écart quadratique exact - solveur par classe de mains
+# des décisions qui mènent au flop, par tapis effectif (jeu de contrôle HU 8, 15, 22 ; 6 flops par pot, 4 rôles).
+RELIABILITY = dict(
+    spot_field='reliability',
+    tapis=dict(label_fr='décision sans flop : toutes les actions finissent par un tapis, un fold ou un abattage immédiat',
+               reliable_bb=[8, 16],
+               basis_fr="valeurs d'EV fixées par l'équité exacte des mains ; stratégie convergée (exploitabilité < 1 mBB) ; calage du pilote 12 à 42 mBB à 12 BB"),
+    flop=dict(label_fr="décision dont au moins une action mène au flop (pot relancé ou limpé) : l'EV dépend du modèle postflop",
+              reliable_bb=None,
+              abstraction_error_mbb={'8': [66, 400], '15': [144, 405], '22': [235, 280]},
+              basis_fr="écart quadratique entre le solveur et le calcul exact au flop, par classe de mains et par rôle : 66 à 405 mBB à 8-22 BB ; "
+                       "le Monte-Carlo de la référence a un bruit de même ordre (150 mBB)"))
+
+
+def reliability_of(tree):
+    """{clé de nœud de décision : dict(reliability='tapis'|'flop', flop_pot=None|'limp'|'relance')} depuis l'arbre préflop :
+    'flop' quand un nœud terminal 'flop' est atteignable depuis la décision (l'EV de ses actions dépend du modèle postflop),
+    'relance' quand un de ces flops est celui d'un pot relancé, 'limp' quand tous sont limpés"""
+    def raised(key): return any(tok.partition('-')[2].startswith('raise') or tok.partition('-')[2] == 'allin' for tok in key.split('_'))
+    memo = {}
+    def walk(nd):
+        if nd.id in memo: return memo[nd.id]
+        if nd.kind == 'terminal': r = (False, False) if nd.terminal != 'flop' else ((False, True) if raised(nd.key) else (True, False))
+        else:
+            r = (False, False)
+            for c in nd.children:
+                a = walk(c); r = (r[0] or a[0], r[1] or a[1])
+        memo[nd.id] = r; return r
+    out = {}
+    for nd in tree.decisions():
+        limp, rel = walk(nd)
+        out[nd.key] = dict(reliability='flop' if (limp or rel) else 'tapis', flop_pot='relance' if rel else 'limp' if limp else None)
+    return out
+
+
 # ------------------------------------------------------------------ spots et publication
-def spots_of(res, path):
+def spots_of(res, path, reliability=False):
+    """reliability : ajoute à chaque spot le champ `reliability` (versions publiées à partir du 07/11/2026, manifeste `reliability`)"""
     st = [float(x) for x in res['stacks']]; cfg = res['tree_config']; nodes = res['nodes']
     sizes = dict(BTN=cfg['open_btn'] if len(st) == 3 else None, SB=cfg['open_sb'], BB_iso=cfg['iso_base'])
     prov = dict(source='solveur', solver=res['solver'], run=_rel(path), model=res['params']['model'],
                 iterations=res['info']['iterations'], exploitability_mbb=res['info']['exploitability_mbb'],
                 equity_matrix=os.path.basename(allin.EQUITY_FILE))
     spots, skipped = [], []
+    rel = reliability_of(Tree(tuple(st), TreeConfig(**cfg))) if reliability else None
     for key in sorted(nodes, key=lambda k: (k.count('_'), k)):
         sp = importer.make_spot(st, nodes, key, res['tree'], sizes, prov)
         if sp and sp['eligible_hands'] == 0: skipped.append((config_name(st), f'{key} : aucune main proposable'))
-        elif sp: spots.append(sp)
+        elif sp:
+            if rel: sp['reliability'] = rel[key]['reliability']; sp['flop_pot'] = rel[key]['flop_pot']
+            spots.append(sp)
     return spots, skipped
 
 
-def build(configs, cfg=None, params=None, workers=4, runs=RUNS, raw=None, log=print):
+def build(configs, cfg=None, params=None, workers=4, runs=RUNS, raw=None, log=print, reliability=True):
     """(spots, rejets, rapport par configuration, écartés)"""
     cfg = cfg or TreeConfig(); params = params or SolveParams()
     spots, rejected, report, skipped = [], [], [], []
@@ -251,7 +291,7 @@ def build(configs, cfg=None, params=None, workers=4, runs=RUNS, raw=None, log=pr
         for cid, label, ok, detail in ctl:
             if not ok: rejected.append((config_name(stacks), cid, f'{label} : {detail}'))
         try:
-            sp, sk = spots_of(res, path); spots += sp; skipped += sk
+            sp, sk = spots_of(res, path, reliability); spots += sp; skipped += sk
         except importer.InvalidSpot as e:
             rejected.append((config_name(stacks), 'spot', str(e))); sp = []
         report.append(dict(config=config_name(stacks), stacks=list(stacks), run=_rel(path), spots=len(sp),
@@ -280,7 +320,7 @@ def publish(version, out, configs, cfg=None, params=None, workers=4, runs=RUNS, 
                     max_exploitability_mbb=MAX_EXPLOITABILITY_MBB, max_drift_mbb=MAX_DRIFT_MBB,
                     questions_eligible=sum(sp['eligible_hands'] for sp in spots),
                     configs=report, sources=[r['run'] for r in report], skipped=[dict(export=c, reason=r) for c, r in skipped],
-                    status='staging')
+                    reliability=RELIABILITY, status='staging')
     json.dump(manifest, open(os.path.join(target, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     return manifest
 
@@ -290,7 +330,7 @@ def rebuild(manifest, runs_root=hrc.ROOT):
     out = {}
     for r in manifest['configs']:
         path = os.path.join(runs_root, r['run']); res = json.load(open(path))
-        for sp in spots_of(res, path)[0]: out[sp['spot_id']] = sp
+        for sp in spots_of(res, path, 'reliability' in manifest)[0]: out[sp['spot_id']] = sp
     return out
 
 
@@ -306,7 +346,7 @@ def check(ref, datasets, workers=4, log=print):
         rebuilt = {}
         for r in manifest['configs']:
             res, path = run(tuple(r['stacks']), cfg, params, workers, tmp, log)
-            for sp in spots_of(res, os.path.join(hrc.ROOT, r['run']))[0]: rebuilt[sp['spot_id']] = sp
+            for sp in spots_of(res, os.path.join(hrc.ROOT, r['run']), 'reliability' in manifest)[0]: rebuilt[sp['spot_id']] = sp
     norm = lambda o: json.loads(json.dumps(o))
     diff = [k for k, sp in published.items() if k not in rebuilt or norm(rebuilt[k]) != norm(sp)]
     return not diff, diff

@@ -307,3 +307,12 @@ Apprentissage ajouté : HU 10 (relance payée et iso payé) et HU 6 (relance pay
 - Aucun nouveau défaut sur les trois points demandés (K5o, K4o face à l'open ; Q8o face à l'iso), et Q8o face à l'iso est corrigé. Mais le défaut d'origine, K5o et K4o couchés face à l'iso à 22-25 BB, n'est pas corrigé, et le nombre de situations des coachs acceptées ne monte pas.
 - Décision : l'effet ne justifie pas 5 h de calcul sur l'ordinateur du porteur. Le défaut des pots relancés est une limite connue de la banque `2026.11.02-s2` (fiable de 8 à 16 BB sur les décisions à tapis ou face à un tapis ; moins sûre sur les décisions qui mènent au flop dans un pot relancé). Les tables `g17-v1`, `g17-v2` et `g17-v3a` et les outils restent dans le dépôt, la correction est désactivée par défaut.
 - Piste si le sujet revient : sous-jeux exacts par flop pour les pots relancés (option 2 de G17), ou davantage de flops par cas pour l'apprentissage (48 flops ne suffisent pas à fixer le signe des Kx de l'appelant hors de position).
+
+### G18 : champ `reliability` (07/11/2026)
+
+Version `gto_preflop/2026.11.07-s2` : mêmes résultats enregistrés que `2026.11.02-s2` (`sf3dc2e6_48fa0906`, 1 780 spots, 151 205 questions, aucun recalcul ; les spots sont identiques hors deux champs ajoutés), avec par spot :
+- `reliability` : `'tapis'` (aucun nœud « flop » atteignable depuis la décision : payer ou pousser un tapis, se coucher face à un tapis…) ou `'flop'` (au moins une action peut mener au flop : l'EV dépend du modèle postflop) ;
+- `flop_pot` : `None` pour `'tapis'` ; pour `'flop'`, `'relance'` si un des flops atteignables est celui d'un pot relancé, `'limp'` si tous sont limpés.
+Calculés depuis l'arbre (`dataset.reliability_of`). Répartition : 1 151 spots « tapis », 629 « flop » (572 « relance », 57 « limp »).
+
+Le manifeste porte `reliability` (`dataset.RELIABILITY`) : plage fiable des décisions « tapis » 8 à 16 BB ; pour « flop », aucune plage fiable, avec l'écart mesuré par rapport au calcul exact (66 à 400 mBB par main à 8 BB, 144 à 405 à 15 BB, 235 à 280 à 22 BB). La reconstruction du catalogue lit ce champ dans le manifeste : les anciennes versions (sans `reliability`) restent reproductibles à l'identique.
