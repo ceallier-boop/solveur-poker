@@ -115,6 +115,7 @@ async function start(f, review = false, plan = null, challenge = null) {
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
     state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
+    if (plan === 'placement') store.set('placement_sid', s.session_id); else if (store.get('placement_sid') !== s.session_id) store.del('placement_sid');   // AU7 : reconnu même après une reprise
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
     await next();
@@ -479,6 +480,7 @@ async function sendReport(e) {
 
 // ------------------------------------------------------------------ bilan
 async function summary() {
+  if (state.sid && state.sid === store.get('placement_sid')) return placementResult();   // AU7 : le test de placement a son propre écran
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
   $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
@@ -551,7 +553,7 @@ async function stats() {
     $('st-offline').textContent = `Hors connexion : ta progression au ${when.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} `
       + `à ${when.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}. Elle se mettra à jour dès que la connexion reviendra.`;
   }
-  for (const id of ['st-export', 'st-delete']) $(id).hidden = !!offline;   // ces actions demandent le serveur
+  for (const id of ['st-export', 'st-delete', 'st-placement']) $(id).hidden = !!offline;   // ces actions demandent le serveur
   if (offline) $('st-adapt').hidden = true; else await adaptation();
   $('st-adapt-title').hidden = $('st-adapt').hidden;                // pas de titre sans le bloc
   if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
@@ -887,6 +889,7 @@ function obShow() {
   for (const k of [1, 2, 3]) $(`ob-${k}`).hidden = k !== ob.step;
   $('ob-steps').textContent = `Étape ${ob.step} sur 3`;
   $('ob-next').textContent = ob.step === 3 ? "C'est parti" : 'Suivant';
+  $('ob-placement').hidden = !(ob.step === 3 && ['confirme', 'gros_volume'].includes(ob.exp));   // AU7 : un débutant commence au niveau 1
   if (ob.step === 2) {
     ob.level = ob.level || ({ debut: 1, confirme: 2, gros_volume: 2 })[ob.exp] || 1;
     $('ob-levels').innerHTML = ob.lv.levels.filter((l) => l.number <= 3).map((l) => `<button type="button" class="ob-level" data-v="${l.number}" aria-pressed="${l.number === ob.level}"><b>Niveau ${l.number}</b> ${escT(l.name)}${l.depth_fr ? ` · ${escT(l.depth_fr)}` : ''}</button>`).join('');   // test joueurs 9 : la profondeur dite
@@ -918,6 +921,36 @@ $('goal-card').addEventListener('click', (e) => {
   else { state.inToday = false; rangeStart(); }
 });
 $('ob-next').addEventListener('click', () => { const ob = state.ob; if (ob.step < 3) { ob.step += 1; obShow(); } else obFinish(false); });
+$('ob-placement').addEventListener('click', async () => { await obFinish(false); startPlacement(); });
+// AU7 : test de placement de 10 mains (4 à moins de 10 BB, 3 à 10-16 BB, 3 à 17-25 BB), en mode GTO ; il ne compte pas dans la
+// progression. À la fin : le niveau proposé et un résultat court par tranche ; rien ne change tant que le joueur ne le prend pas.
+function startPlacement() {
+  state.inToday = false; state.challenge = null; state.forceChrono = null;
+  state.modeBefore = mode(); if (setMode('gto')) onMode(true);
+  start({ mode: 'gto' }, false, 'placement');
+}
+const nfr1 = (x) => String(Math.round(x * 10) / 10).replace('.', ',');
+async function placementResult() {
+  loading(true);
+  const r = await api(`/users/me/placement?session_id=${encodeURIComponent(state.sid)}`);
+  store.del('sid'); store.del('placement_sid'); progress('Test de placement'); state.placementResult = r;
+  $('pl-level').innerHTML = `Niveau ${r.proposed_level}<small>${escT(r.proposed_name)} · ${escT(r.proposed_depth_fr)}</small>`;
+  $('pl-text').textContent = r.text_fr;
+  $('pl-bands').innerHTML = r.bands.map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
+    + `<td>${nfr1(b.points)} sur ${b.expected}</td></tr>`).join('');           // sans reproche : le résultat, pas un verdict
+  const same = r.proposed_level === r.current_level;
+  $('pl-take').hidden = same;
+  $('pl-keep').textContent = same ? `Continuer au niveau ${r.current_level}` : `Garder le niveau ${r.current_level}`;
+  $('pl-keep').className = same ? 'primary big' : 'secondary';
+  show('placement');
+}
+const placementDone = () => { if (state.modeBefore === 'exploit' && setMode('exploit')) onMode(true); state.modeBefore = null; home(); };   // le mode d'avant le test revient
+$('pl-take').addEventListener('click', async () => {
+  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: state.placementResult.proposed_level }) }); placementDone(); }
+  catch (e) { notify(netMsg(e, "le niveau n'a pas été changé")); }
+});
+$('pl-keep').addEventListener('click', placementDone);
+$('st-placement').addEventListener('click', startPlacement);
 $('ob-skip').addEventListener('click', () => obFinish(true));
 
 async function loadLevel() {

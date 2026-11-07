@@ -257,9 +257,21 @@
           <li><b>Range du jour</b> : tu dessines la range de la situation du thème.</li>
         </ol>
         <p class="note">Chaque semaine, trois objectifs à ta mesure. Un jour manqué par semaine ne casse pas ta série de jours.</p>
+        <button class="secondary" id="ob-placement" hidden>Faire un test de 10 mains pour trouver ton niveau (facultatif)</button>
       </div>
       <button class="primary big" id="ob-next">Suivant</button>
       <button class="link" id="ob-skip">Passer</button>
+    </section>
+
+    <!-- Résultat du test de placement (audit AU7) -->
+    <section id="screen-placement" class="screen" hidden aria-labelledby="pl-title">
+      <h2 id="pl-title">Ton niveau proposé</h2>
+      <div class="score" id="pl-level"></div>
+      <p class="note" id="pl-text"></p>
+      <table class="pl-bands"><caption class="sr-only">Résultat par profondeur de tapis</caption><tbody id="pl-bands"></tbody></table>
+      <p class="note">Ces 10 mains ne comptent ni dans ta progression ni dans tes statistiques.</p>
+      <button class="primary big" id="pl-take">Prendre ce niveau</button>
+      <button class="secondary" id="pl-keep">Garder mon niveau</button>
     </section>
 
     <!-- Fin de la séance du jour -->
@@ -284,6 +296,7 @@
         <ul class="level-crit" id="st-level-crit"></ul>
         <p class="note">Changer de niveau :</p>
         <div class="chips" id="st-level-pick"></div>
+        <button class="link" id="st-placement">Pas sûr de ton niveau ? Fais le test de 10 mains</button>
       </section>
       <section class="my-challenges" id="st-challenges" hidden aria-labelledby="st-ch-title">
         <h3 id="st-ch-title">Mes défis</h3>
