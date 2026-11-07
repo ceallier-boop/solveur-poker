@@ -1,0 +1,61 @@
+parametre,stack,n,statut
+shove (tapis en premier),2,4,insuffisant
+shove (tapis en premier),4,24,insuffisant
+shove (tapis en premier),6,35,insuffisant
+shove (tapis en premier),8,51,indicatif
+shove (tapis en premier),10,53,indicatif
+shove (tapis en premier),12,58,indicatif
+shove (tapis en premier),15,49,insuffisant
+shove (tapis en premier),18,31,insuffisant
+shove (tapis en premier),20,35,insuffisant
+shove (tapis en premier),25,83,indicatif
+call (payer un tapis),2,4,insuffisant
+call (payer un tapis),4,20,insuffisant
+call (payer un tapis),6,9,insuffisant
+call (payer un tapis),8,5,insuffisant
+call (payer un tapis),10,1,insuffisant
+call (payer un tapis),12,5,insuffisant
+call (payer un tapis),15,1,insuffisant
+call (payer un tapis),18,1,insuffisant
+call (payer un tapis),20,1,insuffisant
+call (payer un tapis),25,5,insuffisant
+limp_k (limp du SB),2,2,insuffisant
+limp_k (limp du SB),4,13,insuffisant
+limp_k (limp du SB),6,23,insuffisant
+limp_k (limp du SB),8,33,insuffisant
+limp_k (limp du SB),10,29,insuffisant
+limp_k (limp du SB),12,28,insuffisant
+limp_k (limp du SB),15,21,insuffisant
+limp_k (limp du SB),18,13,insuffisant
+limp_k (limp du SB),20,21,insuffisant
+limp_k (limp du SB),25,24,insuffisant
+iso (le BB isole un limp),2,0,insuffisant
+iso (le BB isole un limp),4,4,insuffisant
+iso (le BB isole un limp),6,9,insuffisant
+iso (le BB isole un limp),8,6,insuffisant
+iso (le BB isole un limp),10,8,insuffisant
+iso (le BB isole un limp),12,10,insuffisant
+iso (le BB isole un limp),15,5,insuffisant
+iso (le BB isole un limp),18,3,insuffisant
+iso (le BB isole un limp),20,7,insuffisant
+iso (le BB isole un limp),25,12,insuffisant
+call du tapis après limp,2,0,insuffisant
+call du tapis après limp,4,1,insuffisant
+call du tapis après limp,6,4,insuffisant
+call du tapis après limp,8,4,insuffisant
+call du tapis après limp,10,3,insuffisant
+call du tapis après limp,12,0,insuffisant
+call du tapis après limp,15,0,insuffisant
+call du tapis après limp,18,0,insuffisant
+call du tapis après limp,20,1,insuffisant
+call du tapis après limp,25,2,insuffisant
+open (relance non all-in),2,4,insuffisant
+open (relance non all-in),4,24,insuffisant
+open (relance non all-in),6,35,insuffisant
+open (relance non all-in),8,51,indicatif
+open (relance non all-in),10,53,indicatif
+open (relance non all-in),12,58,indicatif
+open (relance non all-in),15,49,insuffisant
+open (relance non all-in),18,31,insuffisant
+open (relance non all-in),20,35,insuffisant
+open (relance non all-in),25,83,indicatif

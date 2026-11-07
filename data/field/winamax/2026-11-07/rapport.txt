@@ -1,0 +1,14 @@
+Comptages Winamax (winamax_counts 1.0.0)
+Fichiers lus : 39 ; mains : 1013 ; mains Expresso lues : 569 (heads-up 243, 3 joueurs 326) ; illisibles : 0
+Période : 2025-03 à 2026-11
+Adversaires distincts : 63 ; assez observés pour la répartition : 0
+
+Volume par paramètre (occasions par tapis ; fiable ≥ 200, indicatif ≥ 50) :
+- shove (tapis en premier) : fiable à aucun tapis BB ; indicatif à 8, 10, 12, 25 BB
+- call (payer un tapis) : fiable à aucun tapis BB ; indicatif à aucun tapis BB
+- limp_k (limp du SB) : fiable à aucun tapis BB ; indicatif à aucun tapis BB
+- iso (le BB isole un limp) : fiable à aucun tapis BB ; indicatif à aucun tapis BB
+- call du tapis après limp : fiable à aucun tapis BB ; indicatif à aucun tapis BB
+- open (relance non all-in) : fiable à aucun tapis BB ; indicatif à 8, 10, 12, 25 BB
+
+Aucun pseudo ni identifiant n'est écrit dans ces fichiers. Envoie le dossier entier (5 fichiers) au projet.

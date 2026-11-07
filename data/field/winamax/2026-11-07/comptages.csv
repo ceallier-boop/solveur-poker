@@ -1,0 +1,290 @@
+groupe,kind,decision,action,stack,n,k
+field,3w,BB face au limp du BTN (SB fold),check,4,2,1
+field,3w,BB face au limp du BTN (SB fold),tapis,4,2,1
+field,3w,BB face au limp du BTN (SB fold),check,6,1,1
+field,3w,BB face au limp du BTN (SB fold),check,8,1,1
+field,3w,BB face au limp du BTN (SB fold),check,10,2,2
+field,3w,BB face au limp du BTN (SB fold),check,12,2,2
+field,3w,BB face au limp du BTN (SB fold),check,15,3,2
+field,3w,BB face au limp du BTN (SB fold),relance,15,3,1
+field,3w,BB face au limp du BTN (SB fold),check,18,1,1
+field,3w,BB face au limp du BTN (SB fold),check,20,2,1
+field,3w,BB face au limp du BTN (SB fold),relance,20,2,1
+field,3w,BB face au limp du BTN (SB fold),check,25,7,5
+field,3w,BB face au limp du BTN (SB fold),relance,25,7,2
+field,3w,BB face au limp du SB (BTN fold),check,4,2,1
+field,3w,BB face au limp du SB (BTN fold),tapis,4,2,1
+field,3w,BB face au limp du SB (BTN fold),check,6,6,4
+field,3w,BB face au limp du SB (BTN fold),tapis,6,6,2
+field,3w,BB face au limp du SB (BTN fold),check,8,4,4
+field,3w,BB face au limp du SB (BTN fold),check,10,4,4
+field,3w,BB face au limp du SB (BTN fold),check,12,5,4
+field,3w,BB face au limp du SB (BTN fold),relance,12,5,1
+field,3w,BB face au limp du SB (BTN fold),check,15,5,4
+field,3w,BB face au limp du SB (BTN fold),relance,15,5,1
+field,3w,BB face au limp du SB (BTN fold),check,18,1,1
+field,3w,BB face au limp du SB (BTN fold),check,20,6,4
+field,3w,BB face au limp du SB (BTN fold),relance,20,6,1
+field,3w,BB face au limp du SB (BTN fold),tapis,20,6,1
+field,3w,BB face au limp du SB (BTN fold),check,25,6,6
+field,3w,BB face au tapis du BTN (SB fold),fold,4,6,3
+field,3w,BB face au tapis du BTN (SB fold),paie,4,6,3
+field,3w,BB face au tapis du BTN (SB fold),fold,6,2,2
+field,3w,BB face au tapis du BTN (SB fold),paie,8,2,2
+field,3w,BB face au tapis du BTN (SB fold),fold,15,1,1
+field,3w,BB face au tapis du BTN (SB fold),fold,25,1,1
+field,3w,BB face au tapis du BTN et au call du SB,fold,2,2,1
+field,3w,BB face au tapis du BTN et au call du SB,paie,2,2,1
+field,3w,BB face au tapis du BTN et au call du SB,fold,4,2,1
+field,3w,BB face au tapis du BTN et au call du SB,paie,4,2,1
+field,3w,BB face au tapis du BTN et au call du SB,fold,6,2,2
+field,3w,BB face au tapis du BTN et au call du SB,fold,8,1,1
+field,3w,BB face au tapis du SB (BTN fold),fold,2,1,1
+field,3w,BB face au tapis du SB (BTN fold),fold,8,1,1
+field,3w,BB face au tapis du SB (BTN fold),fold,12,1,1
+field,3w,BB face au tapis du SB (BTN fold),fold,20,1,1
+field,3w,BB face à deux limps,check,6,2,2
+field,3w,BB face à deux limps,check,10,3,3
+field,3w,BB face à deux limps,check,12,3,2
+field,3w,BB face à deux limps,relance,12,3,1
+field,3w,BB face à deux limps,check,15,1,1
+field,3w,BB face à deux limps,check,25,6,6
+field,3w,BB face à l'open du BTN (SB fold),fold,4,3,1
+field,3w,BB face à l'open du BTN (SB fold),paie,4,3,1
+field,3w,BB face à l'open du BTN (SB fold),tapis,4,3,1
+field,3w,BB face à l'open du BTN (SB fold),fold,6,1,1
+field,3w,BB face à l'open du BTN (SB fold),paie,8,3,3
+field,3w,BB face à l'open du BTN (SB fold),fold,10,2,1
+field,3w,BB face à l'open du BTN (SB fold),paie,10,2,1
+field,3w,BB face à l'open du BTN (SB fold),paie,12,9,8
+field,3w,BB face à l'open du BTN (SB fold),tapis,12,9,1
+field,3w,BB face à l'open du BTN (SB fold),fold,15,3,1
+field,3w,BB face à l'open du BTN (SB fold),paie,15,3,2
+field,3w,BB face à l'open du BTN (SB fold),fold,18,4,1
+field,3w,BB face à l'open du BTN (SB fold),paie,18,4,3
+field,3w,BB face à l'open du BTN (SB fold),fold,25,13,3
+field,3w,BB face à l'open du BTN (SB fold),paie,25,13,8
+field,3w,BB face à l'open du BTN (SB fold),relance,25,13,1
+field,3w,BB face à l'open du BTN (SB fold),tapis,25,13,1
+field,3w,BB face à l'open du SB (BTN fold),paie,8,1,1
+field,3w,BB face à l'open du SB (BTN fold),paie,10,1,1
+field,3w,BB face à l'open du SB (BTN fold),paie,12,1,1
+field,3w,BB face à l'open du SB (BTN fold),paie,15,2,2
+field,3w,BB face à l'open du SB (BTN fold),paie,18,1,1
+field,3w,BB face à l'open du SB (BTN fold),paie,20,3,3
+field,3w,BB face à l'open du SB (BTN fold),fold,25,6,2
+field,3w,BB face à l'open du SB (BTN fold),paie,25,6,3
+field,3w,BB face à l'open du SB (BTN fold),relance,25,6,1
+field,3w,BTN premier à parler,fold,2,2,1
+field,3w,BTN premier à parler,limp,2,2,1
+field,3w,BTN premier à parler,fold,4,11,1
+field,3w,BTN premier à parler,limp,4,11,5
+field,3w,BTN premier à parler,tapis,4,11,5
+field,3w,BTN premier à parler,fold,6,12,5
+field,3w,BTN premier à parler,limp,6,12,2
+field,3w,BTN premier à parler,tapis,6,12,5
+field,3w,BTN premier à parler,fold,8,18,12
+field,3w,BTN premier à parler,limp,8,18,2
+field,3w,BTN premier à parler,relance,8,18,1
+field,3w,BTN premier à parler,tapis,8,18,3
+field,3w,BTN premier à parler,fold,10,24,11
+field,3w,BTN premier à parler,limp,10,24,12
+field,3w,BTN premier à parler,relance,10,24,1
+field,3w,BTN premier à parler,fold,12,30,17
+field,3w,BTN premier à parler,limp,12,30,5
+field,3w,BTN premier à parler,relance,12,30,5
+field,3w,BTN premier à parler,tapis,12,30,3
+field,3w,BTN premier à parler,fold,15,28,16
+field,3w,BTN premier à parler,limp,15,28,10
+field,3w,BTN premier à parler,relance,15,28,1
+field,3w,BTN premier à parler,tapis,15,28,1
+field,3w,BTN premier à parler,fold,18,18,10
+field,3w,BTN premier à parler,limp,18,18,3
+field,3w,BTN premier à parler,relance,18,18,3
+field,3w,BTN premier à parler,tapis,18,18,2
+field,3w,BTN premier à parler,fold,20,14,3
+field,3w,BTN premier à parler,limp,20,14,9
+field,3w,BTN premier à parler,relance,20,14,2
+field,3w,BTN premier à parler,fold,25,59,21
+field,3w,BTN premier à parler,limp,25,59,23
+field,3w,BTN premier à parler,relance,25,59,12
+field,3w,BTN premier à parler,tapis,25,59,3
+field,3w,SB face au limp du BTN,limp,4,3,3
+field,3w,SB face au limp du BTN,limp,6,2,1
+field,3w,SB face au limp du BTN,relance,6,2,1
+field,3w,SB face au limp du BTN,limp,8,2,1
+field,3w,SB face au limp du BTN,relance,8,2,1
+field,3w,SB face au limp du BTN,fold,10,2,2
+field,3w,SB face au limp du BTN,limp,12,2,1
+field,3w,SB face au limp du BTN,relance,12,2,1
+field,3w,SB face au limp du BTN,fold,15,3,1
+field,3w,SB face au limp du BTN,limp,15,3,2
+field,3w,SB face au limp du BTN,limp,18,1,1
+field,3w,SB face au limp du BTN,fold,20,3,1
+field,3w,SB face au limp du BTN,limp,20,3,2
+field,3w,SB face au limp du BTN,fold,25,11,2
+field,3w,SB face au limp du BTN,limp,25,11,8
+field,3w,SB face au limp du BTN,tapis,25,11,1
+field,3w,SB face au tapis du BB après son limp (BTN fold),paie,4,1,1
+field,3w,SB face au tapis du BB après son limp (BTN fold),fold,6,3,3
+field,3w,SB face au tapis du BB après son limp (BTN fold),fold,8,1,1
+field,3w,SB face au tapis du BB après son limp (BTN fold),fold,20,1,1
+field,3w,SB face au tapis du BTN,paie,2,2,2
+field,3w,SB face au tapis du BTN,fold,4,11,9
+field,3w,SB face au tapis du BTN,paie,4,11,2
+field,3w,SB face au tapis du BTN,fold,6,5,3
+field,3w,SB face au tapis du BTN,paie,6,5,2
+field,3w,SB face au tapis du BTN,fold,10,1,1
+field,3w,SB face au tapis du BTN,fold,12,3,2
+field,3w,SB face au tapis du BTN,paie,12,3,1
+field,3w,SB face au tapis du BTN,paie,18,1,1
+field,3w,SB face au tapis du BTN,fold,25,4,3
+field,3w,SB face au tapis du BTN,paie,25,4,1
+field,3w,SB face à l'open du BTN,paie,2,2,2
+field,3w,SB face à l'open du BTN,fold,4,2,2
+field,3w,SB face à l'open du BTN,fold,6,2,1
+field,3w,SB face à l'open du BTN,tapis,6,2,1
+field,3w,SB face à l'open du BTN,fold,8,5,2
+field,3w,SB face à l'open du BTN,paie,8,5,1
+field,3w,SB face à l'open du BTN,tapis,8,5,2
+field,3w,SB face à l'open du BTN,fold,10,7,5
+field,3w,SB face à l'open du BTN,relance,10,7,1
+field,3w,SB face à l'open du BTN,tapis,10,7,1
+field,3w,SB face à l'open du BTN,fold,12,10,9
+field,3w,SB face à l'open du BTN,paie,12,10,1
+field,3w,SB face à l'open du BTN,fold,15,7,4
+field,3w,SB face à l'open du BTN,paie,15,7,3
+field,3w,SB face à l'open du BTN,fold,18,7,3
+field,3w,SB face à l'open du BTN,paie,18,7,3
+field,3w,SB face à l'open du BTN,tapis,18,7,1
+field,3w,SB face à l'open du BTN,paie,20,3,3
+field,3w,SB face à l'open du BTN,fold,25,25,12
+field,3w,SB face à l'open du BTN,paie,25,25,10
+field,3w,SB face à l'open du BTN,relance,25,25,1
+field,3w,SB face à l'open du BTN,tapis,25,25,2
+field,3w,SB face à la relance du BB après son limp (BTN fold),paie,4,1,1
+field,3w,SB face à la relance du BB après son limp (BTN fold),fold,12,3,1
+field,3w,SB face à la relance du BB après son limp (BTN fold),paie,12,3,2
+field,3w,SB face à la relance du BB après son limp (BTN fold),paie,15,2,2
+field,3w,SB face à la relance du BB après son limp (BTN fold),paie,20,3,3
+field,3w,SB face à la relance du BB après son limp (BTN fold),fold,25,3,1
+field,3w,SB face à la relance du BB après son limp (BTN fold),paie,25,3,2
+field,3w,SB premier à parler (BTN fold),limp,4,5,4
+field,3w,SB premier à parler (BTN fold),tapis,4,5,1
+field,3w,SB premier à parler (BTN fold),fold,6,9,2
+field,3w,SB premier à parler (BTN fold),limp,6,9,6
+field,3w,SB premier à parler (BTN fold),relance,6,9,1
+field,3w,SB premier à parler (BTN fold),fold,8,11,1
+field,3w,SB premier à parler (BTN fold),limp,8,11,6
+field,3w,SB premier à parler (BTN fold),relance,8,11,2
+field,3w,SB premier à parler (BTN fold),tapis,8,11,2
+field,3w,SB premier à parler (BTN fold),fold,10,11,4
+field,3w,SB premier à parler (BTN fold),limp,10,11,4
+field,3w,SB premier à parler (BTN fold),relance,10,11,3
+field,3w,SB premier à parler (BTN fold),fold,12,15,4
+field,3w,SB premier à parler (BTN fold),limp,12,15,10
+field,3w,SB premier à parler (BTN fold),tapis,12,15,1
+field,3w,SB premier à parler (BTN fold),fold,15,13,5
+field,3w,SB premier à parler (BTN fold),limp,15,13,6
+field,3w,SB premier à parler (BTN fold),relance,15,13,1
+field,3w,SB premier à parler (BTN fold),tapis,15,13,1
+field,3w,SB premier à parler (BTN fold),fold,18,3,2
+field,3w,SB premier à parler (BTN fold),limp,18,3,1
+field,3w,SB premier à parler (BTN fold),limp,20,12,6
+field,3w,SB premier à parler (BTN fold),relance,20,12,4
+field,3w,SB premier à parler (BTN fold),tapis,20,12,2
+field,3w,SB premier à parler (BTN fold),fold,25,12,2
+field,3w,SB premier à parler (BTN fold),limp,25,12,8
+field,3w,SB premier à parler (BTN fold),relance,25,12,2
+field,hu,BB face au limp du SB,check,4,2,1
+field,hu,BB face au limp du SB,tapis,4,2,1
+field,hu,BB face au limp du SB,check,6,3,2
+field,hu,BB face au limp du SB,tapis,6,3,1
+field,hu,BB face au limp du SB,check,8,2,2
+field,hu,BB face au limp du SB,check,10,4,3
+field,hu,BB face au limp du SB,tapis,10,4,1
+field,hu,BB face au limp du SB,check,12,5,2
+field,hu,BB face au limp du SB,relance,12,5,2
+field,hu,BB face au limp du SB,tapis,12,5,1
+field,hu,BB face au limp du SB,relance,18,2,2
+field,hu,BB face au limp du SB,relance,20,1,1
+field,hu,BB face au limp du SB,check,25,6,4
+field,hu,BB face au limp du SB,relance,25,6,1
+field,hu,BB face au limp du SB,tapis,25,6,1
+field,hu,BB face au tapis du SB,paie,2,1,1
+field,hu,BB face au tapis du SB,fold,4,3,2
+field,hu,BB face au tapis du SB,paie,4,3,1
+field,hu,BB face au tapis du SB,fold,6,2,2
+field,hu,BB face au tapis du SB,fold,8,2,1
+field,hu,BB face au tapis du SB,paie,8,2,1
+field,hu,BB face au tapis du SB,paie,12,1,1
+field,hu,BB face à l'open du SB,paie,2,1,1
+field,hu,BB face à l'open du SB,paie,4,2,1
+field,hu,BB face à l'open du SB,tapis,4,2,1
+field,hu,BB face à l'open du SB,fold,6,13,7
+field,hu,BB face à l'open du SB,paie,6,13,1
+field,hu,BB face à l'open du SB,tapis,6,13,5
+field,hu,BB face à l'open du SB,fold,8,9,4
+field,hu,BB face à l'open du SB,paie,8,9,4
+field,hu,BB face à l'open du SB,tapis,8,9,1
+field,hu,BB face à l'open du SB,fold,10,10,1
+field,hu,BB face à l'open du SB,paie,10,10,6
+field,hu,BB face à l'open du SB,tapis,10,10,3
+field,hu,BB face à l'open du SB,fold,12,8,3
+field,hu,BB face à l'open du SB,paie,12,8,5
+field,hu,BB face à l'open du SB,fold,15,5,3
+field,hu,BB face à l'open du SB,paie,15,5,2
+field,hu,BB face à l'open du SB,fold,18,4,1
+field,hu,BB face à l'open du SB,paie,18,4,3
+field,hu,BB face à l'open du SB,fold,20,8,2
+field,hu,BB face à l'open du SB,paie,20,8,5
+field,hu,BB face à l'open du SB,relance,20,8,1
+field,hu,BB face à l'open du SB,fold,25,8,3
+field,hu,BB face à l'open du SB,paie,25,8,4
+field,hu,BB face à l'open du SB,relance,25,8,1
+field,hu,SB face au tapis du BB après son limp,fold,6,1,1
+field,hu,SB face au tapis du BB après son limp,fold,8,3,3
+field,hu,SB face au tapis du BB après son limp,fold,10,3,1
+field,hu,SB face au tapis du BB après son limp,paie,10,3,2
+field,hu,SB face au tapis du BB après son limp,fold,25,2,2
+field,hu,SB face à la relance du BB après son limp,fold,6,2,2
+field,hu,SB face à la relance du BB après son limp,tapis,8,2,2
+field,hu,SB face à la relance du BB après son limp,paie,10,1,1
+field,hu,SB face à la relance du BB après son limp,paie,12,1,1
+field,hu,SB face à la relance du BB après son limp,tapis,15,1,1
+field,hu,SB face à la relance du BB après son limp,paie,18,1,1
+field,hu,SB face à la relance du BB après son limp,tapis,25,1,1
+field,hu,SB premier à parler,fold,2,2,1
+field,hu,SB premier à parler,tapis,2,2,1
+field,hu,SB premier à parler,fold,4,8,1
+field,hu,SB premier à parler,limp,4,8,1
+field,hu,SB premier à parler,relance,4,8,1
+field,hu,SB premier à parler,tapis,4,8,5
+field,hu,SB premier à parler,fold,6,14,5
+field,hu,SB premier à parler,limp,6,14,4
+field,hu,SB premier à parler,relance,6,14,1
+field,hu,SB premier à parler,tapis,6,14,4
+field,hu,SB premier à parler,fold,8,22,7
+field,hu,SB premier à parler,limp,8,22,9
+field,hu,SB premier à parler,tapis,8,22,6
+field,hu,SB premier à parler,fold,10,18,5
+field,hu,SB premier à parler,limp,10,18,7
+field,hu,SB premier à parler,relance,10,18,2
+field,hu,SB premier à parler,tapis,10,18,4
+field,hu,SB premier à parler,fold,12,13,4
+field,hu,SB premier à parler,limp,12,13,6
+field,hu,SB premier à parler,relance,12,13,2
+field,hu,SB premier à parler,tapis,12,13,1
+field,hu,SB premier à parler,fold,15,8,2
+field,hu,SB premier à parler,limp,15,8,2
+field,hu,SB premier à parler,relance,15,8,2
+field,hu,SB premier à parler,tapis,15,8,2
+field,hu,SB premier à parler,fold,18,10,7
+field,hu,SB premier à parler,limp,18,10,2
+field,hu,SB premier à parler,relance,18,10,1
+field,hu,SB premier à parler,fold,20,9,5
+field,hu,SB premier à parler,limp,20,9,3
+field,hu,SB premier à parler,relance,20,9,1
+field,hu,SB premier à parler,fold,25,12,3
+field,hu,SB premier à parler,limp,25,12,7
+field,hu,SB premier à parler,relance,25,12,2

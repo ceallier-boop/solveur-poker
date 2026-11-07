@@ -77,3 +77,11 @@ Conséquence : la révision espacée est aujourd'hui intégrée à la séance du
 - **Régie publicitaire :** accord du porteur pour **démarcher Google Ad Manager** (prise de contact et conditions du format récompensé pour un contenu lié au poker). Aucune activation avant la réécriture de la politique de confidentialité et sa relecture (A14).
 - **Règle des désaccords** (accepter aussi l'action que jouent les trois experts quand le solveur en préfère une autre) : **rappel demandé**, décision en attente.
 - **Winamax :** envoi des cinq fichiers de comptages toujours attendu.
+
+## Décision du 07/11 : experts ou solveur
+
+**Entre le solveur et les experts, on privilégie les experts.** La règle des désaccords reste donc telle qu'elle est codée : une action que joue au moins un expert est acceptée, y compris quand les trois experts jouent la même action et que le solveur en préfère une autre ; la correction dit alors ce que préfère le solveur (`quiz.simplify`, `coachs.judge`). Cela vaut pour les 60 situations relues par les experts ; ailleurs, le verdict du solveur s'applique.
+
+## Comptages Winamax reçus le 07/11
+
+Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 569 mains Expresso (heads-up 243, 3 joueurs 326), 63 adversaires distincts, aucun assez observé pour la répartition. Volume **insuffisant pour caler les profils** : aucun paramètre n'est « fiable » à aucun tapis ; seuls « tapis en premier » et « ouverture » sont « indicatifs » à 8, 10, 12 et 25 BB. Il faut environ 20 000 mains Expresso (1 000 tournois).
