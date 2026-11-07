@@ -287,3 +287,23 @@ Apprentissage ajouté : HU 10 (relance payée et iso payé) et HU 6 (relance pay
 - Fréquences globales : le SB relance plus (HU 15 : 17 → 25 %, HU 22 : 32 → 44 %, HU 25 : 39 → 65 %) et limpe moins ; le SB paie plus l'iso (fold 50 → 44 % en HU 15).
 - Mains suivies, SB limpé face à l'iso (fold, sans → avec) : K5o 99 → 0 (HU 22), 89 → 13 (HU 25), 99 → 46 (HU 18) ; K4o 97 → 44 (HU 15), 96 → 1 (HU 18) : le défaut recule. Mais Q8o 58 → 100 (HU 25) et 78 → 91 (HU 22) : il se creuse. Et, face à l'ouverture à 2 BB, le BB se couche avec K5o 0 → 96 % et K4o 0 → 99 % à HU 25, 0 → 44 % et 0 → 26 % à HU 22 : nouveau défaut.
 - Cause identifiée : la correction apprise des Kx de l'appelant hors de position change de signe entre 12 BB (+407 mBB) et 25 BB (−298 mBB), et sur le jeu de contrôle elle dégrade ces mains (HU 15 : Kx assortis −41 → −240 ; HU 22 : +4 → +167). Huit flops par cas ne la fixent pas.
+
+### G17 : table `g17-v3a` (07/11/2026), conclusion
+
+`g17-v3a` : apprentissage `learn` + `short`, lissage fort vers la moyenne de la famille de mains (`--shrink 60`), amplitude divisée par deux (`--scale 0.5`), appliquée dès 6 BB. Essais complets (HU 6, 8, 10, 12, 15, 18, 22, 25 ; 3 joueurs 12 et 25) avec `tools/solver/try_correction.py` ; coachs rejoués avec `tools/solver/score_coaches.py` (verdict du solveur seul : `quiz.correct` accepte de force toute action d'un coach, ce qui donne 100 % par construction).
+
+| Mesure | s2 (sans) | `g17-v1` | `g17-v3a` |
+|---|---|---|---|
+| Actions de coachs acceptées par le solveur seul | 43 / 56 | 43 / 57 | 43 / 56 |
+| Action recommandée acceptée (situations) | 39 / 48 | 39 / 49 | 38 / 48 |
+| BB face à l'open à 2 BB, fold de K5o, K4o à HU 22 et 25 | 0 % | 44 / 26 % (HU 22), 96 / 99 % (HU 25) | 0 % |
+| SB limpé face à l'iso, fold de Q8o à HU 22 / 25 | 78 / 58 % | 91 / 100 % | **19 / 17 %** |
+| SB limpé face à l'iso, fold de K5o, K4o à HU 25 | 89 / 90 % | 13 / 55 % | 87 / 94 % |
+| Décalage de stratégie à HU 25 | | 24 points | 11 points |
+| Contrôle hors échantillon, 8 / 15 / 22 BB, 12 rôles | | 8 sur 12 mieux | 12 sur 12 mieux (écart quadratique −5 à −24 %) |
+| Sous 12 BB (HU 6, 8, 10) | | identique à s2 | décalage de 0,7 à 2,7 points |
+
+- Les actions de coachs refusées changent peu : 5 s'ajoutent (J8o check, K7o isolement et 83s, 98s limpés à HU 25, K2o), 5 se corrigent (KJo, KJs, Q4o, A2s, K2o) ; ce sont presque toutes des « imprécisions » (écart à la limite de la tolérance).
+- Aucun nouveau défaut sur les trois points demandés (K5o, K4o face à l'open ; Q8o face à l'iso), et Q8o face à l'iso est corrigé. Mais le défaut d'origine, K5o et K4o couchés face à l'iso à 22-25 BB, n'est pas corrigé, et le nombre de situations des coachs acceptées ne monte pas.
+- Décision : l'effet ne justifie pas 5 h de calcul sur l'ordinateur du porteur. Le défaut des pots relancés est une limite connue de la banque `2026.11.02-s2` (fiable de 8 à 16 BB sur les décisions à tapis ou face à un tapis ; moins sûre sur les décisions qui mènent au flop dans un pot relancé). Les tables `g17-v1`, `g17-v2` et `g17-v3a` et les outils restent dans le dépôt, la correction est désactivée par défaut.
+- Piste si le sujet revient : sous-jeux exacts par flop pour les pots relancés (option 2 de G17), ou davantage de flops par cas pour l'apprentissage (48 flops ne suffisent pas à fixer le signe des Kx de l'appelant hors de position).
