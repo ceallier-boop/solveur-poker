@@ -277,3 +277,13 @@ Apprentissage ajouté : HU 10 (relance payée et iso payé) et HU 6 (relance pay
 
 - À 8 BB, les quatre rôles s'améliorent (−9 % à −22 %) au lieu de deux qui se dégradaient avec une correction appliquée partout.
 - Reste : l'appelant d'une relance à 8 BB garde des As sous-évalués (As assortis +513, As dépareillés +533 mBB, contre +589 et +623 sans correction) et les broadways dépareillés (+450). Les ranges apprises à 6 et 10 BB ne contiennent pas ces mains comme le fait la range à 8 BB ; un apprentissage supplémentaire à 7 ou 9 BB, ou une mesure à 8 BB elle-même, les corrigerait, au prix d'un contrôle de moins.
+
+### G17 : effet de `g17-v1` sur la stratégie préflop (O7 partielle, 07/11/2026)
+
+43 configurations sur 58 (dossier `sf3dc2e6_eed23e4e`, sans les 15 configurations à 3 joueurs aux tapis inégaux), comparées à `2026.11.02-s2` avec `tools/solver/compare_runs.py`. Exploitabilité ≤ 0,61 mBB et dérive ≤ 0,65 mBB partout : la résolution a convergé.
+
+- Sans effet là où prévu : tous les tapis effectifs sous 12 BB (HU 2 à 10, 3 joueurs 4 à 10), identiques à s2.
+- Décalage moyen de stratégie : 10 à 12 points en HU 12 à 22, 24 points en HU 25 ; 6 à 9 points à 3 joueurs 12 à 25.
+- Fréquences globales : le SB relance plus (HU 15 : 17 → 25 %, HU 22 : 32 → 44 %, HU 25 : 39 → 65 %) et limpe moins ; le SB paie plus l'iso (fold 50 → 44 % en HU 15).
+- Mains suivies, SB limpé face à l'iso (fold, sans → avec) : K5o 99 → 0 (HU 22), 89 → 13 (HU 25), 99 → 46 (HU 18) ; K4o 97 → 44 (HU 15), 96 → 1 (HU 18) : le défaut recule. Mais Q8o 58 → 100 (HU 25) et 78 → 91 (HU 22) : il se creuse. Et, face à l'ouverture à 2 BB, le BB se couche avec K5o 0 → 96 % et K4o 0 → 99 % à HU 25, 0 → 44 % et 0 → 26 % à HU 22 : nouveau défaut.
+- Cause identifiée : la correction apprise des Kx de l'appelant hors de position change de signe entre 12 BB (+407 mBB) et 25 BB (−298 mBB), et sur le jeu de contrôle elle dégrade ces mains (HU 15 : Kx assortis −41 → −240 ; HU 22 : +4 → +167). Huit flops par cas ne la fixent pas.
