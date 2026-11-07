@@ -41,6 +41,7 @@ def _rel(path):
     return os.path.relpath(path, hrc.ROOT).replace(os.sep, '/')
 
 
+REFERENCE_PREFLOP = {'sf3dc2e6': 'd0fd39a7'}      # notre arbre v5 -> empreinte préflop des exports de référence v5 (pilote reçu le 07/11/2026) ; l'identifiant de nos arbres ne change pas
 REFERENCE_TREES = {'daa9aaa0': TreeConfig()}      # arbre de la référence : notre arbre par défaut en reproduit exactement les actions
 # Arbres nommés pour la ligne de commande. v5 : commande de calage du 30/10/2026 (EXPORTS_A_PRODUIRE.md §11), ouvertures à
 # 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé ; c'est l'arbre des banques à venir.
@@ -217,8 +218,9 @@ def reference_nodes(tree, stacks, raw=None):
 
 def calibrate(res, raw=None):
     """calage d'une configuration sur la référence (None si la référence n'a pas cet arbre et ces tapis)"""
-    if not res['tree'] in REFERENCE_TREES: return None
-    ref = reference_nodes(res['tree'], res['stacks'], raw)
+    ref_tree = REFERENCE_PREFLOP.get(res['tree'], res['tree'])
+    if not (res['tree'] in REFERENCE_TREES or res['tree'] in REFERENCE_PREFLOP): return None
+    ref = reference_nodes(ref_tree, res['stacks'], raw)
     if ref is None: return None
     st = [float(x) for x in res['stacks']]
     ours = {k: dict(actions=hrc.labels(n, st), freq=np.array([n['hands'][h]['played'] for h in NAMES])) for k, n in res['nodes'].items()}

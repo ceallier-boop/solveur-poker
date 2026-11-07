@@ -144,3 +144,11 @@ def test_published_bank_carries_reliability(tmp_path):
     spots = [json.loads(l) for l in open(tmp_path / 'out' / 'test-rel' / 'spots.jsonl')]
     assert all(sp['reliability'] in ('tapis', 'flop') for sp in spots)
     assert {sp['reliability'] for sp in spots if sp['node_key'].endswith('allin')} == {'tapis'}
+
+
+def test_solver_is_calibrated_on_the_v5_reference_pilot():
+    """pilote des exports de référence v5 (07/11/2026) : arbre reconnu, cinq répétitions moyennées, solveur à l'écart du bruit de la référence près"""
+    path = os.path.join(quiz.ROOT, 'data', 'solver', 'runs', 'sf3dc2e6_48fa0906', 'hu_12-12.json')
+    res = json.load(open(path)); cal = ds.calibrate(res)
+    assert cal and cal['nodes'] == 8 and len(cal['exports']) == 5 and cal['outside'] == 0
+    assert cal['loss_mbb'] - cal['floor_mbb'] < 5 and cal['agree'] > 85
