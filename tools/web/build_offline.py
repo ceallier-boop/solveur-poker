@@ -680,7 +680,7 @@ const DEMO = (() => {
     }
     if (p === '/users/me/placement' && method === 'GET') {            // audit AU7 : mêmes règles que levels.placement_result
       const s = db.sessions[url.searchParams.get('session_id')]; if (!s || !own(s) || s.plan !== 'placement') return [404, { detail: 'test de placement inconnu' }];
-      const ans = s.items.map((i, k) => [ITEMS[i], s.answers[k]]).filter(([it, a]) => it && a).map(([it, a]) => [Math.min(...it.q.stacks_bb), a.points]);
+      const ans = s.items.map((i, k) => [ITEMS[i], s.answers[k]]).filter(([it, a]) => it && a).map(([it, a]) => [it.eff, a.points]);
       const bands = PL.bands.map(([lv, n]) => { const L = LV.levels[lv], got = ans.filter(([e]) => e >= L.depth[0] && e < L.depth[1]).map((x) => x[1]), sum = got.reduce((a, b) => a + b, 0);
         return { level: lv, name: L.name, depth_fr: LV.depth_fr[lv], questions: got.length, expected: n, points: Math.round(sum * 10) / 10, rate_pct: got.length ? Math.round(100 * sum / got.length) : null, passed: got.length > 0 && sum / got.length >= (PL.passes[lv] ?? 2) }; });
       let level = 1; for (const b of bands.slice(0, -1)) if (b.level === level && b.passed) level += 1;
