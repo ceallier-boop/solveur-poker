@@ -56,3 +56,12 @@ Taux de joueurs qui touchent « Débloquer les deux défis du jour », part des 
 1. Valides-tu le partage du §1 (gratuits : Défi du jour, Sous pression, Semaine pleine ; avec publicité : Série parfaite, Range au cordeau) ?
 2. Accord pour démarcher Google Ad Manager, ou une autre régie à étudier ?
 3. Range au cordeau verrouillé : d'accord pour ne compter que les ranges faites un jour où la zone est ouverte (§1, règle 1) ?
+
+## Réalisé (07/11/2026) : tout ce qui ne dépend pas de la régie
+Décisions du 07/11 : partage validé « pour le moment », accord pour démarcher Google Ad Manager (questions : `QUESTIONS_REGIE_2026-11-07.md`), aucune activation avant A14.
+- **Drapeau** `SPINSACADEMY_AD_CHALLENGES=1`, **éteint par défaut** : tant qu'il est éteint (test fermé), rien n'est verrouillé et rien ne change pour le joueur.
+- **Drapeau allumé** : `GET /users/me/challenges` renvoie `ad_zone` (`enabled`, `open`, `kinds`, textes) ; Série parfaite et Range au cordeau portent `zone: "ad"` et, zone fermée, `locked: true` sans action. `POST /sessions` avec `challenge=perfect` est refusé (403) zone fermée ; Range au cordeau ne compte que les ranges des jours ouverts.
+- **Déblocage à la journée** : `POST /users/me/challenges/unlock` avec `tz` et `source` = `watched` (publicité vue) ou `no_fill` (pas de publicité disponible : ouvert quand même) ; table `ad_unlocks` (joueur, jour local), exportée et effacée avec les autres données.
+- **Interface** : zone « Défis avec publicité » sous les défis gratuits, cadenas, un bouton ; hors ligne « Disponible en ligne » ; bloqueur ou refus de consentement : message neutre, zone fermée. Aucune régie branchée : la page attend `window.SpinAds.showRewarded()` ; sans elle, « pas de publicité disponible », donc ouvert.
+- **Pas encore** : régie, consentement, abonné sans publicité (attend le paiement, P14), zone dans la démo autonome (sans objet tant que le drapeau est éteint).
+- Contrôles : `tests/test_challenges.py` (drapeau éteint, verrou et déblocage, refus 403, déblocage par joueur, export et effacement, Range au cordeau compté seulement les jours ouverts).

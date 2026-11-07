@@ -23,6 +23,10 @@ RANGE_BB = 2.0
 RANGE_ACC = 85
 READER_PROFILES = 2
 HISTORY_DAYS = 60
+AD_KINDS = ('perfect', 'range')          # défis avec publicité (décision du 07/11, « pour le moment ») : ouverts à la journée
+AD_ZONE_FR = dict(title_fr='Défis avec publicité', button_fr='Débloquer les deux défis du jour (courte publicité)',
+                  open_fr="Ouverts aujourd'hui", fallback_fr='Disponible avec une courte publicité ou avec l\'offre payante.',
+                  offline_fr='Disponible en ligne')
 SERIES = {'daily': 'challenge_daily', 'perfect': 'challenge_perfect', 'pressure': 'challenge_pressure', 'reader': 'challenge_reader'}
 INFO = {
     'daily': ('Défi du jour', f"Les mêmes 5 mains pour tous aujourd'hui, au chrono 15 s. Réussi à {DAILY_WIN} sur 5. Une seule tentative par jour, tous modes confondus."),
@@ -75,10 +79,15 @@ def daily_attempt(sessions, utc_day):
     return xs[0] if xs else None
 
 
-def build(sessions, ranges_rows, active, day, tz, mode, utc_day, theme_fr=None, all_sessions=None):
+def build(sessions, ranges_rows, active, day, tz, mode, utc_day, theme_fr=None, all_sessions=None, ad_open_days=None):
     """sessions : dicts {id, created_at, plan, size, answered, correct, timeouts} du mode (séries finies ou non) ; all_sessions : idem,
     tous modes (défi du jour) ; ranges_rows : {answered_at, bb_per_100, accuracy_pct} ; active : jours locaux avec activité ;
-    theme_fr : thème de la séance du jour. Renvoie les défis du jour, de la semaine, du mois et l'historique des tentatives"""
+    theme_fr : thème de la séance du jour ; ad_open_days : None quand la zone « Défis avec publicité » est éteinte (test fermé :
+    tout ouvert), sinon les jours locaux où le joueur l'a débloquée (Série parfaite et Range au cordeau fermés les autres jours,
+    et seules les ranges de ces jours comptent pour Range au cordeau). Renvoie les défis du jour, de la semaine, du mois,
+    l'historique des tentatives et l'état de la zone"""
+    if ad_open_days is not None:
+        ranges_rows = [r for r in ranges_rows if r['answered_at'] and td.local_day(r['answered_at'], tz) in ad_open_days]
     start = day - datetime.timedelta(days=day.weekday())
     done = [s for s in sessions if s['answered'] >= s['size']]
     of = lambda kind: sorted([s for s in done if s['plan'] == SERIES[kind]], key=lambda s: s['created_at'])
@@ -130,4 +139,9 @@ def build(sessions, ranges_rows, active, day, tz, mode, utc_day, theme_fr=None, 
         if r['answered_at'] and range_won(r) and (day - td.local_day(r['answered_at'], tz)).days <= HISTORY_DAYS:
             hist.append(dict(kind='range', title_fr=INFO['range'][0], date=td.local_day(r['answered_at'], tz).isoformat(),
                              result_fr=f"{r['bb_per_100']:g} BB pour 100".replace('.', ','), won=True))
-    return dict(daily=daily, weekly=weekly, monthly=monthly, history=sorted(hist, key=lambda h: h['date'], reverse=True)[:30])
+    zone = dict(enabled=ad_open_days is not None, open=ad_open_days is None or day in ad_open_days, kinds=list(AD_KINDS), **AD_ZONE_FR)
+    for c in daily + weekly:
+        if c['kind'] in AD_KINDS:
+            c['zone'] = 'ad'
+            if not zone['open']: c['locked'] = True; c['action'] = None
+    return dict(daily=daily, weekly=weekly, monthly=monthly, history=sorted(hist, key=lambda h: h['date'], reverse=True)[:30], ad_zone=zone)

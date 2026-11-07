@@ -1072,12 +1072,33 @@ async function loadChallenges() {
   $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
   const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
   $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
-  $('ch-list').innerHTML = all.map((x, i) => `<li class="ch ch-${x.status}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
+  const card = (x, i) => `<li class="ch ch-${x.status}${x.locked ? ' ch-locked' : ''}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.locked ? '🔒 ' : x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
     + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">${x.action.type === 'resume' ? 'Reprendre' : 'Relever'}</button>` : '') + `</div>`
     + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}`
-    + (x.next_fr ? `<small class="ch-next">${escT(x.next_fr)}</small>` : '') + '</li>').join('');
+    + (x.next_fr ? `<small class="ch-next">${escT(x.next_fr)}</small>` : '') + '</li>';
+  const z = c.ad_zone, zoned = z && z.enabled;                       // D8 : zone « Défis avec publicité », éteinte par défaut (test fermé)
+  const items = all.map((x, i) => [x, i]);
+  $('ch-list').innerHTML = items.filter(([x]) => !zoned || x.zone !== 'ad').map(([x, i]) => card(x, i)).join('')
+    + (zoned ? `<li class="ch-zone"><h3>${escT(z.title_fr)}</h3>${z.open ? `<small>${escT(z.open_fr)}</small>` : `<button class="secondary small" id="ch-unlock">${escT(z.button_fr)}</button><small class="ch-zone-msg" id="ch-zone-msg" hidden></small>`}</li>`
+      + items.filter(([x]) => x.zone === 'ad').map(([x, i]) => card(x, i)).join('') : '');
   return c;
 }
+// D8 : publicité récompensée. Aucune régie n'est branchée (A14) : sans régie, « pas de publicité disponible », et le repli ouvre
+// les défis. Une régie branchée plus tard fournira window.SpinAds.showRewarded() → 'watched' | 'no_fill' | 'blocked' | 'refused'.
+async function showRewardedAd() {
+  if (!(window.SpinAds && window.SpinAds.showRewarded)) return 'no_fill';
+  try { return await window.SpinAds.showRewarded(); } catch (e) { return 'no_fill'; }
+}
+$('ch-list').addEventListener('click', async (e) => {
+  if (!e.target.closest('#ch-unlock')) return;
+  const z = state.ch && state.ch.ad_zone, msg = $('ch-zone-msg');
+  if (!navigator.onLine) { msg.textContent = z.offline_fr; msg.hidden = false; return; }
+  const r = await showRewardedAd();
+  if (r !== 'watched' && r !== 'no_fill') { msg.textContent = z.fallback_fr; msg.hidden = false; return; }   // bloqueur, refus : message neutre
+  try { await api('/users/me/challenges/unlock', { method: 'POST', body: JSON.stringify({ tz: tzOffset(), source: r }) }); }
+  catch (err) { notify(netMsg(err, "les défis n'ont pas pu s'ouvrir")); return; }
+  loadChallenges();
+});
 $('ch-list').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-i]'); if (!b) return;
   const x = [...state.ch.daily, ...state.ch.weekly, ...state.ch.monthly][+b.dataset.i], a = x.action; state.inToday = false;

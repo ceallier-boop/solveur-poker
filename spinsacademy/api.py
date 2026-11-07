@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS range_attempts(id INTEGER PRIMARY KEY AUTOINCREMENT, 
   spot_id TEXT NOT NULL, hands TEXT NOT NULL, accuracy_pct REAL NOT NULL, bb_per_100 REAL NOT NULL, answered_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS goals(player_id TEXT NOT NULL, mode TEXT NOT NULL, week TEXT NOT NULL, kind TEXT NOT NULL,
   target REAL NOT NULL, updated_at TEXT NOT NULL, PRIMARY KEY(player_id, mode, week, kind));
+CREATE TABLE IF NOT EXISTS ad_unlocks(player_id TEXT NOT NULL, day TEXT NOT NULL, source TEXT NOT NULL, created_at TEXT NOT NULL,
+  PRIMARY KEY(player_id, day));
 CREATE TABLE IF NOT EXISTS player_level(player_id TEXT PRIMARY KEY, level INTEGER NOT NULL, experience TEXT, goal TEXT,
   onboarded_at TEXT, promoted_at TEXT, updated_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS daily_plan(player_id TEXT NOT NULL, mode TEXT NOT NULL, day TEXT NOT NULL, theme_fr TEXT NOT NULL,
@@ -262,6 +264,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             if prev: raise HTTPException(409, "défi du jour déjà tenté aujourd'hui : nouveau défi demain")
             filters, fixed_seed = {}, challenges.daily_seed(utc_day)
         elif body.challenge == 'perfect':                                  # test joueurs 9 : le thème de la séance du jour du joueur
+            with closing(connect()) as con: _ad_open_or_403(con, pid, body.tz)
             filters = dict(my_today(body.mode, body.tz, x_player_id)['steps'][1]['filters'])
         elif body.challenge == 'pressure': filters = {}
         elif body.challenge == 'reader':
@@ -716,6 +719,41 @@ def my_wins(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(
     return wins.build(rows, mode, day, tz, dict(lv) if lv else None)
 
 
+def ad_zone_enabled():
+    """zone « Défis avec publicité » (D8) : éteinte par défaut ; tout reste ouvert pendant le test fermé et tant que la politique
+    de confidentialité n'est pas réécrite et relue (A14)"""
+    return os.environ.get('SPINSACADEMY_AD_CHALLENGES') == '1'
+
+
+def _ad_open_days(con, pid):
+    """None (zone éteinte : tout ouvert) ou les jours locaux où le joueur a débloqué la zone"""
+    if not ad_zone_enabled(): return None
+    return {datetime.date.fromisoformat(r[0]) for r in con.execute('SELECT day FROM ad_unlocks WHERE player_id = ?', (pid,))}
+
+
+def _ad_open_or_403(con, pid, tz):
+    days = _ad_open_days(con, pid)
+    if days is not None and today.local_day(_now(), max(-840, min(840, tz))) not in days:
+        raise HTTPException(403, f"Série parfaite fermée aujourd'hui. {challenges.AD_ZONE_FR['fallback_fr']}")
+
+
+class AdUnlock(BaseModel):
+    tz: int = Field(0, ge=-840, le=840)
+    source: str = Field(..., pattern='^(watched|no_fill)$')   # publicité vue jusqu'au bout, ou pas de publicité disponible (repli : ouvert)
+
+
+@app.post('/users/me/challenges/unlock')
+def unlock_ad_challenges(body: AdUnlock, x_player_id: Optional[str] = Header(None)):
+    """ouvre les défis avec publicité jusqu'à minuit (jour de l'appareil) ; la fin de la publicité est déclarée par la page (la
+    régie web ne la confirme pas au serveur) ; bloqueur ou consentement refusé : la page n'appelle pas cette route"""
+    pid = player(x_player_id, required=True)
+    if not ad_zone_enabled(): raise HTTPException(409, 'les défis avec publicité sont déjà ouverts')
+    day = today.local_day(_now(), body.tz)
+    with closing(connect()) as con, con:
+        con.execute('INSERT OR IGNORE INTO ad_unlocks(player_id, day, source, created_at) VALUES (?, ?, ?, ?)', (pid, day.isoformat(), body.source, _now()))
+    return dict(open=True, day=day.isoformat(), source=body.source)
+
+
 @app.get('/users/me/challenges')
 def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
     """défis du jour, de la semaine et du mois, et historique « Mes défis » (programme de travail, étape 5)"""
@@ -733,7 +771,8 @@ def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = H
     mine = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
     active = {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r['answered_at'], tz) for r in rgs}
     theme = my_today(mode, tz, x_player_id)['theme_fr']                   # série parfaite : le thème de la séance du jour
-    return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date(), theme_fr=theme, all_sessions=sess))
+    with closing(connect()) as con: ad_days = _ad_open_days(con, pid)
+    return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date(), theme_fr=theme, all_sessions=sess, ad_open_days=ad_days))
 
 
 @app.post('/users/me/adaptation/reset')
@@ -755,7 +794,9 @@ def my_export(x_player_id: Optional[str] = Header(None)):
         ranges_done = [dict(r) for r in con.execute('SELECT dataset_version, spot_id, hands, accuracy_pct, bb_per_100, answered_at FROM range_attempts WHERE player_id = ?', (pid,))]
         goals_set = [dict(r) for r in con.execute('SELECT mode, week, kind, target, updated_at FROM goals WHERE player_id = ?', (pid,))]
         plans = [dict(r) for r in con.execute('SELECT mode, day, theme_fr, filters, range_filters, range_spot FROM daily_plan WHERE player_id = ?', (pid,))]
+        unlocks = [dict(r) for r in con.execute('SELECT day, source, created_at FROM ad_unlocks WHERE player_id = ?', (pid,))]
         return dict(player_id=pid, exported_at=_now(), preferences=_prefs(con, pid), sessions=sessions, answers=_player_rows(con, pid), ranges=ranges_done, goals=goals_set, daily_plans=plans,
+                    ad_unlocks=unlocks,
                     level=dict(r) if (r := con.execute('SELECT level, experience, goal, onboarded_at, promoted_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()) else None)
 
 
@@ -769,6 +810,7 @@ def delete_me(x_player_id: Optional[str] = Header(None)):
             con.execute('DELETE FROM attempts WHERE session_id = ?', (sid,)); con.execute('DELETE FROM questions WHERE session_id = ?', (sid,))
         con.execute('DELETE FROM sessions WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM range_attempts WHERE player_id = ?', (pid,))
+        con.execute('DELETE FROM ad_unlocks WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM preferences WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM goals WHERE player_id = ?', (pid,))
         con.execute('DELETE FROM player_level WHERE player_id = ?', (pid,))
