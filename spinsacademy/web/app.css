@@ -542,3 +542,9 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .pl-bands tr:first-child th, .pl-bands tr:first-child td { border-top: 0; } .pl-bands td { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; }
 .pl-bands tr.ok td { color: var(--ok); }
 #st-placement { align-self: flex-start; padding-left: 0; }
+
+/* D8 : zone « Défis avec publicité » (éteinte par défaut) */
+.ch-zone { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.ch-zone h3 { margin: 0; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.ch-zone small { color: var(--muted); font-size: .85rem; }
+.ch-locked { opacity: .75; }
