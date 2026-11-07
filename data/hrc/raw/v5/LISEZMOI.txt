@@ -1,0 +1,9 @@
+Pilote des exports de référence v5, reçu le 07/11/2026 (archive « référence_v5.zip » du porteur).
+Origine des dossiers (noms d'export du porteur) :
+  hu_12-12_r1 = « Hand 1 »     heads-up 12 / 12, Monte-Carlo
+  hu_12-12_r2 = « From Hand 1 » heads-up 12 / 12, Monte-Carlo
+  hu_12-12_r3 = « Hand 4 »     heads-up 12 / 12, Monte-Carlo
+  hu_12-12_r4 = « Hand 6 »     heads-up 12 / 12, Monte-Carlo
+  hu_12-12_r5 = « Hand 7 »     heads-up 12 / 12, Monte-Carlo
+  hu_8-8_r1   = « Hand 5 »     heads-up 8 / 8, MONTE-CARLO (le pilote demandait le moteur « enumerated », exact : à refaire)
+Aucun NOTES.txt reçu (version de la référence, précision, durée).
