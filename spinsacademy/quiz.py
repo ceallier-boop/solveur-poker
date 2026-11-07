@@ -65,6 +65,21 @@ POOR_REGRET_MBB = 100     # v4.4 (audit Lucho) : regret HRC au-delà duquel une 
 POOR_SHARE = 0.5          # spot écarté quand plus de la moitié des mains atteintes sont mal résolues
 
 
+def from_solver(sp):
+    """spot issu de notre solveur (et non d'un export de référence)"""
+    return (sp.get('provenance') or {}).get('source') == 'solveur'
+
+
+def noise_floor(sp):
+    """écart minimal (mBB) entre la meilleure action et la moins chère des vraies erreurs pour qu'une question soit tirée.
+    EV exacte : aucun. Solveur : 20 mBB (grading.TOLERANCE_MBB) sur une décision qui finit à tapis, où il est précis, 150 mBB sur
+    une décision qui mène au flop, où son erreur d'abstraction mesurée est de 66 à 400 mBB par main (champ reliability, G18).
+    Export de référence : 150 mBB, le bruit de son Monte-Carlo."""
+    if sp['ev_reference'] == 'exact': return 0.0
+    if from_solver(sp) and sp.get('reliability') == 'tapis': return grading.TOLERANCE_MBB
+    return REF_NOISE_MBB
+
+
 def _flag_quality(spots):
     """v4.4 (audit des coachs) : marque les spots que HRC a mal résolus, et les mains dont la référence change d'un arbre à
     l'autre pour un même spot à l'écran (tailles de relance différentes ailleurs dans l'arbre) : elles ne sont plus proposées"""
@@ -73,6 +88,7 @@ def _flag_quality(spots):
         live = [(W[NAMES.index(h)], x.get('hrc_self_regret_mbb', 0)) for h, x in sp['hands'].items() if x.get('reach', 0) >= 0.05]
         tot = sum(w for w, _ in live)
         sp['_poor'] = bool(tot) and sp['ev_reference'] != 'exact' and sum(w for w, r in live if r > POOR_REGRET_MBB) / tot > POOR_SHARE
+        if from_solver(sp) and not SOLVER_TEST_BB[0] <= sp['effective_stack_bb'] <= SOLVER_TEST_BB[1]: sp['_poor'] = True      # hors plage du test fermé
         key = (sp['table'], tuple(sp['stacks_bb']), sp['hero'], tuple(history_text(sp)))
         groups.setdefault(key, []).append(sp)
     for g in groups.values():
@@ -302,6 +318,7 @@ def difficulty(gap):
 
 
 MIN_STACK_BB, MAX_STACK_BB = 4, 25
+SOLVER_TEST_BB = (8, 16)  # décision du 05/11 : banque du solveur en test fermé de 8 à 16 BB (docs/produit/DECISIONS_2026-11-05.md)
 REF_NOISE_MBB = 150      # EV HRC : écart médian avec l'EV exacte ≈ 58 mBB, 90e centile ≈ 250 mBB (relecture du 2026-10-13)
 _TEACH = {}
 
@@ -325,7 +342,7 @@ def teachable(sp):
     if sp.get('field'): return list(sp['hands'])                  # mode Field : une question = une main (ou aucune)
     k = id(sp)
     if k not in _TEACH:
-        floor = 0.0 if sp['ev_reference'] == 'exact' else REF_NOISE_MBB
+        floor = noise_floor(sp)
         out = []; bad = sp.get('_unreliable', ())
         for h in NAMES if not sp.get('_poor') else ():
             x = sp['hands'][h]
