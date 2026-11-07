@@ -9,3 +9,12 @@ Origine des dossiers (noms d'export du porteur) :
 Aucun NOTES.txt reçu (version de la référence, précision, durée).
   hu_8-8_enum = « Hand 9 »     heads-up 8 / 8, moteur ENUMERATED, arbre personnalisé (mode ui, 7 nœuds), reçu le 07/11 :
                                remplace « Hand 8 » (enumerated en arbre par défaut « basic », 3 nœuds : refusé, non rangé)
+
+Deuxième envoi, 07/11 (archive « référence_v5_1.zip »), réglage PREFLOP_ADD_ALLIN_SPR = 40 (le pilote était à 7) :
+  hu_8-8_r2      = « Hand 10 »          heads-up 8 / 8, Monte-Carlo (2e répétition ; le 1er était à SPR 7)
+  3w_8-8-8_r1..3 = « Hand 15 à 17 »     3 joueurs 8 / 8 / 8, Monte-Carlo (3 répétitions : il en faut 4 au moins)
+  3w_12-12-12_r1..5 = « Hand 18 à 22 »  3 joueurs 12 / 12 / 12, Monte-Carlo
+  hu_20-20_r1    = « Hand 23 »          heads-up 20 / 20, Monte-Carlo : essai du tapis direct à 20 BB
+  hu_4-4_enum    = « Hand 24 »          heads-up 4 / 4, enumerated, arbre personnalisé (mode ui) : contrôle des conventions
+Refusés, non rangés : « Hand 11 » et « Hand 12 » (heads-up 8 / 8 enumerated), « Hand 13 » et « Hand 14 » (3 joueurs 8 / 8 / 8 enumerated) :
+arbre par défaut « basic » (tapis ou fold), pas l'arbre personnalisé.
