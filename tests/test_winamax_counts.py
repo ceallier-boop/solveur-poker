@@ -75,6 +75,7 @@ def test_counts_written_without_any_pseudo(tmp_path):
     assert rows[('3w', 'SB premier à parler (BTN fold)', 'tapis', '25')] == (60, 60)
     assert rows[('3w', 'BB face au tapis du SB (BTN fold)', 'fold', '25')] == (60, 60)
     assert rows[('3w', 'BTN premier à parler', 'tapis', '25')] == (30, 30)              # le héros (Moi) n'est jamais compté
+    assert rows[('3w', 'BB face au tapis du SB (BTN fold)', 'paie', '25')] == (60, 0)          # action jamais vue : écrite avec k = 0
     assert ('3w', 'BTN premier à parler', 'fold', '25') not in rows and ('3w', 'SB face au tapis du BTN', 'fold', '25') not in rows
     assert rows[('3w', 'BB face au tapis du BTN (SB fold)', 'paie', '25')] == (30, 30)
     vol = list(csv.DictReader(open(out / 'volume.csv', encoding='utf-8')))

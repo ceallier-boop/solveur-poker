@@ -16,7 +16,7 @@ Usage : python winamax_counts.py <dossier ou archive .zip> [--sortie dossier] [-
 import argparse, csv, io, json, math, os, re, sys, zipfile
 from collections import defaultdict
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'                                     # 1.0.1 : action de calibrage écrite même jamais vue (k = 0)
 GRID = (2, 4, 6, 8, 10, 12, 15, 18, 20, 25)          # tapis du moteur (BB) ; au-delà de 25 BB : 25
 FIABLE, INDICATIF = 200, 50                           # occasions par case : facteur à ± 15 % environ à 200, tendance à 50
 MIN_SHOVE, MIN_CALL, K_ANON = 50, 20, 5               # adversaires : occasions minimales ; cases de moins de 5 joueurs regroupées
@@ -234,8 +234,8 @@ def write(cnt, occ, per, meta, out_dir):
     buf = io.StringIO(); w = csv.writer(buf, lineterminator='\n')
     w.writerow(['groupe', 'kind', 'decision', 'action', 'stack', 'n', 'k'])
     for (kind, d, s), n in sorted(occ.items()):
-        acts = sorted({a for (k, dd, a, ss) in cnt if (k, dd, ss) == (kind, d, s)})
-        for a in acts: w.writerow(['field', kind, d, a, s, n, cnt[(kind, d, a, s)][1]])
+        acts = sorted({a for (k, dd, a, ss) in cnt if (k, dd, ss) == (kind, d, s)} | {a for (k, dd, a) in CALIB if (k, dd) == (kind, d)})
+        for a in acts: w.writerow(['field', kind, d, a, s, n, cnt.get((kind, d, a, s), [0, 0])[1]])
     files['comptages.csv'] = buf.getvalue()
     buf = io.StringIO(); w = csv.writer(buf, lineterminator='\n'); w.writerow(['parametre', 'stack', 'n', 'statut'])
     summary = {}
