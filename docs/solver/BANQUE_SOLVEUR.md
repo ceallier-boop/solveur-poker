@@ -326,3 +326,17 @@ Exports reçus : `data/hrc/raw/v5/` (HU 12/12 ×5 Monte-Carlo, HU 8/8 ×1 Monte-
 - Par famille de mains (perte du solveur contre plancher, mBB), seuls écarts nets : BB face à l'ouverture, Kx dépareillés 60 (plancher 10) et connecteurs assortis 33 (25) ; SB face à l'iso, autres dépareillées 16 (6). Partout ailleurs, au plancher.
 - HU 8/8 (une seule répétition Monte-Carlo, pas d'export « enumerated ») : perte 8,1 mBB (plancher 6,0), accord 86,5 %, TV 14,3 %. Mêmes écarts de sens : SB relance 1,6 % contre 0 % ; BB isole 21,2 % contre 13,7 % ; BB se couche 24,5 % contre 29,5 % face à l'ouverture.
 - Décisions face à un tapis : TV 1 à 2 %, accord 97 à 100 %, perte au niveau du plancher (0,4 à 8 mBB) : les « décisions à tapis » de la banque sont celles de la référence.
+
+### G19 (suite) : export HU 8/8 « enumerated » du 07/11/2026 (`data/hrc/raw/v5/hu_8-8_enum`)
+
+Export exact (moteur enumerated, arbre personnalisé `ui`, mêmes ouvertures et mêmes réglages préflop que les Monte-Carlo ; empreinte préflop `98433a9d`, car elle contient le moteur). 7 nœuds au lieu de 8 : la branche `SB-raise2` (le SB ouvre à 2 BB) n'est pas développée (l'action R2 n'a pas de nœud fils) ; un nœud `SB-fold` s'ajoute. Les EV sont absolues (le fold vaut le tapis restant) : comparées à celles des Monte-Carlo après retrait de l'EV du fold.
+
+Contre l'exact, sur les 6 nœuds communs :
+
+| | TV | accord | perte (plancher de l'exact 8,3 mBB) |
+|---|---|---|---|
+| solveur (s2) | 20,3 % | 79,8 % | 36,0 mBB |
+| Monte-Carlo, 1 répétition | 22,6 % | 77,2 % | 34,2 mBB |
+| solveur contre Monte-Carlo (G19) | 14,3 % | 86,5 % | 8,1 mBB |
+
+Le solveur et le Monte-Carlo sont proches l'un de l'autre et s'écartent ensemble de l'exact (SB face à l'iso : fold 47,5 % dans l'exact, 69,9 % solveur, 68,2 % Monte-Carlo ; BB face au tapis du SB après l'iso : fold 37,4 % exact, 4,3 % solveur, 3,3 % Monte-Carlo). Le solveur et le Monte-Carlo ont aussi le même écart d'EV avec l'exact sur des nœuds sans jeu après le flop (call du tapis après iso : +1,8 et +1,9 BB par rapport au fold), ce qu'aucune abstraction postflop ne peut expliquer : arbre différent (branche `SB-raise2` absente) ou convention d'EV différente. **Aucune conclusion sur la justesse du solveur ou de la référence tant que cet export n'est pas recoupé par un cas sans jeu postflop** (HU 4/4 enumerated, où le jeu est un pur calcul d'équité : nos résultats doivent y coïncider presque exactement, sinon c'est une convention).
