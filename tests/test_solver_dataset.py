@@ -139,8 +139,7 @@ def test_reliability_follows_the_tree():
 
 
 def test_published_bank_carries_reliability(tmp_path):
-    runs = os.path.join(quiz.ROOT, 'data', 'solver', 'runs')
-    m = ds.publish('test-rel', str(tmp_path / 'out'), [(8.0, 4.0)], params=FAST, runs=runs, log=None)
+    m = ds.publish('test-rel', str(tmp_path / 'out'), [(8.0, 4.0)], params=FAST, runs=str(tmp_path / 'runs'), log=None)
     assert m['reliability']['tapis']['reliable_bb'] == [8, 16] and m['reliability']['spot_field'] == 'reliability'
     spots = [json.loads(l) for l in open(tmp_path / 'out' / 'test-rel' / 'spots.jsonl')]
     assert all(sp['reliability'] in ('tapis', 'flop') for sp in spots)
