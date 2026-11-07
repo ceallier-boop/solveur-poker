@@ -8,8 +8,10 @@ from fastapi.testclient import TestClient
 from spinsacademy import catalog, quiz
 
 GTO = os.path.join(quiz.DATASETS, 'gto_preflop')
-CLOSED_TEST = 'gto_preflop/2026.11.02-s2'
-CLOSED_TEST_SHA = '4656a71d3f2cff0a6b0a4bdf2a8bdab8ee3fd2277ee6b0a414e469234bed4a12'   # empreinte des spots au 03/11 : une version est immuable
+CLOSED_TEST = 'gto_preflop/2026.11.07-s2'                                              # P15 (07/11) : servie de 8 à 16 BB
+CLOSED_TEST_SHA = '733d9172a18c7f4a0a6d318d42812f56703f74735b6438175dc2ee146a94cb5b'   # empreinte des spots au 07/11 : une version est immuable
+PREVIOUS = 'gto_preflop/2026.11.02-s2'
+PREVIOUS_SHA = '4656a71d3f2cff0a6b0a4bdf2a8bdab8ee3fd2277ee6b0a414e469234bed4a12'      # au 03/11
 
 
 def manifest(version):
@@ -41,8 +43,26 @@ def test_solver_bank_manifest_and_fingerprint(version):
 
 
 def test_closed_test_bank_fingerprint_is_pinned():
-    assert manifest(CLOSED_TEST.split('/')[1])['spots_sha256'] == CLOSED_TEST_SHA, \
-        'la banque du test fermé a changé sous la même version : une nouvelle banque doit porter une nouvelle version'
+    for ref, sha in ((CLOSED_TEST, CLOSED_TEST_SHA), (PREVIOUS, PREVIOUS_SHA)):
+        assert manifest(ref.split('/')[1])['spots_sha256'] == sha, \
+            f'{ref} a changé sous la même version : une nouvelle banque doit porter une nouvelle version'
+
+
+def _spots(ref):
+    with open(os.path.join(GTO, ref.split('/')[1], 'spots.jsonl'), encoding='utf-8') as f:
+        return {s['spot_id']: s for s in map(json.loads, f)}
+
+
+def test_closed_test_bank_is_the_previous_one_plus_reliability():
+    """2026.11.07-s2 = 2026.11.02-s2 (mêmes 1 780 spots) + reliability (« tapis » ou « flop ») et flop_pot, rien d'autre"""
+    new, old = _spots(CLOSED_TEST), _spots(PREVIOUS)
+    assert len(new) == 1780 and new.keys() == old.keys()
+    changed = {f for k in new for f in set(new[k]) | set(old[k]) if new[k].get(f) != old[k].get(f)}
+    assert changed <= {'reliability', 'flop_pot'}, changed
+    assert {s['reliability'] for s in new.values()} == {'tapis', 'flop'}
+    rel = manifest(CLOSED_TEST.split('/')[1])['reliability']
+    assert rel['spot_field'] == 'reliability' and rel['tapis']['reliable_bb'] == [8, 16] and rel['flop']['reliable_bb'] is None
+    assert tuple(rel['tapis']['reliable_bb']) == quiz.SOLVER_TEST_BB, 'la plage servie (quiz.SOLVER_TEST_BB) suit le manifeste'
 
 
 @pytest.fixture()
