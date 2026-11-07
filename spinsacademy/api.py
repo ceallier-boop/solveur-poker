@@ -230,7 +230,7 @@ def _recent(con, pid):
     """(spots, mains, première main de la dernière série) des dernières questions servies au joueur"""
     if pid is None: return set(), set(), None
     rows = con.execute('SELECT q.spot_id, q.hand, q.idx FROM questions q JOIN sessions s ON s.id = q.session_id WHERE s.player_id = ? '
-                       'ORDER BY s.created_at DESC, q.idx LIMIT ?', (pid, RECENT_QUESTIONS)).fetchall()
+                       'ORDER BY s.created_at DESC, s.rowid DESC, q.idx LIMIT ?', (pid, RECENT_QUESTIONS)).fetchall()
     first = next((r['hand'] for r in rows if r['idx'] == 0), None)
     return {r['spot_id'] for r in rows}, {r['hand'] for r in rows}, first
 

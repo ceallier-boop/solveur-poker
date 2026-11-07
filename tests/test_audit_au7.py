@@ -21,7 +21,7 @@ def _play(client, mode):
     effs = []; ver = s['dataset_version']; _, spots = quiz.load(ver)
     for i in range(10):
         q = client.get(f"/quiz/next?session_id={s['session_id']}", headers=H).json()['question']
-        effs.append(min(spots[q['spot_id']]['stacks_bb']))
+        effs.append(spots[q['spot_id']]['effective_stack_bb'])          # comme le serveur (levels) : tapis effectif, pas le plus petit de la table
         v = {o['id']: quiz.correct(ver, q['spot_id'], q['hand'], o['id'])['verdict'] for o in q['options']}
         want = 'correct' if mode == 'best' else 'erreur'
         pick = next((a for a, x in v.items() if x == want), q['options'][0]['id'])

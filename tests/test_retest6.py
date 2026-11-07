@@ -78,11 +78,31 @@ def test_exploit_texts():
 
 
 def test_series_avoid_recent_hands(client):
-    firsts = []; overlap = 0; prev = set()
-    for k in range(4):
-        s = client.post('/sessions', json={'mode': 'gto'}, headers=H).json(); cur = set()
-        for i in range(s['size']):
-            q = client.get(f"/quiz/next?session_id={s['session_id']}").json()['question']; cur.add((q['spot_id'], q['hand']))
-            if i == 0: firsts.append(q['hand'])
-        overlap += len(cur & prev); prev |= cur
-    assert overlap == 0 and len(set(firsts)) == len(firsts)
+    """règle de _least_repeated : aucune situation+main répétée d'une série à l'autre, et jamais la première main de la série
+    précédente. Graines fixes (10 joueurs, 4 séries chacun) : le résultat ne dépend pas du hasard du tirage. Les 4 premières
+    mains toutes différentes ne sont pas promises (seule la dernière série compte pour la première main)"""
+    for player in range(10):
+        h = {'X-Player-Id': f'recent-hands-{player:04d}'}; firsts = []; overlap = 0; prev = set()
+        for k in range(4):
+            s = client.post('/sessions', json={'mode': 'gto', 'seed': 1000 * player + k}, headers=h).json(); cur = set()
+            for i in range(s['size']):
+                q = client.get(f"/quiz/next?session_id={s['session_id']}").json()['question']; cur.add((q['spot_id'], q['hand']))
+                if i == 0: firsts.append(q['hand'])
+            overlap += len(cur & prev); prev |= cur
+        assert overlap == 0, (player, overlap)
+        assert all(a != b for a, b in zip(firsts, firsts[1:])), (player, firsts)
+
+
+def test_recent_first_hand_is_the_latest_series_even_within_one_second(client):
+    """deux séries créées dans la même seconde : « la dernière série » est la plus récente insérée, pas une plus ancienne
+    (avant le 07/11, l'égalité de created_at renvoyait parfois la première main d'une série plus ancienne)"""
+    import sqlite3
+    from spinsacademy import api
+    h = {'X-Player-Id': 'same-second-0001'}; firsts = []
+    for k in range(3):
+        sid = client.post('/sessions', json={'mode': 'gto', 'seed': 50 + k}, headers=h).json()['session_id']
+        firsts.append(client.get(f"/quiz/next?session_id={sid}").json()['question']['hand'])
+    con = sqlite3.connect(api.db_path()); con.row_factory = sqlite3.Row
+    con.execute("UPDATE sessions SET created_at = '2026-11-07T10:00:00+00:00' WHERE player_id = ?", (h['X-Player-Id'],)); con.commit()
+    assert api._recent(con, h['X-Player-Id'])[2] == firsts[-1]
+    con.close()
