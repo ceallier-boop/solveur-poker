@@ -130,13 +130,17 @@ MAX_STACK = 15   # au-delà, la référence n'a plus de tapis en premier (18 BB 
 
 
 def read_counts(path):
-    """comptages.csv de winamax_counts.py -> liste (kind, décision, stack, n, k) des décisions de DECISIONS, 4 à 15 BB"""
+    """comptages.csv de winamax_counts.py -> liste (kind, décision, stack, n, k) des décisions de DECISIONS, 4 à 15 BB.
+    Une action jamais vue dans une case n'a pas de ligne (fichiers 1.0.0) : ses occasions comptent avec k = 0"""
     import csv, winamax_counts as wc
-    out = []
+    occ, k = {}, {}
     for r in csv.DictReader(open(path, encoding='utf-8')):
-        c = wc.CALIB.get((r['kind'], r['decision'], r['action']))
-        S = int(r['stack'])
-        if c and 4 <= S <= MAX_STACK and int(r['n']) > 0: out.append((r['kind'], c[1], S, int(r['n']), int(r['k'])))
+        key = (r['kind'], r['decision'], int(r['stack']))
+        occ[key] = int(r['n']); k[key + (r['action'],)] = int(r['k'])
+    out = []
+    for (kind, d, S), n in sorted(occ.items()):
+        for (kk, dd, a), (_, name) in wc.CALIB.items():
+            if (kk, dd) == (kind, d) and 4 <= S <= MAX_STACK and n > 0: out.append((kind, name, S, n, k.get((kind, d, S, a), 0)))
     return out
 
 
@@ -148,11 +152,14 @@ def report(counts):
         for S in sorted({c[2] for c in counts}):
             r = [x for x in rows_from_counts([c for c in counts if c[2] == S]) if x[0] == typ and 0 < x[1] < 1]
             f = fit(r).get(typ)
-            if not f: continue
+            if not f or f['n'] < 5: continue                          # moins de 5 occasions : seulement dans le facteur commun
             b, se = f['beta'][0], f['se'][0]
             prior = round(pf.factors(pf.DEFAULT, S)[typ], 2)
             lines.append(f"{typ:5s} | {S:5d} | {int(f['n']):9d} | {np.exp(b):.2f} ({np.exp(b - 1.96 * se):.2f} à {np.exp(b + 1.96 * se):.2f}) | {prior}")
     r = rows_from_counts(counts)
+    for typ, f in fit(r).items():
+        b, se = f['beta'][0], f['se'][0]
+        lines.append(f"{typ} : facteur commun de 4 à {MAX_STACK} BB {np.exp(b):.2f} ({np.exp(b - 1.96 * se):.2f} à {np.exp(b + 1.96 * se):.2f}), {int(f['n'])} occasions")
     for typ, f in fit(r, slope=True).items():
         lines.append(f"{typ} : pente sur le tapis, facteur à 8 BB {np.exp(f['beta'][0]):.2f}, × {np.exp(f['beta'][1]):.2f} par 4 BB de plus ({int(f['n'])} occasions)")
     return '\n'.join(lines)
