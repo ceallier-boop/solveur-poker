@@ -3,6 +3,9 @@
   python tools/web/e2e_audit_helper.py seed <player_id>       historique réel dans la base (SPINSACADEMY_DB) : 4 séries sur
                                                               4 jours, la semaine passée à 15 BB perdus pour 100, celle-ci à 5
   python tools/web/e2e_audit_helper.py depth <level> <spot_id>…  tapis effectif et tranche du niveau de chaque spot servi (JSON)
+  python tools/web/e2e_audit_helper.py pick <best|worst> <spot_id> <main>   option la moins (best) ou la plus (worst) coûteuse (JSON)
+  python tools/web/e2e_audit_helper.py picks                  la même chose en continu : une demande « best|worst spot main »
+                                                              par ligne sur l'entrée, une réponse JSON par ligne (données chargées une fois)
 """
 import datetime, json, os, sqlite3, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -34,6 +37,16 @@ def depth(level, spot_ids):
     print(json.dumps({'band': [lo, hi], 'spots': out}))
 
 
+def pick(which, spot_id, hand):
+    _, spots = quiz.load(V)
+    cost = {a['id']: quiz.correct(V, spot_id, hand, a['id'])['regret_mbb'] for a in spots[spot_id]['actions']}
+    best = (min if which == 'best' else max)(cost, key=cost.get)
+    return {'action_id': best, 'regret_mbb': cost[best], 'verdict': quiz.correct(V, spot_id, hand, best)['verdict']}
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'seed': seed(sys.argv[2])
+    elif sys.argv[1] == 'pick': print(json.dumps(pick(*sys.argv[2:5])))
+    elif sys.argv[1] == 'picks':
+        for line in sys.stdin: print(json.dumps(pick(*line.split())), flush=True)
     else: depth(int(sys.argv[2]), sys.argv[3:])
