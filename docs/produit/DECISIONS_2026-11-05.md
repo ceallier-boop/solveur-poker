@@ -69,3 +69,11 @@ Repli : abonné sans publicité ; pas de publicité disponible = ouvert ; bloque
 | Mode exploitant | présenté à l'onboarding, verrouillé après le test fermé | oui |
 
 Conséquence : la révision espacée est aujourd'hui intégrée à la séance du jour (`today.REVIEW_CAP`) ; pour un joueur gratuit, ces places passent à des nouvelles questions.
+
+## Réponses du 07/11
+
+- **Partage des défis gratuit / publicité** (Défi du jour, Sous pression, Semaine complète gratuits ; Série parfaite et Range au cordeau avec publicité ; Lecteur de vilain payant) : **validé « pour le moment »**, à revoir après le test fermé. Tout reste ouvert, sans publicité, pendant le test fermé.
+- **Frontière gratuit / payant** (gratuit : séance du jour, modes GTO, progression de base ; payant : mode exploitant, révision espacée, statistiques détaillées) : **validée « pour le moment »**, même réserve. Rien n'est verrouillé dans le code avant le paiement (P14).
+- **Régie publicitaire :** accord du porteur pour **démarcher Google Ad Manager** (prise de contact et conditions du format récompensé pour un contenu lié au poker). Aucune activation avant la réécriture de la politique de confidentialité et sa relecture (A14).
+- **Règle des désaccords** (accepter aussi l'action que jouent les trois experts quand le solveur en préfère une autre) : **rappel demandé**, décision en attente.
+- **Winamax :** envoi des cinq fichiers de comptages toujours attendu.
