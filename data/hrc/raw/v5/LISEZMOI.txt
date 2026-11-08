@@ -44,3 +44,25 @@ Troisième envoi, 08/11 (archive « référence_v5_1.zip », 39 exports : « Han
   3w_6-6-6_r1  = « Hand 46 »  3 joueurs 6 / 6 / 6, Monte-Carlo, SPR 40
   3w_4-4-4_r1  = « Hand 47 »  3 joueurs 4 / 4 / 4, Monte-Carlo, SPR 40
   3w_2-2-2_r1  = « Hand 48 »  3 joueurs 2 / 2 / 2, Monte-Carlo, SPR 40
+
+Quatrième envoi, 08/11 (archive « référence_v5_2.zip »), exports demandés par Moteur GTO, SPR 40 :
+  hu_25-25_r2 = « Hand 1 »  Monte-Carlo, SPR 40
+  hu_25-25_r3 = « Hand 2 »  Monte-Carlo, SPR 40
+  hu_25-25_r4 = « Hand 3 »  Monte-Carlo, SPR 40
+  hu_20-20_r3 = « Hand 4 »  Monte-Carlo, SPR 40
+  hu_20-20_r4 = « Hand 5 »  Monte-Carlo, SPR 40
+  hu_16-16_r2 = « Hand 6 »  Monte-Carlo, SPR 40
+  hu_16-16_r3 = « Hand 7 »  Monte-Carlo, SPR 40
+  hu_16-16_r4 = « Hand 8 »  Monte-Carlo, SPR 40
+  3w_16-16-16_r2 = « Hand 9 »  Monte-Carlo, SPR 40
+  3w_16-16-16_r3 = « Hand 10 »  Monte-Carlo, SPR 40
+  3w_16-16-16_r4 = « Hand 11 »  Monte-Carlo, SPR 40
+  3w_16-16-16_r5 = « Hand 12 »  Monte-Carlo, SPR 40
+  3w_25-25-25_r2 = « Hand 13 »  Monte-Carlo, SPR 40
+  3w_25-25-25_r3 = « Hand 14 »  Monte-Carlo, SPR 40
+  3w_25-25-25_r4 = « Hand 15 »  Monte-Carlo, SPR 40
+  hu_8-8_enum : « Hand 22,30,31,32 » identiques entre eux ; identiques à l'export déjà rangé
+  hu_6-6_enum = « Hand 27 » (copies identiques : 27,28,29)  enumerated, arbre personnalisé
+  3w_4-4-4_enum = « Hand 33 » (copies identiques : 33,34,35,36)  enumerated, arbre personnalisé
+Refusés, non rangés : Hand 16 à 21, 23 à 26 (enumerated en arbre par défaut « basic »).
+L'enumerated heads-up 8 / 8 a toujours 7 nœuds (la branche SB-raise2 n'est pas développée avec ce moteur).
