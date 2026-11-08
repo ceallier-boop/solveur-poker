@@ -350,3 +350,31 @@ Le solveur et le Monte-Carlo sont proches l'un de l'autre et s'écartent ensembl
 - **3 joueurs 12/12/12 (5 répétitions)** : 34 nœuds comparés, TV 14,1 %, accord 88,7 %, perte 20,3 mBB (plancher de la référence 26,0), 0,2 % hors référence. Contre une répétition seule : TV 14,4 à 14,8 %, perte 31 à 36 mBB (plancher 24 à 27). Écarts de fréquence à noter, le BB face à l'ouverture du BTN : après un call du SB, il paie 30,2 % chez nous contre 17,1 % dans la référence (et se couche 52,2 % contre 63,3 %) ; quand le SB a couché, il se couche 52,6 % chez nous contre 39,7 % (et paie 26,1 % contre 42,7 %). Détail par nœud : `tools/solver/calibrate_v5.py`.
 - **3 joueurs 8/8/8 (3 répétitions)** : 32 nœuds, TV 13,1 %, accord 90,3 %, perte 30,6 mBB (plancher 38,8), 0 % hors référence.
 - **HU 20/20 (1 répétition, SPR 40)** : le solveur voit les mêmes 12 nœuds et les mêmes actions (tapis direct à la racine inclus), 0 % hors référence ; TV 17,7 %, accord 83,5 %, perte 23,1 mBB (plancher 15,7).
+
+### G19 (suite 3) : courbe de calage profondeur par profondeur (08/11/2026)
+
+Outil : `tools/solver/calibration_curve.py` (résultat : `data/solver/g17/courbe_calage_s2.json`). Solveur de `2026.11.02-s2` (sans correction) contre les exports de référence v5 à tapis égaux, 27 configurations ; perte et plancher en mBB par main, séparées selon `reliability` (nœuds « tapis » / « flop »). Les exports aux mêmes nœuds et actions sont moyennés ensemble (HU 12 : les 5 à SPR 7 et celui à SPR 40, qui s'écarte de leur moyenne de 9 à 17 % de TV, comme un SPR 7 s'écarte de la moyenne des quatre autres, 11 à 17 %).
+
+| Tapis | Exports | Décisions « tapis » : TV / accord / perte (plancher) | Décisions « flop » : TV / accord / perte (plancher) | Bruit de la référence (TV, perte) |
+|---|---|---|---|---|
+| HU 2 | 1 | 0,1 / 99,8 / 0,7 (0,0) | 7,8 / 92,8 / 0,9 (0,3) | |
+| HU 4 | 1 | 1,4 / 97,9 / 0,2 (0,3) | 9,6 / 91,4 / 19,2 (8,6) | |
+| HU 6 | 1 | 0,8 / 99,4 / 0,5 (0,3) | 15,7 / 86,8 / 8,6 (6,1) | |
+| HU 8 | 3 | 1,4 / 99,2 / 1,4 (1,1) | 20,0 / 86,3 / 7,3 (8,6) | 11,9 %, 8,8 |
+| HU 10 | 1 | 2,0 / 98,6 / 2,4 (2,0) | 22,0 / 80,2 / 12,1 (6,7) | |
+| HU 12 | 6 | 2,0 / 98,3 / 2,3 (3,2) | 21,2 / 83,4 / 8,4 (7,4) | 10,1 %, 7,2 |
+| HU 14 | 1 | 2,4 / 97,0 / 5,2 (4,5) | 23,9 / 78,2 / 15,3 (8,4) | |
+| HU 16 | 1 | 4,4 / 95,3 / 10,2 (8,4) | 25,3 / 77,2 / 19,1 (9,3) | |
+| HU 18 | 1 | 3,8 / 97,4 / 9,1 (14,0) | 24,1 / 77,5 / 19,6 (10,1) | |
+| HU 20 | 2 | 4,9 / 95,7 / 19,9 (22,5) | 24,0 / 78,7 / 21,6 (15,5) | 15,3 %, 33,1 |
+| HU 22 | 1 | 6,0 / 94,8 / 49,5 (33,9) | 27,6 / 72,5 / 28,9 (16,1) | |
+| HU 25 | 1 | 5,3 / 96,6 / 59,7 (43,7) | 27,9 / 72,0 / 30,8 (17,4) | |
+| 3 j. 8 | 4 | 5,2 / 97,6 / 7,8 (29,8) | 18,2 / 86,4 / 45,0 (47,1) | 10,8 %, 68,5 |
+| 3 j. 12 | 6 | 4,6 / 97,4 / 10,4 (27,7) | 21,3 / 81,6 / 27,8 (25,1) | 9,9 %, 49,0 |
+| 3 j. 16 | 1 | 5,7 / 96,0 / 33,2 (53,8) | 23,9 / 78,1 / 56,1 (33,4) | |
+| 3 j. 25 | 1 | 8,6 / 93,1 / 141,4 (193,5) | 23,0 / 78,9 / 94,9 (56,0) | |
+
+Lecture :
+- Décisions « tapis » : TV 0,1 à 2 % jusqu'à HU 12, 4 à 6 % de HU 16 à 25, accord 93 à 100 %, perte au niveau du plancher partout. Plage fiable confirmée : HU jusqu'à 16 BB (perte ≤ 10 mBB), 3 joueurs jusqu'à 16 BB ; au-delà, la perte monte avec le bruit de la référence lui-même (plancher de 34 à 44 mBB à HU 22-25, 150 à 190 à 3 joueurs 22-25) et on ne peut plus la distinguer du plancher.
+- Décisions « flop » : TV de 8 % (HU 2) à 28 % (HU 25), accord de 93 à 72 % ; perte au-dessus du plancher de 0 à 1 mBB jusqu'à HU 8, de 1 à 5 mBB à HU 10-12, de 7 à 13 mBB à HU 14-25. L'écart avec la référence croît avec la profondeur, et il est du sens du défaut des pots relancés.
+- Bruit d'un export isolé contre la moyenne des autres : HU 8 et 12, perte de 7 à 9 mBB ; HU 20, 33 mBB ; 3 joueurs, 49 à 69 mBB. C'est le seuil à retenir pour les configurations à une seule répétition (et non 100 mBB) : HU jusqu'à 18 BB, plancher + 15 mBB ; HU 20 à 25, plancher + 35 ; 3 joueurs, plancher + 70.

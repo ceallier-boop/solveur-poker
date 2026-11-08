@@ -1,0 +1,620 @@
+[
+ {
+  "config": "hu_2-2",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 4,
+   "tv": 5.2,
+   "agree": 95.2,
+   "loss": 0.8,
+   "floor": 0.2
+  },
+  "tapis": {
+   "nodes": 2,
+   "tv": 0.1,
+   "agree": 99.8,
+   "loss": 0.7,
+   "floor": 0.0
+  },
+  "flop": {
+   "nodes": 2,
+   "tv": 7.8,
+   "agree": 92.8,
+   "loss": 0.9,
+   "floor": 0.3
+  }
+ },
+ {
+  "config": "hu_4-4",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 4,
+   "tv": 6.8,
+   "agree": 93.6,
+   "loss": 12.9,
+   "floor": 5.9
+  },
+  "tapis": {
+   "nodes": 2,
+   "tv": 1.4,
+   "agree": 97.9,
+   "loss": 0.2,
+   "floor": 0.3
+  },
+  "flop": {
+   "nodes": 2,
+   "tv": 9.6,
+   "agree": 91.4,
+   "loss": 19.2,
+   "floor": 8.6
+  }
+ },
+ {
+  "config": "hu_6-6",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 6,
+   "tv": 11.6,
+   "agree": 90.3,
+   "loss": 6.4,
+   "floor": 4.5
+  },
+  "tapis": {
+   "nodes": 3,
+   "tv": 0.8,
+   "agree": 99.4,
+   "loss": 0.5,
+   "floor": 0.3
+  },
+  "flop": {
+   "nodes": 3,
+   "tv": 15.7,
+   "agree": 86.8,
+   "loss": 8.6,
+   "floor": 6.1
+  }
+ },
+ {
+  "config": "hu_8-8",
+  "exports": 3,
+  "outside": 0.0,
+  "all": {
+   "nodes": 8,
+   "tv": 14.1,
+   "agree": 90.4,
+   "loss": 5.4,
+   "floor": 6.2
+  },
+  "tapis": {
+   "nodes": 4,
+   "tv": 1.4,
+   "agree": 99.2,
+   "loss": 1.4,
+   "floor": 1.1
+  },
+  "flop": {
+   "nodes": 4,
+   "tv": 20.0,
+   "agree": 86.3,
+   "loss": 7.3,
+   "floor": 8.6
+  },
+  "noise": {
+   "tv": 11.9,
+   "loss": 8.8
+  }
+ },
+ {
+  "config": "hu_10-10",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 8,
+   "tv": 15.4,
+   "agree": 86.4,
+   "loss": 8.9,
+   "floor": 5.2
+  },
+  "tapis": {
+   "nodes": 4,
+   "tv": 2.0,
+   "agree": 98.6,
+   "loss": 2.4,
+   "floor": 2.0
+  },
+  "flop": {
+   "nodes": 4,
+   "tv": 22.0,
+   "agree": 80.2,
+   "loss": 12.1,
+   "floor": 6.7
+  }
+ },
+ {
+  "config": "hu_12-12",
+  "exports": 6,
+  "outside": 0.0,
+  "all": {
+   "nodes": 8,
+   "tv": 14.6,
+   "agree": 88.5,
+   "loss": 6.3,
+   "floor": 6.0
+  },
+  "tapis": {
+   "nodes": 4,
+   "tv": 2.0,
+   "agree": 98.3,
+   "loss": 2.3,
+   "floor": 3.2
+  },
+  "flop": {
+   "nodes": 4,
+   "tv": 21.2,
+   "agree": 83.4,
+   "loss": 8.4,
+   "floor": 7.4
+  },
+  "noise": {
+   "tv": 10.1,
+   "loss": 7.2
+  }
+ },
+ {
+  "config": "hu_14-14",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 10,
+   "tv": 16.4,
+   "agree": 84.8,
+   "loss": 11.8,
+   "floor": 7.0
+  },
+  "tapis": {
+   "nodes": 5,
+   "tv": 2.4,
+   "agree": 97.0,
+   "loss": 5.2,
+   "floor": 4.5
+  },
+  "flop": {
+   "nodes": 5,
+   "tv": 23.9,
+   "agree": 78.2,
+   "loss": 15.3,
+   "floor": 8.4
+  }
+ },
+ {
+  "config": "hu_16-16",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 10,
+   "tv": 17.9,
+   "agree": 83.6,
+   "loss": 16.0,
+   "floor": 9.0
+  },
+  "tapis": {
+   "nodes": 5,
+   "tv": 4.4,
+   "agree": 95.3,
+   "loss": 10.2,
+   "floor": 8.4
+  },
+  "flop": {
+   "nodes": 5,
+   "tv": 25.3,
+   "agree": 77.2,
+   "loss": 19.1,
+   "floor": 9.3
+  }
+ },
+ {
+  "config": "hu_18-18",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 10,
+   "tv": 17.0,
+   "agree": 84.5,
+   "loss": 15.9,
+   "floor": 11.5
+  },
+  "tapis": {
+   "nodes": 5,
+   "tv": 3.8,
+   "agree": 97.4,
+   "loss": 9.1,
+   "floor": 14.0
+  },
+  "flop": {
+   "nodes": 5,
+   "tv": 24.1,
+   "agree": 77.5,
+   "loss": 19.6,
+   "floor": 10.1
+  }
+ },
+ {
+  "config": "hu_20-20",
+  "exports": 2,
+  "outside": 0.0,
+  "all": {
+   "nodes": 12,
+   "tv": 17.3,
+   "agree": 84.7,
+   "loss": 21.0,
+   "floor": 17.9
+  },
+  "tapis": {
+   "nodes": 6,
+   "tv": 4.9,
+   "agree": 95.7,
+   "loss": 19.9,
+   "floor": 22.5
+  },
+  "flop": {
+   "nodes": 6,
+   "tv": 24.0,
+   "agree": 78.7,
+   "loss": 21.6,
+   "floor": 15.5
+  },
+  "noise": {
+   "tv": 15.3,
+   "loss": 33.1
+  }
+ },
+ {
+  "config": "hu_22-22",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 12,
+   "tv": 20.0,
+   "agree": 80.3,
+   "loss": 36.1,
+   "floor": 22.3
+  },
+  "tapis": {
+   "nodes": 6,
+   "tv": 6.0,
+   "agree": 94.8,
+   "loss": 49.5,
+   "floor": 33.9
+  },
+  "flop": {
+   "nodes": 6,
+   "tv": 27.6,
+   "agree": 72.5,
+   "loss": 28.9,
+   "floor": 16.1
+  }
+ },
+ {
+  "config": "hu_25-25",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 12,
+   "tv": 19.9,
+   "agree": 80.8,
+   "loss": 41.1,
+   "floor": 26.8
+  },
+  "tapis": {
+   "nodes": 6,
+   "tv": 5.3,
+   "agree": 96.6,
+   "loss": 59.7,
+   "floor": 43.7
+  },
+  "flop": {
+   "nodes": 6,
+   "tv": 27.9,
+   "agree": 72.0,
+   "loss": 30.8,
+   "floor": 17.4
+  }
+ },
+ {
+  "config": "3w_4-4-4",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 18,
+   "tv": 11.8,
+   "agree": 88.2,
+   "loss": 53.0,
+   "floor": 38.7
+  },
+  "tapis": {
+   "nodes": 12,
+   "tv": 8.6,
+   "agree": 92.0,
+   "loss": 40.6,
+   "floor": 31.1
+  },
+  "flop": {
+   "nodes": 6,
+   "tv": 14.6,
+   "agree": 84.7,
+   "loss": 64.1,
+   "floor": 45.4
+  }
+ },
+ {
+  "config": "3w_6-6-6",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 30,
+   "tv": 12.8,
+   "agree": 88.2,
+   "loss": 60.8,
+   "floor": 51.5
+  },
+  "tapis": {
+   "nodes": 20,
+   "tv": 7.1,
+   "agree": 93.0,
+   "loss": 39.9,
+   "floor": 33.1
+  },
+  "flop": {
+   "nodes": 10,
+   "tv": 16.5,
+   "agree": 85.0,
+   "loss": 74.4,
+   "floor": 63.5
+  }
+ },
+ {
+  "config": "3w_8-8-8",
+  "exports": 4,
+  "outside": 0.0,
+  "all": {
+   "nodes": 32,
+   "tv": 12.9,
+   "agree": 91.0,
+   "loss": 29.8,
+   "floor": 40.0
+  },
+  "tapis": {
+   "nodes": 21,
+   "tv": 5.2,
+   "agree": 97.6,
+   "loss": 7.8,
+   "floor": 29.8
+  },
+  "flop": {
+   "nodes": 11,
+   "tv": 18.2,
+   "agree": 86.4,
+   "loss": 45.0,
+   "floor": 47.1
+  },
+  "noise": {
+   "tv": 10.8,
+   "loss": 68.5
+  }
+ },
+ {
+  "config": "3w_10-10-10",
+  "exports": 1,
+  "outside": 0.0,
+  "all": {
+   "nodes": 32,
+   "tv": 14.3,
+   "agree": 87.0,
+   "loss": 33.9,
+   "floor": 29.9
+  },
+  "tapis": {
+   "nodes": 21,
+   "tv": 5.3,
+   "agree": 95.7,
+   "loss": 18.2,
+   "floor": 24.6
+  },
+  "flop": {
+   "nodes": 11,
+   "tv": 20.8,
+   "agree": 80.6,
+   "loss": 45.2,
+   "floor": 33.8
+  }
+ },
+ {
+  "config": "3w_12-12-12",
+  "exports": 6,
+  "outside": 0.2,
+  "all": {
+   "nodes": 34,
+   "tv": 14.1,
+   "agree": 88.4,
+   "loss": 20.3,
+   "floor": 26.2
+  },
+  "tapis": {
+   "nodes": 22,
+   "tv": 4.6,
+   "agree": 97.4,
+   "loss": 10.4,
+   "floor": 27.7
+  },
+  "flop": {
+   "nodes": 12,
+   "tv": 21.3,
+   "agree": 81.6,
+   "loss": 27.8,
+   "floor": 25.1
+  },
+  "noise": {
+   "tv": 9.9,
+   "loss": 49.0
+  }
+ },
+ {
+  "config": "3w_14-14-14",
+  "exports": 1,
+  "outside": 0.2,
+  "all": {
+   "nodes": 46,
+   "tv": 15.1,
+   "agree": 86.4,
+   "loss": 44.6,
+   "floor": 37.8
+  },
+  "tapis": {
+   "nodes": 30,
+   "tv": 5.6,
+   "agree": 95.4,
+   "loss": 34.5,
+   "floor": 42.3
+  },
+  "flop": {
+   "nodes": 16,
+   "tv": 22.9,
+   "agree": 79.0,
+   "loss": 52.8,
+   "floor": 34.1
+  }
+ },
+ {
+  "config": "3w_16-16-16",
+  "exports": 1,
+  "outside": 0.2,
+  "all": {
+   "nodes": 46,
+   "tv": 15.6,
+   "agree": 86.2,
+   "loss": 45.7,
+   "floor": 42.7
+  },
+  "tapis": {
+   "nodes": 30,
+   "tv": 5.7,
+   "agree": 96.0,
+   "loss": 33.2,
+   "floor": 53.8
+  },
+  "flop": {
+   "nodes": 16,
+   "tv": 23.9,
+   "agree": 78.1,
+   "loss": 56.1,
+   "floor": 33.4
+  }
+ },
+ {
+  "config": "3w_18-18-18",
+  "exports": 1,
+  "outside": 0.2,
+  "all": {
+   "nodes": 54,
+   "tv": 15.5,
+   "agree": 86.4,
+   "loss": 51.7,
+   "floor": 52.1
+  },
+  "tapis": {
+   "nodes": 35,
+   "tv": 6.6,
+   "agree": 95.1,
+   "loss": 49.3,
+   "floor": 77.0
+  },
+  "flop": {
+   "nodes": 19,
+   "tv": 22.7,
+   "agree": 79.3,
+   "loss": 53.7,
+   "floor": 32.1
+  }
+ },
+ {
+  "config": "3w_20-20-20",
+  "exports": 1,
+  "outside": 0.2,
+  "all": {
+   "nodes": 56,
+   "tv": 15.4,
+   "agree": 87.3,
+   "loss": 63.6,
+   "floor": 65.1
+  },
+  "tapis": {
+   "nodes": 36,
+   "tv": 6.9,
+   "agree": 95.5,
+   "loss": 75.1,
+   "floor": 96.6
+  },
+  "flop": {
+   "nodes": 20,
+   "tv": 22.1,
+   "agree": 80.8,
+   "loss": 54.4,
+   "floor": 40.0
+  }
+ },
+ {
+  "config": "3w_22-22-22",
+  "exports": 1,
+  "outside": 0.2,
+  "all": {
+   "nodes": 66,
+   "tv": 16.2,
+   "agree": 85.2,
+   "loss": 93.7,
+   "floor": 97.1
+  },
+  "tapis": {
+   "nodes": 43,
+   "tv": 7.8,
+   "agree": 94.0,
+   "loss": 110.6,
+   "floor": 150.1
+  },
+  "flop": {
+   "nodes": 23,
+   "tv": 23.1,
+   "agree": 78.0,
+   "loss": 79.8,
+   "floor": 53.6
+  }
+ },
+ {
+  "config": "3w_25-25-25",
+  "exports": 1,
+  "outside": 0.3,
+  "all": {
+   "nodes": 66,
+   "tv": 16.5,
+   "agree": 85.3,
+   "loss": 116.0,
+   "floor": 118.4
+  },
+  "tapis": {
+   "nodes": 43,
+   "tv": 8.6,
+   "agree": 93.1,
+   "loss": 141.4,
+   "floor": 193.5
+  },
+  "flop": {
+   "nodes": 23,
+   "tv": 23.0,
+   "agree": 78.9,
+   "loss": 94.9,
+   "floor": 56.0
+  }
+ }
+]
