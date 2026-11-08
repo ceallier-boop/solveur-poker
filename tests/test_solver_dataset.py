@@ -121,12 +121,18 @@ def test_v5_tree_runs_with_two_bb_opens(tmp_path):
     assert res['tree'] == ds.tree_id(cfg) != 'daa9aaa0' and {'R2', 'A'} <= set(hrc_labels(res['nodes']['root']))
     spots, _ = ds.spots_of(res, path)
     assert spots and all(sp['open_sizes']['SB'] == 2.0 and sp['preflop_tree'] == res['tree'] for sp in spots)
-    assert ds.calibrate(res) is None                                    # pas encore de référence v5
+    cal = ds.calibrate(res)                                             # références v5 reçues (08/11/2026) : arbre reconnu, aucune action hors de la référence
+    assert cal and cal['outside'] == 0 and cal['nodes'] >= 8 and all(os.path.basename(e).startswith('hu_25-25_r') for e in cal['exports'])
 
 
 def hrc_labels(node):
     from spinsacademy import hrc
     return hrc.labels(node, [25.0, 25.0])
+
+
+def v5_exports(prefix):
+    """répétitions Monte-Carlo de référence présentes dans data/hrc/raw/v5 (les exports enumerated, `_enum`, n'ont pas ce préfixe)"""
+    return sorted(d for d in os.listdir(os.path.join(quiz.ROOT, 'data', 'hrc', 'raw', 'v5')) if d.startswith(prefix))
 
 
 def test_reliability_follows_the_tree():
@@ -150,13 +156,14 @@ def test_solver_is_calibrated_on_the_v5_reference_pilot():
     """pilote des exports de référence v5 (07/11/2026) : arbre reconnu, cinq répétitions moyennées, solveur à l'écart du bruit de la référence près"""
     path = os.path.join(quiz.ROOT, 'data', 'solver', 'runs', 'sf3dc2e6_48fa0906', 'hu_12-12.json')
     res = json.load(open(path)); cal = ds.calibrate(res)
-    assert cal and cal['nodes'] == 8 and len(cal['exports']) == 5 and cal['outside'] == 0
+    assert cal and cal['nodes'] == 8 and cal['outside'] == 0
+    assert sorted(os.path.basename(e) for e in cal['exports']) == v5_exports('hu_12-12_r')      # tous les Monte-Carlo présents, moyennés
     assert cal['loss_mbb'] - cal['floor_mbb'] < 5 and cal['agree'] > 85
 
 
 def test_reference_groups_merge_equal_trees_and_split_engines():
     """SPR 7 et SPR 40 donnent le même arbre à 8 BB : une seule référence moyennée ; l'enumerated (autre empreinte, moteur) n'y entre jamais"""
     ref = ds.reference_nodes(ds.REFERENCE_PREFLOP['sf3dc2e6'], (8.0, 8.0))
-    assert sorted(os.path.basename(e) for e in ref['exports']) == ['hu_8-8_r1', 'hu_8-8_r2']
+    assert sorted(os.path.basename(e) for e in ref['exports']) == v5_exports('hu_8-8_r') and len(ref['exports']) >= 2
     three = ds.reference_nodes(ds.REFERENCE_PREFLOP['sf3dc2e6'], (12.0, 12.0, 12.0))
-    assert len(three['exports']) == 5 and len(three['nodes']) == 44
+    assert sorted(os.path.basename(e) for e in three['exports']) == v5_exports('3w_12-12-12_r') and len(three['nodes']) == 44
