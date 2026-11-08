@@ -41,7 +41,9 @@ def _rel(path):
     return os.path.relpath(path, hrc.ROOT).replace(os.sep, '/')
 
 
-REFERENCE_PREFLOP = {'sf3dc2e6': 'd0fd39a7'}      # notre arbre v5 -> empreinte préflop des exports de référence v5 (pilote reçu le 07/11/2026) ; l'identifiant de nos arbres ne change pas
+# notre arbre v5 -> empreintes préflop des exports de référence v5 : tapis direct à SPR 40 (ed8fc281, HU et 3 joueurs) et pilote à SPR 7 (d0fd39a7, HU 8 et 12 : mêmes
+# nœuds et mêmes actions que le SPR 40 à ces tapis). L'identifiant de nos arbres ne change pas.
+REFERENCE_PREFLOP = {'sf3dc2e6': ('ed8fc281', 'd0fd39a7')}
 REFERENCE_TREES = {'daa9aaa0': TreeConfig()}      # arbre de la référence : notre arbre par défaut en reproduit exactement les actions
 # Arbres nommés pour la ligne de commande. v5 : commande de calage du 30/10/2026 (EXPORTS_A_PRODUIRE.md §11), ouvertures à
 # 2 BB (BTN et SB, à 3 joueurs comme en heads-up), tapis direct toujours proposé ; c'est l'arbre des banques à venir.
@@ -202,17 +204,23 @@ def controls(info, params):
 
 
 def reference_nodes(tree, stacks, raw=None):
-    """nœuds de la référence pour ce même arbre et ces tapis (répétitions moyennées), ou None"""
+    """nœuds de la référence pour ce même arbre (une empreinte préflop, ou plusieurs) et ces tapis, ou None. Les répétitions sont moyennées
+    quand elles ont les mêmes nœuds et les mêmes actions (réglage d'arbre différent mais arbre identique : SPR 7 et 40 à 8 et 12 BB) ;
+    le plus gros groupe est retenu"""
+    trees = {tree} if isinstance(tree, str) else set(tree)
     found = []
     for d in hrc.exports(raw) if raw else hrc.exports():
         s, st, nodes = hrc.load(d)
-        if hrc.preflop_hash(s) == tree and tuple(st) == tuple(float(x) for x in stacks): found.append((d, s, st, nodes))
+        if hrc.preflop_hash(s) in trees and tuple(st) == tuple(float(x) for x in stacks): found.append((d, s, st, nodes))
     if not found: return None
     mode = lambda s: s['treeconfig']['postflop']['id'].split('.')[-1]
-    best = min(found, key=lambda x: importer.POSTFLOP_PREFERENCE.index(mode(x[1])) if mode(x[1]) in importer.POSTFLOP_PREFERENCE else 9)
     base = lambda d: d.split(os.sep)[-2]
-    runs = [x for x in found if base(x[0]) == base(best[0]) and hrc.tree_hash(x[1]) == hrc.tree_hash(best[1])]
-    nodes = hrc.average([x[1:] for x in runs]) if len(runs) > 1 else best[3]
+    shape = lambda x: tuple(sorted((k, tuple(hrc.labels(n, x[2]))) for k, n in x[3].items()))
+    groups = {}
+    for x in found: groups.setdefault((base(x[0]), mode(x[1]), shape(x)), []).append(x)
+    pref = lambda m: importer.POSTFLOP_PREFERENCE.index(m) if m in importer.POSTFLOP_PREFERENCE else 9
+    runs = min(groups.items(), key=lambda g: (pref(g[0][1]), -len(g[1])))[1]
+    nodes = hrc.average([(runs[0][1], x[2], x[3]) for x in runs]) if len(runs) > 1 else runs[0][3]      # réglages du premier : le groupe a les mêmes nœuds et actions
     return dict(exports=[_rel(x[0]) for x in runs], nodes=nodes)
 
 

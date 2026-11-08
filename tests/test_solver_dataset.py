@@ -152,3 +152,11 @@ def test_solver_is_calibrated_on_the_v5_reference_pilot():
     res = json.load(open(path)); cal = ds.calibrate(res)
     assert cal and cal['nodes'] == 8 and len(cal['exports']) == 5 and cal['outside'] == 0
     assert cal['loss_mbb'] - cal['floor_mbb'] < 5 and cal['agree'] > 85
+
+
+def test_reference_groups_merge_equal_trees_and_split_engines():
+    """SPR 7 et SPR 40 donnent le même arbre à 8 BB : une seule référence moyennée ; l'enumerated (autre empreinte, moteur) n'y entre jamais"""
+    ref = ds.reference_nodes(ds.REFERENCE_PREFLOP['sf3dc2e6'], (8.0, 8.0))
+    assert sorted(os.path.basename(e) for e in ref['exports']) == ['hu_8-8_r1', 'hu_8-8_r2']
+    three = ds.reference_nodes(ds.REFERENCE_PREFLOP['sf3dc2e6'], (12.0, 12.0, 12.0))
+    assert len(three['exports']) == 5 and len(three['nodes']) == 44

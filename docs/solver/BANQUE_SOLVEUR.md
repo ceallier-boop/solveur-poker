@@ -326,3 +326,27 @@ Exports reçus : `data/hrc/raw/v5/` (HU 12/12 ×5 Monte-Carlo, HU 8/8 ×1 Monte-
 - Par famille de mains (perte du solveur contre plancher, mBB), seuls écarts nets : BB face à l'ouverture, Kx dépareillés 60 (plancher 10) et connecteurs assortis 33 (25) ; SB face à l'iso, autres dépareillées 16 (6). Partout ailleurs, au plancher.
 - HU 8/8 (une seule répétition Monte-Carlo, pas d'export « enumerated ») : perte 8,1 mBB (plancher 6,0), accord 86,5 %, TV 14,3 %. Mêmes écarts de sens : SB relance 1,6 % contre 0 % ; BB isole 21,2 % contre 13,7 % ; BB se couche 24,5 % contre 29,5 % face à l'ouverture.
 - Décisions face à un tapis : TV 1 à 2 %, accord 97 à 100 %, perte au niveau du plancher (0,4 à 8 mBB) : les « décisions à tapis » de la banque sont celles de la référence.
+
+### G19 (suite) : export HU 8/8 « enumerated » du 07/11/2026 (`data/hrc/raw/v5/hu_8-8_enum`)
+
+Export exact (moteur enumerated, arbre personnalisé `ui`, mêmes ouvertures et mêmes réglages préflop que les Monte-Carlo ; empreinte préflop `98433a9d`, car elle contient le moteur). 7 nœuds au lieu de 8 : la branche `SB-raise2` (le SB ouvre à 2 BB) n'est pas développée (l'action R2 n'a pas de nœud fils) ; un nœud `SB-fold` s'ajoute. Les EV sont absolues (le fold vaut le tapis restant) : comparées à celles des Monte-Carlo après retrait de l'EV du fold.
+
+Contre l'exact, sur les 6 nœuds communs :
+
+| | TV | accord | perte (plancher de l'exact 8,3 mBB) |
+|---|---|---|---|
+| solveur (s2) | 20,3 % | 79,8 % | 36,0 mBB |
+| Monte-Carlo, 1 répétition | 22,6 % | 77,2 % | 34,2 mBB |
+| solveur contre Monte-Carlo (G19) | 14,3 % | 86,5 % | 8,1 mBB |
+
+Le solveur et le Monte-Carlo sont proches l'un de l'autre et s'écartent ensemble de l'exact (SB face à l'iso : fold 47,5 % dans l'exact, 69,9 % solveur, 68,2 % Monte-Carlo ; BB face au tapis du SB après l'iso : fold 37,4 % exact, 4,3 % solveur, 3,3 % Monte-Carlo). Le solveur et le Monte-Carlo ont aussi le même écart d'EV avec l'exact sur des nœuds sans jeu après le flop (call du tapis après iso : +1,8 et +1,9 BB par rapport au fold), ce qu'aucune abstraction postflop ne peut expliquer : arbre différent (branche `SB-raise2` absente) ou convention d'EV différente. **Aucune conclusion sur la justesse du solveur ou de la référence tant que cet export n'est pas recoupé par un cas sans jeu postflop** (HU 4/4 enumerated, où le jeu est un pur calcul d'équité : nos résultats doivent y coïncider presque exactement, sinon c'est une convention).
+
+### G19 (suite 2) : deuxième envoi de référence v5 et contrôle d'équité pur (08/11/2026)
+
+**Rectificatif sur le HU 8/8 enumerated (ci-dessus).** Les EV d'un nœud sans jeu postflop dépendent de la range adverse, qui diffère d'un équilibre à l'autre : l'écart de +1,8 BB sur le call du tapis ne prouvait donc pas une convention d'EV différente. Le contrôle des conventions est le HU 4/4 ci-dessous.
+
+- **HU 4/4 enumerated (jeu d'équité pur au tapis)** : racine du SB (fold, limp, tapis) exact 25,9 / 0,4 / 73,8 %, solveur 26,2 / 0 / 73,8 % (TV 0,4 %) ; décision face au tapis du SB : exact 25,9 / 74,1 %, solveur 26,3 / 73,7 % (TV 0,4 %). EV du call relative au fold : biais 0,3 mBB, écart quadratique 0,8 mBB. **Les conventions d'EV sont les mêmes** (EV de l'export absolue : le fold vaut le tapis restant ; mêmes équités, mêmes blindes). Aux nœuds qui passent par le flop (BB après un limp), l'écart d'EV est de 67 à 98 mBB (limp du SB : −28 mBB de biais), du même ordre que les écarts au calcul exact de G17 (exact et solveur diffèrent par leur modèle postflop) ; le regret de l'export exact lui-même y atteint 435 mBB, ce qui limite ce qu'on peut lui demander.
+- **Empreintes acceptées** (`dataset.REFERENCE_PREFLOP`) : `ed8fc281` (SPR 40, HU et 3 joueurs) et `d0fd39a7` (SPR 7). Les répétitions de nœuds et d'actions identiques sont moyennées ensemble, quelle que soit l'empreinte (`reference_nodes`) : à HU 8/8, r1 (SPR 7) et r2 (SPR 40) ont les mêmes 8 nœuds et les mêmes actions, et leur écart (TV 14 à 25 %) est celui de deux répétitions du même réglage (HU 12, 14 à 21 %). Les répétitions HU 12/12 à SPR 7 restent utilisables telles quelles, avec les nôtres : mêmes nœuds et mêmes actions que notre arbre. Les exports enumerated, d'une autre empreinte (le moteur y entre), ne sont jamais moyennés avec le Monte-Carlo.
+- **3 joueurs 12/12/12 (5 répétitions)** : 34 nœuds comparés, TV 14,1 %, accord 88,7 %, perte 20,3 mBB (plancher de la référence 26,0), 0,2 % hors référence. Contre une répétition seule : TV 14,4 à 14,8 %, perte 31 à 36 mBB (plancher 24 à 27). Écarts de fréquence à noter, le BB face à l'ouverture du BTN : après un call du SB, il paie 30,2 % chez nous contre 17,1 % dans la référence (et se couche 52,2 % contre 63,3 %) ; quand le SB a couché, il se couche 52,6 % chez nous contre 39,7 % (et paie 26,1 % contre 42,7 %). Détail par nœud : `tools/solver/calibrate_v5.py`.
+- **3 joueurs 8/8/8 (3 répétitions)** : 32 nœuds, TV 13,1 %, accord 90,3 %, perte 30,6 mBB (plancher 38,8), 0 % hors référence.
+- **HU 20/20 (1 répétition, SPR 40)** : le solveur voit les mêmes 12 nœuds et les mêmes actions (tapis direct à la racine inclus), 0 % hors référence ; TV 17,7 %, accord 83,5 %, perte 23,1 mBB (plancher 15,7).
