@@ -18,3 +18,29 @@ Deuxième envoi, 07/11 (archive « référence_v5_1.zip »), réglage PREFLOP_AD
   hu_4-4_enum    = « Hand 24 »          heads-up 4 / 4, enumerated, arbre personnalisé (mode ui) : contrôle des conventions
 Refusés, non rangés : « Hand 11 » et « Hand 12 » (heads-up 8 / 8 enumerated), « Hand 13 » et « Hand 14 » (3 joueurs 8 / 8 / 8 enumerated) :
 arbre par défaut « basic » (tapis ou fold), pas l'arbre personnalisé.
+
+Troisième envoi, 08/11 (archive « référence_v5_1.zip », 39 exports : « Hand 10 à 24 » déjà rangés ci-dessus, identiques) : un export par profondeur, tapis égaux, toutes à SPR 40 :
+  hu_2-2_r1  = « Hand 25 »  heads-up 2 / 2, Monte-Carlo, SPR 40
+  hu_4-4_r1  = « Hand 26 »  heads-up 4 / 4, Monte-Carlo, SPR 40
+  hu_6-6_r1  = « Hand 27 »  heads-up 6 / 6, Monte-Carlo, SPR 40
+  hu_8-8_r3  = « Hand 28 »  heads-up 8 / 8, Monte-Carlo, SPR 40
+  hu_10-10_r1  = « Hand 29 »  heads-up 10 / 10, Monte-Carlo, SPR 40
+  hu_12-12_r6  = « Hand 30 »  heads-up 12 / 12, Monte-Carlo, SPR 40
+  hu_14-14_r1  = « Hand 31 »  heads-up 14 / 14, Monte-Carlo, SPR 40
+  hu_16-16_r1  = « Hand 32 »  heads-up 16 / 16, Monte-Carlo, SPR 40
+  hu_18-18_r1  = « Hand 33 »  heads-up 18 / 18, Monte-Carlo, SPR 40
+  hu_20-20_r2  = « Hand 34 »  heads-up 20 / 20, Monte-Carlo, SPR 40
+  hu_22-22_r1  = « Hand 35 »  heads-up 22 / 22, Monte-Carlo, SPR 40
+  hu_25-25_r1  = « Hand 36 »  heads-up 25 / 25, Monte-Carlo, SPR 40
+  3w_25-25-25_r1  = « Hand 37 »  3 joueurs 25 / 25 / 25, Monte-Carlo, SPR 40
+  3w_22-22-22_r1  = « Hand 38 »  3 joueurs 22 / 22 / 22, Monte-Carlo, SPR 40
+  3w_20-20-20_r1  = « Hand 39 »  3 joueurs 20 / 20 / 20, Monte-Carlo, SPR 40
+  3w_18-18-18_r1  = « Hand 40 »  3 joueurs 18 / 18 / 18, Monte-Carlo, SPR 40
+  3w_16-16-16_r1  = « Hand 41 »  3 joueurs 16 / 16 / 16, Monte-Carlo, SPR 40
+  3w_14-14-14_r1  = « Hand 42 »  3 joueurs 14 / 14 / 14, Monte-Carlo, SPR 40
+  3w_12-12-12_r6  = « Hand 43 »  3 joueurs 12 / 12 / 12, Monte-Carlo, SPR 40
+  3w_10-10-10_r1  = « Hand 44 »  3 joueurs 10 / 10 / 10, Monte-Carlo, SPR 40
+  3w_8-8-8_r4  = « Hand 45 »  3 joueurs 8 / 8 / 8, Monte-Carlo, SPR 40
+  3w_6-6-6_r1  = « Hand 46 »  3 joueurs 6 / 6 / 6, Monte-Carlo, SPR 40
+  3w_4-4-4_r1  = « Hand 47 »  3 joueurs 4 / 4 / 4, Monte-Carlo, SPR 40
+  3w_2-2-2_r1  = « Hand 48 »  3 joueurs 2 / 2 / 2, Monte-Carlo, SPR 40
