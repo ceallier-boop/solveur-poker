@@ -17,6 +17,7 @@ import datetime
 import json
 
 MINUTES = 15
+SHORT_MINUTES = 10        # séance courte (audit, rythme N1) : révision, une série du thème, pas de range
 SERIES_PER_THEME = 2
 RANGE_FR = 'Range : la situation du thème'
 RANGE_EXPLOIT_FR = RANGE_FR + ', corrigée sur la théorie'   # l'exercice de range est toujours corrigé sur la référence GTO (test 9)
@@ -94,7 +95,7 @@ def _hour(iso, tz):
 
 
 def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, themes=THEMES, level=None, plan=None, active=None,
-          next_due=None, review_filters=None, played_before=None, mode='gto'):
+          next_due=None, review_filters=None, played_before=None, mode='gto', short=False):
     """sessions : dicts {created_at, plan, filters (JSON), size, answered} du joueur dans ce mode ; ranges : horodatages des ranges ;
     due : mains à réviser maintenant ; focus : diagnostic de progress.compute ; plan : thème fixé pour la journée
     dict(theme_fr, filters, range_filters, range_spot) ; active : jours d'activité tous modes (série de jours) ;
@@ -112,14 +113,15 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
         n = next_due[1]; rlabel = f"Révision : rien à revoir pour l'instant ({n} main{'s' if n > 1 else ''} à partir de {_hour(next_due[0], tz)[1]})"
     else: rlabel = "Révision : rien à revoir aujourd'hui"
     rs = (plan or {}).get('range_filters', range_filters(f))
+    n_theme = 1 if short else SERIES_PER_THEME
     steps = [
         dict(kind='review', done=due == 0 or reviews >= REVIEW_CAP, count=due, label_fr=rlabel, filters=review_filters or {}),
-        dict(kind='theme', done=themed >= SERIES_PER_THEME, count=min(themed, SERIES_PER_THEME), total=SERIES_PER_THEME,
+        dict(kind='theme', done=themed >= n_theme, count=min(themed, n_theme), total=n_theme,
              label_fr=f"Thème : {label}", filters=f),
-        dict(kind='range', done=ranged >= 1, label_fr=RANGE_FR if mode == 'gto' else RANGE_EXPLOIT_FR, filters=rs, spot_id=(plan or {}).get('range_spot')),
     ]
+    if not short: steps.append(dict(kind='range', done=ranged >= 1, label_fr=RANGE_FR if mode == 'gto' else RANGE_EXPLOIT_FR, filters=rs, spot_id=(plan or {}).get('range_spot')))
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
-    return dict(minutes=MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
-                started=(reviews > 0 or themed > 0 or ranged > 0) and nxt is not None,
+    return dict(minutes=SHORT_MINUTES if short else MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
+                started=(reviews > 0 or themed > 0 or (ranged > 0 and not short)) and nxt is not None,
                 streak=streak(active, today), active_today=today in active, theme_fr=label, bb7=bb7, bb7_prev=bb7_prev, level=level,
                 played_before=bool(done_s or ranges) if played_before is None else played_before)

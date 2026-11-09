@@ -426,7 +426,7 @@ const DEMO = (() => {
   }
   function rangeOk(f) { return RTASKS.some((t) => (!f.table || t.table === f.table) && (!f.hero || t.hero === f.hero) && (!f.family || t.family === f.family)
     && t.effective_stack_bb >= (f.min_stack || 0) && t.effective_stack_bb <= (f.max_stack || 999)); }
-  function today(mode) {                                           // test joueurs 9 : thème et range fixés au premier affichage du jour
+  function today(mode, short) {                                           // test joueurs 9 : thème et range fixés au premier affichage du jour
     const db = load(), td = dayBack(0);
     const ss = Object.values(db.sessions).filter((s) => s.mode === mode && own(s));
     const done = ss.filter((s) => Object.keys(s.answers).length >= s.items.length), doneToday = done.filter((s) => dayOf(s.created_at) === td);
@@ -454,10 +454,10 @@ const DEMO = (() => {
     const depth = lvn < 4 ? { min_stack: LV.levels[lvn].depth[0], max_stack: LV.levels[lvn].depth[1] } : {};
     const steps = [
       { kind: 'review', done: due === 0 || revs >= LV.review_cap, count: due, label_fr: rlabel, filters: depth },
-      { kind: 'theme', done: themed >= 2, count: Math.min(themed, 2), total: 2, label_fr: `Thème : ${label}`, filters: f },
-      { kind: 'range', done: ranged >= 1, label_fr: mode === 'gto' ? __RANGE_FR__ : __RANGE_EXPLOIT_FR__, filters: plan.range_filters, spot_id: plan.range_spot }];
+      { kind: 'theme', done: themed >= (short ? 1 : 2), count: Math.min(themed, short ? 1 : 2), total: short ? 1 : 2, label_fr: `Thème : ${label}`, filters: f }];
+    if (!short) steps.push({ kind: 'range', done: ranged >= 1, label_fr: mode === 'gto' ? __RANGE_FR__ : __RANGE_EXPLOIT_FR__, filters: plan.range_filters, spot_id: plan.range_spot });   // N1 : séance courte sans range
     const nxt = steps.findIndex((x) => !x.done), act = activeDays();
-    return { minutes: 15, date: td, steps, next: nxt < 0 ? null : nxt, done: nxt < 0, started: (revs > 0 || themed > 0 || ranged > 0) && nxt >= 0,
+    return { minutes: short ? 10 : 15, date: td, steps, next: nxt < 0 ? null : nxt, done: nxt < 0, started: (revs > 0 || themed > 0 || (ranged > 0 && !short)) && nxt >= 0,
       streak: streak(act), active_today: act.has(td), played_before: act.size > 0, theme_fr: label, level: { number: lvn, name: LV.levels[lvn].name, depth_fr: LV.depth_fr[lvn] },
       bb7: bbWindow(mode, 0, 7), bb7_prev: bbWindow(mode, 7, 14), mode };
   }
@@ -671,7 +671,7 @@ const DEMO = (() => {
     }
     if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
-    if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto')];
+    if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto', Number(url.searchParams.get('minutes') || 15) <= 10)];
     if (p === '/users/me/recommendations') return [200, recommendations(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/goals' && method === 'PUT') return setGoal(body);
     if (p === '/users/me/preferences') {                              // le mode choisi (test joueurs 9) ; pas d'adaptation dans la démo

@@ -265,7 +265,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             filters, fixed_seed = {}, challenges.daily_seed(utc_day)
         elif body.challenge == 'perfect':                                  # test joueurs 9 : le thème de la séance du jour du joueur
             with closing(connect()) as con: _ad_open_or_403(con, pid, body.tz)
-            filters = dict(my_today(body.mode, body.tz, x_player_id)['steps'][1]['filters'])
+            filters = dict(my_today(body.mode, body.tz, x_player_id=x_player_id)['steps'][1]['filters'])
         elif body.challenge == 'pressure': filters = {}
         elif body.challenge == 'reader':
             if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
@@ -481,7 +481,7 @@ def my_reviews(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Head
 
 
 @app.get('/users/me/today')
-def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+def my_today(mode: str = 'gto', tz: int = 0, minutes: int = 15, x_player_id: Optional[str] = Header(None)):
     """séance du jour (programme de travail, étape 1) : révision, thème du jour, range du jour ; série de jours ; BB perdus sur 7 jours.
     Test joueurs 9 : le thème et la range sont fixés au premier affichage de la journée (table daily_plan)"""
     pid = player(x_player_id, required=True)
@@ -522,7 +522,7 @@ def my_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
                       progress.compute(week(0, 7)).get('bb_per_100') if week(0, 7) else None,
                       progress.compute(week(7, 14)).get('bb_per_100') if week(7, 14) else None,
                       level=dict(number=lv, name=levels.LEVELS[lv]['name'], depth_fr=levels.DEPTH_FR[lv]), plan=plan, active=active,
-                      next_due=(rv['next_due_at'], rv['pending']), review_filters=levels.depth_filters(lv), played_before=bool(done_all or rngs), mode=mode)
+                      next_due=(rv['next_due_at'], rv['pending']), review_filters=levels.depth_filters(lv), played_before=bool(done_all or rngs), mode=mode, short=minutes <= today.SHORT_MINUTES)
     return dict(out, mode=mode)
 
 
@@ -531,7 +531,7 @@ def my_recommendations(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str
     """recommandations de l'accueil (programme de travail, étape 2) : au plus deux, chacune avec un constat chiffré et une action"""
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
-    t = my_today(mode, tz, x_player_id)                                  # pour ne pas recommander le thème déjà dans la séance
+    t = my_today(mode, tz, x_player_id=x_player_id)                                  # pour ne pas recommander le thème déjà dans la séance
     with closing(connect()) as con:
         version = serving_version(con, mode); rows = _mode_rows(con, pid, mode, None)
         last = con.execute('SELECT spot_id, hands, accuracy_pct, dataset_version FROM range_attempts WHERE player_id = ? ORDER BY id DESC LIMIT 1', (pid,)).fetchone()
@@ -770,7 +770,7 @@ def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = H
         rgs = [dict(r) for r in con.execute('SELECT answered_at, bb_per_100, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
     mine = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
     active = {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r['answered_at'], tz) for r in rgs}
-    theme = my_today(mode, tz, x_player_id)['theme_fr']                   # série parfaite : le thème de la séance du jour
+    theme = my_today(mode, tz, x_player_id=x_player_id)['theme_fr']                   # série parfaite : le thème de la séance du jour
     with closing(connect()) as con: ad_days = _ad_open_days(con, pid)
     return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date(), theme_fr=theme, all_sessions=sess, ad_open_days=ad_days))
 
