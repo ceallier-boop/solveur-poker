@@ -349,6 +349,24 @@ const DEMO = (() => {
 
   // progression en positif (AU5) : mêmes règles que spinsacademy.wins (jours locaux du navigateur)
   const WN = __WINS__;
+  function worstToday(mode) {                                          // N2 : séries du jour dans l'ordre, arrêt à 3 erreurs, puis les 3 plus coûteuses ; le rejeu n'y entre pas
+    const td0 = dayBack(0), by = [], replays = [];
+    const sess = Object.values(load().sessions).filter((s) => own(s) && s.mode === mode && s.plan !== 'placement').sort((x, y) => x.created_at.localeCompare(y.created_at));
+    const fr2 = (x) => (x <= 0.02 ? '<0,02 BB' : `${(Math.round(x * 100) / 100).toFixed(2).replace('.', ',')} BB`);
+    for (const s of sess) {
+      const errs = [];
+      s.items.forEach((i, k) => { const r = s.answers[k], it = ITEMS[i]; if (!r || !r.at || !it || dayOf(r.at) !== td0) return;
+        if (s.plan === 'replay') { if (r.verdict === 'correct') replays.push({ spot: it.q.spot_id, hand: it.q.hand, at: r.at }); return; }
+        if (!['erreur', 'imprécision'].includes(r.verdict) || r.timed_out || !(r.regret_mbb > 0) || (it.q.field && it.q.field.type)) return;
+        errs.push({ session_id: s.id, question_index: k, spot_id: it.q.spot_id, hand: it.q.hand, prompt_fr: it.q.prompt_fr.replace(' Que fais-tu ?', ''), chosen_fr: r.chosen_label, best_fr: r.best_label,
+          verdict: r.verdict, regret_mbb: r.regret_mbb, cost_bb: Math.round(r.regret_mbb / 10) / 100, cost_fr: fr2(r.regret_mbb / 1000), answered_at: r.at }); });
+      by.push(...errs.length ? [errs] : []);
+    }
+    let pool = []; for (const e of by) { pool = pool.concat(e); if (pool.length >= 3) break; }
+    const out = pool.sort((x, y) => y.regret_mbb - x.regret_mbb || x.answered_at.localeCompare(y.answered_at)).slice(0, 3);
+    out.forEach((e) => { e.replayed_ok = replays.some((r) => r.spot === e.spot_id && r.hand === e.hand && r.at >= e.answered_at); });
+    return { mode, date: td0, errors: out };
+  }
   function winsOf(mode) {
     const db = load(), td0 = dayBack(0), ago = (iso_) => Math.round((Date.parse(td0 + 'T12:00') - Date.parse(dayOf(iso_) + 'T12:00')) / DAY);
     const fr = (x, d = 1) => (d ? String(Math.round(x * 10 ** d) / 10 ** d) : String(Math.round(x))).replace('.', ',');
@@ -583,7 +601,12 @@ const DEMO = (() => {
       const first = last.length && ITEMS[last[0].items[0]] ? ITEMS[last[0].items[0]].q.hand : null;
       const score = (xs) => xs.reduce((a, i) => a + 2 * rSpots.has(ITEMS[i].q.spot_id) + rHands.has(ITEMS[i].q.hand), 0) + (xs.length && ITEMS[xs[0]].q.hand === first ? 3 : 0);
       let picked;
-      if (plan === 'placement') {                                      // audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
+      if (plan === 'replay') {                                         // N2 : rejeu des erreurs du jour (1 à 3 questions, dans l'ordre de la liste)
+        const w = worstToday(mode).errors; if (!w.length) return [422, { detail: "Aucune erreur à rejouer aujourd'hui" }];
+        picked = w.map((e) => ITEMS.findIndex((it) => it.q.spot_id === e.spot_id && it.q.hand === e.hand)).filter((i) => i >= 0);
+        w.forEach((e, k) => { purposes[k] = `Rejeu de ton erreur du jour (${e.cost_fr})`; });
+      } else if (plan === 'placement') {                               // audit AU7
+        // 10 mains sur les trois profondeurs du parcours GTO
         if (mode !== 'gto') return [422, { detail: 'le test de placement se joue en mode GTO' }];
         picked = [];
         for (const [lv, n] of PL.bands) { const L = LV.levels[lv]; const part = draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, n); if (!part) return [422, { detail: 'pas assez de situations' }]; picked = picked.concat(part); }
@@ -696,6 +719,7 @@ const DEMO = (() => {
     if (p === '/users/me/level') return [200, levelInfo()];
     if (p === '/users/me/challenges') return [200, challengesOf(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/wins') return [200, winsOf(url.searchParams.get('mode') || 'gto')];
+    if (p === '/users/me/worst-today') return [200, worstToday(url.searchParams.get('mode') || 'gto')];      // N2 : mêmes règles que worst.build
     if (p === '/users/me/goals') return [200, goals(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me' && method === 'DELETE') { mem = { sessions: {} }; save(); return [204, null]; }
     return [404, { detail: 'indisponible dans la version de démonstration' }];
