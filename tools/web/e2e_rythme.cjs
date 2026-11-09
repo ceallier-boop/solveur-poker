@@ -1,5 +1,6 @@
 // Chantiers de rythme (N1, N2, puis N3) côté interface, avec assertions.
 // N2 : les 3 erreurs les plus coûteuses du jour sur l'accueil, état « rattrapée », bouton « Les rejouer ».
+// N3 : fiches à emporter (réglages, liste groupée, grille, fiabilité, impression d'une page A4).
 // N1 : séance de 15 ou 10 minutes, choix discret gardé sur l'appareil, libellés et étapes qui suivent la réponse du serveur.
 // Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_rythme.cjs [dossier]   (application ou file://…/demo.html)
 const { chromium } = require('playwright');
@@ -50,6 +51,25 @@ const home = (p) => p.waitForSelector('#screen-home:not([hidden]) #today:not([hi
     await p.unroute('**/users/me/worst-today*');
   }
   }
+  // N3 : fiches à emporter : trois réglages, liste groupée, fiche, impression d'une page A4
+  await p.click('#home-btn'); await home(p); await p.click('#fiches-btn'); await p.waitForSelector('#screen-fiches:not([hidden]) #fi-table button');
+  await p.click('#fi-table [data-v="3-handed"]'); await p.click('#fi-stack [data-v="10"]'); await p.click('#fi-hero [data-v="BB"]');
+  const groups = await p.$$eval('#fi-list .fi-group h3', (xs) => xs.map((x) => x.textContent));
+  const items = await p.$$eval('#fi-list .fi-item', (xs) => xs.length);
+  ok('N3 : trois réglages puis fiches groupées par situation', groups.length >= 2 && groups.some((g) => /Face à un tapis/.test(g)) && items > 0 && items < 40, [groups, items]);
+  await p.click('#fi-list .fi-item >> nth=0'); await p.waitForSelector('#fi-sheet:not([hidden]) svg.fi-grid');
+  const texts = await p.$$eval('#fi-sheet svg.fi-grid text', (xs) => xs.length);
+  ok('N3 : fiche 13 × 13, légende, fiabilité', texts === 169 && (await p.$$('#fi-sheet .fi-legend span')).length >= 2 && /Fiable|Approximation/.test(await p.textContent('#fi-sheet .fi-head .fi-rel')), texts);
+  await p.screenshot({ path: `${OUT}/rythme_fiche.png`, fullPage: true });
+  // une fiche « Approximation » (mène au flop) : la note d'écart, discrète
+  await p.click('#fi-back'); await p.click('#fi-table [data-v="heads-up"]'); await p.click('#fi-stack [data-v="10"]');
+  const approx = await p.$$eval('#fi-list .fi-item', (xs) => xs.findIndex((x) => /Approximation/.test(x.textContent)));
+  if (approx >= 0) { await p.click(`#fi-list .fi-item >> nth=${approx}`); await p.waitForSelector('#fi-sheet:not([hidden])');
+    ok('N3 : « Approximation » avec la note d\'écart mesuré', /Approximation : à 10 BB/.test(await p.textContent('#fi-sheet .fi-note')), await p.textContent('#fi-sheet .fi-note')); }
+  else ok('N3 : une fiche « Approximation » à 10 BB en heads-up', false);
+  const pages = ((await p.pdf({ format: 'A4', printBackground: true })).toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length;
+  ok('N3 : impression sur une seule page A4', pages === 1, pages);
+  await p.emulateMedia({ media: 'print' }); await p.screenshot({ path: `${OUT}/rythme_fiche_print.png`, fullPage: true }); await p.emulateMedia({ media: 'screen' });
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
   await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);

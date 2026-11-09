@@ -91,6 +91,7 @@
       <button class="secondary review-btn" id="review-btn" hidden>Revoir mes mains</button>
       <button class="secondary" id="range-btn">Construis ta range</button>
       <a class="secondary conseil-link" href="conseil">Comment jouer ma main ?</a>
+      <button class="secondary" id="fiches-btn">Fiches à emporter</button>
       <p class="note" id="review-note" hidden></p>
       <button class="secondary" id="stats-btn">Ma progression</button>
 
@@ -267,6 +268,21 @@
       </div>
       <button class="primary big" id="ob-next">Suivant</button>
       <button class="link" id="ob-skip">Passer</button>
+    </section>
+
+    <!-- Fiches à emporter (rythme N3) : trois réglages, puis la fiche ; une fiche par page A4 à l'impression -->
+    <section id="screen-fiches" class="screen" hidden aria-labelledby="fi-title">
+      <div class="fi-pick" id="fi-pick">
+        <h2 id="fi-title">Fiches à emporter</h2>
+        <p class="lead">Les ranges de la banque, main par main, à garder sous les yeux ou à imprimer.</p>
+        <fieldset><legend>Table</legend><div class="chips" id="fi-table"></div></fieldset>
+        <fieldset><legend>Tapis</legend><div class="chips" id="fi-stack"></div></fieldset>
+        <fieldset><legend>Ta position</legend><div class="chips" id="fi-hero"></div></fieldset>
+        <div id="fi-list"></div>
+      </div>
+      <article class="fiche" id="fi-sheet" hidden aria-live="polite"></article>
+      <div class="fi-actions" id="fi-actions" hidden><button class="secondary" id="fi-back">Autres fiches</button><button class="primary" id="fi-print">Imprimer cette fiche</button></div>
+      <button class="link" id="fi-home">Retour à l'accueil</button>
     </section>
 
     <!-- Résultat du test de placement (audit AU7) -->

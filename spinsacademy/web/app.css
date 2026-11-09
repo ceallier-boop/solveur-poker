@@ -558,3 +558,27 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .worst li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: .9rem; }
 .worst .w-sit { color: var(--muted); font-size: .85rem; } .worst li.caught { border-color: var(--ok); background: var(--ok-bg); }
 .worst .caught-tag { color: var(--ok); } .worst .small { min-height: 40px; }
+/* N3 : fiches à emporter */
+.fi-pick fieldset { margin: 6px 0 0; } .fi-group h3 { margin: 14px 0 6px; color: var(--text); } .fi-group h3 small { color: var(--muted); font-weight: 500; }
+.fi-group ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fi-item { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 48px; font: inherit; }
+.fi-rel { font-size: .75rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; margin: 0; }
+.fi-rel.tapis { background: var(--ok-bg); color: var(--ok); } .fi-rel.flop { background: var(--warn-bg); color: var(--warn); }
+.fiche { display: flex; flex-direction: column; gap: 8px; } .fi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.fi-head h2 { margin: 0; font-size: 1.1rem; }
+.fi-grid { width: 100%; height: auto; display: block; background: #fff; border-radius: 6px; }
+.fi-t { font: 700 8px system-ui, sans-serif; text-anchor: middle; paint-order: stroke; stroke-width: 1.6px; }
+.fi-t.dead { fill: #9a9a9a; stroke: none; } .fi-l { stroke: rgba(0,0,0,.18); stroke-width: .5; }
+.fi-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; font-size: .85rem; } .fi-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.fi-sw { width: 14px; height: 14px; } .fi-hint, .fi-src { margin: 0; font-size: .78rem; color: var(--muted); }
+.fi-note { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .85rem; } .fi-note.quiet { color: var(--muted); }
+.fi-experts { font-size: .88rem; } .fi-experts p { margin: 0 0 4px; } .fi-experts ul { margin: 0; padding-left: 18px; }
+.fi-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media print {                                                        /* une fiche par page A4, lisible en noir et blanc */
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff !important; } body * { visibility: hidden; }
+  #fi-sheet, #fi-sheet * { visibility: visible; } #fi-sheet { position: absolute; left: 0; top: 0; width: 100%; color: #000; }
+  .fi-grid { max-width: 170mm; margin: 0 auto; } #fi-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .fi-note, .fi-rel { border: 1px solid #666; background: #fff !important; color: #000 !important; }
+}
