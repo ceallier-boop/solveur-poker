@@ -215,11 +215,17 @@ def reference_nodes(tree, stacks, raw=None):
     if not found: return None
     mode = lambda s: s['treeconfig']['postflop']['id'].split('.')[-1]
     base = lambda d: d.split(os.sep)[-2]
-    shape = lambda x: tuple(sorted((k, tuple(hrc.labels(n, x[2]))) for k, n in x[3].items()))
+    labs = lambda x: {k: tuple(hrc.labels(n, x[2])) for k, n in x[3].items()}
     groups = {}
-    for x in found: groups.setdefault((base(x[0]), mode(x[1]), shape(x)), []).append(x)
+    for x in found: groups.setdefault((base(x[0]), mode(x[1])), []).append(x)
     pref = lambda m: importer.POSTFLOP_PREFERENCE.index(m) if m in importer.POSTFLOP_PREFERENCE else 9
-    runs = min(groups.items(), key=lambda g: (pref(g[0][1]), -len(g[1])))[1]
+    best = None
+    for (b, m), xs in sorted(groups.items(), key=lambda g: pref(g[0][1])):
+        # compatibles : mêmes actions aux nœuds communs (un export peut omettre des nœuds : moyenné sur ceux qui les ont) ; ancre : l'export aux nœuds les plus nombreux
+        L = [labs(x) for x in xs]; anchor = max(range(len(xs)), key=lambda i: len(L[i]))
+        cand = [x for x, l in zip(xs, L) if all(l[k] == L[anchor][k] for k in set(l) & set(L[anchor]))]
+        if best is None or (pref(m) == pref(best[0]) and len(cand) > len(best[1])) or pref(m) < pref(best[0]): best = (m, cand)
+    runs = best[1]
     nodes = hrc.average([(runs[0][1], x[2], x[3]) for x in runs]) if len(runs) > 1 else runs[0][3]      # réglages du premier : le groupe a les mêmes nœuds et actions
     return dict(exports=[_rel(x[0]) for x in runs], nodes=nodes)
 

@@ -364,17 +364,40 @@ Outil : `tools/solver/calibration_curve.py` (résultat : `data/solver/g17/courbe
 | HU 10 | 1 | 2,0 / 98,6 / 2,4 (2,0) | 22,0 / 80,2 / 12,1 (6,7) | |
 | HU 12 | 6 | 2,0 / 98,3 / 2,3 (3,2) | 21,2 / 83,4 / 8,4 (7,4) | 10,1 %, 7,2 |
 | HU 14 | 1 | 2,4 / 97,0 / 5,2 (4,5) | 23,9 / 78,2 / 15,3 (8,4) | |
-| HU 16 | 1 | 4,4 / 95,3 / 10,2 (8,4) | 25,3 / 77,2 / 19,1 (9,3) | |
+| HU 16 | 4 | 4,1 / 96,1 / 6,1 (7,3) | 23,2 / 83,0 / 12,2 (9,2) | 11,8 %, 11,6 |
 | HU 18 | 1 | 3,8 / 97,4 / 9,1 (14,0) | 24,1 / 77,5 / 19,6 (10,1) | |
-| HU 20 | 2 | 4,9 / 95,7 / 19,9 (22,5) | 24,0 / 78,7 / 21,6 (15,5) | 15,3 %, 33,1 |
+| HU 20 | 4 | 5,0 / 95,1 / 15,7 (20,1) | 23,5 / 81,4 / 18,4 (15,2) | 12,8 %, 22,8 |
 | HU 22 | 1 | 6,0 / 94,8 / 49,5 (33,9) | 27,6 / 72,5 / 28,9 (16,1) | |
-| HU 25 | 1 | 5,3 / 96,6 / 59,7 (43,7) | 27,9 / 72,0 / 30,8 (17,4) | |
+| HU 25 | 4 | 4,9 / 97,1 / 42,8 (50,9) | 26,4 / 75,1 / 24,7 (18,8) | 14,1 %, 39,6 |
 | 3 j. 8 | 4 | 5,2 / 97,6 / 7,8 (29,8) | 18,2 / 86,4 / 45,0 (47,1) | 10,8 %, 68,5 |
 | 3 j. 12 | 6 | 4,6 / 97,4 / 10,4 (27,7) | 21,3 / 81,6 / 27,8 (25,1) | 9,9 %, 49,0 |
-| 3 j. 16 | 1 | 5,7 / 96,0 / 33,2 (53,8) | 23,9 / 78,1 / 56,1 (33,4) | |
-| 3 j. 25 | 1 | 8,6 / 93,1 / 141,4 (193,5) | 23,0 / 78,9 / 94,9 (56,0) | |
+| 3 j. 16 | 5 | 5,8 / 96,8 / 16,9 (61,4) | 22,3 / 82,6 / 31,3 (35,6) | 11,5 %, 93,4 |
+| 3 j. 25 | 4 | 8,1 / 95,5 / 83,9 (226,7) | 21,9 / 82,6 / 55,8 (59,9) | 13,6 %, 256,9 |
 
 Lecture :
 - Décisions « tapis » : TV 0,1 à 2 % jusqu'à HU 12, 4 à 6 % de HU 16 à 25, accord 93 à 100 %, perte au niveau du plancher partout. Plage fiable confirmée : HU jusqu'à 16 BB (perte ≤ 10 mBB), 3 joueurs jusqu'à 16 BB ; au-delà, la perte monte avec le bruit de la référence lui-même (plancher de 34 à 44 mBB à HU 22-25, 150 à 190 à 3 joueurs 22-25) et on ne peut plus la distinguer du plancher.
 - Décisions « flop » : TV de 8 % (HU 2) à 28 % (HU 25), accord de 93 à 72 % ; perte au-dessus du plancher de 0 à 1 mBB jusqu'à HU 8, de 1 à 5 mBB à HU 10-12, de 7 à 13 mBB à HU 14-25. L'écart avec la référence croît avec la profondeur, et il est du sens du défaut des pots relancés.
 - Bruit d'un export isolé contre la moyenne des autres : HU 8 et 12, perte de 7 à 9 mBB ; HU 20, 33 mBB ; 3 joueurs, 49 à 69 mBB. C'est le seuil à retenir pour les configurations à une seule répétition (et non 100 mBB) : HU jusqu'à 18 BB, plancher + 15 mBB ; HU 20 à 25, plancher + 35 ; 3 joueurs, plancher + 70.
+
+### G19 (suite 4) : mesure du défaut des pots relancés avec 4 répétitions, ancrages exacts, 3 joueurs profonds (09/11/2026)
+
+Exports reçus : HU 16, 20, 25 à 4 répétitions chacun (SPR 40), 3 joueurs 16 (5) et 25 (4), `hu_6-6_enum` et `3w_4-4-4_enum` (exacts, mode `ui`). Le HU 8/8 enumerated est identique à `hu_8-8_enum` (7 nœuds : ce moteur ne développe pas la branche `SB-raise2`). `3w_25-25-25_r3` omet les 3 nœuds du tapis direct du BTN (mêmes réglages) : `reference_nodes` moyenne désormais chaque nœud sur les exports qui l'ont, à condition que leurs actions concordent.
+
+**Défaut G17 avec 4 répétitions (solveur de s2, sans correction), décisions « flop » :**
+
+| Tapis | Perte moins plancher | TV solveur / bruit | BB se couche face à l'ouverture (référence, écart type entre exports → solveur) | BB se couche face à l'iso | SB relance à 2 BB |
+|---|---|---|---|---|---|
+| HU 16 | +3,0 mBB | 23,2 % / 11,8 % | 19,2 % (0,3) → 27,4 % | 46,2 → 50,8 % | 27,3 → 17,9 % |
+| HU 20 | +3,2 mBB | 23,5 % / 12,8 % | 19,0 % (0,8) → 28,1 % | 44,5 → 48,1 % | 31,8 → 27,9 % |
+| HU 25 | +5,9 mBB | 26,4 % / 14,1 % | 17,2 % (0,4) → 26,4 % | 42,5 → 48,2 % | 36,8 → 39,4 % |
+
+- Le défaut est réel et systématique : le BB se couche 8 à 9 points de plus que la référence face à l'ouverture, aux trois profondeurs, soit 10 à 25 écarts types entre exports ; face à l'iso, 4 à 6 points de plus. La TV des décisions « flop » est le double du bruit d'un export.
+- Il coûte peu en EV : 3 à 6 mBB par main au-dessus du plancher, contre un bruit d'un export de 12 à 40 mBB. Les mains concernées sont marginales. À HU 25, par famille (perte, plancher) : As assortis face à l'ouverture 84 (31), connecteurs assortis face à l'iso 41 (14), autres dépareillées face à l'ouverture 21 (9) ; tout le reste au plancher.
+- Les décisions « tapis » restent au plancher (perte de 6 à 43 mBB, plancher de 7 à 51).
+
+**Ancrages exacts (`tools/solver/compare_exact.py`) :**
+- HU 6/6 : décisions « tapis » (2 nœuds) TV 1,3 %, accord 99 %, perte 0,7 mBB (plancher 0,4) ; décisions « flop » (2 nœuds) TV 22 % : le SB limpe 12,8 % chez nous contre 0,6 % dans l'exact, le BB après un limp pousse 49,6 % contre 54,1 %. Branche `SB-raise2` non développée dans l'exact.
+- 3 joueurs 4/4/4 : décisions « tapis » (5 nœuds) TV 2,0 %, accord 98 %, perte 0,4 mBB (plancher 0,0) ; racine du BTN et du SB (fold, tapis) à moins de 0,5 % ; décisions « flop » TV 8,9 % (le BB après deux limps : push 48,9 % contre 56,5 %). La branche du BTN qui limpe (10 nœuds) n'est pas développée dans l'exact.
+- Avec HU 4/4 : les décisions sans flop coïncident avec l'exact aux profondeurs 4 et 6 (TV 0,4 à 2 %) et à 3 joueurs 4 ; les écarts apparaissent aux nœuds qui passent par le flop, du même ordre que le calcul exact au flop de G17.
+
+**3 joueurs profonds :** 16/16/16 (5 répétitions) : TV 14,8 %, accord 89,0 %, perte 24,7 mBB (plancher 47,3), 0,2 % hors référence ; 25/25/25 (4) : TV 15,6 %, accord 88,5 %, perte 68,5 mBB (plancher 135,6), 0,3 % hors. Dans le bruit (bruit d'un export : 93 mBB à 16 BB, 257 mBB à 25 BB) : un calage à 3 joueurs ne peut pas distinguer le solveur de la référence à ces profondeurs.

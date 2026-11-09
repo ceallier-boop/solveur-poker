@@ -191,28 +191,32 @@
  },
  {
   "config": "hu_16-16",
-  "exports": 1,
+  "exports": 4,
   "outside": 0.0,
   "all": {
    "nodes": 10,
-   "tv": 17.9,
-   "agree": 83.6,
-   "loss": 16.0,
-   "floor": 9.0
+   "tv": 16.4,
+   "agree": 87.6,
+   "loss": 10.0,
+   "floor": 8.6
   },
   "tapis": {
    "nodes": 5,
-   "tv": 4.4,
-   "agree": 95.3,
-   "loss": 10.2,
-   "floor": 8.4
+   "tv": 4.1,
+   "agree": 96.1,
+   "loss": 6.1,
+   "floor": 7.3
   },
   "flop": {
    "nodes": 5,
-   "tv": 25.3,
-   "agree": 77.2,
-   "loss": 19.1,
-   "floor": 9.3
+   "tv": 23.2,
+   "agree": 83.0,
+   "loss": 12.2,
+   "floor": 9.2
+  },
+  "noise": {
+   "tv": 11.8,
+   "loss": 11.6
   }
  },
  {
@@ -243,32 +247,32 @@
  },
  {
   "config": "hu_20-20",
-  "exports": 2,
+  "exports": 4,
   "outside": 0.0,
   "all": {
    "nodes": 12,
-   "tv": 17.3,
-   "agree": 84.7,
-   "loss": 21.0,
-   "floor": 17.9
+   "tv": 17.1,
+   "agree": 86.2,
+   "loss": 17.4,
+   "floor": 16.9
   },
   "tapis": {
    "nodes": 6,
-   "tv": 4.9,
-   "agree": 95.7,
-   "loss": 19.9,
-   "floor": 22.5
+   "tv": 5.0,
+   "agree": 95.1,
+   "loss": 15.7,
+   "floor": 20.1
   },
   "flop": {
    "nodes": 6,
-   "tv": 24.0,
-   "agree": 78.7,
-   "loss": 21.6,
-   "floor": 15.5
+   "tv": 23.5,
+   "agree": 81.4,
+   "loss": 18.4,
+   "floor": 15.2
   },
   "noise": {
-   "tv": 15.3,
-   "loss": 33.1
+   "tv": 12.8,
+   "loss": 22.8
   }
  },
  {
@@ -299,28 +303,32 @@
  },
  {
   "config": "hu_25-25",
-  "exports": 1,
+  "exports": 4,
   "outside": 0.0,
   "all": {
    "nodes": 12,
-   "tv": 19.9,
-   "agree": 80.8,
-   "loss": 41.1,
-   "floor": 26.8
+   "tv": 18.8,
+   "agree": 82.9,
+   "loss": 31.1,
+   "floor": 30.2
   },
   "tapis": {
    "nodes": 6,
-   "tv": 5.3,
-   "agree": 96.6,
-   "loss": 59.7,
-   "floor": 43.7
+   "tv": 4.9,
+   "agree": 97.1,
+   "loss": 42.8,
+   "floor": 50.9
   },
   "flop": {
    "nodes": 6,
-   "tv": 27.9,
-   "agree": 72.0,
-   "loss": 30.8,
-   "floor": 17.4
+   "tv": 26.4,
+   "agree": 75.1,
+   "loss": 24.7,
+   "floor": 18.8
+  },
+  "noise": {
+   "tv": 14.1,
+   "loss": 39.6
   }
  },
  {
@@ -489,28 +497,32 @@
  },
  {
   "config": "3w_16-16-16",
-  "exports": 1,
+  "exports": 5,
   "outside": 0.2,
   "all": {
    "nodes": 46,
-   "tv": 15.6,
-   "agree": 86.2,
-   "loss": 45.7,
-   "floor": 42.7
+   "tv": 14.8,
+   "agree": 89.0,
+   "loss": 24.7,
+   "floor": 47.3
   },
   "tapis": {
    "nodes": 30,
-   "tv": 5.7,
-   "agree": 96.0,
-   "loss": 33.2,
-   "floor": 53.8
+   "tv": 5.8,
+   "agree": 96.8,
+   "loss": 16.9,
+   "floor": 61.4
   },
   "flop": {
    "nodes": 16,
-   "tv": 23.9,
-   "agree": 78.1,
-   "loss": 56.1,
-   "floor": 33.4
+   "tv": 22.3,
+   "agree": 82.6,
+   "loss": 31.3,
+   "floor": 35.6
+  },
+  "noise": {
+   "tv": 11.5,
+   "loss": 93.4
   }
  },
  {
@@ -593,28 +605,32 @@
  },
  {
   "config": "3w_25-25-25",
-  "exports": 1,
+  "exports": 4,
   "outside": 0.3,
   "all": {
    "nodes": 66,
-   "tv": 16.5,
-   "agree": 85.3,
-   "loss": 116.0,
-   "floor": 118.4
+   "tv": 15.6,
+   "agree": 88.5,
+   "loss": 68.5,
+   "floor": 135.6
   },
   "tapis": {
    "nodes": 43,
-   "tv": 8.6,
-   "agree": 93.1,
-   "loss": 141.4,
-   "floor": 193.5
+   "tv": 8.1,
+   "agree": 95.5,
+   "loss": 83.9,
+   "floor": 226.7
   },
   "flop": {
    "nodes": 23,
-   "tv": 23.0,
-   "agree": 78.9,
-   "loss": 94.9,
-   "floor": 56.0
+   "tv": 21.9,
+   "agree": 82.6,
+   "loss": 55.8,
+   "floor": 59.9
+  },
+  "noise": {
+   "tv": 13.6,
+   "loss": 256.9
   }
  }
 ]
