@@ -548,3 +548,8 @@ button.term { display: inline; white-space: normal; }   /* « d'équité » ne s
 .ch-zone h3 { margin: 0; font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .ch-zone small { color: var(--muted); font-size: .85rem; }
 .ch-locked { opacity: .75; }
+/* N1 : durée de la séance, choix discret */
+.today-title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.len-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.len-switch button { border: 0; background: transparent; color: var(--muted); font-size: .8rem; font-weight: 600; padding: 4px 10px; min-height: 32px; }
+.len-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }

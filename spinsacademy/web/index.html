@@ -45,7 +45,8 @@
       <section class="today" id="today" hidden aria-labelledby="today-title">
         <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
         <button class="level-line" id="today-level" hidden></button>
-        <h2 id="today-title">Ta séance du jour <small>· 15 min</small></h2>
+        <div class="today-title-row"><h2 id="today-title">Ta séance du jour <small id="today-len">· 15 min</small></h2>
+          <div class="len-switch" id="len-switch" role="group" aria-label="Durée de la séance"><button type="button" data-min="15" aria-pressed="true">15 min</button><button type="button" data-min="10" aria-pressed="false">10 min</button></div></div>
         <ol class="today-steps" id="today-steps"></ol>
         <p class="note" id="today-note" hidden></p>
         <button class="primary big" id="today-go">Commencer la séance</button>
