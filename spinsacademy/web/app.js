@@ -835,19 +835,30 @@ renderPastilles();
 // révision, thème du jour (2 séries), range du jour ; le serveur (ou la démo) construit le plan, l'application l'enchaîne
 const tzOffset = () => -new Date().getTimezoneOffset();
 async function loadToday() {
-  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
+  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}&minutes=${sessionMinutes()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
   state.today = t; renderToday(t); return t;
 }
+// N1 : séance de 15 ou de 10 minutes, au choix, gardé sur l'appareil ; les étapes et la durée viennent de la réponse du serveur
+const sessionMinutes = () => (store.get('session_minutes') === '10' ? 10 : 15);
+const TODAY_EXPLAIN = { 15: '15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.',
+  10: '10 minutes guidées : tes mains à revoir, puis une série sur ton thème du jour.' };
+$('len-switch').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-min]'); if (!b || Number(b.dataset.min) === sessionMinutes()) return;
+  store.set('session_minutes', b.dataset.min); loadToday().then(loadRecs);
+});
 function renderToday(t) {
+  const len = t.minutes === 10 ? 10 : 15;
+  $('today-len').textContent = `· ${len} min`; $('today-explain').textContent = TODAY_EXPLAIN[len];
+  for (const b of $('len-switch').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.min) === len));
   $('today').hidden = false; $('free-title').hidden = false; $('home-lead').hidden = true;
   $('quick-start').className = 'secondary';                          // un seul bouton plein sur l'accueil : la séance
   $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : t.played_before ? 'Pas encore de série aujourd\'hui : c\'est parti' : 'Première séance : c\'est parti';
   $('today-bb').innerHTML = '';                                      // test joueurs 9 : un seul chiffre BB sur l'accueil (objectif de précision)
   $('today-steps').innerHTML = t.steps.map((x, i) => `<li class="${x.done ? 'done' : i === t.next ? 'now' : ''}"><span class="tick" aria-hidden="true">${x.done ? '✓' : ''}</span>`
-    + `<span>${escT(x.label_fr)}${x.total ? ` <small>${x.count}/${x.total} séries</small>` : ''}</span></li>`).join('');
+    + `<span>${escT(x.label_fr)}${x.total ? ` <small>${x.count}/${x.total} série${x.total > 1 ? 's' : ''}</small>` : ''}</span></li>`).join('');
   $('today-note').hidden = !t.done;
-  $('today-note').textContent = t.done ? 'Séance faite. Reviens demain : tes révisions et un nouveau thème t\'attendent.' : '';
-  $('today-go').textContent = t.done ? 'Une série en plus' : t.started ? 'Continuer la séance' : 'Commencer la séance';
+  $('today-note').textContent = t.done ? `Séance de ${len} minutes faite. Reviens demain : tes révisions et un nouveau thème t'attendent.` : '';
+  $('today-go').textContent = t.done ? 'Une série en plus' : t.started ? `Continuer la séance de ${len} minutes` : `Commencer la séance de ${len} minutes`;   // N1 : le libellé suit le choix
   $('today').classList.toggle('is-done', t.done);
 }
 function todayGo() {
