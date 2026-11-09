@@ -120,6 +120,7 @@ async function start(f, review = false, plan = null, challenge = null) {
     store.set('filters', JSON.stringify(state.filters));
     await next();
   } catch (e) {
+    if (plan === 'replay') { loading(false); notify(e.status === 422 ? 'Rien à rejouer pour l\'instant.' : netMsg(e, 'le rejeu n\'a pas pu démarrer')); loadWorst(); return; }   // N2
     loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
       : e.status && e.status < 500 ? e.message : netMsg(e, "la série n'a pas pu démarrer");            // jamais « Failed to fetch »
     $('filters').open = true; $('home-error').hidden = false;
@@ -773,7 +774,7 @@ function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(loadRecs); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
+  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -817,7 +818,7 @@ async function home() {
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
-  progress(''); show('home'); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(loadRecs); loadGoals(); loadLevel(); loadChallenges();
+  progress(''); show('home'); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -838,13 +839,28 @@ async function loadToday() {
   let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}&minutes=${sessionMinutes()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
   state.today = t; renderToday(t); return t;
 }
+// N2 : les 3 erreurs les plus coûteuses du jour (GET /users/me/worst-today, Défis et rétention) : une ligne chacune (situation, ton
+// choix, le bon coup, le coût tel que le serveur l'écrit), « Les rejouer » ; une erreur rejouée juste devient « rattrapée ».
+// Jamais de bloc vide : sans erreur un jour où le joueur a joué, « Aucune erreur coûteuse aujourd'hui » ; sinon le bloc reste caché.
+async function loadWorst() {
+  let w; try { w = await api(`/users/me/worst-today?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { $('worst').hidden = true; return null; }
+  const xs = w.errors || [], played = !!(state.today && (state.today.started || state.today.done || state.today.active_today));
+  $('worst').hidden = !xs.length && !played;
+  $('worst-list').innerHTML = xs.length ? xs.map((x) => `<li class="${x.replayed_ok ? 'caught' : ''}">${x.replayed_ok ? '<b class="caught-tag">✓ Rattrapée</b> ' : ''}`
+    + `<span class="w-sit">${escT((x.prompt_fr || '').replace(/ Que fais-tu \?$/, ''))}</span>`
+    + `<span class="w-line">Ton choix : ${escT(frLabel(x.chosen_fr))} · le bon coup : <b>${escT(frLabel(x.best_fr))}</b> · ${escT(x.cost_fr)}</span></li>`).join('')
+    : '<li class="note">Aucune erreur coûteuse aujourd\'hui.</li>';
+  $('worst-replay').hidden = !xs.some((x) => !x.replayed_ok);
+  return w;
+}
+$('worst-replay').addEventListener('click', () => { state.inToday = false; state.challenge = null; state.forceChrono = null; start({}, false, 'replay'); });
 // N1 : séance de 15 ou de 10 minutes, au choix, gardé sur l'appareil ; les étapes et la durée viennent de la réponse du serveur
 const sessionMinutes = () => (store.get('session_minutes') === '10' ? 10 : 15);
 const TODAY_EXPLAIN = { 15: '15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.',
   10: '10 minutes guidées : tes mains à revoir, puis une série sur ton thème du jour.' };
 $('len-switch').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-min]'); if (!b || Number(b.dataset.min) === sessionMinutes()) return;
-  store.set('session_minutes', b.dataset.min); loadToday().then(loadRecs);
+  store.set('session_minutes', b.dataset.min); loadToday().then(() => { loadRecs(); loadWorst(); });
 });
 function renderToday(t) {
   const len = t.minutes === 10 ? 10 : 15;

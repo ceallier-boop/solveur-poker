@@ -1,4 +1,5 @@
-// Chantiers de rythme (N1, puis N2 et N3) côté interface, avec assertions.
+// Chantiers de rythme (N1, N2, puis N3) côté interface, avec assertions.
+// N2 : les 3 erreurs les plus coûteuses du jour sur l'accueil, état « rattrapée », bouton « Les rejouer ».
 // N1 : séance de 15 ou 10 minutes, choix discret gardé sur l'appareil, libellés et étapes qui suivent la réponse du serveur.
 // Usage : BASE_URL=http://localhost:8000/ node tools/web/e2e_rythme.cjs [dossier]   (application ou file://…/demo.html)
 const { chromium } = require('playwright');
@@ -29,6 +30,26 @@ const home = (p) => p.waitForSelector('#screen-home:not([hidden]) #today:not([hi
   ok('N1 : séance faite après une seule série', /10 minutes de travail/.test(await p.innerText('#td-score')), await p.innerText('#td-score'));
   await p.click('#td-home'); await home(p); await p.waitForTimeout(1000);
   ok('N1 : accueil « séance de 10 minutes faite »', /Séance de 10 minutes faite/.test(await p.textContent('#today-note')), await p.textContent('#today-note'));
+  // N2 : les 3 erreurs les plus coûteuses du jour, après la série jouée (premier coup à chaque main)
+  const demoNoRoute = BASE.startsWith('file:') && !(await p.evaluate(() => fetch('/users/me/worst-today?mode=gto&tz=0').then((r) => r.ok)));
+  if (demoNoRoute) ok('N2 démo sans la route : bloc caché, pas d\'erreur', !(await p.isVisible('#worst')));
+  else {
+  await p.waitForSelector('#worst:not([hidden])', { timeout: 10000 });
+  const wl = await p.$$eval('#worst-list li', (xs) => xs.map((x) => x.innerText.replace(/\n+/g, ' | ')));
+  ok('N2 : bloc du jour, jamais vide', wl.length >= 1 && wl.length <= 3 && wl.every((t) => /Ton choix : .* · le bon coup : .* · .*BB|Aucune erreur coûteuse aujourd'hui/.test(t)), wl);
+  ok('N2 : bouton « Les rejouer » seulement s\'il y a des erreurs', (await p.isVisible('#worst-replay')) === !/Aucune erreur/.test(wl[0]));
+  await p.screenshot({ path: `${OUT}/rythme_worst.png` });
+  if (!BASE.startsWith('file:')) {                                   // état « rattrapée » : réponse injectée au format annoncé
+    await p.route('**/users/me/worst-today*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mode: 'gto', date: '2026-11-09', errors: [
+      { session_id: 's', question_index: 0, spot_id: 'x', hand: 'K9o', prompt_fr: 'SB · 3 joueurs · 8 BB. Que fais-tu ?', chosen_fr: 'FOLD', best_fr: 'ALL-IN 8 BB', verdict: 'erreur', regret_mbb: 1300, cost_bb: 1.3, cost_fr: '1,3 BB', answered_at: '2026-11-09T10:00:00+00:00', replayed_ok: true },
+      { session_id: 's', question_index: 1, spot_id: 'y', hand: 'Q4o', prompt_fr: 'BB · heads-up · 6 BB. Que fais-tu ?', chosen_fr: 'CALL 5 BB', best_fr: 'FOLD', verdict: 'erreur', regret_mbb: 400, cost_bb: 0.4, cost_fr: '0,4 BB', answered_at: '2026-11-09T10:01:00+00:00' }] }) }));
+    await p.click('#home-btn'); await home(p); await p.waitForTimeout(1200);
+    const caught = await p.innerText('#worst-list li.caught').catch(() => '');
+    ok('N2 : erreur rejouée juste « rattrapée », sans reproche', /Rattrapée/.test(caught) && /Tapis 8 BB \(ALL-IN\)/.test(caught), caught);
+    ok('N2 : le rejeu reste proposé pour les autres', await p.isVisible('#worst-replay'));
+    await p.unroute('**/users/me/worst-today*');
+  }
+  }
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
   await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
