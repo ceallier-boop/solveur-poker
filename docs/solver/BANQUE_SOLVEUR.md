@@ -401,3 +401,8 @@ Exports reçus : HU 16, 20, 25 à 4 répétitions chacun (SPR 40), 3 joueurs 16 
 - Avec HU 4/4 : les décisions sans flop coïncident avec l'exact aux profondeurs 4 et 6 (TV 0,4 à 2 %) et à 3 joueurs 4 ; les écarts apparaissent aux nœuds qui passent par le flop, du même ordre que le calcul exact au flop de G17.
 
 **3 joueurs profonds :** 16/16/16 (5 répétitions) : TV 14,8 %, accord 89,0 %, perte 24,7 mBB (plancher 47,3), 0,2 % hors référence ; 25/25/25 (4) : TV 15,6 %, accord 88,5 %, perte 68,5 mBB (plancher 135,6), 0,3 % hors. Dans le bruit (bruit d'un export : 93 mBB à 16 BB, 257 mBB à 25 BB) : un calage à 3 joueurs ne peut pas distinguer le solveur de la référence à ces profondeurs.
+
+### G19 : plage de fiabilité confirmée (09/11/2026, dans la documentation seulement ; le manifeste de `2026.11.07-s2` n'est pas modifié)
+
+- Décisions `tapis` : **8 à 16 BB, heads-up et 3 joueurs**, confirmée par la référence v5 (heads-up : mêmes actions pour 96 à 100 % des mains, perte ≤ 10 mBB jusqu'à 16 BB, au niveau du plancher de la référence ; à 3 joueurs : 93 à 98 %, dans le bruit). Au-delà de 16 BB, la perte monte avec le bruit de la référence (heads-up 22-25 BB : 43 à 50 mBB pour un plancher de 34 à 51) : non démontrée, non démentie.
+- Décisions `flop` : pas de plage fiable. Écart de coût au-dessus du plancher (heads-up) : 0 à 1 mBB jusqu'à 8 BB, 1 à 5 mBB à 10-12 BB, 3 à 13 mBB à 14-25 BB ; **le défaut est surtout de fréquence** : à 16, 20 et 25 BB, le BB se couche 8 à 9 points de trop face à l'ouverture à 2 BB (27 % contre 17 à 19 %) et 4 à 6 points de trop face à la relance après un limp, pour un coût de 3 à 6 mBB par main (mesure à 4 répétitions, écart entre répétitions 0,3 à 0,8 point). Rapport pour le porteur : `docs/solver/RAPPORT_CALAGE_V5.md`.
