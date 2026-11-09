@@ -1239,6 +1239,83 @@ $('rg-again').addEventListener('click', () => (state.inToday ? todayContinue() :
 $('rg-home').addEventListener('click', home);
 
 // test joueurs du 24/10 : le mode et le thème choisis restent après un rechargement
+// ------------------------------------------------------------------ fiches à emporter (rythme N3) : GET /fiches (Moteur GTO)
+// D'abord trois réglages (table, tapis, position), puis les fiches du réglage groupées par situation ; une fiche = une grille 13 × 13
+// en SVG, avec des motifs en plus des couleurs (lisible imprimée en noir et blanc), la légende, la fiabilité et l'avis des experts.
+const NODE_FR = { first_in: 'Premier à parler', vs_limp: 'Face à un limp', vs_raise: 'Face à une relance', vs_allin: 'Face à un tapis' };
+const TABLE_FR2 = { 'heads-up': 'Heads-up', '3-handed': '3 joueurs' };
+const actKind = (a) => (/^FOLD/.test(a) ? 'fold' : /^CHECK/.test(a) ? 'check' : /^CALL/.test(a) ? 'call' : /^RAISE/.test(a) ? 'raise' : 'allin');
+const FI_DEFS = '<defs>'
+  + '<pattern id="fp-call" width="5" height="5" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="#c9b8ef"/><circle cx="2.5" cy="2.5" r="1.2" fill="#3d2a7a"/></pattern>'
+  + '<pattern id="fp-raise" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#f6c58a"/><rect width="2" height="5" fill="#8a4a0a"/></pattern>'
+  + '<pattern id="fp-dead" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f4f4f4"/><rect width="1" height="6" fill="#cfcfcf"/></pattern></defs>';
+const FI_FILL = { fold: '#f3f4f2', check: '#dfe6e2', call: 'url(#fp-call)', raise: 'url(#fp-raise)', allin: '#1f3f73' };
+const FI_INK = { fold: '#17201c', check: '#17201c', call: '#17201c', raise: '#17201c', allin: '#ffffff' };
+const fiState = { data: null, pick: null, sheet: null };
+const isDead = (dead, i) => (parseInt(dead[i >> 2], 16) >> (i & 3)) & 1;
+async function openFiches() {
+  if (!fiState.data) { loading(true); try { fiState.data = await api('/fiches'); } catch (e) { loading(false); notify(netMsg(e, 'les fiches n\'ont pas pu être chargées'), openFiches); return; } }
+  let p = {}; try { p = JSON.parse(store.get('fiches_pick') || '{}') || {}; } catch (e) { p = {}; }
+  fiState.pick = { table: p.table || 'heads-up', stack: p.stack, hero: p.hero };
+  $('fi-pick').hidden = false; $('fi-sheet').hidden = true; $('fi-actions').hidden = true;
+  renderFiPick(); show('fiches'); progress('Fiches');
+}
+function fiChips(id, values, cur, label) {
+  $(id).innerHTML = values.map((v) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(cur)}">${escT(label(v))}</button>`).join('');
+}
+function renderFiPick() {
+  const F = fiState.data.fiches, pk = fiState.pick;
+  const stacks = [...new Set(F.filter((f) => f.table === pk.table).map((f) => f.stack))].sort((a, b) => a - b);
+  if (!stacks.includes(pk.stack)) pk.stack = stacks.includes(10) ? 10 : stacks[0];
+  const heroes = ['BTN', 'SB', 'BB'].filter((h) => F.some((f) => f.table === pk.table && f.stack === pk.stack && f.hero === h));
+  if (!heroes.includes(pk.hero)) pk.hero = heroes[0];
+  fiChips('fi-table', ['heads-up', '3-handed'], pk.table, (v) => TABLE_FR2[v]);
+  fiChips('fi-stack', stacks, pk.stack, (v) => `${v} BB`);
+  fiChips('fi-hero', heroes, pk.hero, (v) => v);
+  store.set('fiches_pick', JSON.stringify(pk));
+  const mine = F.filter((f) => f.table === pk.table && f.stack === pk.stack && f.hero === pk.hero).sort((a, b) => a.order - b.order);
+  const short = (t) => t.replace(/^[^·]*·\s*/, '');                    // le réglage est déjà choisi : « BB face à un tapis de 8 BB »
+  $('fi-list').innerHTML = Object.keys(NODE_FR).map((n) => { const xs = mine.filter((f) => f.node === n); if (!xs.length) return '';
+    return `<section class="fi-group"><h3>${NODE_FR[n]} <small>${xs.length} fiche${xs.length > 1 ? 's' : ''}</small></h3><ul>${xs.map((f) => `<li><button type="button" class="fi-item" data-id="${escT(f.id)}">`
+      + `<span>${escT(short(f.title_fr))}</span><small class="fi-rel ${f.reliability}">${f.reliability === 'tapis' ? 'Fiable' : 'Approximation'}</small></button></li>`).join('')}</ul></section>`; }).join('')
+    || '<p class="note">Pas de fiche pour ce réglage.</p>';
+}
+for (const [id, key] of [['fi-table', 'table'], ['fi-stack', 'stack'], ['fi-hero', 'hero']]) {
+  $(id).addEventListener('click', (e) => { const b = e.target.closest('button[data-v]'); if (!b) return;
+    fiState.pick[key] = key === 'stack' ? Number(b.dataset.v) : b.dataset.v; renderFiPick(); });
+}
+$('fi-list').addEventListener('click', (e) => { const b = e.target.closest('.fi-item'); if (b) showFiche(b.dataset.id); });
+function ficheSVG(f, hands) {
+  const C = 26, kinds = f.actions.map(actKind); let out = `<svg class="fi-grid" viewBox="0 0 ${13 * C} ${13 * C}" role="img" aria-label="Grille des 169 mains">${FI_DEFS}`;
+  for (let i = 0; i < 13; i++) for (let j = 0; j < 13; j++) {
+    const name = cellName(i, j), h = hands.indexOf(name), x = j * C, y = i * C;
+    if (h < 0 || isDead(f.dead, h)) { out += `<rect x="${x}" y="${y}" width="${C}" height="${C}" fill="url(#fp-dead)"/><text x="${x + C / 2}" y="${y + C / 2 + 3}" class="fi-t dead">${name}</text>`; continue; }
+    let cx = x, best = 0;
+    f.actions.forEach((_, a) => { const w = C * (f.f[a][h] || 0) / 100; if (w > 0.2) out += `<rect x="${cx.toFixed(2)}" y="${y}" width="${w.toFixed(2)}" height="${C}" fill="${FI_FILL[kinds[a]]}"/>`; cx += w; if ((f.f[a][h] || 0) > (f.f[best][h] || 0)) best = a; });
+    out += `<text x="${x + C / 2}" y="${y + C / 2 + 3}" class="fi-t" fill="${FI_INK[kinds[best]]}" stroke="${FI_INK[kinds[best]] === '#ffffff' ? '#1f3f73' : '#ffffff'}">${name}</text>`;
+  }
+  for (let k = 0; k <= 13; k++) out += `<line x1="0" y1="${k * C}" x2="${13 * C}" y2="${k * C}" class="fi-l"/><line x1="${k * C}" y1="0" x2="${k * C}" y2="${13 * C}" class="fi-l"/>`;
+  return out + '</svg>';
+}
+function showFiche(id) {
+  const D = fiState.data, f = D.fiches.find((x) => x.id === id); if (!f) return; fiState.sheet = f;
+  const ap = f.reliability === 'flop' ? ((D.approximation[f.table] || {})[String(f.stack)] || {}).note_fr : null;
+  const sw = (fill) => `<svg class="fi-sw" viewBox="0 0 14 14">${FI_DEFS}<rect width="14" height="14" fill="${fill}" stroke="#888" stroke-width=".6"/></svg>`;
+  const legend = f.actions.map((a) => `<span>${sw(FI_FILL[actKind(a)])}${escT(frLabel(a))}</span>`).join('') + `<span>${sw('url(#fp-dead)')}main jamais à cette décision</span>`;
+  const experts = (f.expert_hands || []).map((x) => `<li><b>${escT(x.hand)}</b> : les experts jouent plutôt ${escT(frLabel(x.recommended))} ; la banque, ${escT(frLabel(x.bank))} (${x.bank_pct} %).</li>`).join('');
+  $('fi-sheet').innerHTML = `<header class="fi-head"><h2>${escT(f.title_fr)}</h2><p class="fi-rel ${f.reliability}">${f.reliability === 'tapis' ? 'Fiable' : 'Approximation'}</p></header>`
+    + ficheSVG(f, D.hands) + `<p class="fi-legend">${legend}</p>`
+    + `<p class="fi-hint">Chaque case est partagée selon la part de chaque action ; le texte suit l'action la plus fréquente.</p>`
+    + (ap ? `<p class="fi-note">${escT(ap)}</p>` : `<p class="fi-note quiet">${escT(D.reliability_fr.tapis)}</p>`)
+    + (experts ? `<div class="fi-experts"><p>Là où les experts jouent autrement :</p><ul>${experts}</ul></div>` : '')
+    + `<p class="fi-src">SpinsAcademy · banque ${escT(D.bank)} · ${escT(D.generated)}</p>`;
+  $('fi-pick').hidden = true; $('fi-sheet').hidden = false; $('fi-actions').hidden = false; window.scrollTo(0, 0);
+}
+$('fiches-btn').addEventListener('click', openFiches);
+$('fi-back').addEventListener('click', () => { $('fi-pick').hidden = false; $('fi-sheet').hidden = true; $('fi-actions').hidden = true; window.scrollTo(0, 0); });
+$('fi-print').addEventListener('click', () => window.print());       // une fiche par page A4 (feuille de style d'impression), sans téléchargement
+$('fi-home').addEventListener('click', home);
+
 (function restoreHome() {
   const m = store.get('mode'); const btn = m && document.querySelector(`.mode-switch [data-value="${m}"]`);
   if (btn) { for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn)); }
