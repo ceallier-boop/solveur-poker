@@ -13,6 +13,8 @@ from spinsacademy import adaptive, challenges, coachs, field, goals, levels, qui
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
+_FP = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'data', 'fiches.json')
+FICHES_JSON = open(_FP, encoding='utf-8').read().replace('</', '<\\/') if os.path.exists(_FP) else 'null'     # N3 : fiches à emporter, embarquées dans la démo
 
 
 def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
@@ -671,6 +673,7 @@ const DEMO = (() => {
     }
     if (p === '/users/me/export') return [200, { exported_at: now(), note_fr: 'Version de démonstration : données gardées dans ce navigateur.', sessions: load().sessions }];
     if (p === '/users/me/reviews') return [200, reviews(url.searchParams.get('mode') || 'gto')];
+    if (p === '/fiches') { const el = document.getElementById('demo-fiches'); const d = el ? JSON.parse(el.textContent) : null; return d ? [200, d] : [404, { detail: 'fiches indisponibles' }]; }   // N3
     if (p === '/users/me/today') return [200, today(url.searchParams.get('mode') || 'gto', Number(url.searchParams.get('minutes') || 15) <= 10)];
     if (p === '/users/me/recommendations') return [200, recommendations(url.searchParams.get('mode') || 'gto')];
     if (p === '/users/me/goals' && method === 'PUT') return setGoal(body);
@@ -738,6 +741,7 @@ def build(out, k_gto, exploit_max=2500):
     body = body.replace('id="quick-start">Série recommandée<', 'id="quick-start">Série rapide<', 1)
     page = (f'<meta charset="utf-8">\n<title>SpinsAcademy</title>\n<meta name="theme-color" content="#0f3d2e">\n<style>\n{theme_css(css)}\n{EXTRA_CSS}</style>\n'
             f'{body}\n<div id="demo-toast" role="status" hidden></div>\n<script type="application/octet-stream" id="demo-data">{blob}</script>\n'
+            f'<script type="application/json" id="demo-fiches">{FICHES_JSON}</script>\n'
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
             f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')

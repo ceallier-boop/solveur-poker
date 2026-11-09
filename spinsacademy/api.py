@@ -184,6 +184,16 @@ def conseil_page():
     return FileResponse(os.path.join(WEB, 'conseil.html'))
 
 
+FICHES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'fiches.json')
+
+
+@app.get('/fiches')
+def fiches():
+    """fiches à emporter (rythme N3) : charts 13 x 13 de la banque du solveur, générés par tools/solver/build_fiches.py ; lues à l'ouverture de la page « Fiches »"""
+    if not os.path.exists(FICHES): raise HTTPException(404, 'fiches indisponibles')
+    return FileResponse(FICHES, media_type='application/json', headers={'Cache-Control': 'public, max-age=3600'})
+
+
 @app.get('/admin', include_in_schema=False)
 def admin_page():
     return FileResponse(os.path.join(WEB, 'admin.html'))
