@@ -122,7 +122,7 @@ class NewSession(BaseModel):
     seed: Optional[int] = None
     adaptive: Optional[bool] = None       # None : préférence du joueur ; ignoré si des filtres sont choisis
     review: bool = False                  # révision espacée : les mains ratées arrivées à échéance d'abord, complétées par un tirage normal
-    plan: Optional[str] = Field(None, pattern='^(review|theme|placement)$')   # étape de la séance du jour (spinsacademy.today)
+    plan: Optional[str] = Field(None, pattern='^(review|theme|placement|replay)$')   # étape de la séance du jour (spinsacademy.today)
     challenge: Optional[str] = Field(None, pattern='^(daily|perfect|pressure|reader)$')   # défi (spinsacademy.challenges)
     tz: int = 0                           # décalage horaire de l'appareil (minutes) : thème de la séance du jour pour la série parfaite
 
@@ -262,7 +262,7 @@ def _least_repeated(draw, seed, recent):
 
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
-    pid = player(x_player_id, required=body.review or bool(body.challenge) or body.plan == 'placement'); filters = body.filters.model_dump(exclude_none=True); info = None
+    pid = player(x_player_id, required=body.review or bool(body.challenge) or body.plan in ('placement', 'replay')); filters = body.filters.model_dump(exclude_none=True); info = None
     plan = body.plan; fixed_seed = None
     reader = False
     if body.challenge:                                                     # étape 5 : la série du défi
@@ -281,6 +281,11 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
             filters = dict(family='read'); reader = True
         body.filters = Filters(**filters); body.size = quiz.SERIES_SIZE
+    replay = None
+    if plan == 'replay':                                                   # N2 : rejouer les pires erreurs du jour (1 à 3, sans complément)
+        with closing(connect()) as con: errs = _worst_today(con, pid, body.mode, body.tz)[1]
+        if not errs: raise HTTPException(422, "Aucune erreur à rejouer aujourd'hui")
+        replay = [(e['spot_id'], e['hand'], 'review', f"Rejeu de ton erreur du jour ({e['cost_fr']})") for e in errs]
     depth = {}
     for attempt in (0, 1):                                                 # 2e essai sans la profondeur du niveau si la tranche manque de situations
         try:
@@ -292,7 +297,9 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
                 info = _adaptation(con, pid, body.mode, version, body.size, body.seed, depth) if want else None
                 due = review.summary(_mode_rows(con, pid, body.mode, None), version, tz=max(-840, min(840, body.tz)))['due_items'] if body.review else None
                 recent = _recent(con, pid)
-            if plan == 'placement':                                            # audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
+            if replay is not None:
+                series = replay
+            elif plan == 'placement':                                          # audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
                 if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue en mode GTO')
                 series = [(s, h, None, None) for s, h in quiz.draw_placement(version, body.seed, excluded)]
             elif due is not None:
@@ -721,15 +728,20 @@ def my_worst_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = 
     """les 3 pires erreurs du jour local (chantier N2, spinsacademy.worst) ; liste vide s'il n'y en a pas"""
     pid = player(x_player_id, required=True)
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    with closing(connect()) as con: day, errs = _worst_today(con, pid, mode, tz)
+    return dict(mode=mode, date=day.isoformat(), errors=errs)
+
+
+def _worst_today(con, pid, mode, tz):
+    """(jour local, pires erreurs du jour) : la liste de l'accueil et la série « Les rejouer » viennent du même calcul"""
     tz = max(-840, min(840, tz)); day = today.local_day(_now(), tz)
-    with closing(connect()) as con:
-        rows = [dict(r) for r in con.execute(
-            'SELECT s.id AS session_id, a.idx, s.dataset_version, q.spot_id, q.hand, a.verdict, a.regret_mbb, a.answered_at, a.timed_out, a.result '
-            'FROM sessions s JOIN questions q ON q.session_id = s.id JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx '
-            "WHERE s.player_id = ? AND COALESCE(s.plan, '') != 'placement' AND a.answered_at >= ?",
-            (pid, (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat(timespec='seconds')))]
-    rows = [r for r in rows if quiz.mode_of(r['dataset_version']) == mode]
-    return dict(mode=mode, date=day.isoformat(), errors=worst.build(rows, day, tz))
+    rows = [dict(r) for r in con.execute(
+        'SELECT s.id AS session_id, s.rowid AS session_seq, s.created_at AS session_created_at, s.plan, a.idx, s.dataset_version, q.spot_id, q.hand, a.verdict, '
+        'a.regret_mbb, a.answered_at, a.timed_out, a.result '
+        'FROM sessions s JOIN questions q ON q.session_id = s.id JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx '
+        "WHERE s.player_id = ? AND COALESCE(s.plan, '') != 'placement' AND a.answered_at >= ?",
+        (pid, (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat(timespec='seconds')))]
+    return day, worst.build([r for r in rows if quiz.mode_of(r['dataset_version']) == mode], day, tz)
 
 
 @app.get('/users/me/wins')
