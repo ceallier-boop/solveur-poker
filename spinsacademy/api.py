@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins
+from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins, worst
 from .hrc import ROOT
 
 SCHEMA = """
@@ -704,6 +704,22 @@ def set_goal(body: GoalChange, x_player_id: Optional[str] = Header(None)):
                     'ON CONFLICT(player_id, mode, week, kind) DO UPDATE SET target = excluded.target, updated_at = excluded.updated_at',
                     (pid, body.mode, goals.week_start(day).isoformat(), body.kind, t, _now()))
     return my_goals(body.mode, body.tz, x_player_id)
+
+
+@app.get('/users/me/worst-today')
+def my_worst_today(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(None)):
+    """les 3 pires erreurs du jour local (chantier N2, spinsacademy.worst) ; liste vide s'il n'y en a pas"""
+    pid = player(x_player_id, required=True)
+    if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
+    tz = max(-840, min(840, tz)); day = today.local_day(_now(), tz)
+    with closing(connect()) as con:
+        rows = [dict(r) for r in con.execute(
+            'SELECT s.id AS session_id, a.idx, s.dataset_version, q.spot_id, q.hand, a.verdict, a.regret_mbb, a.answered_at, a.timed_out, a.result '
+            'FROM sessions s JOIN questions q ON q.session_id = s.id JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx '
+            "WHERE s.player_id = ? AND COALESCE(s.plan, '') != 'placement' AND a.answered_at >= ?",
+            (pid, (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat(timespec='seconds')))]
+    rows = [r for r in rows if quiz.mode_of(r['dataset_version']) == mode]
+    return dict(mode=mode, date=day.isoformat(), errors=worst.build(rows, day, tz))
 
 
 @app.get('/users/me/wins')
