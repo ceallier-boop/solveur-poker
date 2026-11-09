@@ -76,8 +76,9 @@ def approximation(curve, table, stack):
     if stack in cands: cands = [stack]
     best = max(cands, key=lambda n: row(n)['flop']['loss'] - row(n)['flop']['floor'])
     f = row(best)['flop']; ex = max(0.0, f['loss'] - f['floor'])
-    note = (f"Approximation : à {best:g} BB, notre solveur perd {f['loss']:g} mBB par main contre {f['floor']:g} pour la référence elle-même "
-            f"(écart de {ex:.1f} mBB), et recommande la même action que la référence pour {f['agree']:g} % des mains.")
+    fr = lambda x: f'{x:g}'.replace('.', ',')
+    note = (f"Approximation : à {best:g} BB, notre solveur perd {fr(f['loss'])} mBB par main contre {fr(f['floor'])} pour la référence elle-même "
+            f"(écart de {fr(round(ex, 1))} mBB), et recommande la même action que la référence pour {fr(f['agree'])} % des mains.")
     if table == 'heads-up' and best >= 16:
         note += " Défaut connu : face à une ouverture à 2 BB, le BB se couche environ 8 points de trop (mains marginales)."
     out = dict(perte_mbb=f['loss'], plancher_mbb=f['floor'], accord_pct=f['agree'], note_fr=note)
