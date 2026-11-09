@@ -63,3 +63,42 @@ def test_timezone(client, tmp_path):
     assert get(client, tz=0)['errors'] == []
     if (now + datetime.timedelta(hours=1)).date() == now.date():
         assert get(client, tz=60)['errors']
+
+
+def answer_all(c, s, H, best=True):
+    for i in range(s['size']):
+        q = c.get(f"/quiz/next?session_id={s['session_id']}").json()['question']
+        reg = sorted((quiz.correct(s['dataset_version'], q['spot_id'], q['hand'], o['id'])['regret_mbb'], o['id']) for o in q['options'])
+        c.post('/attempts', json={'session_id': s['session_id'], 'question_index': i, 'action_id': reg[0 if best else -1][1]}, headers=H)
+
+
+def test_replay(client):
+    assert client.post('/sessions', json={'mode': 'gto', 'plan': 'replay', 'tz': 60}).status_code == 400            # joueur identifié
+    assert client.post('/sessions', json={'mode': 'gto', 'plan': 'replay', 'tz': 60}, headers=A).status_code == 422  # aucune erreur
+    play(client, A, {'mode': 'gto'})
+    before = get(client)['errors']; q0 = client.get('/users/me/stats', headers=A).json()['questions']
+    s = client.post('/sessions', json={'mode': 'gto', 'plan': 'replay', 'tz': 60}, headers=A).json()
+    assert s['size'] == len(before) and 1 <= s['size'] <= 3                                                         # sans complément
+    served = [client.get(f"/quiz/next?session_id={s['session_id']}").json() for _ in range(1)][0]
+    assert (served['question']['spot_id'], served['question']['hand']) == (before[0]['spot_id'], before[0]['hand'])
+    assert served['purpose_fr'].startswith('Rejeu')
+    answer_all(client, s, A, best=True)
+    after = get(client)['errors']
+    assert [(e['spot_id'], e['hand']) for e in after] == [(e['spot_id'], e['hand']) for e in before]                # même liste
+    assert all(e['replayed_ok'] for e in after) and not any(e['replayed_ok'] for e in before)
+    assert client.get('/users/me/stats', headers=A).json()['questions'] == q0 + s['size']                            # compte dans les stats
+    ch = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
+    assert all(c['status'] == 'todo' for c in ch['daily'] + ch['weekly'] if c['kind'] != 'range')                  # aucun défi
+    t = client.get('/users/me/today?mode=gto&tz=60', headers=A).json()
+    assert not next(x for x in t['steps'] if x['kind'] == 'theme')['done']                                           # pas une étape de séance
+
+
+def test_replay_errors_not_listed_and_list_stable(client):
+    play(client, A, {'mode': 'gto'})
+    first = get(client)['errors']; assert len(first) == 3
+    s = client.post('/sessions', json={'mode': 'gto', 'plan': 'replay', 'tz': 60}, headers=A).json()
+    answer_all(client, s, A, best=False)                                                                             # rejeu raté
+    play(client, A, {'mode': 'gto'})                                                                                 # nouvelles erreurs, peut-être plus coûteuses
+    now = get(client)['errors']
+    assert [(e['session_id'], e['question_index']) for e in now] == [(e['session_id'], e['question_index']) for e in first]
+    assert not any(e['replayed_ok'] for e in now)
