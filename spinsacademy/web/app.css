@@ -597,8 +597,11 @@ body.has-tabs main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px
 .tab.center svg { width: 30px; height: 30px; } .tab.center[aria-current="page"]::after { display: none; }
 .tab .badge { position: absolute; top: 4px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--bad); color: #fff; font-size: .68rem; font-weight: 800; display: grid; place-items: center; }
 .tab.center .badge { top: -2px; left: calc(50% + 14px); }
-.avatar { width: 36px; height: 36px; border-radius: 50%; background: #9fe0c0; color: #0b3f2d; border: 0; display: grid; place-items: center; padding: 0; }
-.avatar svg { width: 22px; height: 22px; }
+.avatar { background: none; border: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; color: inherit; }
+.avatar-ic { width: 32px; height: 32px; border-radius: 50%; background: #9fe0c0; color: #0b3f2d; display: grid; place-items: center; }
+.avatar svg { width: 20px; height: 20px; }
+.avatar-label { font-size: .68rem; line-height: 1; }
+body.has-tabs .lex-btn { display: none; }                          /* retest 10 : le lexique est dans Outils ; l'en-tête le garde pendant une série */
 .tab-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; } .tab-head h1 { margin: 8px 0 0; }
 .slot, .train { display: flex; flex-direction: column; gap: 14px; } .slot:empty { display: none; }
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -636,3 +639,8 @@ body.has-tabs main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px
 .im-offer .soon { font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; white-space: nowrap; }
 @media (prefers-color-scheme: dark) { .im-error { color: #ff8a80; } }
 @media (hover: none) { .im-drag { display: none; } }
+
+/* retest 10 : série à reprendre, sur l'onglet Défis */
+.resume-card { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 10px 14px; }
+.resume-card span { flex: 1 1 180px; font-weight: 600; }
+.level-expl { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .level-expl p { margin: 0 0 6px; }

@@ -69,7 +69,7 @@ async function quickSeries(p, served, onAnswer) {                 // une série 
 
   // AU4 seconde moitié et AU5 de bout en bout : historique réel de 4 jours (progrès net), puis rechargement
   p = await page(); await onboard(p, 'debut', 'bases');
-  ok('AU4 : nouveau joueur, objectifs et défis repliés', (await p.getAttribute('#extras', 'open')) === null);
+  ok('retest 10 : objectifs de la semaine dépliés dès le premier jour', (await p.getAttribute('#extras', 'open')) !== null);
   const pid = await p.evaluate(() => localStorage.getItem('player_id'));
   helper('seed', pid);
   await p.reload(); await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
