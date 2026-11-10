@@ -1,7 +1,8 @@
 // Recette indépendante du test de placement (audit AU7, responsable des tests), en complément de e2e_placement.cjs (Interface),
 // avec des réponses choisies côté serveur (meilleure ou pire option) et des contrôles par l'API :
 //   proposé au premier lancement à un joueur confirmé ou « je joue beaucoup », jamais à un débutant ;
-//   meilleures réponses → niveau 3 proposé, rien d'appliqué avant « Prendre ce niveau », niveau 3 enregistré par le serveur après ;
+//   meilleures réponses → le niveau le plus haut que la banque permet (3 ; 2 sur la banque du test fermé 8-16 BB, dont la tranche
+//   17-25 BB est annoncée à 0), rien d'appliqué avant le choix du joueur, niveau enregistré par le serveur après ;
 //   les 10 réponses hors de /users/me/stats, aussi quand le joueur a d'autres séries ;
 //   abandon après 3 mains depuis « Ma progression », reprise de la même série (pas de nouvelle série), pires réponses → niveau 1.
 // Serveur de test (base jetable) puis :
@@ -19,20 +20,32 @@ const lines = readline.createInterface({ input: helper.stdout }); const waiting 
 lines.on('line', (l) => waiting.shift()(JSON.parse(l)));
 const pick = (which, q) => new Promise((res) => { waiting.push(res); helper.stdin.write(`${which} ${q.spot_id} ${q.hand}\n`); });
 
-const api = async (p, route) => {
-  const pid = await p.evaluate(() => localStorage.getItem('player_id'));
-  const r = await fetch(new URL(route, BASE), { headers: { 'X-Player-Id': pid } }); return r.json();
-};
+const api = (p, route) => p.evaluate(async (r) => {                // par le fetch de la page : le serveur, ou le moteur local de la démo
+  const res = await window.fetch('/' + r, { headers: { 'X-Player-Id': localStorage.getItem('player_id') } }); return res.json();
+}, route);
+const watch = (p) => p.evaluate(() => {                              // dernière question, série en cours, séries créées (application et démo)
+  const f = window.fetch; window.__saSessions = 0;
+  window.fetch = async (path, opts) => {
+    const r = await f(path, opts); const u = String(path);
+    if (u.includes('/quiz/next')) { const sid = new URL(u, location.href).searchParams.get('session_id'); const j0 = r.json.bind(r);
+      r.json = async () => { const j = await j0(); if (j && j.question) { window.__lastQ = j.question; window.__lastSid = sid; } return j; }; }
+    if (/\/sessions$/.test(u.split('?')[0]) && opts && opts.method === 'POST') window.__saSessions += 1;   // toute demande de nouvelle série
+    return r;
+  };
+});
+const lastQ = (p) => p.evaluate(() => window.__lastQ); const lastSid = (p) => p.evaluate(() => window.__lastSid);
+const sessionsCreated = (p) => p.evaluate(() => window.__saSessions);
 async function toStep3(p, exp) {
   await p.goto(BASE);
   await p.waitForFunction(() => !document.getElementById('screen-onboard').hidden || !document.getElementById('today').hidden, null, { timeout: 20000 });
+  await watch(p);
   await p.click(`#ob-exp button[data-v="${exp}"]`); await p.click('#ob-goal button[data-v="bases"]'); await p.click('#ob-next'); await p.click('#ob-next');
 }
 async function play(p, which, n) {                                  // n mains, l'option choisie par le serveur ; renvoie les verdicts
   const verdicts = [];
   for (let i = 0; i < n; i++) {
     await p.waitForSelector('#screen-question:not([hidden])'); await p.waitForTimeout(150);
-    const choice = await pick(which, p.lastQ); verdicts.push(choice.verdict);
+    const choice = await pick(which, await lastQ(p)); verdicts.push(choice.verdict);
     await p.click(`#actions button[data-id="${choice.action_id}"]`); await p.waitForSelector('#screen-answer:not([hidden])'); await p.click('#next-btn');
   }
   return verdicts;
@@ -42,11 +55,7 @@ async function play(p, which, n) {                                  // n mains, 
   const b = await chromium.launch(); const errs = [];
   const page = async () => {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e))); p.sessionsCreated = 0;
-    p.on('response', async (r) => {
-      if (r.url().includes('/quiz/next') && r.ok()) { const j = await r.json(); if (j.question) { p.lastQ = j.question; p.lastSid = new URL(r.url()).searchParams.get('session_id'); } }
-      if (r.url().endsWith('/sessions') && r.request().method() === 'POST' && r.status() === 201) p.sessionsCreated += 1;
-    });
+    const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e)));
     return p;
   };
 
@@ -57,28 +66,42 @@ async function play(p, which, n) {                                  // n mains, 
     await p.context().close();
   }
 
-  // confirmé, meilleures réponses : niveau 3 proposé, appliqué seulement par « Prendre ce niveau »
+  // confirmé, meilleures réponses : le niveau le plus haut que la banque permet, appliqué seulement par le choix du joueur
   let p = await page(); await toStep3(p, 'confirme'); await p.click('#ob-placement');
   const best = await play(p, 'best', 10);
   await p.waitForSelector('#screen-placement:not([hidden])', { timeout: 15000 });
-  const res = await api(p, `users/me/placement?session_id=${p.lastSid}`);
+  const res = await api(p, `users/me/placement?session_id=${await lastSid(p)}`);
+  const empty = res.bands.filter((x) => x.expected === 0).map((x) => x.level);       // banque étroite : tranche non servie, annoncée à 0
+  const top = empty.length ? Math.min(...empty) - 1 : 3;
   ok('meilleures réponses : 10 réponses justes', best.every((v) => v === 'correct'), best);
-  ok('résultat du serveur : complet, 4 / 3 / 3 mains, niveau 3 proposé', res.complete && res.bands.map((x) => x.questions).join() === '4,3,3' && res.proposed_level === 3, res);
-  ok('écran : « Niveau 3 » et « Prendre ce niveau »', /Niveau 3/.test(await p.textContent('#pl-level')) && await p.isVisible('#pl-take'), await p.textContent('#pl-level'));
+  ok(`résultat du serveur : complet, 10 mains${empty.length ? `, tranche ${empty} à 0` : ' en 4 / 3 / 3'}, niveau ${top} proposé`,
+    res.complete && res.bands.reduce((n, x) => n + x.questions, 0) === 10 && empty.every((lv) => res.bands[lv - 1].questions === 0)
+    && (empty.length || res.bands.map((x) => x.questions).join() === '4,3,3') && res.proposed_level === top, res);
+  const rows = await p.$$eval('#pl-bands tr', (xs) => xs.map((x) => x.innerText.replace(/\s+/g, ' ').trim()));
+  ok('écran : trois tranches, la tranche non servie annoncée à 0', rows.length === 3 && empty.every((lv) => /\b0\b/.test(rows[lv - 1])), rows);
+  ok(`écran : « Niveau ${top} »`, new RegExp(`Niveau ${top}`).test(await p.textContent('#pl-level')), await p.textContent('#pl-level'));
   ok('rien d\'appliqué avant le choix du joueur', (await api(p, 'users/me/level')).level === 2);
-  await p.click('#pl-take'); await p.waitForSelector('#screen-home:not([hidden])', { timeout: 15000 }); await p.waitForTimeout(1000);
-  ok('« Prendre ce niveau » : niveau 3 enregistré par le serveur', (await api(p, 'users/me/level')).level === 3);
-  ok('« Prendre ce niveau » : accueil au niveau 3', /Niveau 3/.test(await p.innerText('#today-level')), await p.innerText('#today-level'));
+  if (top > 2) {
+    ok('« Prendre ce niveau » proposé', await p.isVisible('#pl-take'));
+    await p.click('#pl-take');
+  } else {                                                          // niveau proposé = niveau actuel : rien à prendre
+    ok('niveau proposé = niveau actuel : pas de « Prendre ce niveau », on continue', !(await p.isVisible('#pl-take')) && await p.isVisible('#pl-keep'), await p.textContent('#pl-keep'));
+    await p.click('#pl-keep');
+  }
+  await p.waitForSelector('#screen-home:not([hidden])', { timeout: 15000 }); await p.waitForTimeout(1000);
+  ok(`niveau ${top} enregistré par le serveur`, (await api(p, 'users/me/level')).level === top);
+  ok(`accueil au niveau ${top}`, new RegExp(`Niveau ${top}`).test(await p.innerText('#today-level')), await p.innerText('#today-level'));
   ok('les 10 réponses du test hors de /users/me/stats', (await api(p, 'users/me/stats')).questions === 0);
 
   // une vraie série, puis le test depuis « Ma progression » : abandon après 3 mains, reprise, pires réponses
   await p.click('#quick-start'); await play(p, 'best', 5); await p.waitForSelector('#screen-summary:not([hidden])'); await p.click('#back-home'); await p.waitForTimeout(800);
   ok('une vraie série compte : 5 questions dans /users/me/stats', (await api(p, 'users/me/stats')).questions === 5);
   await p.click('#stats-btn'); await p.waitForSelector('#screen-stats:not([hidden])'); await p.click('#st-placement');
-  const before = p.sessionsCreated; await play(p, 'worst', 3); const sid = p.lastSid;
+  await play(p, 'worst', 3); const sid = await lastSid(p); const before = await sessionsCreated(p);   // après l'abandon
   await p.click('#home-btn'); await p.waitForSelector('#resume:not([hidden])', { timeout: 15000 }); await p.click('#resume');
   await p.waitForSelector('#screen-question:not([hidden])'); await p.waitForTimeout(300);
-  ok('reprise : même série, à la 4e main', p.lastSid === sid && p.sessionsCreated === before + 1 && /4 \/ 10/.test(await p.textContent('#progress')), { sid, now: p.lastSid, progress: await p.textContent('#progress') });
+  const nowSid = await lastSid(p), made = await sessionsCreated(p);
+  ok('reprise : même série, aucune série créée, à la 4e main', nowSid === sid && made === before && /4 \/ 10/.test(await p.textContent('#progress')), { sid, now: nowSid, séries: made - before, progress: await p.textContent('#progress') });
   const worst = await play(p, 'worst', 7);
   await p.waitForSelector('#screen-placement:not([hidden])', { timeout: 15000 });
   const res2 = await api(p, `users/me/placement?session_id=${sid}`);
