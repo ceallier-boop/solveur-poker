@@ -9,7 +9,7 @@ const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = proce
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   if (process.env.PLAYER) await ctx.addInitScript((id) => localStorage.setItem('player_id', id), process.env.PLAYER);
-  const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#recs:not([hidden])', { timeout: 15000 });
   const res = { recs: await p.$$eval('#recs-list li', (x) => x.map((y) => y.innerText.replace(/\n+/g, ' | '))) };
   await p.screenshot({ path: `${OUT}/recs_home.png`, fullPage: true });

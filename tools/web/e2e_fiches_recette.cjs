@@ -33,7 +33,7 @@ function readGrid() {                                              // dans la pa
 
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE);
   await p.waitForFunction(() => !document.getElementById('screen-onboard').hidden || !document.getElementById('today').hidden, null, { timeout: 20000 });

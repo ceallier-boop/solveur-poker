@@ -11,7 +11,7 @@ const OLD = 'gto_preflop/2026.10.12-1';            // version historique refusé
 (async () => {
   const out = process.argv[2]; const errors = []; const base = process.env.BASE_URL || 'http://localhost:8000/';
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage();
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', e => errors.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !/40[39]|503/.test(m.text())) errors.push(m.text()); });
   p.on('dialog', d => d.accept());
   const before = await (await ctx.request.post(base + 'sessions', { data: {} })).status();

@@ -9,7 +9,7 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 (async () => {
   const out = process.argv[2] || '.'; const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const b = await chromium.launch(); const res = {};
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage(); const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p); await p.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller || false, null, { timeout: 5000 }).catch(() => {});
   await p.tap('#quick-start');
   for (let i = 0; i < 5; i++) { await p.waitForSelector('#screen-question:not([hidden])'); await p.locator('#actions button').first().tap(); await p.waitForSelector('#screen-answer:not([hidden])'); await p.tap('#next-btn'); }

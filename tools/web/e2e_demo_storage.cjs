@@ -8,7 +8,7 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 };
 (async () => {
   const URL = process.env.DEMO_URL || 'http://localhost:8072/spinsacademy.html'; const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage(); const logs = []; p.on('pageerror', (e) => logs.push('pageerror ' + e.message));
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); const logs = []; p.on('pageerror', (e) => logs.push('pageerror ' + e.message));
   const ans = (v) => ({ action_id: 'F', at: '2026-10-20T10:00:00+00:00', verdict: v, points: v === 'correct' ? 1 : v === 'erreur' ? 0 : 0.5, regret_mbb: 80, chosen_label: 'Fold', best_label: 'Tapis (8 BB)' });
   const old = { sessions: {
     a: { id: 'a', created_at: '2026-10-20T10:00:00+00:00', mode: 'gto', items: [999990, 999991, 3, 4, 5], answers: { 0: ans('erreur'), 1: ans('correct'), 2: ans('correct'), 3: ans('imprécision'), 4: ans('correct') }, purposes: {} },

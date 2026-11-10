@@ -32,7 +32,7 @@ async function quickSeries(p) {
   if (!BANK) { console.error('SPINSACADEMY_DATASET : la banque servie par le serveur de test (ex. 2026.11.07-s2) est nécessaire'); process.exit(2); }
   const b = await chromium.launch(); const errs = [];
   for (const [label, exp, level, series] of [['niveau 2', 'confirme', null, 5], ['niveau 1', 'debut', null, 2], ['niveau 3', 'confirme', 3, 2]]) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage().then(require('./nav_helper.cjs').wire);
     p.on('pageerror', (e) => errs.push(String(e))); const served = []; const versions = new Set();
     p.on('response', async (r) => {
       if (r.url().includes('/quiz/next') && r.ok()) { const q = (await r.json()).question; if (q) served.push(q.spot_id); }

@@ -5,7 +5,7 @@ const skipOnboarding = async (pg) => { try { await pg.waitForSelector('#screen-o
   if (await pg.isVisible('#screen-onboard')) { await pg.click('#ob-skip'); await pg.waitForSelector('#screen-home:not([hidden])'); } } catch (e) { /* page sans accueil */ } };
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 (async () => {
-  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#today:not([hidden])', { timeout: 15000 });
   const res = { modeFirst: await p.evaluate(() => !!(document.querySelector('.mode-switch').compareDocumentPosition(document.getElementById('today')) & Node.DOCUMENT_POSITION_FOLLOWING)) };

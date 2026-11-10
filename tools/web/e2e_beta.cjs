@@ -13,7 +13,7 @@ const FOUR_G = { offline: false, latency: 70, downloadThroughput: 4e6 / 8, uploa
 
 async function mobile(browser) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage(); const errors = [];
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); const errors = [];
   p.on('pageerror', (e) => errors.push(String(e)));
   return { ctx, p, errors };
 }

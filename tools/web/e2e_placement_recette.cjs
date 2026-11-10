@@ -42,7 +42,7 @@ async function play(p, which, n) {                                  // n mains, 
   const b = await chromium.launch(); const errs = [];
   const page = async () => {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(String(e))); p.sessionsCreated = 0;
+    const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e))); p.sessionsCreated = 0;
     p.on('response', async (r) => {
       if (r.url().includes('/quiz/next') && r.ok()) { const j = await r.json(); if (j.question) { p.lastQ = j.question; p.lastSid = new URL(r.url()).searchParams.get('session_id'); } }
       if (r.url().endsWith('/sessions') && r.request().method() === 'POST' && r.status() === 201) p.sessionsCreated += 1;

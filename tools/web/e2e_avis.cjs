@@ -11,7 +11,7 @@ const avisOf = (chosen, k) => ({ split: true, experts: 3, nuance_fr: k === 'rec'
 (async () => {
   const b = await chromium.launch(); const errs = [];
   for (const k of ['rec', 'autre', 'aucun']) {
-    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(String(e)));
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e)));
     await p.route('**/attempts', async (route) => {
       const res = await route.fetch(); const body = await res.json();
       body.avis = avisOf(body.chosen_action, k); body.details_fr = [...(body.details_fr || []), "Les experts ne sont pas d'accord sur cette main : phrase déjà dans le bloc."];

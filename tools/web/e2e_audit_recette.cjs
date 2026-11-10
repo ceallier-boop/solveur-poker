@@ -40,7 +40,7 @@ async function quickSeries(p, served, onAnswer) {                 // une série 
   const b = await chromium.launch(); const errs = [];
   const page = async () => {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(String(e)));
+    const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e)));
     p.on('response', async (r) => { if (r.url().includes('/quiz/next') && r.ok()) { const q = (await r.json()).question; if (q) p.served.push(q.spot_id); } });
     p.served = []; return p;
   };

@@ -5,7 +5,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 (async () => {
   const out = process.argv[2]; const errors = []; const base = process.env.BASE_URL || 'http://localhost:8000/';
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  const p = await ctx.newPage();
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', e => errors.push(String(e))); p.on('console', m => { if (m.type() === 'error' && !m.text().includes('403')) errors.push(m.text()); });
   await p.goto(base + 'admin');
   await p.fill('#token', 'mauvais'); await p.fill('#actor', 'Expert test'); await p.click('#login-form button');

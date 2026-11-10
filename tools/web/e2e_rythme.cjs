@@ -9,7 +9,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
 const home = (p) => p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE);
   await p.waitForFunction(() => !document.getElementById('screen-onboard').hidden || !document.getElementById('today').hidden, null, { timeout: 20000 });
@@ -53,6 +53,7 @@ const home = (p) => p.waitForSelector('#screen-home:not([hidden]) #today:not([hi
       { session_id: 's', question_index: 0, spot_id: 'x', hand: 'K9o', prompt_fr: 'SB · 3 joueurs · 8 BB. Que fais-tu ?', chosen_fr: 'FOLD', best_fr: 'ALL-IN 8 BB', verdict: 'erreur', regret_mbb: 1300, cost_bb: 1.3, cost_fr: '1,3 BB', answered_at: '2026-11-09T10:00:00+00:00', replayed_ok: true },
       { session_id: 's', question_index: 1, spot_id: 'y', hand: 'Q4o', prompt_fr: 'BB · heads-up · 6 BB. Que fais-tu ?', chosen_fr: 'CALL 5 BB', best_fr: 'FOLD', verdict: 'erreur', regret_mbb: 400, cost_bb: 0.4, cost_fr: '0,4 BB', answered_at: '2026-11-09T10:01:00+00:00' }] }) }));
     await p.click('#home-btn'); await home(p); await p.waitForTimeout(1200);
+    await p.openTab('gto');                                          // I9 : les erreurs du jour sont dans l'onglet GTO
     const caught = await p.innerText('#worst-list li.caught').catch(() => '');
     ok('N2 : erreur rejouée juste « rattrapée », sans reproche', /Rattrapée/.test(caught) && /Tapis 8 BB \(ALL-IN\)/.test(caught), caught);
     ok('N2 : le rejeu reste proposé pour les autres', await p.isVisible('#worst-replay'));

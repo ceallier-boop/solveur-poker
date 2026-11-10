@@ -57,10 +57,15 @@ async function api(path, opts = {}) {
   return body;
 }
 
+// I9 : cinq onglets fixes en bas ; la barre n'apparaît que sur les pages des onglets (ni au premier lancement, ni pendant une série)
+const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', prog: 'stats', outils: 'outils' };
 function show(name) {
   if (name !== 'question' && state.timer) stopTimer();
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
   $('loading').hidden = true;
+  const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
+  $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab);
+  if (tab) { state.tab = tab; for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === tab), b.dataset.tab === tab && b.setAttribute('aria-current', 'page'); }
   window.scrollTo(0, 0);
 }
 function loading(on) { $('loading').hidden = !on; }
@@ -519,7 +524,7 @@ function themeRow(x, min) {
 // progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
 // ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
 const STATS_KEY = 'stats_cache';
-function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); if (!$('screen-home').hidden) lightHome(); }
+function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); if (state.homeReady) lightHome(); }
 // AU4 : accueil d'un nouveau joueur (moins de 3 jours d'entraînement) : un seul bouton principal, la séance et la série rapide
 // expliquées, objectifs et défis repliés (toujours accessibles)
 function daysPlayed() { const c = cachedStats(), ev = (c && c.s && c.s.evolution) || []; return new Set(ev.map((e) => (e.date || '').slice(0, 10)).filter(Boolean)).size; }
@@ -529,12 +534,7 @@ function lightHome() {
   const x = $('extras'); x.classList.toggle('folded', fresh);
   if (fresh !== state.extrasFresh) { x.open = !fresh; state.extrasFresh = fresh; }     // replié une fois, puis le joueur décide
 }
-function homeSummary() {                                            // analyse des écrans (29/10) : où tu en es, dès l'accueil
-  const c = cachedStats(), s = c && c.s, b = $('stats-btn');
-  if (!s || !s.questions) { b.textContent = 'Ma progression'; return; }
-  const f = s.focus && s.focus.label ? ` · à travailler : ${s.focus.label.split(' · ').slice(1).join(' · ') || s.focus.label}` : '';
-  b.innerHTML = `Ma progression<small>${pc(s.score_pct)} de réussite${escT(f)}</small>`;   // test joueurs 9 : un seul chiffre BB sur l'accueil
-}
+function homeSummary() { /* I9 : l'onglet Progression remplace le bouton « Ma progression » de l'accueil */ }
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
 function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
 
@@ -720,7 +720,28 @@ document.addEventListener('keydown', (e) => {
 
 // ------------------------------------------------------------------ navigation
 const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
-$('stats-btn').addEventListener('click', openStats);
+// I9 : les onglets ; GTO et Exploitant fixent le mode, l'onglet central est la séance GTO et les défis
+const tabMode = (tab) => (tab === 'expl' ? 'exploit' : 'gto');
+function placeBlocks(tab) {                                          // les blocs uniques vont dans l'onglet affiché
+  $(tab === 'expl' ? 'slot-expl-today' : 'slot-defis-today').appendChild($('today'));
+  $(tab === 'expl' ? 'slot-expl-train' : 'slot-gto-train').appendChild($('train'));
+}
+function goTab(tab) {
+  if (tab === 'expl' && exploitLocked()) { notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
+  if (tab === 'prog') { openStats(); return; }
+  if (tab === 'outils') { progress(''); show('outils'); return; }
+  placeBlocks(tab); const changed = setMode(tabMode(tab));
+  progress(''); show(TAB_SCREEN[tab]);
+  if (changed) onMode(true);                                         // séance, recommandations, erreurs du jour… suivent le mode
+}
+$('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) goTab(b.dataset.tab); });
+function setBadge(id, n) { const b = $(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); }
+$('tools-lex').addEventListener('click', () => $('lex-btn').click());
+$('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); });
+$('pf-close').addEventListener('click', () => { $('profile').hidden = true; });
+$('profile').addEventListener('click', (e) => { if (e.target.id === 'profile') $('profile').hidden = true; });
+$('pf-level').addEventListener('click', () => { $('profile').hidden = true; state.scrollLevel = true; goTab('prog'); });
+$('pf-data').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-export').scrollIntoView({ block: 'center' }), 600); });
 $('st-back').addEventListener('click', home);
 $('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
@@ -741,7 +762,8 @@ $('review-btn').addEventListener('click', () => { state.inToday = false; start({
 // révision espacée : bouton quand des mains ratées sont arrivées à échéance (1, 3 puis 7 jours)
 async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
-  let r; try { r = await api(`/users/me/reviews?mode=${mode()}&tz=${tzOffset()}`); } catch (e) { return; }
+  const m = mode(); let r; try { r = await api(`/users/me/reviews?mode=${m}&tz=${tzOffset()}`); } catch (e) { return; }
+  setBadge(m === 'exploit' ? 'badge-expl' : 'badge-gto', r.due);    // I9 : les mains à revoir sur l'onglet du mode
   if (r.due > 0) {
     $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
@@ -759,7 +781,9 @@ function renderExploitAccess() {
   const locked = exploitLocked(), b = document.querySelector('.mode-switch [data-value="exploit"]');
   b.classList.toggle('locked', locked);                               // pas d'aria-disabled : il masque les puces de filtre
   b.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';
-  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, en haut de l\'accueil.';
+  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, avec l\'onglet Exploitant.';
+  $('tab-expl-label').innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // I9 : le cadenas est sur l'onglet
+  $('expl-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open;
   if (locked && mode() === 'exploit') { setMode('gto'); onMode(); }
 }
 document.querySelector('.mode-switch').addEventListener('click', (e) => {     // verrouillé : le bouton ne change pas de mode
@@ -774,7 +798,7 @@ function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
   $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (!$('screen-home').hidden && state.homeReady) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
+  reviews(); if (state.homeReady && ['defis', 'gto', 'expl'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -796,7 +820,7 @@ $('again-btn').addEventListener('click', () => {                 // A1 : même m
   start({ ...f, mode: state.mode || mode() });
 });
 $('back-home').addEventListener('click', home);
-$('home-btn').addEventListener('click', home);
+$('home-btn').addEventListener('click', () => { state.tab = 'defis'; home(); });   // le logo ramène à l'onglet central
 $('resume').addEventListener('click', () => { state.sid = store.get('sid'); next().catch(home); });
 document.addEventListener('keydown', (e) => {
   if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -818,7 +842,9 @@ async function home() {
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
-  progress(''); show('home'); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
+  const tab = ['defis', 'gto', 'expl'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
+  if (setMode(tabMode(tab))) onMode(true);
+  placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   $('resume').hidden = true; reviews();
   if (!sid) return;
@@ -836,7 +862,7 @@ renderPastilles();
 // révision, thème du jour (2 séries), range du jour ; le serveur (ou la démo) construit le plan, l'application l'enchaîne
 const tzOffset = () => -new Date().getTimezoneOffset();
 async function loadToday() {
-  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}&minutes=${sessionMinutes()}`); } catch (e) { $('today').hidden = true; $('free-title').hidden = true; return null; }
+  let t; try { t = await api(`/users/me/today?mode=${mode()}&tz=${tzOffset()}&minutes=${sessionMinutes()}`); } catch (e) { $('today').hidden = true; return null; }
   state.today = t; renderToday(t); return t;
 }
 // N2 : les 3 erreurs les plus coûteuses du jour (GET /users/me/worst-today, Défis et rétention) : une ligne chacune (situation, ton
@@ -864,9 +890,10 @@ $('len-switch').addEventListener('click', (e) => {
 });
 function renderToday(t) {
   const len = t.minutes === 10 ? 10 : 15;
-  $('today-len').textContent = `· ${len} min`; $('today-explain').textContent = TODAY_EXPLAIN[len];
+  $('today-len').textContent = `· ${t.mode === 'exploit' ? 'Exploitant' : 'GTO'} · ${len} min`;   // I9 : chaque onglet a sa séance
+  $('today-explain').textContent = TODAY_EXPLAIN[len];
   for (const b of $('len-switch').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.min) === len));
-  $('today').hidden = false; $('free-title').hidden = false; $('home-lead').hidden = true;
+  $('today').hidden = false;
   $('quick-start').className = 'secondary';                          // un seul bouton plein sur l'accueil : la séance
   $('today-streak').textContent = t.streak ? `${t.streak} jour${t.streak > 1 ? 's' : ''} de suite` : t.played_before ? 'Pas encore de série aujourd\'hui : c\'est parti' : 'Première séance : c\'est parti';
   $('today-bb').innerHTML = '';                                      // test joueurs 9 : un seul chiffre BB sur l'accueil (objectif de précision)
@@ -928,7 +955,7 @@ async function obFinish(skip) {
   const ob = state.ob;
   const body = skip ? { experience: 'debut', goal: 'bases' } : { experience: ob.exp, goal: ob.goal, level: ob.level };
   try { state.level = await api('/users/me/onboarding', { method: 'POST', body: JSON.stringify(body) }); } catch (e) { /* le niveau 1 s'appliquera */ }
-  if (body.goal === 'recreatifs' && !exploitLocked() && setMode('exploit')) onMode(true);   // AU1 : mode par défaut d'après le but, jamais imposé ensuite
+  // AU1 + I9 : l'application s'ouvre toujours sur l'onglet central ; pour « récréatifs », la carte du but y met l'onglet Exploitant en avant
   home();
 }
 // AU1 : « Ton but » met en avant ce qui y répond : bases = la séance GTO (rien de plus) ; récréatifs = le mode Exploitant
@@ -937,14 +964,14 @@ function renderGoalCard() {
   const goal = state.level && state.level.goal, box = $('goal-card');
   const card = goal === 'recreatifs' && mode() !== 'exploit'
     ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
-      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Passer en mode Exploitant</button>`)
+      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir l'onglet Exploitant</button>`)
     : goal === 'ranges' ? `<p><b>Ton but : affûter tes ranges.</b> Dessine la range d'une situation, main par main, et vois où tu te trompes.</p><button class="secondary small" id="goal-go" data-go="range">Construis ta range</button>`
     : '';
   box.hidden = !card; box.innerHTML = card;
 }
 $('goal-card').addEventListener('click', (e) => {
   const b = e.target.closest('#goal-go'); if (!b) return;
-  if (b.dataset.go === 'exploit') { if (setMode('exploit')) onMode(true); renderGoalCard(); }
+  if (b.dataset.go === 'exploit') { goTab('expl'); renderGoalCard(); }
   else { state.inToday = false; rangeStart(); }
 });
 $('ob-next').addEventListener('click', () => { const ob = state.ob; if (ob.step < 3) { ob.step += 1; obShow(); } else obFinish(false); });
@@ -971,7 +998,7 @@ async function placementResult() {
   $('pl-keep').className = same ? 'primary big' : 'secondary';
   show('placement');
 }
-const placementDone = () => { if (state.modeBefore === 'exploit' && setMode('exploit')) onMode(true); state.modeBefore = null; home(); };   // le mode d'avant le test revient
+const placementDone = () => { state.tab = state.modeBefore === 'exploit' ? 'expl' : 'defis'; state.modeBefore = null; home(); };   // la séance du nouveau niveau est sur l'onglet central   // le mode d'avant le test revient
 $('pl-take').addEventListener('click', async () => {
   try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: state.placementResult.proposed_level }) }); placementDone(); }
   catch (e) { notify(netMsg(e, "le niveau n'a pas été changé")); }
@@ -1096,6 +1123,7 @@ async function loadChallenges() {
     $('challenges').hidden = false; $('ch-box').hidden = true; $('ch-error').hidden = false; return null;
   }
   state.ch = c; const all = [...c.daily, ...c.weekly, ...c.monthly];
+  { const d0 = c.daily[0]; setBadge('badge-defis', d0 && d0.status !== 'won' && d0.action && !d0.locked ? 1 : 0); }   // I9 : défi du jour à relever ou à finir
   $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
   const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
   $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
