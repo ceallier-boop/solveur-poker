@@ -35,8 +35,8 @@ const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'ar
   ok('AU4 : un seul bouton principal', primaries.length === 1 && /séance/.test(primaries[0]), primaries);
   const todayExplained = await p.isVisible('#today-explain'); await p.openTab('gto');                    // I9 : la série rapide est dans l'onglet GTO
   ok('AU4 : séance et série rapide expliquées', todayExplained && await p.isVisible('#quick-explain'));
-  await p.openTab('prog');                                                                              // I9 : les objectifs sont dans l'onglet Progression
-  ok('AU4 : objectifs repliés', (await p.getAttribute('#extras', 'open')) === null && await p.isVisible('#extras-sum') && !(await p.isVisible('#goals-list')));
+  await p.openTab('prog'); await p.waitForSelector('#screen-stats:not([hidden]) #goals:not([hidden])', { timeout: 10000 });   // I9 : les objectifs sont dans l'onglet Progression
+  ok('retest 10 : objectifs de la semaine dépliés dans Progression', (await p.getAttribute('#extras', 'open')) !== null && await p.isVisible('#goals-list'));
   await p.click('#home-btn'); await homeReady(p);
   await p.screenshot({ path: `${OUT}/audit_home_new.png`, fullPage: true });
 

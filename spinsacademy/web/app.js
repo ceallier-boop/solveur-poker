@@ -59,6 +59,7 @@ async function api(path, opts = {}) {
 
 // I9 : cinq onglets fixes en bas ; la barre n'apparaît que sur les pages des onglets (ni au premier lancement, ni pendant une série)
 const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', prog: 'stats', outils: 'outils' };
+const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour à l\'onglet GTO', expl: 'Retour à l\'onglet Exploitant' };
 function show(name) {
   if (name !== 'question' && state.timer) stopTimer();
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
@@ -66,16 +67,17 @@ function show(name) {
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
   $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab);
   if (tab) { state.tab = tab; for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === tab), b.dataset.tab === tab && b.setAttribute('aria-current', 'page'); }
+  else $('back-home').textContent = $('td-home').textContent = BACK_LABEL[state.tab] || BACK_LABEL.defis;   // retest 10 : le lien de retour nomme l'onglet où il ramène
   window.scrollTo(0, 0);
 }
 function loading(on) { $('loading').hidden = !on; }
 
 // messages dans l'écran (pas de boîte de dialogue du navigateur) : erreur avec « Réessayer », confirmation en deux temps
-function notify(msg, retry) {                                       // test joueurs 9 : le chrono s'arrête tant que le message est affiché
+function notify(msg, retry, ms = 6000) {                            // test joueurs 9 : le chrono s'arrête tant que le message est affiché
   const n = $('notice'); $('notice-text').textContent = msg; n.hidden = false; pauseTimer();
   $('notice-retry').hidden = !retry;
   $('notice-retry').onclick = () => { n.hidden = true; retry(); };
-  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; resumeTimer(); }, 6000);
+  clearTimeout(notify.t); if (!retry) notify.t = setTimeout(() => { n.hidden = true; resumeTimer(); }, ms);
 }
 const closed = (e) => !!(e && e.status === 503 && /aucun dataset publié/.test(e.message));   // test joueurs 6 : rien en ligne, réessayer ne sert à rien
 const netMsg = (e, what) => (closed(e) ? `L'entraînement n'est pas ouvert sur ce serveur : ${what}, aucune banque de questions n'est en ligne. Réessayer ne changera rien : préviens l'équipe.`
@@ -119,17 +121,25 @@ async function start(f, review = false, plan = null, challenge = null) {
   $('home-error').hidden = true; loading(true);
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
-    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id);
+    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id); store.set('sid_tab', state.tab || 'defis');   // retest 10 : onglet d'origine, pour le retour
     if (plan === 'placement') store.set('placement_sid', s.session_id); else if (store.get('placement_sid') !== s.session_id) store.del('placement_sid');   // AU7 : reconnu même après une reprise
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
     await next();
   } catch (e) {
     if (plan === 'replay') { loading(false); notify(e.status === 422 ? 'Rien à rejouer pour l\'instant.' : netMsg(e, 'le rejeu n\'a pas pu démarrer')); loadWorst(); return; }   // N2
-    loading(false); $('home-error').textContent = e.status === 422 ? 'Pas assez de situations pour ce thème : élargis les filtres.'
-      : e.status && e.status < 500 ? e.message : netMsg(e, "la série n'a pas pu démarrer");            // jamais « Failed to fetch »
-    $('filters').open = true; $('home-error').hidden = false;
-    $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
+    loading(false);
+    // retest 10 : un refus du serveur (422) n'est plus jamais silencieux, quel que soit l'onglet d'où part la série
+    const detail = typeof e.message === 'string' && !/^\[object|^Erreur \d+$/.test(e.message) ? e.message.replace(/\.$/, '') : '';
+    const what = plan === 'placement' ? 'Le test de placement n\'a pas pu démarrer' : plan === 'theme' || plan === 'review' ? 'La séance du jour n\'a pas pu démarrer' : 'La série n\'a pas pu démarrer';
+    const msg = e.status === 422 ? `${what}${detail ? ` : ${detail}` : ''}.${plan === 'placement' ? '' : ' Essaie une série rapide, ou élargis les filtres.'}`
+      : e.status && e.status < 500 ? (detail || `${what}.`) : netMsg(e, what.replace(/^(Le|La) /, (m) => m.toLowerCase()));   // jamais « Failed to fetch »
+    notify(msg, null, 10000);
+    $('home-error').textContent = msg; $('home-error').hidden = false;
+    if ($('home-error').checkVisibility && $('home-error').checkVisibility()) {   // filtres de l'onglet affiché : on y montre aussi l'erreur
+      if (!plan) $('filters').open = true;
+      $('home-error').scrollIntoView({ block: 'center' }); $('home-error').focus({ preventScroll: true });
+    }
   } finally { state.starting = false; }
 }
 
@@ -496,7 +506,7 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${e.chosen} automatique)` : `Ton coup : ${e.chosen} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${e.best}</b></li>`).join('')
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${frLabel(e.chosen)} automatique)` : `Ton coup : ${frLabel(e.chosen)} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${frLabel(e.best)}</b></li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
   $('s-review').hidden = !s.errors.length;
   $('again-btn').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle série';
@@ -531,8 +541,7 @@ function daysPlayed() { const c = cachedStats(), ev = (c && c.s && c.s.evolution
 function lightHome() {
   const fresh = daysPlayed() < 3;
   $('today-explain').hidden = !fresh; $('quick-explain').hidden = !fresh;
-  const x = $('extras'); x.classList.toggle('folded', fresh);
-  if (fresh !== state.extrasFresh) { x.open = !fresh; state.extrasFresh = fresh; }     // replié une fois, puis le joueur décide
+  // retest 10 : les objectifs de la semaine sont dépliés dans Progression, pour tous (le pli reste au joueur)
 }
 function homeSummary() { /* I9 : l'onglet Progression remplace le bouton « Ma progression » de l'accueil */ }
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
@@ -560,7 +569,7 @@ async function stats() {
   if (!offline) api(`/users/me/challenges?mode=${mode()}&tz=${tzOffset()}`).then((c) => {     // étape 5 : mes défis réussis
     $('st-challenges').hidden = false;
     $('st-ch-list').innerHTML = c.history.length ? c.history.map((h) => `<li class="${h.won ? 'won' : 'lost'}">${h.won ? '✓' : '✗'} <b>${escT(h.title_fr)}</b> <small>${new Date(h.date + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} · ${escT(h.result_fr)}${h.won ? '' : ' · pas réussi'}</small></li>`).join('')
-      : '<li class="note">Pas encore de défi tenté : relève le défi du jour depuis l\'accueil.</li>';   // test joueurs 9 : les tentatives aussi
+      : '<li class="note">Pas encore de défi tenté : relève le défi du jour dans l\'onglet Défis.</li>';   // test joueurs 9 : les tentatives aussi
   }).catch(() => { $('st-challenges').hidden = true; });
   else $('st-challenges').hidden = true;
   if (offline) renderLevel(null);                                   // étape 4 : mon niveau (aussi avant la première série)
@@ -725,6 +734,7 @@ const tabMode = (tab) => (tab === 'expl' ? 'exploit' : 'gto');
 function placeBlocks(tab) {                                          // les blocs uniques vont dans l'onglet affiché
   $(tab === 'expl' ? 'slot-expl-today' : 'slot-defis-today').appendChild($('today'));
   $(tab === 'expl' ? 'slot-expl-train' : 'slot-gto-train').appendChild($('train'));
+  $(tab === 'defis' ? 'slot-defis-worst' : 'slot-train-worst').appendChild($('worst'));   // retest 10 : les erreurs du jour à l'arrivée (décision du 09/11)
 }
 function goTab(tab) {
   if (tab === 'expl' && exploitLocked()) { notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
@@ -736,13 +746,16 @@ function goTab(tab) {
 }
 $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) goTab(b.dataset.tab); });
 function setBadge(id, n) { const b = $(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); }
+const defisBadge = () => setBadge('badge-defis', (state.badgeDaily || 0) + (state.badgeResume || 0));   // défi du jour à relever + série à reprendre
 $('tools-lex').addEventListener('click', () => $('lex-btn').click());
 $('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); });
 $('pf-close').addEventListener('click', () => { $('profile').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('profile').hidden) { $('profile').hidden = true; $('profile-btn').focus(); } });   // retest 10 : Échap ferme la feuille
+$('pf-history').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-evo-title').scrollIntoView({ block: 'start' }), 600); });
 $('profile').addEventListener('click', (e) => { if (e.target.id === 'profile') $('profile').hidden = true; });
 $('pf-level').addEventListener('click', () => { $('profile').hidden = true; state.scrollLevel = true; goTab('prog'); });
 $('pf-data').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-export').scrollIntoView({ block: 'center' }), 600); });
-$('st-back').addEventListener('click', home);
+$('st-back').addEventListener('click', () => { state.tab = 'defis'; home(); });
 $('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
   try {
@@ -821,7 +834,9 @@ $('again-btn').addEventListener('click', () => {                 // A1 : même m
 });
 $('back-home').addEventListener('click', home);
 $('home-btn').addEventListener('click', () => { state.tab = 'defis'; home(); });   // le logo ramène à l'onglet central
-$('resume').addEventListener('click', () => { state.sid = store.get('sid'); next().catch(home); });
+const resumeSeries = () => { state.sid = store.get('sid'); state.tab = store.get('sid_tab') || state.tab; next().catch(home); };   // retest 10 : reprise depuis GTO, Exploitant ou Défis ; le retour ramène à l'onglet d'où la série est partie
+$('resume').addEventListener('click', resumeSeries);
+$('resume-card-go').addEventListener('click', resumeSeries);
 document.addEventListener('keydown', (e) => {
   if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
   const b = $('actions').querySelector(`button[data-k="${Number(e.key)}"]`);
@@ -846,12 +861,16 @@ async function home() {
   if (setMode(tabMode(tab))) onMode(true);
   placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
-  $('resume').hidden = true; reviews();
+  const showResume = (on, s) => {                                    // retest 10 : la série abandonnée se voit aussi depuis Défis, avec un badge
+    $('resume').hidden = !on; $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
+    if (on) $('resume-card-text').textContent = s && s.size ? `Ta série n'est pas finie : ${s.questions || 0} décision${(s.questions || 0) > 1 ? 's' : ''} sur ${s.size}.` : 'Ta série n\'est pas finie.';
+  };
+  showResume(false); reviews();
   if (!sid) return;
   try {
     const s = await api(`/sessions/${encodeURIComponent(sid)}/summary`);
-    if (!s.complete) $('resume').hidden = false; else store.del('sid');
-  } catch (e) { if (e && e.status && e.status < 500) store.del('sid'); }     // hors ligne : la série en cours reste reprenable
+    if (!s.complete) showResume(true, s); else store.del('sid');
+  } catch (e) { if (e && e.status && e.status < 500) store.del('sid'); else showResume(true); }     // hors ligne : la série en cours reste reprenable
 }
 $('past-rows').addEventListener('click', (e) => {
   const b = e.target.closest('.swatch'); if (!b) return;
@@ -989,8 +1008,8 @@ async function placementResult() {
   const r = await api(`/users/me/placement?session_id=${encodeURIComponent(state.sid)}`);
   store.del('sid'); store.del('placement_sid'); progress('Test de placement'); state.placementResult = r;
   $('pl-level').innerHTML = `Niveau ${r.proposed_level}<small>${escT(r.proposed_name)} · ${escT(r.proposed_depth_fr)}</small>`;
-  $('pl-text').textContent = r.text_fr;
-  $('pl-bands').innerHTML = r.bands.map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
+  $('pl-text').textContent = r.text_fr;                            // retest 10 : une tranche à 0 question (absente de la banque servie) n'est pas montrée
+  $('pl-bands').innerHTML = r.bands.filter((b) => b.expected > 0).map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
     + `<td>${nfr1(b.points)} sur ${b.expected}</td></tr>`).join('');           // sans reproche : le résultat, pas un verdict
   const same = r.proposed_level === r.current_level;
   $('pl-take').hidden = same;
@@ -1056,21 +1075,21 @@ function critText(c) {
 function renderLevel(lv) {
   $('st-level').hidden = !lv;
   if (!lv) return;
-  const ex = mode() === 'exploit', cur = ex ? 4 : lv.level;          // test joueurs 9 : le niveau suit le mode
-  $('st-level-name').innerHTML = ex ? '<b>Niveau 4 · Exploiter le field</b> : mode exploitant, ouvert en continu. Ton niveau GTO : ' + `${lv.level} · ${escT(lv.name)}.`
-    : `<b>Niveau ${lv.level} · ${escT(lv.name)}</b> (${escT(lv.depth_fr || '')})` + (lv.status.final ? ' : dernier niveau GTO. Le niveau 4 se joue en mode Exploitant.' : ' : pour passer au suivant');
+  // retest 10 : le niveau ne dépend plus de l'onglet ouvert. Le niveau GTO (1 à 3) et ses critères, puis le mode Exploitant à part
+  $('st-level-name').innerHTML = `<b>Niveau GTO ${lv.level} · ${escT(lv.name)}</b> (${escT(lv.depth_fr || '')})` + (lv.status.final ? ' : dernier niveau GTO.' : ' : pour passer au suivant');
   const scope = (c) => (c.kind === 'bb' && lv.depth_fr ? `${c.label_fr} à ${lv.depth_fr}` : c.label_fr);   // AU2 : « … pour 100 décisions à moins de 10 BB »
-  $('st-level-crit').innerHTML = ex || lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(scope(c))} <small>${escT(critText(c))}</small></li>`).join('');
-  $('st-level-pick').innerHTML = lv.levels.map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === cur}">${l.number} · ${escT(l.name)}</button>`).join('');
+  $('st-level-crit').innerHTML = lv.status.final ? '' : lv.status.criteria.map((c) => `<li class="${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escT(scope(c))} <small>${escT(critText(c))}</small></li>`).join('');
+  $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number < 4).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
+  const four = lv.levels.find((l) => l.number === 4);
+  $('st-level-expl').hidden = !four || exploitLocked();
+  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : le mode Exploitant, ouvert en continu, dans son onglet.`;
 }
 $('st-level-pick').addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  const v = +b.dataset.v;
-  if (v === 4) { if (setMode('exploit')) onMode(true); renderLevel(state.level); return; }      // le niveau 4 est le mode exploitant
-  if (setMode('gto')) onMode(true);
-  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: v }) }); renderLevel(state.level); }
+  try { state.level = await api('/users/me/level', { method: 'PUT', body: JSON.stringify({ level: +b.dataset.v }) }); renderLevel(state.level); loadLevel(); }
   catch (err) { notify(netMsg(err, "le niveau n'a pas été changé")); }
 });
+$('st-level-expl-go').addEventListener('click', () => goTab('expl'));
 $('today-level').addEventListener('click', () => { state.scrollLevel = true; $('stats-btn').click(); });
 
 // recommandations (programme de travail, étape 2) : au plus deux, un constat chiffré et une action en un toucher
@@ -1123,7 +1142,7 @@ async function loadChallenges() {
     $('challenges').hidden = false; $('ch-box').hidden = true; $('ch-error').hidden = false; return null;
   }
   state.ch = c; const all = [...c.daily, ...c.weekly, ...c.monthly];
-  { const d0 = c.daily[0]; setBadge('badge-defis', d0 && d0.status !== 'won' && d0.action && !d0.locked ? 1 : 0); }   // I9 : défi du jour à relever ou à finir
+  { const d0 = c.daily[0]; state.badgeDaily = d0 && d0.status !== 'won' && d0.action && !d0.locked ? 1 : 0; defisBadge(); }   // I9 : défi du jour à relever ou à finir
   $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
   const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
   $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
@@ -1342,7 +1361,7 @@ function showFiche(id) {
 $('fiches-btn').addEventListener('click', openFiches);
 $('fi-back').addEventListener('click', () => { $('fi-pick').hidden = false; $('fi-sheet').hidden = true; $('fi-actions').hidden = true; window.scrollTo(0, 0); });
 $('fi-print').addEventListener('click', () => window.print());       // une fiche par page A4 (feuille de style d'impression), sans téléchargement
-$('fi-home').addEventListener('click', home);
+$('fi-home').addEventListener('click', () => goTab('outils'));   // les fiches s'ouvrent depuis Outils
 
 // Importer mes mains : historiques Winamax lus dans le navigateur par window.Winamax (spinsacademy/web/winamax.js, Moteur
 // exploitant ; chargé à la demande, hors du premier chargement). Rien n'est envoyé ni gardé sur l'appareil : le résultat ne vit qu'en mémoire (imp.result), « Effacer » le vide.
