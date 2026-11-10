@@ -3,7 +3,7 @@
 // jour arrivent tout de suite ; le cache ne sert qu'en cas de coupure. Les réponses de l'API ne sont jamais mises en cache ici :
 // la progression hors ligne est gardée par la page elle-même (localStorage).
 const CACHE = 'spinsacademy-shell-v3';
-const SHELL = ['/', '/conseil', '/static/app.css', '/static/app.js', '/static/lexique.json', '/static/icon.svg', '/static/manifest.json', '/static/winamax.js'];
+const SHELL = ['/', '/conseil', '/static/app.css', '/static/app.js', '/static/winamax.js', '/static/lexique.json', '/static/icon.svg', '/static/manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

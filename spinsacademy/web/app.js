@@ -1009,8 +1009,8 @@ async function placementResult() {
   store.del('sid'); store.del('placement_sid'); progress('Test de placement'); state.placementResult = r;
   $('pl-level').innerHTML = `Niveau ${r.proposed_level}<small>${escT(r.proposed_name)} · ${escT(r.proposed_depth_fr)}</small>`;
   $('pl-text').textContent = r.text_fr;                            // retest 10 : une tranche à 0 question (absente de la banque servie) n'est pas montrée
-  $('pl-bands').innerHTML = r.bands.filter((b) => b.expected > 0).map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
-    + `<td>${nfr1(b.points)} sur ${b.expected}</td></tr>`).join('');           // sans reproche : le résultat, pas un verdict
+  $('pl-bands').innerHTML = r.bands.filter((b) => b.expected > 0 || b.questions > 0).map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
+    + `<td>${nfr1(b.points)} sur ${Math.max(b.questions, b.expected)}</td></tr>`).join('');   // sans reproche ; banque étroite : les mains d'une tranche absente vont dans une autre
   const same = r.proposed_level === r.current_level;
   $('pl-take').hidden = same;
   $('pl-keep').textContent = same ? `Continuer au niveau ${r.current_level}` : `Garder le niveau ${r.current_level}`;
