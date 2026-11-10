@@ -22,6 +22,8 @@ Mode invité au MVP : pas d'authentification. La question 22 du cahier des charg
 
 Familles de décision : `first_in` (premier à parler), `vs_limp`, `vs_raise`, `vs_allin`.
 
+Questions d'équités (CE3) : `POST /sessions {"mode": "equity"}`. Ce mode à part ne se mêle jamais aux séries GTO ou exploitant et n'entre pas dans le BB/100. Le format est décrit dans [QUIZ_EQUITES.md](QUIZ_EQUITES.md).
+
 L'ancien mode exploitant (profils fictifs, dataset `exploit_calls`, route `/profiles`) a été retiré le 21/10/2026 : `mode: "exploit"` sert désormais les joueurs du field (section ci-dessous). Les réponses enregistrées sur l'ancien dataset restent en base mais ne comptent plus dans la progression.
 
 ## Tirage d'une série (`spinsacademy/quiz.py`)
