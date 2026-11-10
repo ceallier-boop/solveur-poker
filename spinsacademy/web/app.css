@@ -609,3 +609,30 @@ body.has-tabs main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px
 .sheet-in { background: var(--bg); color: var(--text); width: 100%; max-width: 560px; max-height: 85%; overflow: auto; border-radius: 18px 18px 0 0;
   padding: 16px; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 10px; }
 .sheet-head { display: flex; justify-content: space-between; align-items: center; } .sheet-head h2 { margin: 0; }
+
+/* Importer mes mains */
+.im-where { margin: 0; }
+.im-help { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.im-help summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.im-help ul { margin: 8px 0 0; padding-left: 20px; }
+.im-help li { margin: 4px 0; overflow-wrap: anywhere; }
+.im-drop { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 14px; border: 2px dashed var(--line); border-radius: var(--radius); background: var(--surface); text-align: center; cursor: pointer; }
+.im-drop.over, .im-drop:focus-within { border-color: var(--accent); }
+.im-drop-main { font-weight: 650; color: var(--accent); }
+.im-drop-sub { color: var(--muted); }
+.im-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.im-progress progress { width: 100%; height: 12px; accent-color: var(--accent); }
+.im-progress p { margin: 4px 0 0; color: var(--muted); }
+.im-error { margin: 0; color: #b3261e; font-weight: 600; }
+.im-result { display: flex; flex-direction: column; gap: 10px; }
+.im-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; }
+.im-nums div { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.im-nums dt { color: var(--muted); font-size: .85rem; }
+.im-nums dd { margin: 2px 0 0; font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.im-volume { margin: 0; font-weight: 600; }
+.im-skip-note, .im-save-note, .im-demo { margin: 0; color: var(--muted); font-size: .9rem; }
+.im-offer { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.im-offer input { margin-top: 4px; }
+.im-offer .soon { font-size: .75rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; white-space: nowrap; }
+@media (prefers-color-scheme: dark) { .im-error { color: #ff8a80; } }
+@media (hover: none) { .im-drag { display: none; } }

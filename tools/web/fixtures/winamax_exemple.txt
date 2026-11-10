@@ -1,0 +1,97 @@
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #11112222-1-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (500)
+Seat 2: JoueurB (500)
+Seat 3: JoueurC (500)
+*** ANTE/BLINDS ***
+JoueurB posts small blind 10
+JoueurC posts big blind 20
+Dealt to JoueurA [Ah 7c]
+*** PRE-FLOP *** 
+JoueurA folds
+JoueurB raises 480 to 500 and is all-in
+JoueurC folds
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #11112222-2-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (500)
+Seat 2: JoueurB (500)
+Seat 3: JoueurC (500)
+*** ANTE/BLINDS ***
+JoueurB posts small blind 10
+JoueurC posts big blind 20
+Dealt to JoueurA [Ah 7c]
+*** PRE-FLOP *** 
+JoueurA raises 480 to 500 and is all-in
+JoueurB folds
+JoueurC calls 480
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #11112222-3-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (500)
+Seat 2: JoueurB (500)
+Seat 3: JoueurC (500)
+*** ANTE/BLINDS ***
+JoueurB posts small blind 10
+JoueurC posts big blind 20
+Dealt to JoueurA [Ah 7c]
+*** PRE-FLOP *** 
+JoueurA folds
+JoueurB calls 10
+JoueurC checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 2 - HandId: #11112222-4-1667487600 - Holdem no limit (15/30) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (300)
+Seat 2: JoueurB (700)
+*** ANTE/BLINDS ***
+JoueurA posts small blind 15
+JoueurB posts big blind 30
+Dealt to JoueurA [Kd Qs]
+*** PRE-FLOP *** 
+JoueurA raises 285 to 300 and is all-in
+JoueurB calls 270
+*** SUMMARY ***
+
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 2 - HandId: #11112222-5-1667487600 - Holdem no limit (15/30) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (300)
+Seat 2: JoueurB (700)
+*** ANTE/BLINDS ***
+JoueurA posts small blind 15
+JoueurB posts big blind 30
+Dealt to JoueurA [Kd Qs]
+*** PRE-FLOP *** 
+JoueurA folds
+*** SUMMARY ***
+
+
+
+Winamax Poker - Tournament "Sit&Go Classique" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #11112222-6-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(600000001)#0' 3-max (real money) Seat #1 is the button
+Seat 1: JoueurA (500)
+Seat 2: JoueurB (500)
+Seat 3: JoueurC (500)
+*** ANTE/BLINDS ***
+JoueurB posts small blind 10
+JoueurC posts big blind 20
+Dealt to JoueurA [Ah 7c]
+*** PRE-FLOP *** 
+JoueurA folds
+JoueurB folds
+*** SUMMARY ***
+Total pot 40 | No rake

@@ -157,7 +157,7 @@
       <button class="secondary" id="fiches-btn">Fiches à emporter</button>
       <button class="secondary" id="range-btn">Construis ta range</button>
         <button class="secondary" id="tools-lex" type="button">Lexique</button>
-        <div class="tool-soon"><b>Mes mains</b><small>Bientôt : importe ton historique et vois tes vraies fuites.</small></div>
+        <button class="secondary" id="import-btn" type="button">Importer mes mains</button>
       </div>
     </section>
 
@@ -300,6 +300,48 @@
       <article class="fiche" id="fi-sheet" hidden aria-live="polite"></article>
       <div class="fi-actions" id="fi-actions" hidden><button class="secondary" id="fi-back">Autres fiches</button><button class="primary" id="fi-print">Imprimer cette fiche</button></div>
       <button class="link" id="fi-home">Retour à l'accueil</button>
+    </section>
+
+    <!-- Importer mes mains (historiques Winamax, lus dans le navigateur ; rien n'est envoyé) -->
+    <section id="screen-import" class="screen" hidden aria-labelledby="im-title">
+      <h2 id="im-title">Importer mes mains</h2>
+      <p class="lead" id="im-private">Tes fichiers restent sur cet appareil. Rien n'est envoyé. Les pseudos ne sont jamais conservés.</p>
+      <p class="im-where">Choisis les fichiers d'historique de mains écrits par le logiciel Winamax sur ton ordinateur.</p>
+      <details class="im-help" id="im-help">
+        <summary>Aide : où trouver mes historiques ?</summary>
+        <ul>
+          <li>Sous Windows, colle <code>%APPDATA%\winamax</code> dans la barre de l'explorateur, puis ouvre <i>documents › accounts › ton compte › history</i>.</li>
+          <li>Si le dossier n'est pas là, le logiciel Winamax l'indique dans ses réglages de l'historique des mains.</li>
+          <li>Prends les fichiers <i>.txt</i> des Expresso. Les fichiers qui finissent par <i>_summary</i> sont ignorés tout seuls.</li>
+        </ul>
+      </details>
+      <label class="im-drop" id="im-drop" for="im-files">
+        <span class="im-drop-main">Choisir mes fichiers</span>
+        <small class="im-drop-sub"><span class="im-drag">ou glisse-les ici · </span>fichiers .txt</small>
+        <input type="file" id="im-files" multiple accept=".txt,text/plain">
+      </label>
+      <div class="im-progress" id="im-progress" hidden>
+        <progress id="im-bar" max="1" value="0" aria-labelledby="im-progress-text"></progress>
+        <p id="im-progress-text" role="status">Lecture…</p>
+      </div>
+      <p class="im-error" id="im-error" role="alert" hidden></p>
+      <div class="im-result" id="im-result" hidden aria-live="polite">
+        <h3>Ce que j'ai lu</h3>
+        <dl class="im-nums">
+          <div><dt>Mains lues</dt><dd id="im-read">0</dd></div>
+          <div><dt>Mains ignorées</dt><dd id="im-skipped">0</dd></div>
+          <div><dt>Heads-up</dt><dd id="im-hu">0</dd></div>
+          <div><dt>À 3 joueurs</dt><dd id="im-3w">0</dd></div>
+        </dl>
+        <p class="im-skip-note" id="im-skip-note" hidden>Mains ignorées : autres formats que l'Expresso, parties sans argent réel, ou lignes illisibles.</p>
+        <p class="im-volume" id="im-volume"></p>
+        <button class="primary" id="im-save" type="button">Enregistrer mes comptages</button>
+        <p class="im-demo" id="im-demo" hidden>Enregistrement disponible dans l'application : cette démo ne peut pas télécharger de fichier.</p>
+        <p class="im-save-note" id="im-save-note">Deux fichiers, sans aucun pseudo : comptages.csv et volume.csv.</p>
+        <label class="im-offer"><input type="checkbox" id="im-offer" disabled> J'offre ces comptages anonymes pour améliorer l'application <span class="soon">bientôt</span></label>
+        <button class="secondary" id="im-clear" type="button">Effacer</button>
+      </div>
+      <button class="link" id="im-back" type="button">Retour aux outils</button>
     </section>
 
     <!-- Résultat du test de placement (audit AU7) -->
