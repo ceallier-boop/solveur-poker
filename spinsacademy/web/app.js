@@ -1344,6 +1344,89 @@ $('fi-back').addEventListener('click', () => { $('fi-pick').hidden = false; $('f
 $('fi-print').addEventListener('click', () => window.print());       // une fiche par page A4 (feuille de style d'impression), sans téléchargement
 $('fi-home').addEventListener('click', home);
 
+// Importer mes mains : historiques Winamax lus dans le navigateur par window.Winamax (spinsacademy/web/winamax.js, Moteur
+// exploitant ; chargé à la demande, hors du premier chargement). Rien n'est envoyé ni gardé sur l'appareil : le résultat ne vit qu'en mémoire (imp.result), « Effacer » le vide.
+// Aucun pseudo n'est affiché : l'écran ne montre que des nombres.
+const imp = { result: null, busy: false };
+const IMP_VOLUME = [[1, 'c\'est un début ; il en faut quelques centaines pour un premier aperçu'], [200, 'assez pour un premier aperçu, pas pour caler le field'],
+  [20000, 'assez pour caler les tapis de 6 à 12 BB, pas encore les cas rares'], [50000, 'assez pour caler le field']];   // seuils de docs/produit/HISTORIQUE_WINAMAX.md
+const nfr = (n) => Number(n || 0).toLocaleString('fr-FR');
+function impNums(r) {                                                // résultat de Winamax.analyze (MM2, version 1.0.1)
+  const t = r.by_table || {};
+  return { read: r.hands || 0, skipped: (r.ignored || 0) + (r.unreadable || 0), hu: t.hu || 0, w3: t['3w'] || 0 };
+}
+function impVolume(n) {
+  if (!n) return 'Aucune main Expresso lue : vérifie que tu as choisi les fichiers d\'historique, pas les résumés.';
+  let line = IMP_VOLUME[0][1]; for (const [min, t] of IMP_VOLUME) if (n >= min) line = t;
+  return `${nfr(n)} main${n > 1 ? 's' : ''} : ${line}.`;
+}
+function loadWinamax() {                                             // chargé à la demande : le reste de l'application n'en dépend pas
+  if (window.Winamax) return Promise.resolve(window.Winamax);
+  if (!loadWinamax.p) loadWinamax.p = new Promise((ok, ko) => {
+    const sc = document.createElement('script'); sc.src = '/static/winamax.js';
+    sc.onload = () => (window.Winamax ? ok(window.Winamax) : ko(new Error('absent')));
+    sc.onerror = () => { loadWinamax.p = null; ko(new Error('absent')); };
+    document.head.appendChild(sc);
+  });
+  return loadWinamax.p;
+}
+function impReset() {
+  imp.result = null; $('im-files').value = '';
+  $('im-result').hidden = true; $('im-progress').hidden = true; $('im-error').hidden = true;
+}
+function openImport() {
+  progress('Importer mes mains'); show('import');
+  const demo = typeof DEMO !== 'undefined';                          // la démo publiée ne peut pas télécharger de fichier
+  $('im-save').hidden = demo; $('im-demo').hidden = !demo; $('im-save-note').hidden = demo;
+}
+async function impRun(files) {
+  files = [...files].filter((f) => /\.txt$/i.test(f.name) || f.type === 'text/plain');
+  if (imp.busy) return;
+  $('im-error').hidden = true;
+  if (!files.length) { $('im-error').textContent = 'Aucun fichier .txt : choisis les fichiers d\'historique de mains.'; $('im-error').hidden = false; return; }
+  imp.busy = true; $('im-result').hidden = true; $('im-progress').hidden = false;
+  $('im-bar').max = files.length; $('im-bar').value = 0; $('im-progress-text').textContent = `Lecture de ${files.length} fichier${files.length > 1 ? 's' : ''}…`;
+  try {
+    const W = await loadWinamax();
+    files.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));   // ordre des noms : mêmes fichiers CSV que winamax_counts.py
+    const texts = await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text() })));
+    imp.result = await W.analyze(texts, ({ done, total, hands }) => {
+      $('im-bar').max = total; $('im-bar').value = done;
+      $('im-progress-text').textContent = `Lecture : ${done} fichier${done > 1 ? 's' : ''} sur ${total} · ${nfr(hands)} main${hands > 1 ? 's' : ''}`;
+    });
+    const n = impNums(imp.result);
+    $('im-read').textContent = nfr(n.read); $('im-skipped').textContent = nfr(n.skipped);
+    $('im-hu').textContent = nfr(n.hu); $('im-3w').textContent = nfr(n.w3);
+    $('im-skip-note').hidden = !n.skipped;
+    $('im-volume').textContent = impVolume(n.read);
+    $('im-save').disabled = !n.read;
+    $('im-progress').hidden = true; $('im-result').hidden = false;
+  } catch (e) {
+    imp.result = null; $('im-progress').hidden = true;
+    $('im-error').textContent = e && e.message === 'absent' ? 'Le lecteur d\'historiques n\'est pas encore disponible ici. Réessaie plus tard.'
+      : 'Ces fichiers n\'ont pas pu être lus sans risque pour la confidentialité : rien n\'a été gardé.';   // analyze ne rejette que si un pseudo passerait
+    $('im-error').hidden = false;
+  } finally { imp.busy = false; $('im-files').value = ''; }
+}
+function impSave() {
+  if (!imp.result || typeof DEMO !== 'undefined') return;
+  const out = window.Winamax.toCsv(imp.result) || {};
+  for (const name of ['comptages.csv', 'volume.csv']) {
+    if (typeof out[name] !== 'string') continue;
+    const url = URL.createObjectURL(new Blob([out[name]], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+$('import-btn').addEventListener('click', openImport);
+$('im-files').addEventListener('change', (e) => impRun(e.target.files));
+for (const ev of ['dragenter', 'dragover']) $('im-drop').addEventListener(ev, (e) => { e.preventDefault(); $('im-drop').classList.add('over'); });
+for (const ev of ['dragleave', 'drop']) $('im-drop').addEventListener(ev, () => $('im-drop').classList.remove('over'));
+$('im-drop').addEventListener('drop', (e) => { e.preventDefault(); impRun(e.dataTransfer.files); });
+$('im-save').addEventListener('click', impSave);
+$('im-clear').addEventListener('click', impReset);
+$('im-back').addEventListener('click', () => goTab('outils'));
+
 (function restoreHome() {
   const m = store.get('mode'); const btn = m && document.querySelector(`.mode-switch [data-value="${m}"]`);
   if (btn) { for (const b of document.querySelectorAll('.mode-switch [data-value]')) b.setAttribute('aria-pressed', String(b === btn)); }

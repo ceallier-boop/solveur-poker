@@ -1,0 +1,10 @@
+groupe,kind,decision,action,stack,n,k
+field,3w,BB face au limp du SB (BTN fold),check,25,1,1
+field,3w,BB face au tapis du BTN (SB fold),paie,25,1,1
+field,3w,BB face au tapis du SB (BTN fold),fold,25,1,1
+field,3w,BB face au tapis du SB (BTN fold),paie,25,1,0
+field,3w,SB face au tapis du BTN,fold,25,1,1
+field,3w,SB face au tapis du BTN,paie,25,1,0
+field,3w,SB premier à parler (BTN fold),limp,25,2,1
+field,3w,SB premier à parler (BTN fold),tapis,25,2,1
+field,hu,BB face au tapis du SB,paie,10,1,1
