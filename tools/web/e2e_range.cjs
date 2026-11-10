@@ -7,7 +7,7 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 };
 (async () => {
   const out = process.argv[2] || '.'; const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const b = await chromium.launch(); const res = {};
-  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })).newPage();
+  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p); if (process.argv[2]) await p.screenshot({ path: `${out}/accueil.png` });
   // range

@@ -45,7 +45,7 @@ async function series(p, which) {
 
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE);
   await p.waitForFunction(() => !document.getElementById('screen-onboard').hidden || !document.getElementById('today').hidden, null, { timeout: 20000 });
@@ -74,12 +74,13 @@ async function series(p, which) {
 
   // N2 : série juste → rien de coûteux
   await series(p, 'best');
+  await p.openTab('gto');                                            // I9 : les erreurs du jour sont dans l'onglet GTO
   const w0 = await p.isVisible('#worst') ? await worstList(p) : [];
   ok('N2 : après une série juste, « Aucune erreur coûteuse aujourd\'hui », pas de rejeu', w0.length === 1 && /Aucune erreur coûteuse aujourd'hui/.test(w0[0]) && !(await p.isVisible('#worst-replay')), w0);
 
   // N2 : série fausse → 3 erreurs triées par coût
   const bad = await series(p, 'worst');
-  const w1 = await worstList(p); const c1 = w1.map(cost);
+  await p.openTab('gto'); const w1 = await worstList(p); const c1 = w1.map(cost);   // I9 : lue onglet affiché (le texte d'un bloc caché se lit autrement)
   ok('N2 : série fausse jouée (5 erreurs ou imprécisions)', bad.every((x) => x.verdict !== 'correct'), bad.map((x) => x.verdict));
   ok('N2 : 3 erreurs, de la plus coûteuse à la moins coûteuse', w1.length === 3 && c1[0] >= c1[1] && c1[1] >= c1[2] && c1[2] > 0, w1);
   let server = null;
@@ -97,13 +98,14 @@ async function series(p, which) {
     rp.every((x, k) => /Rejeu de ton erreur du jour/.test(x.banner) && cost(x.banner) === c1[k]), rp.map((x) => x.banner));
   if (server) ok('N2 : le rejeu sert les mêmes situations et mains que la liste du serveur', rp.every((x, k) => x.spot_id === server[k].spot_id && x.hand === server[k].hand));
   await p.click('#back-home'); await home(p); await p.waitForTimeout(1200);
-  const w2 = await worstList(p);
+  await p.openTab('gto'); const w2 = await worstList(p);
   ok('N2 : la liste ne change pas après le rejeu (ses erreurs n\'y entrent pas)', JSON.stringify(plain(w2)) === JSON.stringify(plain(w1)), { avant: w1, après: w2 });
   ok('N2 : rejouée juste « Rattrapée », rejouée fausse non', /Rattrapée/.test(w2[0]) && !/Rattrapée/.test(w2[1]) && /Rattrapée/.test(w2[2]), w2);
   ok('N2 : « Les rejouer » reste proposé pour l\'erreur non rattrapée', await p.isVisible('#worst-replay'));
 
   // N2 : une nouvelle série fausse ne change pas la liste du jour
   await series(p, 'worst');
+  await p.openTab('gto');
   ok('N2 : liste stable après une nouvelle série fausse', JSON.stringify(plain(await worstList(p))) === JSON.stringify(plain(w1)), await worstList(p));
   if (!DEMO) ok('N2 : le rejeu compte dans les statistiques (5 + 5 + 3 + 5 questions)', (await api(p, 'users/me/stats')).questions === 18);
   await p.screenshot({ path: `${OUT}/rythme_recette_caught.png`, fullPage: true });

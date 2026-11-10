@@ -7,10 +7,10 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 };
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 (async () => {
-  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p);
-  await p.waitForSelector('#screen-home:not([hidden]) #extras'); if (!(await p.$eval('#extras', (d) => d.open))) await p.click('#extras-sum');   // AU4 : repliés pour un nouveau joueur ; on les ouvre au toucher, comme le joueur
+  await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])'); await p.openTab('prog'); if (!(await p.$eval('#extras', (d) => d.open))) await p.click('#extras-sum');   // I9 : les objectifs sont dans l'onglet Progression, repliés pour un nouveau joueur (AU4)
   await p.waitForSelector('#goals:not([hidden])', { timeout: 15000 });
   const goals = () => p.$$eval('#goals-list li', (x) => x.map((y) => y.innerText.replace(/\n+/g, ' | ')));
   const res = { before: await goals() };

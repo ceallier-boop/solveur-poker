@@ -7,7 +7,7 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 };
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 (async () => {
-  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await skipOnboarding(p); await p.waitForSelector('#today:not([hidden])', { timeout: 15000 });
   const res = { home: await p.innerText('#today'), primary: await p.$$eval('#screen-home .primary', (x) => x.filter((y) => y.offsetParent).map((y) => y.textContent.trim())) };

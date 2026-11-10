@@ -13,15 +13,13 @@ async function onboard(p, goal) {                                    // premier 
 const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'aria-pressed');
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  const page = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(String(e))); return p; };
+  const page = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e))); return p; };
 
-  // AU1 : récréatifs → mode exploitant par défaut, mis en avant si le joueur revient en GTO
+  // AU1 : récréatifs → l'onglet central met l'onglet Exploitant en avant (I9 : l'application s'ouvre toujours au même endroit)
   let p = await page(); await onboard(p, 'recreatifs');
-  ok('AU1 récréatifs : mode Exploitant par défaut', await pressed(p) === 'true');
-  await p.click('.mode-switch [data-value="gto"]'); await p.waitForTimeout(600);
-  ok('AU1 récréatifs : carte du mode Exploitant en GTO', /récréatifs/.test(await p.innerText('#goal-card')) && await p.isVisible('#goal-go'), await p.innerText('#goal-card'));
-  await p.click('#goal-go'); await p.waitForTimeout(600);
-  ok('AU1 récréatifs : la carte fait passer en Exploitant', await pressed(p) === 'true' && !(await p.isVisible('#goal-card')));
+  ok('AU1 récréatifs : carte de l\'onglet Exploitant sur l\'onglet central', /récréatifs/.test(await p.innerText('#goal-card')) && await p.isVisible('#goal-go'), await p.innerText('#goal-card'));
+  await p.click('#goal-go'); await p.waitForTimeout(800);
+  ok('AU1 récréatifs : la carte ouvre l\'onglet Exploitant', await pressed(p) === 'true' && await p.isVisible('#screen-expl'));
   await p.context().close();
   // AU1 : ranges → « Construis ta range » mis en avant ; bases → rien de plus, mode GTO
   p = await page(); await onboard(p, 'ranges');
@@ -35,8 +33,11 @@ const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'ar
   // AU4 : accueil d'un nouveau joueur
   const primaries = await p.$$eval('#screen-home .primary', (xs) => xs.filter((x) => x.checkVisibility()).map((x) => x.textContent.trim()));   // un bouton dans un bloc replié ne compte pas
   ok('AU4 : un seul bouton principal', primaries.length === 1 && /séance/.test(primaries[0]), primaries);
-  ok('AU4 : séance et série rapide expliquées', await p.isVisible('#today-explain') && await p.isVisible('#quick-explain'));
-  ok('AU4 : objectifs et défis repliés', (await p.getAttribute('#extras', 'open')) === null && await p.isVisible('#extras-sum') && !(await p.isVisible('#goals-list')));
+  const todayExplained = await p.isVisible('#today-explain'); await p.openTab('gto');                    // I9 : la série rapide est dans l'onglet GTO
+  ok('AU4 : séance et série rapide expliquées', todayExplained && await p.isVisible('#quick-explain'));
+  await p.openTab('prog');                                                                              // I9 : les objectifs sont dans l'onglet Progression
+  ok('AU4 : objectifs repliés', (await p.getAttribute('#extras', 'open')) === null && await p.isVisible('#extras-sum') && !(await p.isVisible('#goals-list')));
+  await p.click('#home-btn'); await homeReady(p);
   await p.screenshot({ path: `${OUT}/audit_home_new.png`, fullPage: true });
 
   // AU8 : vocabulaire du niveau 1 sur les boutons et dans le verdict

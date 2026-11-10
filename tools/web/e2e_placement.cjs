@@ -13,7 +13,7 @@ async function toStep3(p, exp) {
 const answer = async (p, k) => { await p.waitForSelector('#screen-question:not([hidden])'); await p.click(`#actions button >> nth=${k}`); await p.waitForSelector('#screen-answer:not([hidden])'); await p.click('#next-btn'); };
 (async () => {
   const b = await chromium.launch(); const errs = [];
-  const page = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(String(e))); return p; };
+  const page = async () => { const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage().then(require('./nav_helper.cjs').wire); p.on('pageerror', (e) => errs.push(String(e))); return p; };
 
   // débutant : pas de test proposé
   let p = await page(); await toStep3(p, 'debut');

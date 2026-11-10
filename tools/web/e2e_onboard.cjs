@@ -3,7 +3,7 @@
 const { chromium } = require('playwright');
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 (async () => {
-  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage().then(require('./nav_helper.cjs').wire);
   const errs = []; p.on('pageerror', (e) => errs.push(String(e)));
   await p.goto(BASE); await p.waitForSelector('#screen-onboard:not([hidden])', { timeout: 15000 });
   const res = { step1: await p.innerText('#ob-1'), nextDisabled: await p.isDisabled('#ob-next') };

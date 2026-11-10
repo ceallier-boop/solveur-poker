@@ -8,7 +8,7 @@ const skipOnboarding = async (pg) => {          // étape 4 : un nouveau joueur 
 (async () => {
   const out = process.argv[2]; const errors = [];
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: process.argv[3] || 'light' });
-  const p = await ctx.newPage();
+  const p = await ctx.newPage().then(require('./nav_helper.cjs').wire);
   p.on('pageerror', e => errors.push(String(e))); p.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await p.goto(process.env.BASE_URL || 'http://localhost:8000/'); await skipOnboarding(p); await p.screenshot({ path: out + '/1_accueil.png' });
   if (process.env.MODE === 'exploit') await p.click('.mode-switch [data-value="exploit"]');

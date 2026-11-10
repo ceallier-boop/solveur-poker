@@ -15,6 +15,7 @@
     <div class="bar-right">
       <div class="progress" id="progress" aria-live="polite"></div>
       <button class="lex-btn" id="lex-btn" aria-haspopup="dialog" aria-controls="lex">Lexique</button>
+      <button class="avatar" id="profile-btn" type="button" aria-haspopup="dialog" aria-controls="profile" aria-label="Mon profil et mes réglages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
     </div>
   </header>
 
@@ -32,16 +33,21 @@
 
   <main id="app">
     <!-- Accueil -->
-    <section id="screen-home" class="screen" aria-labelledby="home-title">
-      <h1 id="home-title">Entraînement Expresso</h1>
-      <p class="lead" id="home-lead">Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
-      <div class="mode-switch mode-top chips" data-name="mode" role="group" aria-label="Mode d'entraînement">
+    <!-- Navigation à cinq onglets (I9) : Outils · GTO · Défis (au centre) · Exploitant · Progression ; la barre est en bas de la page.
+         Les blocs d'entraînement (séance du jour, série libre, erreurs du jour, recommandations, thèmes) sont uniques : app.js les range
+         dans l'onglet affiché (placeBlocks), le mode suit l'onglet (GTO ou Exploitant). -->
+    <!-- Onglet central : Défis (séance du jour GTO en tête, puis les défis) -->
+    <section id="screen-home" class="screen tab-page" data-tab="defis" aria-labelledby="home-title">
+      <h1 id="home-title">Aujourd'hui</h1>
+      <p class="lead" id="home-lead" hidden>Séries de 5 décisions préflop, de 4 à 25 BB, avec la correction et l'explication de chaque coup.</p>
+      <div class="mode-switch mode-top chips" hidden data-name="mode" role="group" aria-label="Mode d'entraînement">
         <button type="button" data-value="gto" aria-pressed="true">GTO</button>
         <button type="button" data-value="exploit" aria-pressed="false">Exploitant</button>
       </div>
-      <p class="note" id="mode-note">Stratégie de référence, contre des adversaires qui jouent juste.</p>
+      <p class="note" id="mode-note" hidden>Stratégie de référence, contre des adversaires qui jouent juste.</p>
       <section class="celebrate" id="celebrate" hidden role="status"></section>
       <section class="wins home-wins" id="home-wins" hidden aria-label="Tes progrès"><ul id="home-wins-list"></ul></section>
+      <div class="slot" id="slot-defis-today">
       <section class="today" id="today" hidden aria-labelledby="today-title">
         <div class="today-head"><span id="today-streak"></span><span id="today-bb"></span></div>
         <button class="level-line" id="today-level" hidden></button>
@@ -52,49 +58,42 @@
         <button class="primary big" id="today-go">Commencer la séance</button>
         <p class="note" id="today-explain" hidden>15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.</p>
       </section>
-      <section class="recs" id="recs" hidden aria-labelledby="recs-title">
-        <h2 class="free-title" id="recs-title">Recommandé pour toi</h2>
-        <ul id="recs-list"></ul>
-      </section>
-      <section class="worst" id="worst" hidden aria-labelledby="worst-title">           <!-- N2 : les 3 erreurs les plus coûteuses du jour -->
-        <h2 class="free-title" id="worst-title">Tes 3 plus coûteuses aujourd'hui</h2>
-        <ul id="worst-list"></ul>
-        <button class="secondary small" id="worst-replay" hidden>Les rejouer</button>
-      </section>
+      </div>
       <section class="goal-card" id="goal-card" hidden aria-live="polite"></section>
-      <details class="extras" id="extras" open>                       <!-- AU4 : objectifs et défis repliés pour un nouveau joueur -->
-        <summary id="extras-sum">Objectifs de la semaine et défis</summary>
-      <section class="goals" id="goals" hidden aria-labelledby="goals-title">
-        <div class="goals-head"><h2 class="free-title" id="goals-title">Objectifs de la semaine <span id="goals-mode"></span></h2><button class="link" id="goals-edit">modifier</button></div>
-        <p class="block-error" id="goals-error" hidden>Objectifs indisponibles pour l'instant. <button class="link" id="goals-retry">Réessayer</button></p>
-        <div class="last-week" id="last-week" hidden></div>
-        <ul id="goals-list"></ul>
-        <p class="note" id="goals-note"></p>
-      </section>
       <section class="challenges" id="challenges" hidden aria-labelledby="ch-title">
-        <details class="ch-box" id="ch-box"><summary><h2 class="free-title" id="ch-title">Défis</h2> <span id="ch-sum"></span></summary>
+        <details class="ch-box" id="ch-box" open><summary><h2 class="free-title" id="ch-title">Défis</h2> <span id="ch-sum"></span></summary>
           <ul id="ch-list"></ul>
         </details>
         <p class="block-error" id="ch-error" hidden>Défis indisponibles pour l'instant. <button class="link" id="ch-retry">Réessayer</button></p>
       </section>
-      </details>
-      <h2 class="free-title" id="free-title" hidden>Jouer librement</h2>
+    </section>
+
+    <!-- Onglet GTO -->
+    <section id="screen-gto" class="screen tab-page" data-tab="gto" hidden aria-labelledby="gto-title">
+      <h1 id="gto-title">GTO</h1>
+      <p class="lead">La stratégie théorique, contre des joueurs qui jouent juste.</p>
+      <div class="slot" id="slot-gto-train">
+        <div class="train" id="train">
+      <button class="link" id="resume" hidden>Reprendre la série en cours</button>
+      <button class="secondary review-btn" id="review-btn" hidden>Revoir mes mains</button>
+      <p class="note" id="review-note" hidden></p>
+      <button class="primary big" id="quick-start">Série recommandée</button>
+      <p class="note" id="quick-explain" hidden>Une série de 5 décisions, en dehors de ta séance du jour : pour jouer un peu plus quand tu veux.</p>
       <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
         <div class="chips" data-name="chrono">
           <button type="button" data-value="0" aria-pressed="false">Sans</button>
           <button type="button" data-value="15" aria-pressed="true">15 s</button>
           <button type="button" data-value="8" aria-pressed="false">8 s</button>
         </div></div>
-      <button class="primary big" id="quick-start">Série recommandée</button>
-      <p class="note" id="quick-explain" hidden>Une série de 5 décisions, en dehors de ta séance du jour : pour jouer un peu plus quand tu veux.</p>
-      <button class="link" id="resume" hidden>Reprendre la série en cours</button>
-      <button class="secondary review-btn" id="review-btn" hidden>Revoir mes mains</button>
-      <button class="secondary" id="range-btn">Construis ta range</button>
-      <a class="secondary conseil-link" href="conseil">Comment jouer ma main ?</a>
-      <button class="secondary" id="fiches-btn">Fiches à emporter</button>
-      <p class="note" id="review-note" hidden></p>
-      <button class="secondary" id="stats-btn">Ma progression</button>
-
+      <section class="worst" id="worst" hidden aria-labelledby="worst-title">           <!-- N2 : les 3 erreurs les plus coûteuses du jour -->
+        <h2 class="free-title" id="worst-title">Tes 3 plus coûteuses aujourd'hui</h2>
+        <ul id="worst-list"></ul>
+        <button class="secondary small" id="worst-replay" hidden>Les rejouer</button>
+      </section>
+      <section class="recs" id="recs" hidden aria-labelledby="recs-title">
+        <h2 class="free-title" id="recs-title">Recommandé pour toi</h2>
+        <ul id="recs-list"></ul>
+      </section>
       <details class="filters" id="filters">
         <summary>Choisir le thème</summary>
         <fieldset>
@@ -137,11 +136,29 @@
         <p class="error" id="home-error" role="alert" tabindex="-1" hidden></p>
         <button class="primary" id="custom-start">Lancer cette série</button>
       </details>
-      <details class="filters" id="past-box">
-        <summary>Mes pastilles</summary>
-        <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche à côté des adversaires que tu as assez observés (une question sur deux : l'autre te laisse lire ses stats), et sur les questions « Quelle pastille ? ».</p>
-        <div id="past-rows"></div>
-      </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Onglet Exploitant (niveau 4) -->
+    <section id="screen-expl" class="screen tab-page" data-tab="expl" hidden aria-labelledby="expl-title">
+      <div class="tab-head"><h1 id="expl-title">Exploitant</h1><span class="tag-paid" id="expl-paid">Offre payante, ouverte pendant le test</span></div>
+      <p class="lead">Contre les vrais joueurs d'Expresso : lis leurs stats, adapte-toi à leurs défauts.</p>
+      <div class="slot" id="slot-expl-today"></div>
+      <div class="slot" id="slot-expl-train"></div>
+    </section>
+
+    <!-- Onglet Outils -->
+    <section id="screen-outils" class="screen tab-page" data-tab="outils" hidden aria-labelledby="outils-title">
+      <h1 id="outils-title">Outils</h1>
+      <p class="lead">Ce qu'on ouvre entre deux parties.</p>
+      <div class="tools-grid">
+      <a class="secondary conseil-link" href="conseil">Comment jouer ma main ?</a>
+      <button class="secondary" id="fiches-btn">Fiches à emporter</button>
+      <button class="secondary" id="range-btn">Construis ta range</button>
+        <button class="secondary" id="tools-lex" type="button">Lexique</button>
+        <div class="tool-soon"><b>Mes mains</b><small>Bientôt : importe ton historique et vois tes vraies fuites.</small></div>
+      </div>
     </section>
 
     <!-- Construis ta range (chantier 2) -->
@@ -306,11 +323,21 @@
     </section>
 
     <!-- Progression -->
-    <section id="screen-stats" class="screen" hidden aria-labelledby="st-title">
+    <section id="screen-stats" class="screen tab-page" data-tab="prog" hidden aria-labelledby="st-title">
       <h2 id="st-title">Ma progression</h2>
       <p class="offline-note" id="st-offline" role="status" hidden></p>
       <div class="score" id="st-score"></div>
       <div class="focus" id="st-focus" role="status"></div>
+      <details class="extras" id="extras" open>                       <!-- AU4 : repliés pour un nouveau joueur -->
+        <summary id="extras-sum">Objectifs de la semaine</summary>
+      <section class="goals" id="goals" hidden aria-labelledby="goals-title">
+        <div class="goals-head"><h2 class="free-title" id="goals-title">Objectifs de la semaine <span id="goals-mode"></span></h2><button class="link" id="goals-edit">modifier</button></div>
+        <p class="block-error" id="goals-error" hidden>Objectifs indisponibles pour l'instant. <button class="link" id="goals-retry">Réessayer</button></p>
+        <div class="last-week" id="last-week" hidden></div>
+        <ul id="goals-list"></ul>
+        <p class="note" id="goals-note"></p>
+      </section>
+      </details>
       <section class="wins" id="st-wins" hidden aria-labelledby="st-wins-title"><h3 id="st-wins-title">Tes progrès</h3><ul id="st-wins-list"></ul><p class="note" id="st-wins-effort"></p></section>
       <section class="my-level" id="st-level" hidden aria-labelledby="st-level-title">
         <h3 id="st-level-title">Mon niveau</h3>
@@ -343,10 +370,27 @@
       <button class="link danger" id="st-delete">Effacer mes données</button>
     </section>
 
+    <div class="sheet" id="profile" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title"><div class="sheet-in">
+      <div class="sheet-head"><h2 id="pf-title">Mon profil et mes réglages</h2><button class="lex-close" id="pf-close" type="button" aria-label="Fermer">×</button></div>
+      <button class="secondary" id="pf-level" type="button">Mon niveau</button>
+      <details class="filters" id="past-box" open>
+        <summary>Mes pastilles</summary>
+        <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche à côté des adversaires que tu as assez observés (une question sur deux : l'autre te laisse lire ses stats), et sur les questions « Quelle pastille ? ».</p>
+        <div id="past-rows"></div>
+      </details>
+      <button class="secondary" id="pf-data" type="button">Mes données (exporter, effacer)</button>
+    </div></div>
     <div class="loading" id="loading" hidden>Chargement…</div>
     <div class="notice" id="notice" role="alert" hidden><span id="notice-text"></span>
       <button class="secondary" id="notice-retry" hidden>Réessayer</button><button class="link" id="notice-close" aria-label="Fermer le message">✕</button></div>
   </main>
+  <nav class="tabs" id="tabs" aria-label="Pages de l'application" hidden><div class="tabs-in">
+    <button class="tab" type="button" id="tab-outils" data-tab="outils"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span>Outils</span></button>
+    <button class="tab" type="button" id="tab-gto" data-tab="gto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span>GTO</span><b class="badge" id="badge-gto" hidden></b></button>
+    <button class="tab center" type="button" id="tab-defis" data-tab="defis"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><span>Défis</span><b class="badge" id="badge-defis" hidden></b></button>
+    <button class="tab" type="button" id="tab-expl" data-tab="expl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span id="tab-expl-label">Exploitant</span><b class="badge" id="badge-expl" hidden></b></button>
+    <button class="tab" type="button" id="stats-btn" data-tab="prog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Progression</span></button>
+  </div></nav>
   <script src="/static/app.js"></script>
 </body>
 </html>
