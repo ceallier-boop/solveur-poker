@@ -62,6 +62,7 @@ const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', prog: 'stats', out
 const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour à l\'onglet GTO', expl: 'Retour à l\'onglet Exploitant' };
 function show(name) {
   if (name !== 'question' && state.timer) stopTimer();
+  if (name !== 'question') stopReplay();
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
   $('loading').hidden = true;
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
@@ -144,10 +145,12 @@ async function start(f, review = false, plan = null, challenge = null) {
 }
 
 // ------------------------------------------------------------------ question
-function contributions(q) {
-  const n = q.players.length, c = BLINDS[n].slice(), folded = new Array(n).fill(false);
+// rejouée de la main (décision du porteur, 10/11) : vs = étape affichée { upto: actions jouées, cards, blinds } ; par défaut l'état final
+const FULL = { upto: Infinity, cards: true, blinds: true };
+function contributions(q, vs = FULL) {
+  const n = q.players.length, c = vs.blinds ? BLINDS[n].slice() : new Array(n).fill(0), folded = new Array(n).fill(false);
   const kind = c.map((x) => (x > 0 ? 'blind' : null));               // dernière action de chaque joueur, pour son jeton
-  for (const h of q.history) {
+  for (const h of q.history.slice(0, vs.upto)) {
     const i = q.players.indexOf(h.position);
     if (h.action === 'fold') folded[i] = true;
     else if (h.to_bb !== undefined) c[i] = h.to_bb;
@@ -160,15 +163,31 @@ function contributions(q) {
 const ACT_TAG = { fold: 'FOLD', check: 'CHECK', limp: 'CALL', call: 'CALL', call_allin: 'CALL', raise: 'RAISE', allin: 'ALL-IN' };
 const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call', call_pct_bb_sb_fold: 'Call', limp_pct: 'Limp', call_after_limp_pct: 'Call après limp',
   jam_over_limp_pct: 'Tapis/limp', open_pct: 'Open', defend_pct: 'Déf.' };
-function lastActions(q) {
+function lastActions(q, vs = FULL) {
   const last = {};
-  for (const h of q.history) last[h.position] = h.action;
+  for (const h of q.history.slice(0, vs.upto)) last[h.position] = h.action;
   return last;
 }
+// jetons devant le joueur : un limp ou une blinde = un jeton ; une mise = une pile dont la hauteur suit le montant ; un tapis = plusieurs colonnes
+const CHIP_STEPS = [1.5, 3, 5, 8, 12];                               // paliers lisibles (BB) : 2 à 6 jetons
+function chipsHTML(amount, kind, allin, fresh) {
+  if (!(amount > 0)) return '';
+  const pile = (k) => `<span class="pile">${'<i></i>'.repeat(k)}</span>`;
+  let html, type;
+  if (allin) { type = 'allin'; const h = 2 + CHIP_STEPS.filter((x) => amount > x).length; html = pile(h) + pile(h) + pile(Math.max(2, h - 1)); }
+  else if (kind === 'limp' || kind === 'blind') { type = kind; html = pile(1); }
+  else { type = 'bet'; html = pile(2 + CHIP_STEPS.filter((x) => amount > x).length); }
+  return `<span class="stake c-${type}${fresh ? ' fresh' : ''}" data-chips="${type}" aria-hidden="true">${html}</span>`;   // fresh : posés à cette étape (seuls animés)
+}
+const BUBBLE_FR = { fold: () => 'Se couche', check: () => 'Parole', limp: () => 'Limp', call: (h) => `Paie ${bb(h.to_bb)} BB`,
+  call_allin: (h) => `Paie ${bb(h.to_bb)} BB`, raise: (h) => `Relance à ${bb(h.to_bb)} BB`, allin: (h) => `Tapis ${bb(h.to_bb)} BB` };
+const bubbleText = (h) => (BUBBLE_FR[h.action] || (() => h.action))(h);
 
-function renderTable(q) {
+function renderTable(q, vs = FULL) {
   const view = $('table-view'); view.innerHTML = '';
-  const n = q.players.length, hero = q.players.indexOf(q.hero), { c: c0, folded } = contributions(q), last = lastActions(q);
+  const n = q.players.length, hero = q.players.indexOf(q.hero), { c: c0, folded, kind } = contributions(q, vs), last = lastActions(q, vs);
+  const said = vs.upto > 0 && vs.upto !== Infinity ? q.history[vs.upto - 1] : null;   // l'action qui vient d'être jouée : sa bulle
+  $('table-wrap').classList.toggle('undealt', !vs.cards); view.dataset.step = vs === FULL ? 'final' : `${vs.cards ? 'c' : ''}${vs.blinds ? 'b' : ''}${vs.upto}`;
   view.classList.toggle('hu', n === 2);
   // une mise au-delà du plus gros tapis adverse encore en jeu ne peut pas être payée : on l'affiche plafonnée, comme le pot de la correction
   const c = c0.map((x, i) => Math.min(x, Math.max(...q.stacks_bb.map((s, j) => (j !== i && !folded[j] ? s : 0)), 0) || x));
@@ -182,22 +201,26 @@ function renderTable(q) {
     const allin = left <= 1e-9 || last[pos] === 'allin';                     // test joueurs 6 : un joueur à tapis n'affiche plus de jetons derrière
     const act = allin ? '' : ACT_TAG[last[pos]] || '';                        // tapis : « ALL-IN » à la place du tapis restant
     const stack = allin ? 'ALL-IN' : `${bb(left)} BB`;
+    const side = k === 0 ? '' : seats[k][0] > 50 ? ' to-l' : ' to-r';                // bulle à côté du siège, vers le centre de la table
+    const bubble = said && said.position === pos ? `<span class="bubble${side}" data-pos="${pos}">${escT(bubbleText(said))}</span>` : '';
+    const chips = chipsHTML(c[i], kind[i], allin && c[i] > 0, (said && said.position === pos) || (vs.blinds && vs.upto === 0 && kind[i] === 'blind'));
     if (k === 0) {
-      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '');   // ton action, comme pour les autres
+      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '') + bubble;   // ton action, comme pour les autres
     } else {
       const seat = document.createElement('div');
       seat.className = 'seat' + (folded[i] ? ' folded' : '');
       seat.style.left = seats[k][0] + '%'; seat.style.top = seats[k][1] + '%';
-      const backs = !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';           // cartes cachées des adversaires encore dans le coup
+      const backs = !folded[i] && vs.cards ? '<span class="backs"><i></i><i></i></span>' : '';   // cartes cachées des adversaires encore dans le coup
       const marked = q.field && q.field.pastille && (q.field.villains || []).includes(pos);
       const tag = q.field ? (marked ? pastilleDot(q.field.pastille) : '<i class="pastille none" title="Pas de pastille">?</i>') : '';
       const pname = marked ? `<span class="pname" style="--p:${pastilles()[q.field.pastille]};--pi:${inkOn(pastilles()[q.field.pastille])}">${q.field.pastille}</span>` : '';   // analyse des écrans : le nom de la pastille sous le siège
       seat.innerHTML = backs + `<b>${tag}${pos}</b><span class="stack">${stack}${covers ? ' <small>te couvre</small>' : ''}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '') + pname
-        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}<small> BB</small></span>` : '');   // sa mise, devant lui (en BB)
+        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + bubble
+        + (c[i] > 0 ? `<span class="betnum">${chips}${bb(c[i])}<small> BB</small></span>` : '');   // sa mise, devant lui : jetons et montant en BB
       view.appendChild(seat);
     }
     if (k === 0 && c[i] > 0) {
-      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.innerHTML = `${bb(c[i])}<small> BB</small>`; view.appendChild(b);
+      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.innerHTML = `${chips}${bb(c[i])}<small> BB</small>`; view.appendChild(b);
     }
     if (pos === button) {
       const d = document.createElement('span'); d.className = 'dealer'; d.textContent = 'D'; d.title = 'Bouton';
@@ -279,6 +302,29 @@ function startTimer(q, leftMs) {
   tick(); state.timer = setInterval(tick, 100);
 }
 
+// rejouée de la main avant la question : table vide avec les tapis, cartes distribuées, blindes, puis chaque action dans l'ordre
+// jusqu'au héros ; ses options n'apparaissent qu'à la fin et le chrono ne part qu'à ce moment. « Passer » montre tout de suite l'état
+// final ; avec la réduction des mouvements demandée par le système, l'état final est direct. L'énoncé texte reste lu (lecteurs d'écran).
+const REPLAY_MS = { empty: 350, deal: 450, blinds: 450, action: 550 };
+const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function stopReplay() { const r = state.replay; if (!r) return; clearTimeout(r.t); state.replay = null; $('replay-skip').hidden = true; }
+function replayHand(q, done) {
+  stopReplay();
+  const finish = () => { stopReplay(); renderTable(q); $('actions').hidden = false; done(); };
+  if (reducedMotion()) { finish(); return; }
+  const steps = [[{ upto: 0, cards: false, blinds: false }, REPLAY_MS.empty], [{ upto: 0, cards: true, blinds: false }, REPLAY_MS.deal],
+    [{ upto: 0, cards: true, blinds: true }, REPLAY_MS.blinds], ...q.history.map((h, k) => [{ upto: k + 1, cards: true, blinds: true }, REPLAY_MS.action])];
+  $('actions').hidden = true; $('replay-skip').hidden = false;
+  const r = state.replay = { finish, t: null }; let k = 0;
+  const tick = () => {
+    if (state.replay !== r) return;
+    if (k >= steps.length) { finish(); return; }
+    const [vs, ms] = steps[k++]; renderTable(q, vs); r.t = setTimeout(tick, ms);
+  };
+  tick();
+}
+$('replay-skip').addEventListener('click', () => { if (state.replay) state.replay.finish(); });
+
 function renderQuestion(data) {
   state.q = data.question; state.index = data.question_index; state.size = data.size;
   $('purpose').hidden = !data.purpose_fr; $('purpose').textContent = data.purpose_fr || '';
@@ -309,8 +355,9 @@ function renderQuestion(data) {
   });
   main.style.setProperty('--n', String(main.children.length));
   box.appendChild(main); if (extra.children.length) box.appendChild(extra);
-  show('question'); startTimer(q);
-  box.querySelector('button').focus({ preventScroll: true });
+  show('question');
+  const ready = () => { startTimer(q); box.querySelector('button').focus({ preventScroll: true }); };
+  if (noHand) { stopReplay(); box.hidden = false; ready(); } else replayHand(q, ready);
 }
 
 // mode exploitant : la ligne de stats est sous le siège du vilain ; ici, le détail (k sur n, observé contre théorie), replié.
@@ -838,7 +885,7 @@ const resumeSeries = () => { state.sid = store.get('sid'); state.tab = store.get
 $('resume').addEventListener('click', resumeSeries);
 $('resume-card-go').addEventListener('click', resumeSeries);
 document.addEventListener('keydown', (e) => {
-  if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+  if ($('screen-question').hidden || !$('lex').hidden || state.replay || e.altKey || e.ctrlKey || e.metaKey) return;   // pas de réponse pendant la rejouée
   const b = $('actions').querySelector(`button[data-k="${Number(e.key)}"]`);
   if (b) b.click();
 });
