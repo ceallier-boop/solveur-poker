@@ -158,43 +158,16 @@ OPPOSITES = ({'assortie', 'depareillee'}, {'top_paire_souvent', 'top_paire_rarem
 PAIR_UNCLEAR = ('cartes_hautes', 'depareillee', 'top_paire_souvent', 'top_paire_rarement', 'paire_faible')   # règles pensées pour deux rangs différents
 
 
-def _strong_set():
-    """les 20 % meilleures combinaisons de départ (équité contre une main au hasard), comme spinsacademy.equities.build"""
-    eq = equities.table()['equity_random']; order = sorted(range(len(NAMES)), key=lambda i: -eq[i])
-    out = []; tot = 0
-    for i in order:
-        out.append(NAMES[i]); tot += _W[NAMES[i]]
-        if tot >= 0.2 * 1326: break
-    return out
-
-
-_DOM = None
-
-
 def domination(hand):
-    """part (dix-millièmes) des combinaisons fortes qui dominent la main (même règle que la table) ; recalculée ici car la table ne
-    garde la valeur que des mains étiquetées « dominée »"""
-    global _DOM
-    if _DOM is None:
-        strong = _strong_set(); tot = sum(_W[h] for h in strong); _DOM = {}
-        for h in NAMES:
-            a, b = _R.index(h[0]), _R.index(h[1]); num = 0
-            if a != b:
-                for s in strong:
-                    c, d = _R.index(s[0]), _R.index(s[1])
-                    if c == d: continue
-                    if (c == a and d > b and d != a) or (d == a and c > b and c != a) or (d == b and c > a) or (c == b and d > a): num += _W[s]
-            _DOM[h] = round(10000 * num / tot)
-    return _DOM[hand]
+    """part (dix-millièmes) des combinaisons fortes qui dominent la main (mesure de la table, toutes mains)"""
+    return equities.measures_of(hand)['domination']
 
 
 def measures(hand):
-    hc = equities.hit_chances(hand); a, b = _R.index(hand[0]), _R.index(hand[1])
-    weak = hc['paire_poche_sous_tableau'] + hc['paire_basse'] + hc['paire_intermediaire']
+    mo = equities.measures_of(hand); a, b = _R.index(hand[0]), _R.index(hand[1])
     return dict(pair=a == b, suited=is_suited(hand), hi=a, lo=b, gap=(a - b - 1) if a != b else None, has_ace=12 in (a, b),
-                tirage_couleur=hc['tirage_couleur'], tirage_quinte_8=hc['tirage_quinte_8'], au_moins_top_paire=hc['au_moins_top_paire'],
-                equity_random=equities.equity_random(hand), domination=domination(hand),
-                part_paire_faible=round(10000 * weak / hc['au_moins_paire']) if hc['au_moins_paire'] else 0)
+                tirage_couleur=mo['tirage_couleur'], tirage_quinte_8=mo['tirage_quinte_8'], au_moins_top_paire=mo['au_moins_top_paire'],
+                equity_random=mo['equity_random'], domination=mo['domination'], part_paire_faible=mo['part_paire_faible'])
 
 
 def _m(s): return max(100, round(0.2 * s))      # marge d'une règle à seuil : 1 point au moins, 20 % du seuil sinon

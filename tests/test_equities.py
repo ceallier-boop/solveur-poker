@@ -107,3 +107,21 @@ def test_runtime_does_not_need_numpy_and_size_is_bounded():
 
 def test_table_is_regenerated_identically():
     assert E._dump(E.build()) == open(E.PATH, encoding='utf-8').read()
+
+
+def test_pairs_do_not_carry_labels_that_make_no_sense_for_them(t):
+    """retour de la session Équité : 22 était « fait souvent la top paire ou mieux » (la double paire comprend la paire du tableau)"""
+    for h in t['hands']:
+        if len(h) == 2:
+            ids = {l['id'] for l in E.labels(h)}
+            assert ids.isdisjoint({'top_paire_souvent', 'top_paire_rarement', 'paire_faible', 'cartes_hautes', 'depareillee', 'cartes_eloignees', 'dominee', 'connectee'}), (h, ids)
+            assert 'paire_de_poche' in ids
+
+
+def test_measures_are_given_for_every_hand_even_when_no_label_applies(t):
+    for h in t['hands']:
+        m = E.measures_of(h)
+        assert {'domination', 'part_paire_faible', 'equity_random', 'au_moins_top_paire', 'tirage_couleur'} <= set(m)
+        for l in E.labels(h): assert l['valeur'] == m[{'top_paire_souvent': 'au_moins_top_paire', 'top_paire_rarement': 'au_moins_top_paire', 'dominee': 'domination',
+                                                    'paire_faible': 'part_paire_faible', 'forte_contre_au_hasard': 'equity_random', 'faible_contre_au_hasard': 'equity_random'}[l['id']]] \
+            if l['id'] in ('top_paire_souvent', 'top_paire_rarement', 'dominee', 'paire_faible', 'forte_contre_au_hasard', 'faible_contre_au_hasard') else True
