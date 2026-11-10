@@ -78,7 +78,9 @@ async function play(p, which, n) {                                  // n mains, 
     res.complete && res.bands.reduce((n, x) => n + x.questions, 0) === 10 && empty.every((lv) => res.bands[lv - 1].questions === 0)
     && (empty.length || res.bands.map((x) => x.questions).join() === '4,3,3') && res.proposed_level === top, res);
   const rows = await p.$$eval('#pl-bands tr', (xs) => xs.map((x) => x.innerText.replace(/\s+/g, ' ').trim()));
-  ok('écran : trois tranches, la tranche non servie annoncée à 0', rows.length === 3 && empty.every((lv) => /\b0\b/.test(rows[lv - 1])), rows);
+  const over = rows.filter((t) => { const m = t.match(/([\d,]+) sur (\d+)/); return m && Number(m[1].replace(',', '.')) > Number(m[2]); });
+  ok('écran : une ligne par tranche servie (la tranche non servie masquée ou à 0)', rows.length === 3 - empty.length || (rows.length === 3 && empty.every((lv) => /\b0\b/.test(rows[lv - 1]))), rows);
+  ok('écran : jamais plus de points que de mains dans une tranche (« 6 sur 3 » interdit)', !over.length, rows);
   ok(`écran : « Niveau ${top} »`, new RegExp(`Niveau ${top}`).test(await p.textContent('#pl-level')), await p.textContent('#pl-level'));
   ok('rien d\'appliqué avant le choix du joueur', (await api(p, 'users/me/level')).level === 2);
   if (top > 2) {
