@@ -14,7 +14,7 @@ Règles :
     100 décisions ; les questions de lecture du vilain (sans EV) n'y comptent pas. Plus il est bas, mieux c'est.
 """
 from collections import defaultdict
-from . import quiz
+from . import equity_quiz, quiz
 
 MIN_SAMPLE = 10
 DEPTHS = (('lt10', 'Moins de 10 BB', 0, 9.5), ('10_16', '10 à 16 BB', 9.5, 16.5), ('17_25', '17 à 25 BB', 16.5, 99))
@@ -70,6 +70,7 @@ def compute(rows):
     dims = {'mode': defaultdict(_bucket), 'family': defaultdict(_bucket), 'hero': defaultdict(_bucket), 'table': defaultdict(_bucket), 'depth': defaultdict(_bucket)}
     sessions = defaultdict(lambda: dict(questions=0, points=0.0, date=None, ev_questions=0, regret=0.0))
     themes = defaultdict(lambda: dict(errors=0, imprecisions=0, questions=0, regret=0.0, examples=[], tight=0, loose=0, small=0, big=0))
+    equity_rows = [r for r in rows if quiz.mode_of(r['dataset_version']) == 'equity']     # CE3 : bloc à part, hors score GTO et BB/100
     rows = [r for r in rows if quiz.mode_of(r['dataset_version']) in MODE_FR]      # l'ancien mode des profils fictifs (retiré) ne compte plus
     for r in rows:
         _, spots = quiz.load(r['dataset_version']); sp = spots[r['spot_id']]
@@ -110,7 +111,7 @@ def compute(rows):
                 ev_questions=total['ev_questions'],
                 verdicts={v: verdicts.get(v, 0) for v in ('correct', 'imprécision', 'erreur')},
                 min_sample=MIN_SAMPLE, by=by, evolution=evolution[-20:], recurring_errors=recurring, weakest=weakest,
-                focus=focus(themes, weakest, n, depth_label, depth_filter, nearest(by)))
+                focus=focus(themes, weakest, n, depth_label, depth_filter, nearest(by)), equity=equity_quiz.stats(equity_rows))
 
 
 DIM_NAME = {'family': 'Situation', 'hero': 'Position', 'table': 'Format', 'depth': 'Profondeur'}

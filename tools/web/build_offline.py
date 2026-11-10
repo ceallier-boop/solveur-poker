@@ -9,7 +9,7 @@ Usage : python tools/web/build_offline.py sortie.html [--hands-gto 3] [--exploit
 """
 import argparse, base64, gzip, hashlib, json, os, random, re, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-from spinsacademy import adaptive, challenges, coachs, field, goals, levels, quiz, ranges, review, today, wins
+from spinsacademy import adaptive, challenges, coachs, equity_quiz, field, goals, levels, quiz, ranges, review, today, wins
 from spinsacademy.cards import NAMES, W
 
 WEB = os.path.join(os.path.dirname(__file__), '..', '..', 'spinsacademy', 'web')
@@ -41,6 +41,22 @@ def items(gto_ref, k_gto, seed=1, field_ref=None, field_max=None):
                 out.append(dict(m=quiz.mode_of(ref), q=q, eff=sp['effective_stack_bb'], base=sp.get('base_spot_id'),
                                 b=key[1], g=json.dumps(key[2]), w=weights.get(key, quiz.RARE_FLOOR),
                                 c={o['id']: slim(quiz.correct(ref, sp['spot_id'], h, o['id'])) for o in q['options']}))
+    return out
+
+
+EQUITY_PER_KIND = 10      # CE3 : questions d'équités embarquées, par sorte et par niveau (1, et 2 pour les niveaux 2 et plus)
+
+
+def equity_items(per_kind=EQUITY_PER_KIND, seed=13):
+    """questions d'équités calculées par spinsacademy.equity_quiz (mêmes énoncés, mêmes corrections que l'API) ; la démo les tire par
+    niveau et par sorte, sans jamais les mêler aux séries GTO ou exploitant"""
+    out = []; seen = set()
+    for lv in (1, 2):
+        for kind in equity_quiz.KINDS:
+            for sid, h in equity_quiz.draw(lv, per_kind, seed=seed * 10 + lv, kind=kind):
+                if (sid, h) in seen: continue
+                seen.add((sid, h)); q = equity_quiz.question(sid, h)
+                out.append(dict(m='equity', q=q, lv=lv, k=kind, eff=None, c={o['id']: slim(equity_quiz.correct(sid, h, o['id'])) for o in q['options']}))
     return out
 
 
@@ -107,7 +123,22 @@ const DEMO = (() => {
   const HU_SHARE = __HU_SHARE__, EASY_SHARE = __EASY_SHARE__, FAMILY_SHARE = __FAMILY_SHARE__, MAX_TRAPS = __MAX_TRAPS__, MAX_READ = __MAX_READ__;
   const wpick = (xs, w) => { let t = xs.reduce((a, x) => a + w(x), 0) * Math.random(); for (const x of xs) { t -= w(x); if (t <= 0) return x; } return xs[xs.length - 1]; };
   const uniq = (xs) => [...new Set(xs)];
+  // CE3 : questions d'équités, mêmes règles que equity_quiz.draw (sortes en alternance, une main ne revient pas), au niveau du joueur
+  function drawEquity(f, size) {
+    const lv = levelRow().level <= 1 ? 1 : 2;
+    const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === 'equity' && it.lv === lv && (!f.kind || it.k === f.kind)).map(([, i]) => i);
+    const kinds = uniq(pool.map((i) => ITEMS[i].k)); let order = [];
+    while (order.length < size && kinds.length) order = order.concat(kinds.slice().sort(() => Math.random() - 0.5));
+    const seen = new Set(), used = new Set(), out = [];
+    for (const k of order.slice(0, size)) {
+      const cand = pool.filter((i) => ITEMS[i].k === k && !seen.has(ITEMS[i].q.hand) && !used.has(i));
+      if (!cand.length) return null;
+      const i = rnd(cand); seen.add(ITEMS[i].q.hand); used.add(i); out.push(i);
+    }
+    return out.length === size ? out : null;
+  }
   function draw(mode, f, size) {
+    if (mode === 'equity') return drawEquity(f, size);
     const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === mode
       && (!f.table || it.q.table === f.table) && (!f.hero || it.q.hero === f.hero) && (!f.family || (it.g === 'read' ? 'read' : it.q.family) === f.family)
       && (f.min_stack == null || it.eff >= f.min_stack) && (f.max_stack == null || it.eff <= f.max_stack)).map(([, i]) => i);
@@ -161,10 +192,21 @@ const DEMO = (() => {
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
       chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out })).sort((a, b) => b.regret_mbb - a.regret_mbb);
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
-    const ev = rows.filter(([, r]) => !(r.field && r.field.read)); const lost = ev.reduce((a, [, r]) => a + Math.round((r.regret_mbb || 0) / 10) / 100, 0);   // somme des coûts affichés
+    const ev = rows.filter(([, r]) => !(r.field && r.field.read) && !r.equity); const lost = ev.reduce((a, [, r]) => a + Math.round((r.regret_mbb || 0) / 10) / 100, 0);   // somme des coûts affichés
     return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length,
       bb_per_100: ev.length ? Math.round(10000 * lost / ev.length) / 100 : null, timeouts: rows.filter(([, r]) => r.timed_out).length, verdicts, errors, review: errors.slice(0, 3).map((e) => e.prompt_fr),
-      session_id: s.id, size: s.items.length, complete: n === s.items.length };
+      session_id: s.id, size: s.items.length, complete: n === s.items.length, ...(s.mode === 'equity' ? { bb_lost: null, bb_per_100: null, category_fr: 'Équités' } : {}) };
+  }
+
+  // CE3 : bloc « Équités » des statistiques (equity_quiz.stats), hors score GTO et BB/100
+  const EQ_KIND_FR = __EQ_KIND_FR__;
+  function equityStats() {
+    const rows = Object.values(load().sessions).filter((s) => s.mode === 'equity' && own(s)).flatMap((s) => answered(s).map(([it, r]) => [s.id, it, r]));
+    const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; const by = {};
+    for (const [, it, r] of rows) { verdicts[r.verdict] += 1; const k = (r.equity || {}).kind; if (k) { const b = (by[k] = by[k] || [0, 0]); b[0] += 1; b[1] += r.points; } }
+    const n = rows.length, pts = rows.reduce((a, [, , r]) => a + r.points, 0);
+    return { questions: n, sessions: new Set(rows.map(([s]) => s)).size, points: Math.round(10 * pts) / 10, score_pct: n ? Math.round(1000 * pts / n) / 10 : null, verdicts,
+      by_kind: Object.keys(by).sort().map((k) => ({ kind: k, label_fr: EQ_KIND_FR[k], questions: by[k][0], score_pct: Math.round(1000 * by[k][1] / by[k][0]) / 10 })), category_fr: 'Équités' };
   }
 
   function stats() {
@@ -173,7 +215,7 @@ const DEMO = (() => {
     const per100 = (b) => (b.evq ? Math.round(b.regret / 1000 * 100 / b.evq * 100) / 100 : null);
     const total = bucket(); const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 };
     const dims = { mode: {}, family: {}, hero: {}, table: {}, depth: {} }; const sessions = []; const themes = {}; let untracked = 0;
-    const sess = Object.values(load().sessions).filter((s) => s.plan !== 'placement').sort((a, b) => a.created_at.localeCompare(b.created_at));   // AU7 : le placement ne compte pas dans la progression
+    const sess = Object.values(load().sessions).filter((s) => s.plan !== 'placement' && s.mode !== 'equity').sort((a, b) => a.created_at.localeCompare(b.created_at));   // AU7 ; CE3 : équités à part : le placement ne compte pas dans la progression
     for (const s of sess) {
       const rows = answered(s); if (!rows.length) continue;
       let sp = 0; const sb = bucket();
@@ -235,7 +277,7 @@ const DEMO = (() => {
     }
     return { sessions: sessions.length, questions: n, points: Math.round(10 * total.points) / 10, score_pct: n ? Math.round(1000 * total.points / n) / 10 : null, bb_per_100: per100(total),
       ev_questions: total.evq, timeouts: sess.reduce((a, s) => a + answered(s).filter(([, r]) => r.timed_out).length, 0),
-      verdicts, min_sample: MIN_SAMPLE, by, untracked_questions: untracked, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus };
+      verdicts, min_sample: MIN_SAMPLE, by, untracked_questions: untracked, evolution: sessions.slice(-20), recurring_errors: recurring, weakest, focus, equity: equityStats() };
   }
 
   // signalements : base de données partagée de l'artefact (lue par le porteur du projet), un document par signalement
@@ -620,6 +662,10 @@ const DEMO = (() => {
       let f = Object.assign({}, body.filters || {}); let mode = f.mode || body.mode || 'gto'; delete f.mode;
       if (body.challenge) mode = CH.gto_bank.includes(body.challenge) ? 'gto' : 'exploit';      // catégories (10/11) : la banque suit le défi
       const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null;
+      if (mode === 'equity') {                                         // CE3 : mêmes règles que l'API (mode à part, filtre kind seulement)
+        if (body.challenge || body.plan) return [422, { detail: "défis, séance du jour et placement ne s'appliquent pas aux questions d'équités" }];
+        if (Object.keys(f).some((k) => k !== 'kind')) return [422, { detail: "seul le filtre kind (hit, equity, labels) s'applique aux équités" }];
+      } else delete f.kind;
       if (body.challenge) {                                            // défis : mêmes règles que le serveur
         plan = `challenge_${body.challenge}`; const ud = new Date(); const utc = `${ud.getUTCFullYear()}${pad(ud.getUTCMonth() + 1)}${pad(ud.getUTCDate())}`;
         if (body.challenge === 'daily') { if (dailyAttempt()) return [409, { detail: "défi du jour déjà tenté aujourd'hui : nouveau défi demain" }]; f = {}; seeded = Number(utc); }
@@ -782,7 +828,7 @@ EXTRA_CSS = """
 
 def build(out, k_gto, exploit_max=2500):
     html = open(os.path.join(WEB, 'index.html')).read(); css = open(os.path.join(WEB, 'app.css')).read(); js = open(os.path.join(WEB, 'app.js')).read()
-    data = items(quiz.DEFAULT_VERSION, k_gto, field_ref=quiz.DEFAULT_FIELD, field_max=exploit_max)
+    data = items(quiz.DEFAULT_VERSION, k_gto, field_ref=quiz.DEFAULT_FIELD, field_max=exploit_max) + equity_items()
     grids = {}                                                    # grille de stratégie : une par spot, pas une par réponse
     for it in data:
         for r in it['c'].values(): grids[it['q']['spot_id']] = r.pop('range', None)
@@ -807,8 +853,8 @@ def build(out, k_gto, exploit_max=2500):
             f'<script>\n{open(os.path.join(WEB, "winamax.js")).read()}\n</script>\n'                  # lecteur d'historiques Winamax (import de mains)
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS, profile_min=wins.PROFILE_MIN, range_good=wins.RANGE_GOOD, range_avg_min=wins.RANGE_AVG_MIN))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES, category=challenges.CATEGORY, access=challenges.ACCESS, ad_kinds=list(challenges.AD_KINDS), gto_bank=list(challenges.GTO_BANK), categories=[dict(key=k, label_fr=l, available=a, challenge=c) for k, l, a, c in challenges.CATEGORIES]), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
-    open(out, 'w').write(page)
+<<<<<<< HEAD
+            f'<script>\n{SHIM.replace("__EQ_KIND_FR__", json.dumps(equity_quiz.KIND_FR, ensure_ascii=False)).replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS, profile_min=wins.PROFILE_MIN, range_good=wins.RANGE_GOOD, range_avg_min=wins.RANGE_AVG_MIN))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES, category=challenges.CATEGORY, access=challenges.ACCESS, ad_kinds=list(challenges.AD_KINDS), gto_bank=list(challenges.GTO_BANK), categories=[dict(key=k, label_fr=l, available=a, challenge=c) for k, l, a, c in challenges.CATEGORIES]), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     return len(data), len(page)
 
 

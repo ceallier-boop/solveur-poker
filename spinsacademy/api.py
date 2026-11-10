@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, challenges, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins, worst
+from . import adaptive, catalog, challenges, equity_quiz, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins, worst
 from .hrc import ROOT
 
 SCHEMA = """
@@ -113,10 +113,11 @@ class Filters(BaseModel):
     family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin|read)$')     # read : lecture du vilain (mode Field)
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
+    kind: Optional[str] = Field(None, pattern='^(hit|equity|labels)$')     # mode « equity » seulement : une seule sorte de question d'équités
 
 
 class NewSession(BaseModel):
-    mode: str = Field('gto', pattern='^(gto|exploit)$')
+    mode: str = Field('gto', pattern='^(gto|exploit|equity)$')       # equity : questions d'équités (spinsacademy.equity_quiz), demandées explicitement
     filters: Filters = Filters()
     size: int = Field(quiz.SERIES_SIZE, ge=1, le=20)
     seed: Optional[int] = None
@@ -260,8 +261,32 @@ def _least_repeated(draw, seed, recent):
     return best
 
 
+def _equity_session(body, x_player_id):
+    """CE3 : série de questions d'équités. Mode à part (référence virtuelle equity_quiz.REF) : jamais mêlée à une série GTO ou exploitant,
+    hors BB/100. Niveau des questions : celui du joueur (1 : quatre tranches, mots simples ; 2 et plus : cinq ou six tranches).
+    Révision espacée, défis, séance du jour et placement ne s'y appliquent pas (décision du 10/11 : pas de coût en BB, pas de révision pour l'instant)"""
+    if body.challenge or body.plan or body.review:
+        raise HTTPException(422, "révision, défis, séance du jour et placement ne s'appliquent pas aux questions d'équités")
+    pid = player(x_player_id); kind = body.filters.kind
+    if set(body.filters.model_dump(exclude_none=True)) - {'kind'}: raise HTTPException(422, "seul le filtre kind (hit, equity, labels) s'applique aux équités")
+    with closing(connect()) as con:
+        level = _level_row(con, pid)['level'] if pid else 1
+        recent = _recent(con, pid)[1]
+    try: series = [(s, h, None, None) for s, h in equity_quiz.draw(level, body.size, body.seed, kind, frozenset(recent))]
+    except ValueError as e: raise HTTPException(422, str(e))
+    sid = uuid.uuid4().hex
+    with closing(connect()) as con, con:
+        con.execute('INSERT INTO sessions(id, created_at, dataset_version, filters, seed, size, player_id, plan) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    (sid, _now(), equity_quiz.REF, body.filters.model_dump_json(exclude_none=True), body.seed, len(series), pid, None))
+        con.executemany('INSERT INTO questions(session_id, idx, spot_id, hand, purpose, purpose_fr) VALUES (?, ?, ?, ?, ?, ?)',
+                        [(sid, i, s, h, k, t) for i, (s, h, k, t) in enumerate(series)])
+    return dict(session_id=sid, dataset_version=equity_quiz.REF, mode='equity', size=len(series), adaptive=None, level=equity_quiz.level_of(level))
+
+
 @app.post('/sessions', status_code=201)
 def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
+    if body.mode == 'equity': return _equity_session(body, x_player_id)
+    body.filters.kind = None                                               # le filtre kind ne concerne que les équités
     pid = player(x_player_id, required=body.review or bool(body.challenge) or body.plan in ('placement', 'replay')); filters = body.filters.model_dump(exclude_none=True); info = None
     plan = body.plan; fixed_seed = None
     reader = False

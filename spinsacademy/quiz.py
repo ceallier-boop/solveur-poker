@@ -11,14 +11,14 @@ La question envoyée au joueur ne contient jamais la solution.
 import json, os, random, re
 from functools import lru_cache
 import threading
-from . import coachs, field, grading
+from . import coachs, equity_quiz, field, grading
 from .cards import NAMES, W
 from .hrc import ROOT
 
 DATASETS = os.path.join(ROOT, 'data', 'datasets')
 DEFAULT_VERSION = os.environ.get('SPINSACADEMY_DATASET', '2026.10.13-3')                       # gto_preflop
 DEFAULT_FIELD = os.environ.get('SPINSACADEMY_FIELD', 'exploit_field/2026.10.23-1')                 # mode exploitant (spinsacademy.field)
-MODES = ('gto', 'exploit')
+MODES = ('gto', 'exploit')                  # modes à dataset publié ; « equity » (spinsacademy.equity_quiz) est à part, sans dataset
 SERIES_SIZE = 5
 SUITS = {'pair': ('♠', '♥'), 's': ('♠', '♠'), 'o': ('♠', '♥')}
 FAMILIES = {'premier à parler': 'first_in', 'face à un limp': 'vs_limp', 'face à une relance': 'vs_raise', 'face à un tapis': 'vs_allin'}
@@ -32,9 +32,13 @@ def ref_path(ref):
 def is_field(ref): return ref.startswith('exploit_field')
 
 
+def is_equity(ref): return ref.startswith('equites/')        # CE3 : questions d'équités (référence virtuelle, spinsacademy.equity_quiz)
+
+
 def mode_of(ref):
     """mode d'entraînement d'une version de dataset : gto, exploit (joueurs du field) ; « retired » pour l'ancien mode
     des profils fictifs (exploit_calls), retiré le 21/10/2026 : ses réponses ne comptent plus dans aucun mode"""
+    if is_equity(ref): return 'equity'
     return 'exploit' if is_field(ref) else 'retired' if ref.startswith('exploit_') else 'gto'
 
 
@@ -517,6 +521,7 @@ def draw_placement(version, seed=None, excluded=frozenset()):
 
 def question(version, spot_id, hand):
     """ce que voit le joueur : état du jeu et options, sans solution"""
+    if is_equity(version): return equity_quiz.question(spot_id, hand)
     _, spots = load(version); sp = spots[spot_id]
     if sp.get('field'): return field.question(sp)
     return dict(spot_id=spot_id, hand=hand, hand_display=hand_display(hand), prompt_fr=prompt(sp, hand), table=sp['table'],
@@ -1012,6 +1017,7 @@ REDUNDANT = re.compile(r"^(Moins de [\d,]+ BB d'écart : |Petit écart \(moins d
 
 def correct(version, spot_id, hand, action_id):
     """correction et explication structurée (données du dataset uniquement)"""
+    if is_equity(version): return equity_quiz.correct(spot_id, hand, action_id)
     _, spots = load(version); sp = spots[spot_id]
     if sp.get('field'): return field.correct(sp, action_id)
     g = grading.grade(sp, hand, action_id)
@@ -1135,6 +1141,7 @@ def call_equity(sp, hand):
 
 def summary(version, answers):
     """answers : [(spot_id, main, résultat de correct())] -> bilan de la série"""
+    if is_equity(version): return equity_quiz.summary(answers)
     _, spots = load(version); n = len(answers)
     pts = sum(r['points'] for _, _, r in answers)
     by = {}
