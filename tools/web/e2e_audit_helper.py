@@ -6,6 +6,8 @@
   python tools/web/e2e_audit_helper.py pick <best|worst> <spot_id> <main>   option la moins (best) ou la plus (worst) coûteuse (JSON)
   python tools/web/e2e_audit_helper.py picks                  la même chose en continu : une demande « best|worst spot main »
                                                               par ligne sur l'entrée, une réponse JSON par ligne (données chargées une fois)
+  python tools/web/e2e_audit_helper.py fiche <banque> <spot_id>…   stratégie lue dans la banque (pas dans fiches.json) : part de
+                                                              chaque famille d'action par main, en %, et mains jamais atteintes (JSON)
 """
 import datetime, json, os, sqlite3, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -44,8 +46,24 @@ def pick(which, spot_id, hand):
     return {'action_id': best, 'regret_mbb': cost[best], 'verdict': quiz.correct(V, spot_id, hand, best)['verdict']}
 
 
+KIND = {'fold': 'fold', 'check': 'check', 'call': 'call', 'call_allin': 'call', 'limp': 'call', 'raise': 'raise', 'allin': 'allin'}
+
+
+def fiche(bank, spot_ids):
+    manifest, spots = quiz.load(bank); minreach = manifest.get('min_reach_for_questions', 0.05); out = {}
+    for sid in spot_ids:
+        sp = spots[sid]; kinds = [KIND[a['type']] for a in sp['actions']]; hands = {}
+        for h, x in sp['hands'].items():
+            share = {}
+            for k, f in zip(kinds, x['freq']): share[k] = share.get(k, 0) + 100 * f
+            hands[h] = dict(dead=x['reach'] < minreach, share={k: round(v, 1) for k, v in share.items()})
+        out[sid] = dict(kinds=kinds, hands=hands)
+    print(json.dumps(out))
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'seed': seed(sys.argv[2])
+    elif sys.argv[1] == 'fiche': fiche(sys.argv[2], sys.argv[3:])
     elif sys.argv[1] == 'pick': print(json.dumps(pick(*sys.argv[2:5])))
     elif sys.argv[1] == 'picks':
         for line in sys.stdin: print(json.dumps(pick(*line.split())), flush=True)
