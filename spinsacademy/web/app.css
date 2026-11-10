@@ -644,3 +644,28 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .resume-card { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 10px 14px; }
 .resume-card span { flex: 1 1 180px; font-weight: 600; }
 .level-expl { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .level-expl p { margin: 0 0 6px; }
+
+/* Rejouée de la main (10/11) : cartes, blindes, bulles d'action et jetons ; état final direct si la réduction des mouvements est demandée */
+.table-wrap { position: relative; }
+.table-wrap.undealt #hero-cards { visibility: hidden; }
+.hero-seat { position: relative; }
+.replay-skip { position: absolute; bottom: 70px; right: 8px; z-index: 3; min-height: 36px; padding: 4px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.7);
+  background: rgba(0,0,0,.45); color: #fff; font-weight: 700; font-size: .85rem; }
+.bubble { position: absolute; left: 50%; top: calc(100% + 66px); transform: translateX(-50%); z-index: 2; white-space: nowrap; padding: 3px 9px; border-radius: 10px;
+  background: #fff; color: #0b3f2d; font-size: .78rem; font-weight: 750; box-shadow: 0 2px 6px rgba(0,0,0,.35); animation: bubble-in .18s ease-out; }
+.hero-seat .bubble { top: auto; bottom: calc(100% + 92px); }                     /* au-dessus de tes cartes */
+.stake { display: inline-flex; align-items: flex-end; gap: 2px; margin-right: 5px; vertical-align: -2px; }
+.stake.fresh { animation: chips-in .22s ease-out; }
+.stake .pile { display: flex; flex-direction: column-reverse; }
+.stake .pile i { display: block; width: 20px; height: 5px; margin-top: -1px; border-radius: 3px; background: #ff5a4a; border: 1px solid #fff; box-shadow: 0 1px 0 rgba(0,0,0,.35); box-sizing: content-box; }
+.stake.c-allin .pile i { background: #4f9bff; }
+.stake.c-limp .pile i, .stake.c-blind .pile i { width: 18px; height: 18px; margin: 0; border-radius: 50%; border: 3px dashed #fff; background: #ff5a4a; box-sizing: border-box; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.stake.c-blind .pile i { background: #c9d1cc; border-color: #fff; }
+@keyframes bubble-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes chips-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bubble, .stake.fresh { animation: none; } }
+
+.table-view .betnum { white-space: nowrap; }                           /* jetons et montant sur une ligne */
+.bubble.to-r, .bubble.to-l { top: 50%; transform: translateY(-50%); animation-name: bubble-side; }
+.bubble.to-r { left: calc(100% + 8px); } .bubble.to-l { left: auto; right: calc(100% + 8px); }
+@keyframes bubble-side { from { opacity: 0; } to { opacity: 1; } }
