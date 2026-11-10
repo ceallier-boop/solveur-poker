@@ -96,7 +96,8 @@ def split_hands(text):
 
 
 def parse(lines, all_formats=False):
-    """main -> dict(kind, hero, stacks, bb, month, actions) ou None (hors Expresso, partie fictive, main illisible)"""
+    """main -> dict(kind, hero, stacks, bb, month, actions), None (hors Expresso, partie fictive) ; ValueError : main illisible.
+    Portage navigateur : spinsacademy/web/winamax.js (mêmes règles, à garder alignées)"""
     m = RE_HEAD.match(lines[0])
     if not m or (not all_formats and not m.group(1).lower().startswith('expresso')): return None
     if any('play money' in l.lower() for l in lines[:3]): return None
@@ -113,12 +114,12 @@ def parse(lines, all_formats=False):
             for nm in seats:
                 for kw in ('small blind', 'big blind'):
                     if l.startswith(nm + ' posts ' + kw + ' '): posts[kw] = (nm, num(l[len(nm + ' posts ' + kw + ' '):].split()[0]))
-    if len(seats) not in (2, 3) or 'big blind' not in posts or 'small blind' not in posts: return None
+    if len(seats) not in (2, 3) or 'big blind' not in posts or 'small blind' not in posts: raise ValueError('table illisible')
     bb = posts['big blind'][1]
     pos = {posts['small blind'][0]: 'SB', posts['big blind'][0]: 'BB'}
     if len(seats) == 3:
         rest = [n for n in seats if n not in pos]
-        if len(rest) != 1: return None
+        if len(rest) != 1: raise ValueError('positions illisibles')
         pos[rest[0]] = 'BTN'
     acts = []
     for l in lines[i + 1:]:

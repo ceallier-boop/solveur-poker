@@ -1,0 +1,520 @@
+﻿Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-109-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (300)
+Seat 2: Beta Joueur (300)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test raises 280 to 300 and is all-in
+Beta Joueur calls 280 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-110-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (300)
+Seat 2: Beta Joueur (300)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 280 to 300 and is all-in
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-111-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (300)
+Seat 2: Beta Joueur (300)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 40 to 60
+Alpha_Test calls 40
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-112-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (300)
+Seat 2: Beta Joueur (300)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test raises 20 to 40
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-113-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (300)
+Seat 2: Beta Joueur (300)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur checks
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-114-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (300)
+Seat 2: Alpha_Test (300)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur raises 280 to 300 and is all-in
+Alpha_Test calls 280 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-115-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (300)
+Seat 2: Alpha_Test (300)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 280 to 300 and is all-in
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-116-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (300)
+Seat 2: Alpha_Test (300)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 40 to 60
+Beta Joueur calls 40
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-117-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (300)
+Seat 2: Alpha_Test (300)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur raises 20 to 40
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-118-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (300)
+Seat 2: Alpha_Test (300)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test checks
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-119-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (120)
+Seat 2: Beta Joueur (700)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test raises 100 to 120 and is all-in
+Beta Joueur calls 680 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-120-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (120)
+Seat 2: Beta Joueur (700)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 680 to 700 and is all-in
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-121-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (120)
+Seat 2: Beta Joueur (700)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 40 to 60
+Alpha_Test calls 40
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-122-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (120)
+Seat 2: Beta Joueur (700)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test raises 20 to 40
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-123-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (120)
+Seat 2: Beta Joueur (700)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur checks
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-124-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (120)
+Seat 2: Alpha_Test (700)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur raises 100 to 120 and is all-in
+Alpha_Test calls 680 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-125-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (120)
+Seat 2: Alpha_Test (700)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 680 to 700 and is all-in
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-126-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (120)
+Seat 2: Alpha_Test (700)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 40 to 60
+Beta Joueur calls 40
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-127-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (120)
+Seat 2: Alpha_Test (700)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur raises 20 to 40
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-128-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (120)
+Seat 2: Alpha_Test (700)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test checks
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-129-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (640)
+Seat 2: Beta Joueur (180)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test raises 620 to 640 and is all-in
+Beta Joueur calls 160 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-130-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (640)
+Seat 2: Beta Joueur (180)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 160 to 180 and is all-in
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-131-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (640)
+Seat 2: Beta Joueur (180)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur raises 40 to 60
+Alpha_Test calls 40
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-132-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (640)
+Seat 2: Beta Joueur (180)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test raises 20 to 40
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-133-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (640)
+Seat 2: Beta Joueur (180)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test calls 10
+Beta Joueur checks
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-134-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (640)
+Seat 2: Alpha_Test (180)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur raises 620 to 640 and is all-in
+Alpha_Test calls 160 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-135-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (640)
+Seat 2: Alpha_Test (180)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 160 to 180 and is all-in
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-136-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (640)
+Seat 2: Alpha_Test (180)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test raises 40 to 60
+Beta Joueur calls 40
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-137-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (640)
+Seat 2: Alpha_Test (180)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur raises 20 to 40
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso Nitro" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-138-1667487600 - Holdem no limit (10/20) - 2026/11/01 15:00:00 UTC
+Table: 'Expresso Nitro(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (640)
+Seat 2: Alpha_Test (180)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur calls 10
+Alpha_Test checks
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake

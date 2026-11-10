@@ -1,0 +1,16 @@
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-900-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Alpha_Test folds
+Beta Joueur raises 480 to 500 and is all-in
+Gamma77 folds
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
