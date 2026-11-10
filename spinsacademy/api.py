@@ -287,7 +287,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
         if not errs: raise HTTPException(422, "Aucune erreur à rejouer aujourd'hui")
         replay = [(e['spot_id'], e['hand'], 'review', f"Rejeu de ton erreur du jour ({e['cost_fr']})") for e in errs]
     depth = {}
-    for attempt in (0, 1):                                                 # 2e essai sans la profondeur du niveau si la tranche manque de situations
+    for attempt in (0, 1, 2):                                              # 2e essai sans la profondeur du niveau si la tranche manque de situations
         try:
             with closing(connect()) as con:
                 version = serving_version(con, body.mode); excluded = _excluded(con)
@@ -322,6 +322,9 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             break
         except ValueError as e:
             if attempt == 0 and depth: continue
+            m = re.match(r'(\d+) spots disponibles pour ces filtres', str(e))
+            if plan == 'theme' and m and int(m.group(1)) >= 3 and body.size > int(m.group(1)):     # banque étroite (solveur) : série du thème plus courte plutôt que refus
+                body.size = int(m.group(1)); continue
             raise HTTPException(422, str(e))
     sid = uuid.uuid4().hex
     with closing(connect()) as con, con:
@@ -646,7 +649,8 @@ def placement_result(session_id: str, x_player_id: Optional[str] = Header(None))
         if s['player_id'] != pid or s['plan'] != 'placement': raise HTTPException(404, 'test de placement inconnu')
         _, spots = quiz.load(s['dataset_version'])
         rows = con.execute('SELECT q.spot_id, a.points FROM questions q JOIN attempts a ON a.session_id = q.session_id AND a.idx = q.idx WHERE q.session_id = ?', (session_id,)).fetchall()
-        res = levels.placement_result([(spots[r['spot_id']]['effective_stack_bb'], r['points']) for r in rows])
+        served = [spots[r['spot_id']]['effective_stack_bb'] for r in con.execute('SELECT spot_id FROM questions WHERE session_id = ?', (session_id,)).fetchall()]
+        res = levels.placement_result([(spots[r['spot_id']]['effective_stack_bb'], r['points']) for r in rows], served)
         cur = _level_row(con, pid)['level']
     lv = levels.LEVELS[res['proposed_level']]
     return dict(res, session_id=session_id, current_level=cur, proposed_name=lv['name'], proposed_depth_fr=levels.DEPTH_FR[res['proposed_level']],
