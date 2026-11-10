@@ -2,8 +2,8 @@
 // Service worker : l'application s'ouvre sans connexion (page, styles, script, lexique). Réseau d'abord, pour que les mises à
 // jour arrivent tout de suite ; le cache ne sert qu'en cas de coupure. Les réponses de l'API ne sont jamais mises en cache ici :
 // la progression hors ligne est gardée par la page elle-même (localStorage).
-const CACHE = 'spinsacademy-shell-v2';
-const SHELL = ['/', '/conseil', '/static/app.css', '/static/app.js', '/static/lexique.json', '/static/icon.svg', '/static/manifest.json'];
+const CACHE = 'spinsacademy-shell-v3';
+const SHELL = ['/', '/conseil', '/static/app.css', '/static/app.js', '/static/winamax.js', '/static/lexique.json', '/static/icon.svg', '/static/manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
