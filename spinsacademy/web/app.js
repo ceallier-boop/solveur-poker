@@ -1345,16 +1345,15 @@ $('fi-print').addEventListener('click', () => window.print());       // une fich
 $('fi-home').addEventListener('click', home);
 
 // Importer mes mains : historiques Winamax lus dans le navigateur par window.Winamax (spinsacademy/web/winamax.js, Moteur
-// exploitant). Rien n'est envoyé ni gardé sur l'appareil : le résultat ne vit qu'en mémoire (imp.result), « Effacer » le vide.
+// exploitant ; chargé à la demande, hors du premier chargement). Rien n'est envoyé ni gardé sur l'appareil : le résultat ne vit qu'en mémoire (imp.result), « Effacer » le vide.
 // Aucun pseudo n'est affiché : l'écran ne montre que des nombres.
 const imp = { result: null, busy: false };
 const IMP_VOLUME = [[1, 'c\'est un début ; il en faut quelques centaines pour un premier aperçu'], [200, 'assez pour un premier aperçu, pas pour caler le field'],
   [20000, 'assez pour caler les tapis de 6 à 12 BB, pas encore les cas rares'], [50000, 'assez pour caler le field']];   // seuils de docs/produit/HISTORIQUE_WINAMAX.md
 const nfr = (n) => Number(n || 0).toLocaleString('fr-FR');
-function impNums(r) {                                                // format de Winamax.analyze lu avec tolérance, en attendant qu'il soit figé
-  const kinds = r.kinds || r.by_kind || {};
-  const read = r.hands ?? r.hands_read ?? r.read ?? 0;
-  return { read, skipped: r.skipped ?? r.hands_skipped ?? r.ignored ?? 0, hu: kinds.hu ?? r.hu ?? 0, w3: kinds['3w'] ?? kinds.three ?? r['3w'] ?? 0 };
+function impNums(r) {                                                // résultat de Winamax.analyze (MM2, version 1.0.1)
+  const t = r.by_table || {};
+  return { read: r.hands || 0, skipped: (r.ignored || 0) + (r.unreadable || 0), hu: t.hu || 0, w3: t['3w'] || 0 };
 }
 function impVolume(n) {
   if (!n) return 'Aucune main Expresso lue : vérifie que tu as choisi les fichiers d\'historique, pas les résumés.';
@@ -1389,9 +1388,11 @@ async function impRun(files) {
   $('im-bar').max = files.length; $('im-bar').value = 0; $('im-progress-text').textContent = `Lecture de ${files.length} fichier${files.length > 1 ? 's' : ''}…`;
   try {
     const W = await loadWinamax();
-    imp.result = await W.analyze(files, (done, total) => {
-      const t = total || files.length; $('im-bar').max = t; $('im-bar').value = done;
-      $('im-progress-text').textContent = `Lecture : ${done} fichier${done > 1 ? 's' : ''} sur ${t}`;
+    files.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));   // ordre des noms : mêmes fichiers CSV que winamax_counts.py
+    const texts = await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text() })));
+    imp.result = await W.analyze(texts, ({ done, total, hands }) => {
+      $('im-bar').max = total; $('im-bar').value = done;
+      $('im-progress-text').textContent = `Lecture : ${done} fichier${done > 1 ? 's' : ''} sur ${total} · ${nfr(hands)} main${hands > 1 ? 's' : ''}`;
     });
     const n = impNums(imp.result);
     $('im-read').textContent = nfr(n.read); $('im-skipped').textContent = nfr(n.skipped);
@@ -1403,7 +1404,7 @@ async function impRun(files) {
   } catch (e) {
     imp.result = null; $('im-progress').hidden = true;
     $('im-error').textContent = e && e.message === 'absent' ? 'Le lecteur d\'historiques n\'est pas encore disponible ici. Réessaie plus tard.'
-      : 'Ces fichiers n\'ont pas pu être lus. Vérifie que ce sont des historiques de mains Winamax (.txt).';
+      : 'Ces fichiers n\'ont pas pu être lus sans risque pour la confidentialité : rien n\'a été gardé.';   // analyze ne rejette que si un pseudo passerait
     $('im-error').hidden = false;
   } finally { imp.busy = false; $('im-files').value = ''; }
 }

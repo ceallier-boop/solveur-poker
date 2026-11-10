@@ -11,15 +11,15 @@ const FIXTURE = path.join(__dirname, 'fixtures', 'winamax_exemple.txt');
 const PSEUDOS = ['JoueurA', 'JoueurB', 'JoueurC'];
 const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!cond, info });
 // lecteur provisoire : même interface que winamax.js (analyze(files, onProgress) → Promise, toCsv(result) → { nom: texte })
-const STAND_IN = `window.Winamax = { provisional: true,
-  async analyze(files, onProgress) { const r = { files: files.length, hands: 0, skipped: 0, kinds: { hu: 0, '3w': 0 } };
-    let i = 0; for (const f of files) { const t = await f.text();
-      for (const h of t.split(/\\n(?=Winamax Poker - )/)) { if (!/^Winamax Poker - /.test(h.trim())) continue;
-        if (!/Tournament "Expresso/.test(h) || !/\\(real money\\)/.test(h)) { r.skipped++; continue; }
-        r.hands++; r.kinds[(h.match(/^Seat \\d+: /gm) || []).length === 2 ? 'hu' : '3w']++; }
-      onProgress && onProgress(++i, files.length); await new Promise((s) => setTimeout(s)); }
+const STAND_IN = `window.Winamax = { VERSION: 'provisoire',
+  async analyze(files, onProgress) { const r = { files: files.length, skipped_files: 0, hands: 0, unreadable: 0, ignored: 0, by_table: { hu: 0, '3w': 0 } };
+    let i = 0, hands = 0; for (const f of files) {
+      for (const h of f.text.split(/\\n(?=Winamax Poker - )/)) { if (!/^Winamax Poker - /.test(h.trim())) continue;
+        if (!/Tournament "Expresso/.test(h) || !/\\(real money\\)/.test(h)) { r.ignored++; continue; }
+        r.hands++; r.by_table[(h.match(/^Seat \\d+: /gm) || []).length === 2 ? 'hu' : '3w']++; }
+      onProgress && onProgress({ done: ++i, total: files.length, hands: r.hands }); await new Promise((s) => setTimeout(s)); }
     return r; },
-  toCsv(r) { return { 'comptages.csv': 'groupe,kind,decision,action,stack,n,k\\n', 'volume.csv': 'parametre,stack,n,statut\\nmains,,' + r.hands + ',insuffisant\\n' }; } };`;
+  toCsv(r) { return { 'comptages.csv': 'groupe,kind,decision,action,stack,n,k\\n', 'volume.csv': 'parametre,stack,n,statut\\n' }; } };`;
 (async () => {
   const b = await chromium.launch(); const errs = [];
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, acceptDownloads: true });
@@ -67,9 +67,14 @@ const STAND_IN = `window.Winamax = { provisional: true,
     await p.click('#im-save');
     await p.waitForFunction(() => true); for (let i = 0; i < 20 && files.length < 2; i++) await p.waitForTimeout(150);
     const names = files.map((d) => d.suggestedFilename()).sort();
+    files.sort((x, y) => (x.suggestedFilename() < y.suggestedFilename() ? -1 : 1));
     const bodies = await Promise.all(files.map(async (d) => fs.readFileSync(await d.path(), 'utf8')));
     ok('enregistrement : comptages.csv et volume.csv', JSON.stringify(names) === '["comptages.csv","volume.csv"]', names);
     ok('fichiers enregistrés sans pseudo', bodies.length === 2 && bodies.every((t) => PSEUDOS.every((x) => !t.includes(x))));
+    if (!provisional) {                                              // le vrai lecteur : mêmes fichiers que winamax_counts.py sur l'exemple
+      const want = names.map((n) => fs.readFileSync(path.join(__dirname, 'fixtures', `winamax_exemple.${n}`), 'utf8'));
+      ok('fichiers identiques à ceux de winamax_counts.py', bodies.length === 2 && bodies.every((t, i) => t === want[i]));
+    }
   }
   ok('rien gardé dans localStorage', await p.evaluate((ps) => { const all = JSON.stringify(Object.assign({}, localStorage)); return ps.every((x) => !all.includes(x)) && !/winamax|hand/i.test(Object.keys(localStorage).join(' ')); }, PSEUDOS));
   await p.click('#im-clear');
