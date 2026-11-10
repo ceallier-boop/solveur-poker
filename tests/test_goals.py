@@ -62,3 +62,10 @@ def test_goals_api(client):
     assert lw and lw['days'] == 1 and lw['total'] == 3 and lw['decisions'] == 5
     assert client.get('/users/me/export', headers=H).json()['goals']
     assert client.delete('/users/me', headers=H).status_code == 204
+
+
+def test_goal_categories():
+    """catégories (10/11) : jours = toutes catégories, BB perdus = Préflop du mode, ranges = Ranges"""
+    from spinsacademy import goals
+    assert [goals.category(k, 'gto') for k in goals.KINDS] == [None, 'gto', 'ranges']
+    assert goals.category('precision', 'exploit') == 'exploit'

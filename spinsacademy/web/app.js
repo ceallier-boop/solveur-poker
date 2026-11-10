@@ -1226,7 +1226,7 @@ $('ch-list').addEventListener('click', (e) => {
   if (a.type === 'range') { rangeStart(); return; }
   state.challenge = a.challenge; state.forceChrono = a.chrono || null;
   if (a.type === 'resume') { state.sid = a.session_id; store.set('sid', a.session_id); next().catch((err) => { loading(false); notify(netMsg(err, "le défi n'a pas pu reprendre")); }); return; }
-  start({}, false, null, a.challenge);
+  start(a.mode ? { mode: a.mode } : {}, false, null, a.challenge);   // catégories (10/11) : la banque suit le défi, pas l'onglet
 });
 $('ch-retry').addEventListener('click', () => loadChallenges());
 $('recs-list').addEventListener('click', (e) => {
