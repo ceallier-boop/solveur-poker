@@ -45,12 +45,23 @@ def test_daily_challenge_one_attempt_per_day_all_modes(client):
 
 
 def test_perfect_series_follows_todays_theme(client):
-    t = client.get('/users/me/today?mode=gto&tz=60', headers=H).json()
+    # catégories (10/11) : Série parfaite = défi de la semaine du Préflop exploitant, sur le thème exploitant de la séance (hors lecture)
+    t = client.get('/users/me/today?mode=exploit&tz=60', headers=H).json()
     c = client.get('/users/me/challenges?mode=gto&tz=60', headers=H).json()
-    assert c['daily'][1]['theme_fr'] == t['theme_fr']
+    card = next(x for x in c['weekly'] if x['kind'] == 'perfect')
+    f = t['steps'][1]['filters']
+    if f.get('family') != 'read': assert card['theme_fr'] == t['theme_fr']
     s = _create(client, {'mode': 'gto', 'challenge': 'perfect', 'tz': 60}).json()
     con = sqlite3.connect(client.db)
-    assert json.loads(con.execute('SELECT filters FROM sessions WHERE id = ?', (s['session_id'],)).fetchone()[0]) == t['steps'][1]['filters']
+    got = json.loads(con.execute('SELECT filters FROM sessions WHERE id = ?', (s['session_id'],)).fetchone()[0])
+    assert got.get('family') != 'read' and (f.get('family') == 'read' or got == f)
+
+
+def test_perfect_theme_never_read():
+    themes = levels.LEVELS[4]['themes']
+    assert challenges.perfect_theme('Premier', {'family': 'first_in'}, D, themes) == ('Premier', {'family': 'first_in'})
+    l, f = challenges.perfect_theme('Lire le vilain', {'family': 'read'}, D, themes)
+    assert f['family'] != 'read' and (l, f) == challenges.perfect_theme('Lire le vilain', {'family': 'read'}, D, themes)   # stable dans la journée
 
 
 def test_reader_challenge_has_two_profile_questions(client):

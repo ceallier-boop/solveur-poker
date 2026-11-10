@@ -11,6 +11,9 @@ Indicateurs renvoyés seulement quand ils montrent un progrès net, jamais un ch
   4. passage de niveau : passage automatique (player_level.promoted_at) dans les 7 derniers jours ;
   5. effort : décisions et jours d'entraînement des 7 derniers jours, toujours renvoyé (jamais d'écran vide).
 Journées dans le fuseau de l'appareil ; « 7 derniers jours » = aujourd'hui et les 6 jours précédents.
+Bilan par catégorie (10/11, `by_category`, en plus des champs ci-dessus qui restent ceux du mode demandé) : Préflop GTO et Préflop
+exploitant (lecture du vilain exclue) avec les indicateurs 1 et 2 ; Profils : lectures justes de la semaine, en nombre (au moins
+PROFILE_MIN) ; Ranges : ranges à RANGE_GOOD % ou plus de la semaine ; Équités : réservé (available=false).
 """
 import datetime
 import math
@@ -22,6 +25,9 @@ ERR_DAYS, ERR_MIN, ERR_GAIN, ERR_REL = 15, 60, 2.0, 0.15
 REVIEW_DAYS, REVIEW_MIN = 7, 3
 LEVEL_DAYS, EFFORT_DAYS = 7, 7
 ORDER = ('level_up', 'bb_recovered', 'fewer_errors', 'review_recovered')
+PROFILE_MIN, RANGE_GOOD, RANGE_AVG_MIN = 5, 85, 3       # Profils : lectures justes ; Ranges : justesse « bonne », moyenne dès 3 ranges
+CATEGORIES = (('gto', 'Préflop GTO', True), ('exploit', 'Préflop exploitant', True), ('profils', 'Profils', True),
+              ('ranges', 'Ranges', True), ('equites', 'Équités', False))
 
 
 def fr(x, d=1):
@@ -120,22 +126,64 @@ def effort(rows, day, tz):
     return dict(window_days=EFFORT_DAYS, decisions=len(now), active_days=days, text_fr=text)
 
 
+def _level_changed(level_row, day, tz):
+    """niveau actuel si le joueur en a changé dans les 14 jours (comparaison des BB limitée à ce niveau), sinon None"""
+    if not level_row or level_row.get('level', 1) >= 4: return None
+    manual = level_row.get('updated_at') if level_row.get('updated_at') != level_row.get('onboarded_at') else None   # pas l'arrivée au niveau 1
+    last = max(level_row.get('promoted_at') or '', manual or '')
+    return level_row['level'] if last and (day - local_day(last, tz)).days < 2 * BB_DAYS else None
+
+
+def _preflop(rows, day, tz, level=None):
+    wins, short = [], []
+    for w, s in (bb_recovered(rows, day, tz, level), fewer_errors(rows, day, tz)):
+        if w: wins.append(w)
+        if s: short.append(s)
+    return wins, short
+
+
+def by_category(rows, ranges_rows, day, tz, level_row=None):
+    """bilan par catégorie. rows : réponses du joueur, tous modes (mêmes champs que build) ; ranges_rows : {answered_at, accuracy_pct}"""
+    rows = [r for r in rows if r.get('answered_at')]
+    gto = [r for r in rows if quiz.mode_of(r['dataset_version']) == 'gto']
+    field = [r for r in rows if quiz.mode_of(r['dataset_version']) == 'exploit']
+    exploit, reads = [r for r in field if _has_ev(r)], [r for r in field if not _has_ev(r)]
+    out = []
+    for key, label, available in CATEGORIES:
+        c = dict(category=key, label_fr=label, available=available, wins=[], not_enough=[], effort=None)
+        if key in ('gto', 'exploit'):
+            c['wins'], c['not_enough'] = _preflop(gto if key == 'gto' else exploit, day, tz, _level_changed(level_row, day, tz) if key == 'gto' else None)
+            c['effort'] = effort(gto if key == 'gto' else exploit, day, tz)
+        elif key == 'profils':
+            now, _ = _windows(reads, day, tz, EFFORT_DAYS); ok = sum(r['verdict'] == 'correct' for r in now)
+            if ok >= PROFILE_MIN:
+                c['wins'].append(dict(kind='reads_correct', window_days=EFFORT_DAYS, correct=ok, answered=len(now),
+                                      text_fr=f"{_plural(ok, 'lecture juste', 'lectures justes')} cette semaine."))
+            c['effort'] = effort(reads, day, tz)
+        elif key == 'ranges':
+            now = [r for r in ranges_rows if r.get('answered_at') and 0 <= (day - local_day(r['answered_at'], tz)).days < EFFORT_DAYS]
+            good = sum((r.get('accuracy_pct') or 0) >= RANGE_GOOD for r in now)
+            if good:
+                w = dict(kind='ranges_good', window_days=EFFORT_DAYS, good=good, done=len(now),
+                         text_fr=f"{_plural(good, 'range')} à {RANGE_GOOD} % ou plus cette semaine.")
+                if len(now) >= RANGE_AVG_MIN: w['accuracy_avg'] = round(sum(r.get('accuracy_pct') or 0 for r in now) / len(now), 1)
+                c['wins'].append(w)
+            days = len({local_day(r['answered_at'], tz) for r in now})
+            c['effort'] = dict(window_days=EFFORT_DAYS, decisions=len(now), active_days=days,
+                               text_fr=(f"{_plural(len(now), 'range')} sur {_plural(days, 'jour')} cette semaine." if now else "Pas encore de range cette semaine."))
+        out.append(c)
+    return out
+
+
 def build(rows, mode, day, tz, level_row=None):
     """rows : réponses du joueur dans le mode (dataset_version, spot_id, hand, verdict, regret_mbb, answered_at), ordre quelconque ;
     level_row : ligne player_level (level, promoted_at, updated_at, onboarded_at) ou None ; un changement manuel se lit dans
     updated_at (différent d'onboarded_at, écrit à l'arrivée au niveau 1)"""
     rows = [r for r in rows if r.get('answered_at')]
-    changed = None
-    if mode == 'gto' and level_row and level_row.get('level', 1) < 4:          # changement de niveau dans les 14 jours
-        manual = level_row.get('updated_at') if level_row.get('updated_at') != level_row.get('onboarded_at') else None   # pas l'arrivée au niveau 1
-        last = max(level_row.get('promoted_at') or '', manual or '')
-        if last and (day - local_day(last, tz)).days < 2 * BB_DAYS: changed = level_row['level']
-    wins, short = [], []
+    changed = _level_changed(level_row, day, tz) if mode == 'gto' else None     # changement de niveau dans les 14 jours
+    wins, short = _preflop(rows, day, tz, changed)
     lv = level_up(level_row, day, tz)
     if lv: wins.append(lv)
-    for w, s in (bb_recovered(rows, day, tz, changed), fewer_errors(rows, day, tz)):
-        if w: wins.append(w)
-        if s: short.append(s)
     rv = review_recovered(rows, day, tz)
     if rv: wins.append(rv)
     wins.sort(key=lambda w: ORDER.index(w['kind']))

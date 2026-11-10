@@ -102,3 +102,29 @@ def test_timezone_boundary():
     late = [dict(r, answered_at=datetime.datetime(2026, 10, 30, 23, 30, tzinfo=datetime.timezone.utc).isoformat()) for r in rows(5, 0)]
     assert wins.build(late, 'gto', D, 0)['effort']['decisions'] == 0                     # 30/10 en UTC : hors des 7 jours
     assert wins.build(late, 'gto', D, 60)['effort']['decisions'] == 5                    # 31/10 à Paris : dedans
+
+
+def test_by_category():
+    """catégories (10/11) : Préflop GTO, Préflop exploitant sans la lecture, Profils en nombre, Ranges, Équités réservé"""
+    field = list(quiz.load(quiz.DEFAULT_FIELD)[1].values())
+    reads = [sp['spot_id'] for sp in field if sp['field']['type'] in ('identification', 'profil')]
+    plays = [sp['spot_id'] for sp in field if sp['field']['type'] not in ('identification', 'profil')]
+    fr = lambda n, d, spots, err=0: [dict(r, dataset_version=quiz.DEFAULT_FIELD) for r in rows(n, d, errors=err, spots=spots, hand='')]
+    data = rows(60, 2, regret=50) + rows(60, 9, regret=150) + fr(6, 1, reads) + fr(3, 1, plays)
+    rg = [dict(answered_at=at(1).isoformat(), accuracy_pct=90), dict(answered_at=at(2).isoformat(), accuracy_pct=70)]
+    out = wins.by_category(data, rg, D, 0)
+    c = {x['category']: x for x in out}
+    assert list(c) == ['gto', 'exploit', 'profils', 'ranges', 'equites'] and not c['equites']['available'] and c['equites']['wins'] == []
+    assert [w['kind'] for w in c['gto']['wins']] == ['bb_recovered']
+    assert c['exploit']['effort']['decisions'] == 3 and c['profils']['effort']['decisions'] == 6            # la lecture sort de l'exploitant
+    assert c['profils']['wins'][0] == dict(kind='reads_correct', window_days=7, correct=6, answered=6, text_fr='6 lectures justes cette semaine.')
+    assert c['ranges']['wins'][0]['good'] == 1 and 'accuracy_avg' not in c['ranges']['wins'][0]                # moyenne seulement dès 3 ranges
+    few = {x['category']: x for x in wins.by_category(fr(4, 1, reads), [], D, 0)}
+    assert few['profils']['wins'] == [] and few['ranges']['wins'] == []                                      # moins de 5 lectures : rien
+    for x in out: no_negative(x)
+
+
+def test_route_keeps_fields_and_adds_by_category(client):
+    r = client.get('/users/me/wins?mode=gto&tz=60', headers={'X-Player-Id': 'wins-cat-0000'}).json()
+    assert {'mode', 'as_of', 'wins', 'effort', 'not_enough', 'by_category'} <= set(r)
+    assert [c['category'] for c in r['by_category']] == ['gto', 'exploit', 'profils', 'ranges', 'equites']

@@ -19,7 +19,7 @@ DEFAULT_BB = 20.0
 MIN_DECISIONS = 30
 RANGE_GOOD = 85
 BOUNDS = {'days': (1, 7), 'ranges': (1, 10), 'precision': (2, 60)}
-LABEL = {'days': "Jours d'entraînement", 'precision': 'BB perdus pour 100 décisions', 'ranges': f'Ranges à {RANGE_GOOD} % ou plus'}
+LABEL = {'days': "Jours d'entraînement", 'precision': 'BB perdus pour 100 décisions de Préflop', 'ranges': f'Ranges à {RANGE_GOOD} % ou plus'}
 
 
 def week_start(day):
@@ -71,8 +71,13 @@ def propose(prev_targets, prev_values, history_bb, new=False):
     return out
 
 
-def view(targets, v, cap=None):
-    """cap : plafond de la cible de jours (days_cap)"""
+def category(kind, mode):
+    """catégorie d'un objectif (10/11) : jours = toutes catégories (None) ; BB perdus = Préflop du mode ; ranges = Ranges"""
+    return None if kind == 'days' else 'ranges' if kind == 'ranges' else ('exploit' if mode == 'exploit' else 'gto')
+
+
+def view(targets, v, cap=None, mode='gto'):
+    """cap : plafond de la cible de jours (days_cap) ; mode : pour la catégorie de l'objectif « BB perdus »"""
     items = []
     for k in KINDS:
         t = targets[k]
@@ -83,7 +88,7 @@ def view(targets, v, cap=None):
             frac = 0 if cur is None else min(1.0, v['decisions'] / MIN_DECISIONS) * (1.0 if cur <= t else max(0.0, min(1.0, t / cur)))
         else:
             text = f"{v[k]} / {int(t)}"; frac = min(1.0, v[k] / t) if t else 1.0
-        items.append(dict(kind=k, label_fr=LABEL[k], target=t, value=v[k] if k != 'precision' else v['precision'],
+        items.append(dict(kind=k, label_fr=LABEL[k], category=category(k, mode), target=t, value=v[k] if k != 'precision' else v['precision'],
                           text_fr=text, progress=round(frac, 2), done=done(k, t, v), min=BOUNDS[k][0],
                           max=min(BOUNDS[k][1], cap) if k == 'days' and cap else BOUNDS[k][1]))
     return items
