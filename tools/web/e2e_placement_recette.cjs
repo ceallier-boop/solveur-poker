@@ -81,6 +81,8 @@ async function play(p, which, n) {                                  // n mains, 
   const shownBands = res.bands.filter((x) => x.expected > 0 || x.questions > 0);   // retest 10 (point 3) : une tranche à 0 question n'est pas montrée
   ok('écran : une ligne par tranche servie, points sur les mains posées', rows.length === shownBands.length
     && shownBands.every((x, i) => rows[i].endsWith(` sur ${Math.max(x.questions, x.expected)}`)), rows);
+  const over = rows.filter((t) => { const m = t.match(/([\d,]+) sur (\d+)/); return m && Number(m[1].replace(',', '.')) > Number(m[2]); });
+  ok('écran : jamais plus de points que de mains dans une tranche (« 6 sur 3 » interdit)', !over.length, rows);
   ok(`écran : « Niveau ${top} »`, new RegExp(`Niveau ${top}`).test(await p.textContent('#pl-level')), await p.textContent('#pl-level'));
   ok('rien d\'appliqué avant le choix du joueur', (await api(p, 'users/me/level')).level === 2);
   if (top > 2) {

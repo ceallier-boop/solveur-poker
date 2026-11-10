@@ -63,3 +63,13 @@ def test_today_flow(client):
     assert t['done'] and t['next'] is None and all(s['done'] for s in t['steps']) and t['bb7'] is not None
     assert client.post('/sessions', json={'mode': 'gto', 'plan': 'autre'}, headers=H).status_code == 422
     assert client.get('/users/me/today?mode=poker', headers=H).status_code == 422
+
+
+def test_steps_carry_category(client):
+    """catégories (10/11) : chaque étape de la séance porte sa catégorie, pour le bilan par catégorie"""
+    H = {'X-Player-Id': 'cat-steps-0000'}
+    g = client.get('/users/me/today?mode=gto&tz=60', headers=H).json()
+    assert [s['category'] for s in g['steps']] == ['gto', 'gto', 'ranges'][:len(g['steps'])]
+    e = client.get('/users/me/today?mode=exploit&tz=60', headers=H).json()
+    th = next(s for s in e['steps'] if s['kind'] == 'theme')
+    assert th['category'] == ('profils' if th['filters'].get('family') == 'read' else 'exploit')
