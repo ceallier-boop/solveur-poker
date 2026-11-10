@@ -40,6 +40,14 @@ const home = (p) => p.waitForSelector('#screen-home:not([hidden]) #today:not([hi
   ok('N2 : bloc du jour, jamais vide', wl.length >= 1 && wl.length <= 3 && wl.every((t) => /Ton choix : .* · le bon coup : .* · .*BB|Aucune erreur coûteuse aujourd'hui/.test(t)), wl);
   ok('N2 : bouton « Les rejouer » seulement s\'il y a des erreurs', (await p.isVisible('#worst-replay')) === !/Aucune erreur/.test(wl[0]));
   await p.screenshot({ path: `${OUT}/rythme_worst.png` });
+  if (await p.isVisible('#worst-replay')) {                          // « Les rejouer », de bout en bout : les mêmes situations, puis retour au bloc
+    const n = wl.length; await p.click('#worst-replay'); await p.waitForSelector('#screen-question:not([hidden])', { timeout: 15000 });
+    ok('N2 : le rejeu sert les erreurs du jour', /Rejeu de ton erreur du jour/.test(await p.textContent('#purpose')) && new RegExp(`1 / ${n}$`).test((await p.textContent('#progress')).trim()), [await p.textContent('#purpose'), await p.textContent('#progress')]);
+    for (let i = 0; i < n; i++) { await p.waitForSelector('#screen-question:not([hidden])'); await p.click('#actions button >> nth=-1'); await p.waitForSelector('#screen-answer:not([hidden])'); await p.click('#next-btn'); }
+    await p.waitForSelector('#screen-summary:not([hidden])'); await p.click('#back-home'); await home(p); await p.waitForSelector('#worst:not([hidden])');
+    const after = await p.$$eval('#worst-list li', (xs) => xs.map((x) => x.className));
+    ok('N2 : après le rejeu, la même liste (rattrapées marquées)', after.length === n, after);
+  }
   if (!BASE.startsWith('file:')) {                                   // état « rattrapée » : réponse injectée au format annoncé
     await p.route('**/users/me/worst-today*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mode: 'gto', date: '2026-11-09', errors: [
       { session_id: 's', question_index: 0, spot_id: 'x', hand: 'K9o', prompt_fr: 'SB · 3 joueurs · 8 BB. Que fais-tu ?', chosen_fr: 'FOLD', best_fr: 'ALL-IN 8 BB', verdict: 'erreur', regret_mbb: 1300, cost_bb: 1.3, cost_fr: '1,3 BB', answered_at: '2026-11-09T10:00:00+00:00', replayed_ok: true },
