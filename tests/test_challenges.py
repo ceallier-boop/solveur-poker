@@ -2,7 +2,7 @@
 import datetime
 import pytest
 from fastapi.testclient import TestClient
-from spinsacademy import challenges
+from spinsacademy import challenges, quiz
 
 A, B = {'X-Player-Id': 'chal-a-0000'}, {'X-Player-Id': 'chal-b-0000'}
 D = datetime.date(2026, 10, 29)
@@ -35,17 +35,24 @@ def _play(c, H, body, pick=0):
 
 def test_challenges_api(client):
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
-    assert [x['kind'] for x in r['daily']] == ['daily', 'perfect'] and [x['kind'] for x in r['weekly']] == ['pressure', 'range']
-    assert all(x['status'] == 'todo' for x in r['daily'] + r['weekly']) and r['history'] == [] and r['daily'][1]['theme_fr']
-    assert _play(client, A, {'mode': 'gto', 'challenge': 'daily'}) == _play(client, B, {'mode': 'gto', 'challenge': 'daily'})   # mêmes mains pour tous
+    # catégories (10/11, option A) : un défi du jour GTO, un défi de la semaine par catégorie, Équités réservé
+    assert [x['kind'] for x in r['daily']] == ['daily'] and [x['kind'] for x in r['weekly']] == ['pressure', 'perfect', 'reader', 'range']
+    assert [x['category'] for x in r['daily'] + r['weekly']] == ['gto', 'gto', 'exploit', 'profils', 'ranges'] and r['monthly'][0]['category'] is None
+    assert [(c['key'], c['available']) for c in r['categories']] == [('gto', True), ('exploit', True), ('profils', True), ('ranges', True), ('equites', False)]
+    assert {x['kind']: x['access'] for x in r['daily'] + r['weekly']} == {'daily': 'free', 'pressure': 'free', 'perfect': 'paid', 'reader': 'paid', 'range': 'ad'}
+    assert all(x['status'] == 'todo' for x in r['daily'] + r['weekly']) and r['history'] == [] and r['weekly'][1]['theme_fr']
+    assert r == dict(client.get('/users/me/challenges?mode=exploit&tz=60', headers=A).json(), mode='gto')       # même liste depuis les deux onglets
+    assert _play(client, A, {'mode': 'exploit', 'challenge': 'daily'}) == _play(client, B, {'mode': 'gto', 'challenge': 'daily'})   # mêmes mains pour tous, banque GTO
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
     d = r['daily'][0]
     assert d['status'] in ('won', 'tried') and d['result_fr'] and d['action'] is None                   # une seule tentative compte
     assert r['history'] and r['history'][0]['won'] == (d['status'] == 'won')                            # l'historique garde aussi les tentatives perdues
+    s = client.post('/sessions', json={'mode': 'exploit', 'challenge': 'pressure'}, headers=A).json()
+    assert s['mode'] == 'gto' and not quiz.is_field(s['dataset_version'])                                   # Sous pression : banque GTO
     _play(client, A, {'mode': 'gto', 'challenge': 'pressure'})
     assert client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()['weekly'][0]['status'] != 'todo'
-    assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'reader'}, headers=A).status_code == 422
-    assert [x['kind'] for x in client.get('/users/me/challenges?mode=exploit&tz=60', headers=A).json()['weekly']] == ['pressure', 'range', 'reader']
+    for ch in ('reader', 'perfect'):                                                                        # Profils et Préflop exploitant
+        assert client.post('/sessions', json={'mode': 'gto', 'challenge': ch, 'tz': 60}, headers=A).json()['mode'] == 'exploit'
     assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'daily'}).status_code == 400             # joueur identifié
 
 
@@ -65,7 +72,7 @@ def test_ad_zone_off_everything_open(client):
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
     assert r['ad_zone']['enabled'] is False and r['ad_zone']['open'] is True
     assert not any(c.get('locked') for c in r['daily'] + r['weekly'])
-    assert {c['kind'] for c in r['daily'] + r['weekly'] if c.get('zone') == 'ad'} == {'perfect', 'range'}
+    assert {c['kind'] for c in r['daily'] + r['weekly'] if c.get('zone') == 'ad'} == {'range'}                         # option A (10/11) : seule Range au cordeau
     assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'perfect', 'tz': 60}, headers=A).status_code == 201
     assert client.post('/users/me/challenges/unlock', json={'tz': 60, 'source': 'watched'}, headers=A).status_code == 409
 
@@ -75,9 +82,9 @@ def test_ad_zone_on_locked_until_unlock(client, monkeypatch):
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()
     z = r['ad_zone']; locked = [c for c in r['daily'] + r['weekly'] if c.get('locked')]
     assert z['enabled'] and not z['open'] and z['button_fr'] and z['fallback_fr']
-    assert {c['kind'] for c in locked} == {'perfect', 'range'} and all(c['action'] is None for c in locked)
+    assert {c['kind'] for c in locked} == {'range'} and all(c['action'] is None for c in locked)
     assert not any(c.get('locked') for c in r['daily'] + r['weekly'] if c['kind'] in ('daily', 'pressure'))   # gratuits
-    assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'perfect', 'tz': 60}, headers=A).status_code == 403
+    assert client.post('/sessions', json={'mode': 'gto', 'challenge': 'perfect', 'tz': 60}, headers=A).status_code == 201        # Série parfaite : plus derrière la publicité (option A)
     assert client.post('/users/me/challenges/unlock', json={'tz': 60, 'source': 'blocked'}, headers=A).status_code == 422   # repli : la page n'ouvre pas
     assert client.post('/users/me/challenges/unlock', json={'tz': 60, 'source': 'no_fill'}, headers=A).json()['open'] is True
     r = client.get('/users/me/challenges?mode=gto&tz=60', headers=A).json()

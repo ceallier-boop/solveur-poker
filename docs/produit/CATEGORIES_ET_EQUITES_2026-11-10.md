@@ -53,3 +53,12 @@ Calcul : le moteur existe déjà (équités du solveur et énumérations dans le
 | CE4 | Interface | rangement par catégorie (maquette puis refonte), écran des questions d'équité |
 | CE5 | Défis et rétention | défis par catégorie, défi du jour mixte, bilan par catégorie |
 | CE6 | Tests | exactitude des équités, recette navigateur, test joueurs |
+
+## 5. CE5 réalisé : défis, objectifs et bilan par catégorie (Défis et rétention, 10/11, option A provisoire)
+- **Défi du jour** : 5 questions de Préflop GTO, toujours tirées dans la banque GTO, même depuis l'onglet Exploitant (la série est créée en mode `gto`) ; une seule tentative par jour, comme avant.
+- **Un défi de la semaine par catégorie** (`GET /users/me/challenges`, identique depuis les deux onglets) : Préflop GTO = Sous pression (banque GTO, gratuit) ; Préflop exploitant = Série parfaite, devenue hebdomadaire, sur le thème exploitant de la séance (la lecture du vilain y est remplacée par un thème exploitant hors lecture, le même toute la journée ; payant) ; Profils = Lecteur de vilain (payant) ; Ranges = Range au cordeau (seul défi avec publicité, zone éteinte pendant le test fermé) ; Équités = réservé, non affiché. Semaine pleine reste mensuelle, hors catégorie.
+- Chaque carte porte `category` et `access` (`free`, `ad`, `paid`) ; l'action porte le `mode` de sa banque ; la réponse ajoute `categories` (clé, libellé, `available`, défi de la semaine).
+- **Séance du jour** : chaque étape porte `category` (`gto`, `exploit`, `profils` pour la lecture du vilain, `ranges`), sans changer son contenu.
+- **Objectifs** : chaque objectif porte `category` (jours : aucune ; BB perdus : Préflop du mode, libellé « … de Préflop » ; ranges : `ranges`).
+- **Bilan** : `GET /users/me/wins` garde ses champs et ajoute `by_category` (Préflop GTO et exploitant : BB récupérés et erreurs en moins, lecture exclue de l'exploitant ; Profils : lectures justes de la semaine, dès 5 ; Ranges : ranges à 85 % ou plus, justesse moyenne dès 3 ranges ; Équités : `available: false`).
+- Démo autonome : mêmes règles. Contrôles : `tests/test_challenges.py`, `test_retest9.py`, `test_today.py`, `test_goals.py`, `test_wins.py` ; `e2e_challenges.cjs` (application et démo).

@@ -267,18 +267,17 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
     reader = False
     if body.challenge:                                                     # étape 5 : la série du défi
         plan = challenges.SERIES[body.challenge]; utc_day = datetime.datetime.now(datetime.timezone.utc).date()
+        body.mode = 'gto' if body.challenge in challenges.GTO_BANK else 'exploit'    # catégories (10/11) : la banque suit le défi, pas l'onglet
         if body.challenge == 'daily':                                      # les mêmes mains pour tous ; une seule tentative par jour UTC, tous modes
             with closing(connect()) as con:
                 prev = challenges.daily_attempt([dict(r) for r in con.execute('SELECT created_at, plan FROM sessions WHERE player_id = ? AND plan = ?',
                                                                               (pid, plan))], utc_day)
             if prev: raise HTTPException(409, "défi du jour déjà tenté aujourd'hui : nouveau défi demain")
             filters, fixed_seed = {}, challenges.daily_seed(utc_day)
-        elif body.challenge == 'perfect':                                  # test joueurs 9 : le thème de la séance du jour du joueur
-            with closing(connect()) as con: _ad_open_or_403(con, pid, body.tz)
-            filters = dict(my_today(body.mode, body.tz, x_player_id=x_player_id)['steps'][1]['filters'])
+        elif body.challenge == 'perfect':                                  # Préflop exploitant : thème exploitant de la séance du jour
+            filters = _perfect_theme(body.tz, x_player_id)[1]
         elif body.challenge == 'pressure': filters = {}
-        elif body.challenge == 'reader':
-            if body.mode != 'exploit': raise HTTPException(422, 'le défi « Lecteur de vilain » se joue en mode exploitant')
+        elif body.challenge == 'reader':                                   # Profils
             filters = dict(family='read'); reader = True
         body.filters = Filters(**filters); body.size = quiz.SERIES_SIZE
     replay = None
@@ -696,10 +695,10 @@ def my_goals(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header
                     cur[k] = t
     last = None
     if len(prev_t) == len(goals.KINDS) and (prev_v['days'] or prev_v['ranges'] or prev_v['decisions']):   # test joueurs 9 : seulement s'il y avait des objectifs
-        items = goals.view(prev_t, prev_v)
+        items = goals.view(prev_t, prev_v, mode=mode)
         last = dict(week=wk(1).isoformat(), done=sum(x['done'] for x in items), total=len(items), bb=prev_v['precision'],
                     bb_before=vals(2)['precision'], days=prev_v['days'], decisions=prev_v['decisions'])
-    return dict(mode=mode, week=start.isoformat(), days_left=6 - day.weekday(), items=goals.view(cur, v0, cap), last_week=last)
+    return dict(mode=mode, week=start.isoformat(), days_left=6 - day.weekday(), items=goals.view(cur, v0, cap, mode=mode), last_week=last)
 
 
 class GoalChange(BaseModel):
@@ -756,9 +755,11 @@ def my_wins(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = Header(
     if mode not in quiz.MODES: raise HTTPException(422, 'mode inconnu')
     tz = max(-840, min(840, tz)); day = today.local_day(_now(), tz)
     with closing(connect()) as con:
-        rows = _mode_rows(con, pid, mode, None)
+        everything = _player_rows(con, pid); rows = [r for r in everything if quiz.mode_of(r['dataset_version']) == mode]
         lv = con.execute('SELECT level, promoted_at, updated_at, onboarded_at FROM player_level WHERE player_id = ?', (pid,)).fetchone()
-    return wins.build(rows, mode, day, tz, dict(lv) if lv else None)
+        rgs = [dict(r) for r in con.execute('SELECT answered_at, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
+    lv = dict(lv) if lv else None
+    return dict(wins.build(rows, mode, day, tz, lv), by_category=wins.by_category(everything, rgs, day, tz, lv))   # catégories (10/11)
 
 
 def ad_zone_enabled():
@@ -773,10 +774,10 @@ def _ad_open_days(con, pid):
     return {datetime.date.fromisoformat(r[0]) for r in con.execute('SELECT day FROM ad_unlocks WHERE player_id = ?', (pid,))}
 
 
-def _ad_open_or_403(con, pid, tz):
-    days = _ad_open_days(con, pid)
-    if days is not None and today.local_day(_now(), max(-840, min(840, tz))) not in days:
-        raise HTTPException(403, f"Série parfaite fermée aujourd'hui. {challenges.AD_ZONE_FR['fallback_fr']}")
+def _perfect_theme(tz, x_player_id):
+    """(libellé, filtres) de la série parfaite : thème de la séance exploitante du jour, hors lecture du vilain"""
+    t = my_today('exploit', tz, x_player_id=x_player_id); st = next(x for x in t['steps'] if x['kind'] == 'theme')
+    return challenges.perfect_theme(t['theme_fr'], st['filters'], today.local_day(_now(), max(-840, min(840, tz))), levels.LEVELS[4]['themes'])
 
 
 class AdUnlock(BaseModel):
@@ -810,11 +811,11 @@ def my_challenges(mode: str = 'gto', tz: int = 0, x_player_id: Optional[str] = H
             '(SELECT COALESCE(SUM(a.timed_out), 0) FROM attempts a WHERE a.session_id = s.id) AS timeouts '
             'FROM sessions s WHERE s.player_id = ?', (pid,))]
         rgs = [dict(r) for r in con.execute('SELECT answered_at, bb_per_100, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
-    mine = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+    sess = [x for x in sess if quiz.mode_of(x['dataset_version']) in quiz.MODES]       # catégories (10/11) : les défis ne dépendent plus de l'onglet
     active = {today.local_day(x['created_at'], tz) for x in sess if x['answered'] >= x['size']} | {today.local_day(r['answered_at'], tz) for r in rgs}
-    theme = my_today(mode, tz, x_player_id=x_player_id)['theme_fr']                   # série parfaite : le thème de la séance du jour
+    theme = _perfect_theme(tz, x_player_id)[0]                                          # série parfaite : thème exploitant de la séance
     with closing(connect()) as con: ad_days = _ad_open_days(con, pid)
-    return dict(mode=mode, **challenges.build(mine, rgs, active, day, tz, mode, now.date(), theme_fr=theme, all_sessions=sess, ad_open_days=ad_days))
+    return dict(mode=mode, **challenges.build(sess, rgs, active, day, tz, mode, now.date(), theme_fr=theme, ad_open_days=ad_days))
 
 
 @app.post('/users/me/adaptation/reset')

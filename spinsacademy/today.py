@@ -120,6 +120,9 @@ def build(sessions, ranges, due, focus, today, tz, bb7=None, bb7_prev=None, them
              label_fr=f"Thème : {label}", filters=f),
     ]
     if not short: steps.append(dict(kind='range', done=ranged >= 1, label_fr=RANGE_FR if mode == 'gto' else RANGE_EXPLOIT_FR, filters=rs, spot_id=(plan or {}).get('range_spot')))
+    main = 'gto' if mode == 'gto' else 'exploit'                     # catégories (10/11) : une étape = une catégorie, pour le bilan
+    for st in steps:
+        st['category'] = 'ranges' if st['kind'] == 'range' else 'profils' if (st.get('filters') or {}).get('family') == 'read' else main
     nxt = next((i for i, s in enumerate(steps) if not s['done']), None)
     return dict(minutes=SHORT_MINUTES if short else MINUTES, date=today.isoformat(), steps=steps, next=nxt, done=nxt is None,
                 started=(reviews > 0 or themed > 0 or (ranged > 0 and not short)) and nxt is not None,
