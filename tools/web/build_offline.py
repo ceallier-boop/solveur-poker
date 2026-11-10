@@ -609,7 +609,11 @@ const DEMO = (() => {
         // 10 mains sur les trois profondeurs du parcours GTO
         if (mode !== 'gto') return [422, { detail: 'le test de placement se joue en mode GTO' }];
         picked = [];
-        for (const [lv, n] of PL.bands) { const L = LV.levels[lv]; const part = draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, n); if (!part) return [422, { detail: 'pas assez de situations' }]; picked = picked.concat(part); }
+        const cnt = {}, okb = []; for (const [lv, n] of PL.bands) { cnt[lv] = n; const L = LV.levels[lv]; if (draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, 1)) okb.push(lv); }
+        if (!okb.length) return [422, { detail: 'aucune situation pour le test de placement' }];
+        for (const [lv] of PL.bands) if (!okb.includes(lv)) { const near = okb.slice().sort((a, b) => Math.abs(a - lv) - Math.abs(b - lv) || a - b)[0]; cnt[near] += cnt[lv]; cnt[lv] = 0; }   // banque étroite : tranche absente reprise par la voisine
+        for (const lv of okb) { const L = LV.levels[lv]; let n = cnt[lv], part = null; while (n > 0 && !(part = draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, n))) n -= 1; if (part) picked = picked.concat(part); }
+        if (picked.length < 6) return [422, { detail: 'pas assez de situations' }];
       } else if (seeded !== null) {                                           // défi du jour : tirage fixé par la date, le même pour tous
         const rnd0 = Math.random; let t = seeded >>> 0;
         Math.random = () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; };
@@ -621,7 +625,9 @@ const DEMO = (() => {
         let g = f;                                                     // audit AU3 : une série libre reste dans la profondeur du niveau
         if (mode === 'gto' && !body.review && !plan && !Object.keys(f).length) { const L = LV.levels[levelRow().level]; if (L.depth[1] < 99 || L.depth[0] > 0) g = { min_stack: L.depth[0], max_stack: L.depth[1] }; }
         if (g !== f && !draw(mode, g, size)) g = f;                    // tranche trop pauvre : série libre
-        picked = draw(mode, g, size);                                  // test joueurs 6 : la série qui répète le moins les dernières
+        picked = draw(mode, g, size);
+        if (!picked && plan === 'theme') for (let n = size - 1; n >= 3 && !picked; n--) picked = draw(mode, g, n);      // banque étroite : série du thème plus courte plutôt que refus
+        //  test joueurs 6 : la série qui répète le moins les dernières
         for (let k = 1; picked && score(picked) && k < 6; k++) { const o = draw(mode, g, size); if (o && score(o) < score(picked)) picked = o; }
       }
       if (body.review) {
@@ -707,9 +713,10 @@ const DEMO = (() => {
     if (p === '/users/me/placement' && method === 'GET') {            // audit AU7 : mêmes règles que levels.placement_result
       const s = db.sessions[url.searchParams.get('session_id')]; if (!s || !own(s) || s.plan !== 'placement') return [404, { detail: 'test de placement inconnu' }];
       const ans = s.items.map((i, k) => [ITEMS[i], s.answers[k]]).filter(([it, a]) => it && a).map(([it, a]) => [it.eff, a.points]);
-      const bands = PL.bands.map(([lv, n]) => { const L = LV.levels[lv], got = ans.filter(([e]) => e >= L.depth[0] && e < L.depth[1]).map((x) => x[1]), sum = got.reduce((a, b) => a + b, 0);
+      const served = s.items.map((i) => ITEMS[i] && ITEMS[i].eff).filter((e) => e !== undefined), none = new Set();
+      const bands = PL.bands.map(([lv, n0]) => { const L = LV.levels[lv], n = served.some((e) => e >= L.depth[0] && e < L.depth[1]) ? n0 : (none.add(lv), 0), got = ans.filter(([e]) => e >= L.depth[0] && e < L.depth[1]).map((x) => x[1]), sum = got.reduce((a, b) => a + b, 0);
         return { level: lv, name: L.name, depth_fr: LV.depth_fr[lv], questions: got.length, expected: n, points: Math.round(sum * 10) / 10, rate_pct: got.length ? Math.round(100 * sum / got.length) : null, passed: got.length > 0 && sum / got.length >= (PL.passes[lv] ?? 2) }; });
-      let level = 1; for (const b of bands.slice(0, -1)) if (b.level === level && b.passed) level += 1;
+      let level = 1; for (const b of bands.slice(0, -1)) if (b.level === level && b.passed && !none.has(level + 1)) level += 1;
       const complete = bands.every((b) => b.questions >= b.expected), L = LV.levels[level];
       return [200, { bands, proposed_level: level, complete, session_id: s.id, current_level: levelRow().level, proposed_name: L.name, proposed_depth_fr: LV.depth_fr[level],
         text_fr: complete ? `Niveau proposé : ${level}, ${L.name} (${LV.depth_fr[level]}). Tu peux le changer à tout moment dans « Ma progression ».` : 'Termine les 10 questions pour connaître le niveau proposé.' }];

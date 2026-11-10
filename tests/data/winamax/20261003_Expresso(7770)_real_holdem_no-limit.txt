@@ -1,0 +1,520 @@
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-1-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test folds
+Beta Joueur raises 480 to 500 and is all-in
+Gamma77 folds
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-2-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test folds
+Beta Joueur calls 10
+Gamma77 raises 480 to 500 and is all-in
+Beta Joueur calls 490 and is all-in
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-3-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test folds
+Beta Joueur calls 10
+Gamma77 raises 40 to 60
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-4-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test folds
+Beta Joueur raises 30 to 40
+Gamma77 calls 20
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-5-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test raises 480 to 500 and is all-in
+Beta Joueur calls 490 and is all-in
+Gamma77 folds
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-6-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test raises 480 to 500 and is all-in
+Beta Joueur folds
+Gamma77 calls 480 and is all-in
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-7-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Alpha_Test raises 20 to 40
+Beta Joueur folds
+Gamma77 raises 480 to 500 and is all-in
+Alpha_Test calls 500 and is all-in
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-8-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Alpha_Test calls 20
+Beta Joueur folds
+Gamma77 checks
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-9-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Alpha_Test (500)
+Seat 2: Beta Joueur (500)
+Seat 3: Gamma77 (500)
+*** ANTE/BLINDS ***
+Beta Joueur posts small blind 10
+Gamma77 posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Alpha_Test calls 20
+Beta Joueur calls 10
+Gamma77 checks
+*** FLOP *** [2c 7h Kd]
+Gamma77 checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-10-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur folds
+Gamma77 raises 480 to 500 and is all-in
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-11-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur folds
+Gamma77 calls 10
+Alpha_Test raises 480 to 500 and is all-in
+Gamma77 calls 490 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-12-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur folds
+Gamma77 calls 10
+Alpha_Test raises 40 to 60
+Gamma77 folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-13-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur folds
+Gamma77 raises 30 to 40
+Alpha_Test calls 20
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-14-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur raises 480 to 500 and is all-in
+Gamma77 calls 490 and is all-in
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-15-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur raises 480 to 500 and is all-in
+Gamma77 folds
+Alpha_Test calls 480 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-16-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Td 8d]
+*** PRE-FLOP *** 
+Beta Joueur raises 20 to 40
+Gamma77 folds
+Alpha_Test raises 480 to 500 and is all-in
+Beta Joueur calls 500 and is all-in
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-17-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Ah Kd]
+*** PRE-FLOP *** 
+Beta Joueur calls 20
+Gamma77 folds
+Alpha_Test checks
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-18-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Beta Joueur (500)
+Seat 2: Gamma77 (500)
+Seat 3: Alpha_Test (500)
+*** ANTE/BLINDS ***
+Gamma77 posts small blind 10
+Alpha_Test posts big blind 20
+Dealt to Alpha_Test [Qs Js]
+*** PRE-FLOP *** 
+Beta Joueur calls 20
+Gamma77 calls 10
+Alpha_Test checks
+*** FLOP *** [2c 7h Kd]
+Alpha_Test checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-19-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Gamma77 folds
+Alpha_Test raises 480 to 500 and is all-in
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-20-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Gamma77 folds
+Alpha_Test calls 10
+Beta Joueur raises 480 to 500 and is all-in
+Alpha_Test calls 490 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-21-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Gamma77 folds
+Alpha_Test calls 10
+Beta Joueur raises 40 to 60
+Alpha_Test folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-22-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Gamma77 folds
+Alpha_Test raises 30 to 40
+Beta Joueur calls 20
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-23-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Gamma77 raises 480 to 500 and is all-in
+Alpha_Test calls 490 and is all-in
+Beta Joueur folds
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-24-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Gamma77 raises 480 to 500 and is all-in
+Alpha_Test folds
+Beta Joueur calls 480 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-25-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [7c 7d]
+*** PRE-FLOP *** 
+Gamma77 raises 20 to 40
+Alpha_Test folds
+Beta Joueur raises 480 to 500 and is all-in
+Gamma77 calls 500 and is all-in
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-26-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [9h 2c]
+*** PRE-FLOP *** 
+Gamma77 calls 20
+Alpha_Test folds
+Beta Joueur checks
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake
+
+
+Winamax Poker - Tournament "Expresso" buyIn: 4.65€ + 0.35€ level: 1 - HandId: #424242-27-1667487600 - Holdem no limit (10/20) - 2026/10/03 15:00:00 UTC
+Table: 'Expresso(777)#0' 3-max (real money) Seat #1 is the button
+Seat 1: Gamma77 (500)
+Seat 2: Alpha_Test (500)
+Seat 3: Beta Joueur (500)
+*** ANTE/BLINDS ***
+Alpha_Test posts small blind 10
+Beta Joueur posts big blind 20
+Dealt to Alpha_Test [As 5s]
+*** PRE-FLOP *** 
+Gamma77 calls 20
+Alpha_Test calls 10
+Beta Joueur checks
+*** FLOP *** [2c 7h Kd]
+Beta Joueur checks
+*** SUMMARY ***
+Total pot 40 | No rake

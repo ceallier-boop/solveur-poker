@@ -85,3 +85,12 @@ Conséquence : la révision espacée est aujourd'hui intégrée à la séance du
 ## Comptages Winamax reçus le 07/11
 
 Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 569 mains Expresso (heads-up 243, 3 joueurs 326), 63 adversaires distincts, aucun assez observé pour la répartition. Volume **insuffisant pour caler les profils** : aucun paramètre n'est « fiable » à aucun tapis ; seuls « tapis en premier » et « ouverture » sont « indicatifs » à 8, 10, 12 et 25 BB. Il faut environ 20 000 mains Expresso (1 000 tournois).
+
+## Réponses du 10/11
+
+- **« Mes mains », offre :** validée (import et bilan global gratuits ; détail par famille et position, suivi dans le temps : statistiques détaillées payantes). **Bêta : tout est gratuit**, pour encourager les dépôts et réunir un maximum de mains. Le verrouillage payant n'est codé qu'avec le paiement (P14).
+- **Contribution volontaire des comptages anonymes :** acceptée. Question du porteur : pourquoi la case décochée par défaut ? Réponse de Plan : un consentement doit être un acte positif (RGPD, CNIL) ; une case précochée n'est pas valable et l'envoi serait irrégulier. Le levier est ailleurs : proposition faite au moment où le joueur vient de voir son bilan, un seul geste, un texte clair sur ce qui part (comptages sans pseudo) et à quoi cela sert. Décision finale à confirmer avec la relecture A14.
+- **Calendrier « Mes mains » :** les deux essais (MM2 lecteur Winamax en JavaScript, MM3 table de référence) démarrent dès que le porteur a envoyé son nouveau jeu de mains.
+- **Régie publicitaire :** le porteur s'en occupera à la préparation de la version finale de la bêta.
+- **Mains Winamax :** le porteur en enverra ; compléter ensuite par les dépôts volontaires.
+- **Test fermé :** feu vert pour publier la banque `2026.11.07-s2` (8 à 16 BB).

@@ -492,11 +492,26 @@ def draw_plan(version, slots, theme_of, seed=None, excluded=frozenset(), filters
 
 
 def draw_placement(version, seed=None, excluded=frozenset()):
-    """10 mains du test de placement (audit AU7) : 4 à moins de 10 BB, 3 à 10-16 BB, 3 à 17-25 BB, dans cet ordre"""
+    """10 mains du test de placement (audit AU7) : 4 à moins de 10 BB, 3 à 10-16 BB, 3 à 17-25 BB, dans cet ordre.
+    Une banque qui ne couvre pas une tranche (banque du solveur : 8 à 16 BB) ne la fournit pas : ses mains passent à la tranche
+    voisine la plus proche, le total reste de 10 mains"""
     from . import levels
     out = []; base = random.Random(seed).randrange(1 << 30)
-    for lv, n in levels.PLACEMENT_BANDS:
-        out += draw_series(version, levels.depth_filters(lv), n, base + lv, excluded)
+    bands = list(levels.PLACEMENT_BANDS); counts = {lv: n for lv, n in bands}
+    ok = []
+    for lv, n in bands:
+        try: draw_series(version, levels.depth_filters(lv), 1, base + lv, excluded); ok.append(lv)
+        except ValueError: pass
+    if not ok: raise ValueError('aucune situation pour le test de placement')
+    for lv, n in bands:
+        if lv not in ok:
+            near = min(ok, key=lambda x: (abs(x - lv), x)); counts[near] += counts[lv]; counts[lv] = 0
+    for lv in ok:
+        n = counts[lv]
+        while n > 0:
+            try: out += draw_series(version, levels.depth_filters(lv), n, base + lv, excluded); break
+            except ValueError: n -= 1                    # tranche pauvre : autant de mains qu'elle en offre
+    if len(out) < 6: raise ValueError(f'{len(out)} situations seulement pour le test de placement')
     return out
 
 
