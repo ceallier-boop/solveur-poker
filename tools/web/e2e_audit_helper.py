@@ -3,7 +3,7 @@
   python tools/web/e2e_audit_helper.py seed <player_id>       historique réel dans la base (SPINSACADEMY_DB) : 4 séries sur
                                                               4 jours, la semaine passée à 15 BB perdus pour 100, celle-ci à 5
   python tools/web/e2e_audit_helper.py depth <level> <spot_id>…  tapis effectif et tranche du niveau de chaque spot servi (JSON)
-  python tools/web/e2e_audit_helper.py pick <best|worst> <spot_id> <main>   option la moins (best) ou la plus (worst) coûteuse (JSON)
+  python tools/web/e2e_audit_helper.py pick <best|worst|imprecise> <spot_id> <main>   option la moins (best) ou la plus (worst) coûteuse, ou une imprécision (JSON)
   python tools/web/e2e_audit_helper.py picks                  la même chose en continu : une demande « best|worst spot main »
                                                               par ligne sur l'entrée, une réponse JSON par ligne (données chargées une fois)
   python tools/web/e2e_audit_helper.py fiche <banque> <spot_id>…   stratégie lue dans la banque (pas dans fiches.json) : part de
@@ -42,7 +42,10 @@ def depth(level, spot_ids):
 def pick(which, spot_id, hand):
     _, spots = quiz.load(V)
     cost = {a['id']: quiz.correct(V, spot_id, hand, a['id'])['regret_mbb'] for a in spots[spot_id]['actions']}
-    best = (min if which == 'best' else max)(cost, key=cost.get)
+    if which == 'imprecise':                                          # une option jugée « imprécision » s'il y en a une, sinon la meilleure
+        imp = [a for a in cost if quiz.correct(V, spot_id, hand, a)['verdict'] == 'imprécision']
+        best = imp[0] if imp else min(cost, key=cost.get)
+    else: best = (min if which == 'best' else max)(cost, key=cost.get)
     return {'action_id': best, 'regret_mbb': cost[best], 'verdict': quiz.correct(V, spot_id, hand, best)['verdict']}
 
 

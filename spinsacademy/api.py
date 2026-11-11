@@ -324,7 +324,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             if replay is not None:
                 series = replay
             elif plan == 'placement':                                          # audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
-                if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue en mode GTO')
+                if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue sur la banque GTO')
                 series = [(s, h, None, None) for s, h in quiz.draw_placement(version, body.seed, excluded)]
             elif due is not None:
                 series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]

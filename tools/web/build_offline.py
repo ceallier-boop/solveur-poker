@@ -684,7 +684,7 @@ const DEMO = (() => {
         w.forEach((e, k) => { purposes[k] = `Rejeu de ton erreur du jour (${e.cost_fr})`; });
       } else if (plan === 'placement') {                               // audit AU7
         // 10 mains sur les trois profondeurs du parcours GTO
-        if (mode !== 'gto') return [422, { detail: 'le test de placement se joue en mode GTO' }];
+        if (mode !== 'gto') return [422, { detail: 'le test de placement se joue sur la banque GTO' }];
         picked = [];
         const cnt = {}, okb = []; for (const [lv, n] of PL.bands) { cnt[lv] = n; const L = LV.levels[lv]; if (draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, 1)) okb.push(lv); }
         if (!okb.length) return [422, { detail: 'aucune situation pour le test de placement' }];
