@@ -178,6 +178,7 @@
           <button class="secondary small" type="button" data-kind="hit">Toucher le flop</button>
           <button class="secondary small" type="button" data-kind="equity">Équité contre une range</button>
           <button class="secondary small" type="button" data-kind="labels">Forces et faiblesses</button>
+          <button class="secondary small" type="button" data-kind="outs">Tirages et outs</button>
         </div>
       </section>
       <section class="cat-card" id="cat-profils" data-cat="profils" aria-labelledby="cat-profils-title">
@@ -226,7 +227,7 @@
         <button class="replay-skip" id="replay-skip" type="button" hidden>Passer</button>
         <div class="hero-zone" aria-hidden="true"><div class="cards hole" id="hero-cards"></div><div class="hero-seat" id="hero-seat"></div></div>
       </div>
-      <div class="eq-hand" id="eq-hand" hidden aria-hidden="true"><div class="cards" id="eq-cards"></div><p class="eq-kind" id="eq-kind"></p></div>
+      <div class="eq-hand" id="eq-hand" hidden aria-hidden="true"><div class="eq-board" id="eq-board" hidden></div><div class="cards" id="eq-cards"></div><p class="eq-kind" id="eq-kind"></p></div>
       <div class="villain" id="villain" hidden></div>
       <ol class="history sr-only" id="history" aria-label="Historique du coup"></ol>
       <p class="sr-only" id="prompt-full"></p>
@@ -237,6 +238,7 @@
 
     <!-- Correction -->
     <section id="screen-answer" class="screen" hidden aria-labelledby="a-verdict">
+      <div class="eq-board a-board" id="a-board" hidden aria-hidden="true"></div>
       <div class="cards mini" id="a-cards" aria-hidden="true"></div>
       <p class="recap" id="a-recap"></p>
       <div class="verdict" id="a-verdict" tabindex="-1" role="status"></div>
