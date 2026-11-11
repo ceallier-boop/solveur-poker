@@ -733,3 +733,9 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 
 /* retest 11 : liens vers la séance exploitante (Défis) et vers Profils (Quiz Exploitant) */
 .defis-expl, #expl-to-profils { align-self: flex-start; padding-left: 0; text-align: left; }
+
+/* Composant de cartes (11/11) : dos de carte, tableau en trois temps (flop · turn · river), pour les équités avec tableau */
+.card.back { background: repeating-linear-gradient(45deg, #b3261e 0 4px, #8f1d17 4px 8px); border: 2px solid #fff; }
+.board { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.board .street { display: flex; gap: 4px; }
+.board .street + .street { padding-left: 10px; border-left: 2px dashed rgba(255,255,255,.35); }

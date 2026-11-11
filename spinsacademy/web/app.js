@@ -250,16 +250,29 @@ function hudLines(q) {
   return out;
 }
 
-function renderCards(display, id = 'hero-cards') {
-  const box = $(id); box.innerHTML = ''; const names = [];
-  const cards = [...display.matchAll(/([2-9TJQKA])([♠♥♦♣])/g)];
-  for (const [, r, s] of cards) {
-    const el = document.createElement('div'); const k = SUIT[s];
-    el.className = `card ${k}`; el.innerHTML = `${r === 'T' ? '10' : r}<small>${s}</small>`; box.appendChild(el);
-    names.push(`${r === 'T' ? '10' : r} de ${SUIT_NAME[k]}`);
-  }
-  box.setAttribute('aria-label', 'Ta main : ' + names.join(' et '));
+// cartes : un seul composant pour ta main, le tableau (flop, turn, river) et les mains adverses (équités avec tableau, à venir).
+// Une carte s'écrit « A♠ » (affichage des questions) ou « As » (rang 2-9 T J Q K A, couleur s h d c) ; « ?? » = carte cachée (dos).
+const SUIT_OF = { s: '♠', h: '♥', d: '♦', c: '♣' };
+function parseCards(x) {
+  const list = Array.isArray(x) ? x.join(' ') : String(x || '');
+  return [...list.matchAll(/(\?\?)|([2-9TJQKA])([♠♥♦♣shdc])/g)].map(([, back, r, su]) => (back ? { back: true } : { r, s: SUIT[su] || su }));
 }
+const cardName = (c) => (c.back ? 'carte cachée' : `${c.r === 'T' ? '10' : c.r} de ${SUIT_NAME[c.s]}`);
+function cardsHTML(cards) {
+  return parseCards(cards).map((c) => (c.back ? '<div class="card back" aria-hidden="true"></div>'
+    : `<div class="card ${c.s}">${c.r === 'T' ? '10' : c.r}<small>${SUIT_OF[c.s]}</small></div>`)).join('');
+}
+// une rangée de cartes dans une boîte, avec son libellé pour les lecteurs d'écran (« Ta main : as de pique et dame de cœur »)
+function renderCardRow(box, cards, label) {
+  const list = parseCards(cards); box.innerHTML = cardsHTML(cards);
+  box.setAttribute('aria-label', `${label} : ${list.map(cardName).join(' et ') || 'aucune carte'}`); return list;
+}
+// le tableau : 3 cartes du flop, puis turn et river, séparés ; les cartes pas encore tombées sont absentes (rien n'est inventé)
+function boardHTML(cards) {
+  const list = parseCards(cards), part = (xs, cls, t) => (xs.length ? `<span class="street ${cls}" aria-label="${t}">${cardsHTML(xs.map((c) => (c.back ? '??' : c.r + c.s)))}</span>` : '');
+  return `<div class="board">${part(list.slice(0, 3), 'flop', 'Flop')}${part(list.slice(3, 4), 'turn', 'Turn')}${part(list.slice(4, 5), 'river', 'River')}</div>`;
+}
+function renderCards(display, id = 'hero-cards') { renderCardRow($(id), display, 'Ta main'); }
 
 // bouton d'action : le montant en gros, le verbe du client en dessous (« 0,5 BB / CALL »), comme à la table
 const VERB_RE = /^(FOLD|CHECK|CALL|RAISE TO|ALL-IN)(?: (.+))?$/i;
