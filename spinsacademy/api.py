@@ -324,7 +324,7 @@ def create_session(body: NewSession, x_player_id: Optional[str] = Header(None)):
             if replay is not None:
                 series = replay
             elif plan == 'placement':                                          # audit AU7 : 10 mains sur les trois profondeurs du parcours GTO
-                if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue en mode GTO')
+                if body.mode != 'gto': raise HTTPException(422, 'le test de placement se joue sur la banque GTO')
                 series = [(s, h, None, None) for s, h in quiz.draw_placement(version, body.seed, excluded)]
             elif due is not None:
                 series = [(x['spot_id'], x['hand'], 'spaced', review.purpose_fr(x)) for x in due if x['spot_id'] not in excluded][:body.size]
@@ -686,7 +686,7 @@ def _goal_data(con, pid, mode):
     sess = [dict(r) for r in con.execute(
         'SELECT s.created_at, s.plan, s.size, s.dataset_version, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
         'FROM sessions s WHERE s.player_id = ?', (pid,))]
-    sess = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+    # « Jours d'entraînement » est hors catégorie : toute série finie compte, GTO, exploitant ou équités (retest 10)
     rgs = [dict(r) for r in con.execute('SELECT answered_at, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
     return _mode_rows(con, pid, mode, None), sess, rgs
 

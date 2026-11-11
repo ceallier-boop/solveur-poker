@@ -58,15 +58,18 @@ async function api(path, opts = {}) {
 }
 
 // I9 : cinq onglets fixes en bas ; la barre n'apparaît que sur les pages des onglets (ni au premier lancement, ni pendant une série)
-const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', prog: 'stats', outils: 'outils' };
-const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour à l\'onglet GTO', expl: 'Retour à l\'onglet Exploitant' };
+const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', exos: 'exos', prog: 'stats', outils: 'outils' };   // gto / expl : les deux côtés de l'onglet Quiz (11/11)
+const barTab = (t) => (t === 'gto' || t === 'expl' ? 'quiz' : t);
+const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour au quiz GTO', expl: 'Retour au quiz Exploitant', exos: 'Retour aux exercices' };
 function show(name) {
   if (name !== 'question' && state.timer) stopTimer();
+  if (name !== 'question') stopReplay();
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
   $('loading').hidden = true;
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
   $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab);
-  if (tab) { state.tab = tab; for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === tab), b.dataset.tab === tab && b.setAttribute('aria-current', 'page'); }
+  if (tab) { state.tab = tab; const bt = barTab(tab); for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === bt), b.dataset.tab === bt && b.setAttribute('aria-current', 'page');
+    for (const q of document.querySelectorAll('.quiz-switch [data-side]')) q.setAttribute('aria-pressed', String(q.dataset.side === tab)); }
   else $('back-home').textContent = $('td-home').textContent = BACK_LABEL[state.tab] || BACK_LABEL.defis;   // retest 10 : le lien de retour nomme l'onglet où il ramène
   window.scrollTo(0, 0);
 }
@@ -121,7 +124,7 @@ async function start(f, review = false, plan = null, challenge = null) {
   $('home-error').hidden = true; loading(true);
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
-    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id); store.set('sid_tab', state.tab || 'defis');   // retest 10 : onglet d'origine, pour le retour
+    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id); store.set('sid_tab', state.tab || 'defis'); store.set('sid_mode', s.mode || '');   // retest 10 : onglet d'origine, pour le retour
     if (plan === 'placement') store.set('placement_sid', s.session_id); else if (store.get('placement_sid') !== s.session_id) store.del('placement_sid');   // AU7 : reconnu même après une reprise
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -144,10 +147,12 @@ async function start(f, review = false, plan = null, challenge = null) {
 }
 
 // ------------------------------------------------------------------ question
-function contributions(q) {
-  const n = q.players.length, c = BLINDS[n].slice(), folded = new Array(n).fill(false);
+// rejouée de la main (décision du porteur, 10/11) : vs = étape affichée { upto: actions jouées, cards, blinds } ; par défaut l'état final
+const FULL = { upto: Infinity, cards: true, blinds: true };
+function contributions(q, vs = FULL) {
+  const n = q.players.length, c = vs.blinds ? BLINDS[n].slice() : new Array(n).fill(0), folded = new Array(n).fill(false);
   const kind = c.map((x) => (x > 0 ? 'blind' : null));               // dernière action de chaque joueur, pour son jeton
-  for (const h of q.history) {
+  for (const h of q.history.slice(0, vs.upto)) {
     const i = q.players.indexOf(h.position);
     if (h.action === 'fold') folded[i] = true;
     else if (h.to_bb !== undefined) c[i] = h.to_bb;
@@ -160,15 +165,31 @@ function contributions(q) {
 const ACT_TAG = { fold: 'FOLD', check: 'CHECK', limp: 'CALL', call: 'CALL', call_allin: 'CALL', raise: 'RAISE', allin: 'ALL-IN' };
 const HUD_FR = { shove_pct: 'Tapis', call_pct: 'Call', call_pct_bb_sb_fold: 'Call', limp_pct: 'Limp', call_after_limp_pct: 'Call après limp',
   jam_over_limp_pct: 'Tapis/limp', open_pct: 'Open', defend_pct: 'Déf.' };
-function lastActions(q) {
+function lastActions(q, vs = FULL) {
   const last = {};
-  for (const h of q.history) last[h.position] = h.action;
+  for (const h of q.history.slice(0, vs.upto)) last[h.position] = h.action;
   return last;
 }
+// jetons devant le joueur : un limp ou une blinde = un jeton ; une mise = une pile dont la hauteur suit le montant ; un tapis = plusieurs colonnes
+const CHIP_STEPS = [1.5, 3, 5, 8, 12];                               // paliers lisibles (BB) : 2 à 6 jetons
+function chipsHTML(amount, kind, allin, fresh) {
+  if (!(amount > 0)) return '';
+  const pile = (k) => `<span class="pile">${'<i></i>'.repeat(k)}</span>`;
+  let html, type;
+  if (allin) { type = 'allin'; const h = 2 + CHIP_STEPS.filter((x) => amount > x).length; html = pile(h) + pile(h) + pile(Math.max(2, h - 1)); }
+  else if (kind === 'limp' || kind === 'blind') { type = kind; html = pile(1); }
+  else { type = 'bet'; html = pile(2 + CHIP_STEPS.filter((x) => amount > x).length); }
+  return `<span class="stake c-${type}${fresh ? ' fresh' : ''}" data-chips="${type}" aria-hidden="true">${html}</span>`;   // fresh : posés à cette étape (seuls animés)
+}
+const BUBBLE_FR = { fold: () => 'Se couche', check: () => 'Parole', limp: () => 'Limp', call: (h) => `Paie ${bb(h.to_bb)} BB`,
+  call_allin: (h) => `Paie ${bb(h.to_bb)} BB`, raise: (h) => `Relance à ${bb(h.to_bb)} BB`, allin: (h) => `Tapis ${bb(h.to_bb)} BB` };
+const bubbleText = (h) => (BUBBLE_FR[h.action] || (() => h.action))(h);
 
-function renderTable(q) {
+function renderTable(q, vs = FULL) {
   const view = $('table-view'); view.innerHTML = '';
-  const n = q.players.length, hero = q.players.indexOf(q.hero), { c: c0, folded } = contributions(q), last = lastActions(q);
+  const n = q.players.length, hero = q.players.indexOf(q.hero), { c: c0, folded, kind } = contributions(q, vs), last = lastActions(q, vs);
+  const said = vs.upto > 0 && vs.upto !== Infinity ? q.history[vs.upto - 1] : null;   // l'action qui vient d'être jouée : sa bulle
+  $('table-wrap').classList.toggle('undealt', !vs.cards); view.dataset.step = vs === FULL ? 'final' : `${vs.cards ? 'c' : ''}${vs.blinds ? 'b' : ''}${vs.upto}`;
   view.classList.toggle('hu', n === 2);
   // une mise au-delà du plus gros tapis adverse encore en jeu ne peut pas être payée : on l'affiche plafonnée, comme le pot de la correction
   const c = c0.map((x, i) => Math.min(x, Math.max(...q.stacks_bb.map((s, j) => (j !== i && !folded[j] ? s : 0)), 0) || x));
@@ -182,22 +203,26 @@ function renderTable(q) {
     const allin = left <= 1e-9 || last[pos] === 'allin';                     // test joueurs 6 : un joueur à tapis n'affiche plus de jetons derrière
     const act = allin ? '' : ACT_TAG[last[pos]] || '';                        // tapis : « ALL-IN » à la place du tapis restant
     const stack = allin ? 'ALL-IN' : `${bb(left)} BB`;
+    const side = k === 0 ? '' : seats[k][0] > 50 ? ' to-l' : ' to-r';                // bulle à côté du siège, vers le centre de la table
+    const bubble = said && said.position === pos ? `<span class="bubble${side}" data-pos="${pos}">${escT(bubbleText(said))}</span>` : '';
+    const chips = chipsHTML(c[i], kind[i], allin && c[i] > 0, (said && said.position === pos) || (vs.blinds && vs.upto === 0 && kind[i] === 'blind'));
     if (k === 0) {
-      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '');   // ton action, comme pour les autres
+      $('hero-seat').innerHTML = `<b>${pos} · toi</b><span class="stack">${stack}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '') + bubble;   // ton action, comme pour les autres
     } else {
       const seat = document.createElement('div');
       seat.className = 'seat' + (folded[i] ? ' folded' : '');
       seat.style.left = seats[k][0] + '%'; seat.style.top = seats[k][1] + '%';
-      const backs = !folded[i] ? '<span class="backs"><i></i><i></i></span>' : '';           // cartes cachées des adversaires encore dans le coup
+      const backs = !folded[i] && vs.cards ? '<span class="backs"><i></i><i></i></span>' : '';   // cartes cachées des adversaires encore dans le coup
       const marked = q.field && q.field.pastille && (q.field.villains || []).includes(pos);
       const tag = q.field ? (marked ? pastilleDot(q.field.pastille) : '<i class="pastille none" title="Pas de pastille">?</i>') : '';
       const pname = marked ? `<span class="pname" style="--p:${pastilles()[q.field.pastille]};--pi:${inkOn(pastilles()[q.field.pastille])}">${q.field.pastille}</span>` : '';   // analyse des écrans : le nom de la pastille sous le siège
       seat.innerHTML = backs + `<b>${tag}${pos}</b><span class="stack">${stack}${covers ? ' <small>te couvre</small>' : ''}</span>` + (act ? `<span class="act a-${last[pos]}">${act}</span>` : '') + pname
-        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + (c[i] > 0 ? `<span class="betnum">${bb(c[i])}<small> BB</small></span>` : '');   // sa mise, devant lui (en BB)
+        + (hud[pos] ? `<span class="hud">${hud[pos]}</span>` : '') + bubble
+        + (c[i] > 0 ? `<span class="betnum">${chips}${bb(c[i])}<small> BB</small></span>` : '');   // sa mise, devant lui : jetons et montant en BB
       view.appendChild(seat);
     }
     if (k === 0 && c[i] > 0) {
-      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.innerHTML = `${bb(c[i])}<small> BB</small>`; view.appendChild(b);
+      const b = document.createElement('span'); b.className = 'betnum hero-bet'; b.innerHTML = `${chips}${bb(c[i])}<small> BB</small>`; view.appendChild(b);
     }
     if (pos === button) {
       const d = document.createElement('span'); d.className = 'dealer'; d.textContent = 'D'; d.title = 'Bouton';
@@ -225,16 +250,29 @@ function hudLines(q) {
   return out;
 }
 
-function renderCards(display, id = 'hero-cards') {
-  const box = $(id); box.innerHTML = ''; const names = [];
-  const cards = [...display.matchAll(/([2-9TJQKA])([♠♥♦♣])/g)];
-  for (const [, r, s] of cards) {
-    const el = document.createElement('div'); const k = SUIT[s];
-    el.className = `card ${k}`; el.innerHTML = `${r === 'T' ? '10' : r}<small>${s}</small>`; box.appendChild(el);
-    names.push(`${r === 'T' ? '10' : r} de ${SUIT_NAME[k]}`);
-  }
-  box.setAttribute('aria-label', 'Ta main : ' + names.join(' et '));
+// cartes : un seul composant pour ta main, le tableau (flop, turn, river) et les mains adverses (équités avec tableau, à venir).
+// Une carte s'écrit « A♠ » (affichage des questions) ou « As » (rang 2-9 T J Q K A, couleur s h d c) ; « ?? » = carte cachée (dos).
+const SUIT_OF = { s: '♠', h: '♥', d: '♦', c: '♣' };
+function parseCards(x) {
+  const list = Array.isArray(x) ? x.join(' ') : String(x || '');
+  return [...list.matchAll(/(\?\?)|([2-9TJQKA])([♠♥♦♣shdc])/g)].map(([, back, r, su]) => (back ? { back: true } : { r, s: SUIT[su] || su }));
 }
+const cardName = (c) => (c.back ? 'carte cachée' : `${c.r === 'T' ? '10' : c.r} de ${SUIT_NAME[c.s]}`);
+function cardsHTML(cards) {
+  return parseCards(cards).map((c) => (c.back ? '<div class="card back" aria-hidden="true"></div>'
+    : `<div class="card ${c.s}">${c.r === 'T' ? '10' : c.r}<small>${SUIT_OF[c.s]}</small></div>`)).join('');
+}
+// une rangée de cartes dans une boîte, avec son libellé pour les lecteurs d'écran (« Ta main : as de pique et dame de cœur »)
+function renderCardRow(box, cards, label) {
+  const list = parseCards(cards); box.innerHTML = cardsHTML(cards);
+  box.setAttribute('aria-label', `${label} : ${list.map(cardName).join(' et ') || 'aucune carte'}`); return list;
+}
+// le tableau : 3 cartes du flop, puis turn et river, séparés ; les cartes pas encore tombées sont absentes (rien n'est inventé)
+function boardHTML(cards) {
+  const list = parseCards(cards), part = (xs, cls, t) => (xs.length ? `<span class="street ${cls}" aria-label="${t}">${cardsHTML(xs.map((c) => (c.back ? '??' : c.r + c.s)))}</span>` : '');
+  return `<div class="board">${part(list.slice(0, 3), 'flop', 'Flop')}${part(list.slice(3, 4), 'turn', 'Turn')}${part(list.slice(4, 5), 'river', 'River')}</div>`;
+}
+function renderCards(display, id = 'hero-cards') { renderCardRow($(id), display, 'Ta main'); }
 
 // bouton d'action : le montant en gros, le verbe du client en dessous (« 0,5 BB / CALL »), comme à la table
 const VERB_RE = /^(FOLD|CHECK|CALL|RAISE TO|ALL-IN)(?: (.+))?$/i;
@@ -265,7 +303,7 @@ function resumeTimer() {                                             // reprise 
 }
 function startTimer(q, leftMs) {
   stopTimer(); if (leftMs == null) state.timedOut = false;
-  const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr)) return;   // pas de chrono pour la lecture du vilain
+  const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr) || q.mode === 'equity') return;   // pas de chrono pour la lecture du vilain ni les équités (on calcule)
   const end = Date.now() + (leftMs == null ? secs * 1000 : leftMs), box = $('q-timer'); box.hidden = false; state.timerEnd = end;
   const tick = () => {
     const left = Math.max(0, end - Date.now());
@@ -279,38 +317,65 @@ function startTimer(q, leftMs) {
   tick(); state.timer = setInterval(tick, 100);
 }
 
+// rejouée de la main avant la question : table vide avec les tapis, cartes distribuées, blindes, puis chaque action dans l'ordre
+// jusqu'au héros ; ses options n'apparaissent qu'à la fin et le chrono ne part qu'à ce moment. « Passer » montre tout de suite l'état
+// final ; avec la réduction des mouvements demandée par le système, l'état final est direct. L'énoncé texte reste lu (lecteurs d'écran).
+const REPLAY_MS = { empty: 350, deal: 450, blinds: 450, action: 550 };
+const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function stopReplay() { const r = state.replay; if (!r) return; clearTimeout(r.t); state.replay = null; $('replay-skip').hidden = true; }
+function replayHand(q, done) {
+  stopReplay();
+  const finish = () => { stopReplay(); renderTable(q); $('actions').hidden = false; done(); };
+  if (reducedMotion()) { finish(); return; }
+  const steps = [[{ upto: 0, cards: false, blinds: false }, REPLAY_MS.empty], [{ upto: 0, cards: true, blinds: false }, REPLAY_MS.deal],
+    [{ upto: 0, cards: true, blinds: true }, REPLAY_MS.blinds], ...q.history.map((h, k) => [{ upto: k + 1, cards: true, blinds: true }, REPLAY_MS.action])];
+  $('actions').hidden = true; $('replay-skip').hidden = false;
+  const r = state.replay = { finish, t: null }; let k = 0;
+  const tick = () => {
+    if (state.replay !== r) return;
+    if (k >= steps.length) { finish(); return; }
+    const [vs, ms] = steps[k++]; renderTable(q, vs); r.t = setTimeout(tick, ms);
+  };
+  tick();
+}
+$('replay-skip').addEventListener('click', () => { if (state.replay) state.replay.finish(); });
+
 function renderQuestion(data) {
   state.q = data.question; state.index = data.question_index; state.size = data.size;
   $('purpose').hidden = !data.purpose_fr; $('purpose').textContent = data.purpose_fr || '';
   $('purpose').className = `purpose ${data.purpose || ''}`;
   const q = state.q;
   progress(`Question ${state.index + 1} / ${state.size}`);
-  const noHand = !q.hand || !!(q.field && q.field.ask_fr);           // questions de lecture du vilain : sans main ni table
+  const eq = q.mode === 'equity';                                    // Équités : une main seule, sans table (players et history vides)
+  const noHand = eq || !q.hand || !!(q.field && q.field.ask_fr);     // questions de lecture du vilain : sans main ni table
   $('table-wrap').hidden = noHand;
+  $('q-cat').hidden = false; $('q-cat').textContent = CAT_FR[catOf(q)]; $('q-cat').dataset.cat = catOf(q);   // étiquette de catégorie (10/11)
   if (!noHand) { renderTable(q); renderCards(q.hand_display); }
-  $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
+  $('history').innerHTML = eq ? '' : q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
+  $('eq-hand').hidden = !eq; if (eq) { renderCards(q.hand_display, 'eq-cards'); $('eq-kind').textContent = q.kind_fr || ''; }
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   $('ask').className = noHand ? 'ask' : 'ask sr-only';               // la table suffit ; la question reste lue par les lecteurs d'écran
-  $('ask').innerHTML = !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}︎</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
+  $('ask').innerHTML = eq ? escT(q.prompt_fr) : !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}︎</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
   $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
   renderFieldStats(q, noHand);
   const box = $('actions'); box.innerHTML = '';
   const main = document.createElement('div'); main.className = 'mainrow';
   const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
-  const read = noHand; box.classList.toggle('read', read);
+  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); box.classList.toggle('bands', eq && q.answer === 'band'); box.classList.toggle('stmts', eq && q.answer === 'statement');   // tranches : en grille ; affirmations : en liste
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
     b.innerHTML = actionHTML(o.label_fr) + `<span class="key">${k + 1}</span>`; b.dataset.id = o.id; b.dataset.k = k + 1;
     if (/^Fold$/.test(o.label_fr)) b.classList.add('fold');
     b.addEventListener('click', () => answer(o.id));
-    (read || k < 3 ? main : extra).appendChild(b);
+    (read || eq || k < 3 ? main : extra).appendChild(b);
   });
   main.style.setProperty('--n', String(main.children.length));
   box.appendChild(main); if (extra.children.length) box.appendChild(extra);
-  show('question'); startTimer(q);
-  box.querySelector('button').focus({ preventScroll: true });
+  show('question');
+  const ready = () => { startTimer(q); box.querySelector('button').focus({ preventScroll: true }); };
+  if (noHand) { stopReplay(); box.hidden = false; ready(); } else replayHand(q, ready);
 }
 
 // mode exploitant : la ligne de stats est sous le siège du vilain ; ici, le détail (k sur n, observé contre théorie), replié.
@@ -362,7 +427,38 @@ function recapLine(q) {
   const hist = (q.history_fr || []).map((t) => t.replace(/^Le /, '')).join(' · ') || 'premier à parler';
   return `<b>${q.hero}</b> · ${q.table === 'heads-up' ? 'heads-up' : '3 joueurs'} · ${bb(eff)} BB effectifs<br><span>${escT(hist)}</span>`;
 }
+// Équités : la correction dit la bonne tranche (ou la bonne affirmation), la valeur exacte en une phrase, le calcul, les forces et
+// faiblesses ; jamais de BB perdus (regret_mbb = 0, loss_fr = null). Format : docs/api/QUIZ_EQUITES.md
+function renderEquityAnswer(r) {
+  const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
+  const best = r.best_label || '';
+  const sub = band ? (r.verdict === 'correct' ? `Bonne tranche : ${best}.` : r.verdict === 'imprécision' ? `Tranche voisine, un demi-point : la bonne est ${best}.` : `La bonne tranche : ${best}.`)
+    : r.verdict === 'correct' ? `Bonne réponse : « ${best} ».` : `La bonne réponse : « ${best} ».`;
+  v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? 'Bonne tranche' : title}<small>${escT(sub)}</small>`;
+  stopTimer();
+  for (const id of ['a-avis', 'a-choice', 'a-conseil', 'a-next-box', 'a-grid-box', 'a-strategy-title', 'a-strategy', 'a-exploit']) $(id).hidden = true;
+  renderCards(q.hand_display, 'a-cards'); $('a-cards').hidden = false;
+  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b> · ${escT(q.hand_display)}`;
+  $('a-essential').textContent = band ? r.essential_fr || '' : '';      // affirmations : le verdict dit déjà la bonne réponse
+  const how = (r.method_fr || '').replace(/^Calcul : /, '');            // « Calcul : … » : le titre le dit déjà
+  $('a-remember').hidden = !how; $('a-remember').innerHTML = how ? `<b>Le calcul</b><span class="eline">${escT(how.charAt(0).toUpperCase() + how.slice(1))}</span>` : '';
+  const list = (xs, cls2, t) => (xs && xs.length ? `<h4 class="${cls2}">${t}</h4><ul class="${cls2}">${xs.map((x) => `<li>${escT(x)}</li>`).join('')}</ul>` : '');
+  const rows = band
+    ? `<ol class="eq-bands">${(e.options || []).map((l, i) => { const id = `b${i}`, good = id === e.correct_option, mine = id === r.chosen_action;
+      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
+    : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
+  $('a-equity').hidden = false;
+  $('a-equity').innerHTML = rows + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
+  const det = r.details_fr || []; $('a-more').open = false;
+  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
+  $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
+  resetReport();
+  for (const id of ['a-essential', 'a-remember', 'a-equity']) glossify($(id));
+  show('answer'); v.focus({ preventScroll: true });
+}
 function renderAnswer(r) {
+  if (state.q && state.q.mode === 'equity') { renderEquityAnswer(r); return; }
+  $('a-equity').hidden = true;
   const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
@@ -495,10 +591,15 @@ async function sendReport(e) {
 }
 
 // ------------------------------------------------------------------ bilan
+function errLine(e) {                                              // une ligne par erreur du bilan ; Équités : la valeur exacte, jamais de BB
+  if (e.value_fr !== undefined || state.mode === 'equity' || /^eq:/.test(e.spot_id || '')) return `Ta réponse : ${escT(e.chosen)} · bonne réponse : <b>${escT(e.best)}</b>${e.value_fr ? ` (valeur exacte : ${escT(e.value_fr)})` : ''}`;
+  return `${e.timed_out ? `Temps écoulé (${frLabel(e.chosen)} automatique)` : `Ton coup : ${frLabel(e.chosen)} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${frLabel(e.best)}</b>`;
+}
 async function summary() {
   if (state.sid && state.sid === store.get('placement_sid')) return placementResult();   // AU7 : le test de placement a son propre écran
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
+  if (state.q) { $('s-cat').hidden = false; $('s-cat').textContent = CAT_FR[catOf(state.q)]; $('s-cat').dataset.cat = catOf(state.q); }
   $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
     + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB par rapport aux meilleurs coups (ses ${s.ev_questions} décisions)` : 'Aucun BB perdu sur cette série'}.`   // AU2 : un seul chiffre BB par écran, son périmètre écrit
       + '</small>' : '')
@@ -506,9 +607,9 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${frLabel(e.chosen)} automatique)` : `Ton coup : ${frLabel(e.chosen)} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${frLabel(e.best)}</b></li>`).join('')
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${errLine(e)}</li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
-  $('s-review').hidden = !s.errors.length;
+  $('s-review').hidden = !s.errors.length || state.mode === 'equity';   // pas de révision pour les équités (décision du 10/11)
   $('again-btn').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle série';
   if (state.challenge) {                                               // étape 5 : résultat du défi
     const kind = state.challenge; state.challenge = null; state.forceChrono = null;
@@ -534,7 +635,41 @@ function themeRow(x, min) {
 // progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
 // ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
 const STATS_KEY = 'stats_cache';
-function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); if (state.homeReady) lightHome(); }
+function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); renderCats(s); if (state.homeReady) lightHome(); }
+// catégories (10/11) : Préflop GTO, Préflop exploitant, Profils, Ranges (onglet GTO ou Exploitant), Équités (à venir). Les chiffres viennent de
+// GET /users/me/stats : par mode, la lecture du vilain (famille « read ») comptée à part en Profils ; elle n'a pas de BB (pas d'EV)
+const CAT_FR = { gto: 'Préflop GTO', exploit: 'Préflop exploitant', profils: 'Profils', ranges: 'Ranges', equites: 'Équités' };
+const catOf = (q) => (q && q.mode === 'equity' ? 'equites' : q && q.field && q.field.ask_fr ? 'profils' : q && q.mode === 'exploit' ? 'exploit' : 'gto');
+function catNumbers(s) {
+  const by = (s && s.by) || {}, m = (k) => (by.mode || []).find((x) => x.filters.mode === k), read = (by.family || []).find((x) => x.filters.family === 'read');
+  const pts = (x) => (x ? (x.score_pct || 0) * x.questions / 100 : 0);
+  const g = m('gto'), e = m('exploit'), eq = e ? e.questions - (read ? read.questions : 0) : 0;
+  const r = (s && s.ranges) || {};
+  return {
+    gto: g && g.questions ? { q: g.questions, pct: g.score_pct, bb: g.bb_per_100 } : null,
+    exploit: eq > 0 ? { q: eq, pct: 100 * (pts(e) - pts(read)) / eq, bb: e.bb_per_100 } : null,
+    profils: read && read.questions ? { q: read.questions, ok: Math.round(pts(read)), pct: read.score_pct } : null,
+    ranges: r.count ? { n: r.count, acc: r.accuracy_pct } : null,
+    equites: s && s.equity && s.equity.questions ? { q: s.equity.questions, pct: s.equity.score_pct, kinds: s.equity.by_kind || [] } : null,   // bloc « equity » (hors score GTO)
+  };
+}
+const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+function catLine(key, v) {
+  if (!v) return key === 'ranges' ? 'Pas encore de range dessinée.' : 'Pas encore commencé.';
+  if (key === 'equites') return `${Math.round(v.pct)} % des points · ${plural(v.q, 'question')}`;
+  if (key === 'profils') return `${plural(v.ok, 'lecture')} juste${v.ok > 1 ? 's' : ''} sur ${v.q}`;
+  if (key === 'ranges') return `${plural(v.n, 'range')} · ${nfr1(v.acc)} % de mains bien classées en moyenne`;
+  return `${Math.round(v.pct)} % des points · ${plural(v.q, 'décision')}`   // score en points (imprécision = demi-point), comme Équités + (v.bb != null ? ` · ${nfr1(v.bb)} BB perdus pour 100` : '');
+}
+function renderCats(s) {
+  const n = catNumbers(s);
+  for (const k of ['gto', 'exploit', 'profils', 'ranges', 'equites']) $(`cat-${k}-meter`).textContent = catLine(k, n[k]);
+  const head = (k, v) => (!v ? '–' : k === 'ranges' ? `${Math.round(v.acc)} %` : `${Math.round(v.pct)} %`);
+  const kinds = (v) => (v && v.kinds.length ? `<ul class="cat-kinds">${v.kinds.map((x) => `<li>${escT(x.label_fr)}<b>${Math.round(x.score_pct)} %</b><small>${plural(x.questions, 'question')}</small></li>`).join('')}</ul>` : '');
+  $('st-cats').hidden = false;
+  $('st-cats-list').innerHTML = Object.keys(CAT_FR).filter((k) => k !== 'exploit' && k !== 'profils' || !exploitLocked())
+    .map((k) => `<li class="cat-row" data-cat="${k}"><span><b>${CAT_FR[k]}</b><small>${escT(catLine(k, n[k]))}</small>${k === 'equites' ? kinds(n[k]) : ''}</span><b class="cats-num">${head(k, n[k])}</b></li>`).join('');   // Équités : le détail par sorte de question
+}
 // AU4 : accueil d'un nouveau joueur (moins de 3 jours d'entraînement) : un seul bouton principal, la séance et la série rapide
 // expliquées, objectifs et défis repliés (toujours accessibles)
 function daysPlayed() { const c = cachedStats(), ev = (c && c.s && c.s.evolution) || []; return new Set(ev.map((e) => (e.date || '').slice(0, 10)).filter(Boolean)).size; }
@@ -543,6 +678,7 @@ function lightHome() {
   $('today-explain').hidden = !fresh; $('quick-explain').hidden = !fresh;
   // retest 10 : les objectifs de la semaine sont dépliés dans Progression, pour tous (le pli reste au joueur)
 }
+function refreshCats() { const c = cachedStats(); if (c && c.s) renderCats(c.s); api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : les derniers chiffres gardés */ }); }
 function homeSummary() { /* I9 : l'onglet Progression remplace le bouton « Ma progression » de l'accueil */ }
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
 function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
@@ -550,7 +686,7 @@ function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { 
 async function stats() {
   loading(true);
   let s, offline = null;
-  try { s = await api('/users/me/stats'); cacheStats(s); }
+  try { s = await api('/users/me/stats'); cacheStats(s); loadGoals(); }   // objectifs à jour (l'objectif exploitant dépend des statistiques)
   catch (e) {
     const c = (!e || !e.status || e.status >= 500) ? cachedStats() : null;      // coupure réseau ou panne du serveur
     if (!c) throw e;
@@ -599,7 +735,7 @@ async function stats() {
     + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
     + (f.filters && !offline ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
   if (f.filters && !offline) $('train-focus').addEventListener('click', () => { state.inToday = false; start(f.filters); });
-  const groups = Object.entries(s.by).filter(([, rows]) => rows.length);          // pas de carte vide
+  const groups = Object.entries(s.by).filter(([k, rows]) => k !== 'mode' && rows.length);   // pas de carte vide ; GTO / Exploitant : le tableau « Par catégorie » (10/11)
   const old = s.untracked_questions || 0;                                         // démo : réponses d'une version précédente, sans description
   const cards = groups.map(([k, rows]) => `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
   const anyScore = groups.some(([k, rows]) => k !== 'mode' && rows.some((x) => x.reliable));
@@ -731,30 +867,37 @@ document.addEventListener('keydown', (e) => {
 const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
 // I9 : les onglets ; GTO et Exploitant fixent le mode, l'onglet central est la séance GTO et les défis
 const tabMode = (tab) => (tab === 'expl' ? 'exploit' : 'gto');
+// retest 11 : côté Quiz, « Reprendre la série en cours » seulement du côté de la série abandonnée (la carte de Défis reste commune)
+function syncResume(tab) { const m = store.get('sid_mode') || 'gto'; $('resume').hidden = !(state.resumable && (tab === 'expl' ? m === 'exploit' : m === 'gto')); }
 function placeBlocks(tab) {                                          // les blocs uniques vont dans l'onglet affiché
+  syncResume(tab);
   $(tab === 'expl' ? 'slot-expl-today' : 'slot-defis-today').appendChild($('today'));
   $(tab === 'expl' ? 'slot-expl-train' : 'slot-gto-train').appendChild($('train'));
   $(tab === 'defis' ? 'slot-defis-worst' : 'slot-train-worst').appendChild($('worst'));   // retest 10 : les erreurs du jour à l'arrivée (décision du 09/11)
 }
+const quizSide = () => (store.get('quiz_side') === 'expl' && !exploitLocked() ? 'expl' : 'gto');   // dernier choix gardé, GTO par défaut
 function goTab(tab) {
-  if (tab === 'expl' && exploitLocked()) { notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
+  if (tab === 'quiz') tab = quizSide();
+  if (tab === 'expl' && exploitLocked()) { notify(`Le Quiz Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
   if (tab === 'prog') { openStats(); return; }
   if (tab === 'outils') { progress(''); show('outils'); return; }
+  if (tab === 'exos') { placeBlocks('exos'); if (setMode('gto')) onMode(true); progress(''); show('exos'); return; }   // Ranges, Équités, Profils
+  if (tab === 'gto' || tab === 'expl') store.set('quiz_side', tab);   // côté du Quiz gardé ; Défis ne l'efface pas
   placeBlocks(tab); const changed = setMode(tabMode(tab));
   progress(''); show(TAB_SCREEN[tab]);
   if (changed) onMode(true);                                         // séance, recommandations, erreurs du jour… suivent le mode
 }
 $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) goTab(b.dataset.tab); });
+for (const q of document.querySelectorAll('.quiz-switch')) q.addEventListener('click', (e) => { const b = e.target.closest('[data-side]'); if (b && b.dataset.side !== state.tab) goTab(b.dataset.side); });   // GTO | Exploitant
 function setBadge(id, n) { const b = $(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); }
 const defisBadge = () => setBadge('badge-defis', (state.badgeDaily || 0) + (state.badgeResume || 0));   // défi du jour à relever + série à reprendre
 $('tools-lex').addEventListener('click', () => $('lex-btn').click());
-$('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); });
+$('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); adaptation().catch(() => {}); });   // réglages du profil : chrono, exercices adaptatifs, données
 $('pf-close').addEventListener('click', () => { $('profile').hidden = true; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('profile').hidden) { $('profile').hidden = true; $('profile-btn').focus(); } });   // retest 10 : Échap ferme la feuille
 $('pf-history').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-evo-title').scrollIntoView({ block: 'start' }), 600); });
 $('profile').addEventListener('click', (e) => { if (e.target.id === 'profile') $('profile').hidden = true; });
 $('pf-level').addEventListener('click', () => { $('profile').hidden = true; state.scrollLevel = true; goTab('prog'); });
-$('pf-data').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-export').scrollIntoView({ block: 'center' }), 600); });
 $('st-back').addEventListener('click', () => { state.tab = 'defis'; home(); });
 $('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
@@ -776,7 +919,7 @@ $('review-btn').addEventListener('click', () => { state.inToday = false; start({
 async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
   const m = mode(); let r; try { r = await api(`/users/me/reviews?mode=${m}&tz=${tzOffset()}`); } catch (e) { return; }
-  setBadge(m === 'exploit' ? 'badge-expl' : 'badge-gto', r.due);    // I9 : les mains à revoir sur l'onglet du mode
+  setBadge('badge-quiz', r.due);                                    // les mains à revoir, sur l'onglet Quiz
   if (r.due > 0) {
     $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
@@ -794,14 +937,16 @@ function renderExploitAccess() {
   const locked = exploitLocked(), b = document.querySelector('.mode-switch [data-value="exploit"]');
   b.classList.toggle('locked', locked);                               // pas d'aria-disabled : il masque les puces de filtre
   b.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';
-  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, avec l\'onglet Exploitant.';
-  $('tab-expl-label').innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // I9 : le cadenas est sur l'onglet
+  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, dans le Quiz, côté Exploitant.';
+  for (const l of document.querySelectorAll('.quiz-switch .qs-label')) l.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // le cadenas est sur le bouton Exploitant du quiz
+  $('profils-paid').textContent = `Profils : ${(locked ? PAID_NOTE.locked : PAID_NOTE.open.replace('à tous ', '')).replace(/^./, (c) => c.toLowerCase()).replace(/\.$/, '')}`;   // retest 11 : l'étiquette nomme Profils
+  $('defis-expl-today').hidden = locked;                            // retest 11 : la séance exploitante annoncée sur Défis
   $('expl-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open;
   if (locked && mode() === 'exploit') { setMode('gto'); onMode(); }
 }
 document.querySelector('.mode-switch').addEventListener('click', (e) => {     // verrouillé : le bouton ne change pas de mode
   const b = e.target.closest('button'); if (!b || b.dataset.value !== 'exploit' || !exploitLocked()) return;
-  e.stopImmediatePropagation(); notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
+  e.stopImmediatePropagation(); notify(`Le Quiz Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
 }, true);
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
@@ -810,8 +955,7 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
-  $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
-  reviews(); if (state.homeReady && ['defis', 'gto', 'expl'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
+  reviews(); if (state.homeReady && ['defis', 'gto', 'expl', 'exos'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -838,7 +982,7 @@ const resumeSeries = () => { state.sid = store.get('sid'); state.tab = store.get
 $('resume').addEventListener('click', resumeSeries);
 $('resume-card-go').addEventListener('click', resumeSeries);
 document.addEventListener('keydown', (e) => {
-  if ($('screen-question').hidden || !$('lex').hidden || e.altKey || e.ctrlKey || e.metaKey) return;
+  if ($('screen-question').hidden || !$('lex').hidden || state.replay || e.altKey || e.ctrlKey || e.metaKey) return;   // pas de réponse pendant la rejouée
   const b = $('actions').querySelector(`button[data-k="${Number(e.key)}"]`);
   if (b) b.click();
 });
@@ -857,12 +1001,12 @@ async function home() {
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
-  const tab = ['defis', 'gto', 'expl'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
+  const tab = ['defis', 'gto', 'expl', 'exos'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
   if (setMode(tabMode(tab))) onMode(true);
-  placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
+  placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); refreshCats(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   const showResume = (on, s) => {                                    // retest 10 : la série abandonnée se voit aussi depuis Défis, avec un badge
-    $('resume').hidden = !on; $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
+    state.resumable = on; syncResume(state.tab); $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
     if (on) $('resume-card-text').textContent = s && s.size ? `Ta série n'est pas finie : ${s.questions || 0} décision${(s.questions || 0) > 1 ? 's' : ''} sur ${s.size}.` : 'Ta série n\'est pas finie.';
   };
   showResume(false); reviews();
@@ -982,8 +1126,8 @@ async function obFinish(skip) {
 function renderGoalCard() {
   const goal = state.level && state.level.goal, box = $('goal-card');
   const card = goal === 'recreatifs' && mode() !== 'exploit'
-    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
-      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir l'onglet Exploitant</button>`)
+    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le Quiz Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
+      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le Quiz Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir le Quiz Exploitant</button>`)
     : goal === 'ranges' ? `<p><b>Ton but : affûter tes ranges.</b> Dessine la range d'une situation, main par main, et vois où tu te trompes.</p><button class="secondary small" id="goal-go" data-go="range">Construis ta range</button>`
     : '';
   box.hidden = !card; box.innerHTML = card;
@@ -1033,7 +1177,7 @@ async function loadLevel() {
   const b = $('today-level'), m = mode() === 'gto';
   b.hidden = false;                                                  // test joueurs 9 : pas de chiffre BB ici (celui de l'accueil est l'objectif)
   b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.filter((c) => c.kind !== 'bb').map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
-    : '<b>Niveau 4 · Exploiter le field</b><small>mode exploitant, ouvert en continu</small>';
+    : '<b>Niveau 4 · Exploiter le field</b><small>contre le field, ouvert en continu</small>';
   return lv;
 }
 function celebrate(lv) {
@@ -1082,7 +1226,7 @@ function renderLevel(lv) {
   $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number < 4).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
   const four = lv.levels.find((l) => l.number === 4);
   $('st-level-expl').hidden = !four || exploitLocked();
-  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : le mode Exploitant, ouvert en continu, dans son onglet.`;
+  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : le côté Exploitant du Quiz, ouvert en continu.`;
 }
 $('st-level-pick').addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1090,6 +1234,8 @@ $('st-level-pick').addEventListener('click', async (e) => {
   catch (err) { notify(netMsg(err, "le niveau n'a pas été changé")); }
 });
 $('st-level-expl-go').addEventListener('click', () => goTab('expl'));
+$('defis-expl-today').addEventListener('click', () => goTab('expl'));   // retest 11 : un seul bloc de séance par côté, un lien depuis Défis
+$('expl-to-profils').addEventListener('click', () => { goTab('exos'); $('cat-profils').scrollIntoView({ block: 'start' }); });
 $('today-level').addEventListener('click', () => { state.scrollLevel = true; $('stats-btn').click(); });
 
 // recommandations (programme de travail, étape 2) : au plus deux, un constat chiffré et une action en un toucher
@@ -1100,21 +1246,28 @@ async function loadRecs() {
   $('recs-list').innerHTML = state.recs.map((x, i) => `<li class="rec rec-${x.kind}"><p>${escT(x.text_fr)}</p><button class="secondary small" data-i="${i}">${escT(x.label_fr)}</button></li>`).join('');
 }
 // objectifs de la semaine (programme de travail, étape 3) : trois cibles, modifiables, et le bilan de la semaine passée
+// objectifs de la semaine : comme le niveau (retest 10), ils ne suivent pas l'onglet ouvert. Toujours ceux de GTO ; si le joueur a déjà joué
+// en exploitant, son objectif « BB perdus » de Préflop exploitant s'ajoute (jours et ranges valent pour toutes les catégories)
+const exploitPlayed = () => { const c = cachedStats(), m = c && c.s && c.s.by && (c.s.by.mode || []).find((x) => x.filters.mode === 'exploit'); return !!(m && m.questions); };
 async function loadGoals() {
-  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); }
+  let g; try { g = await api(`/users/me/goals?mode=gto&tz=${tzOffset()}`); }
   catch (e) {                                                        // test joueurs 9 : un message plutôt qu'un bloc vide
     if (e && e.status && e.status < 500 && e.status !== 429) { $('goals').hidden = true; return null; }
     $('goals').hidden = false; $('goals-list').innerHTML = ''; $('goals-note').textContent = ''; $('last-week').hidden = true; $('goals-error').hidden = false; return null;
   }
+  state.goalsX = null;
+  if (!exploitLocked() && exploitPlayed()) { try { state.goalsX = await api(`/users/me/goals?mode=exploit&tz=${tzOffset()}`); } catch (e) { state.goalsX = null; } }
   $('goals-error').hidden = true; renderGoals(g); return g;
 }
+const goalLabel = (x, m) => (x.category === 'gto' || x.category === 'exploit' ? `${x.label_fr} ${m === 'exploit' ? 'exploitant' : 'GTO'}` : x.label_fr);   // « … de Préflop GTO »
 function renderGoals(g) {
   state.goals = g; $('goals').hidden = false;
-  $('goals-mode').textContent = `· ${g.mode === 'exploit' ? 'Exploitant' : 'GTO'}`;   // test joueurs 9 : les objectifs sont propres à chaque mode
-  const edit = !!state.goalsEdit;
+  $('goals-mode').textContent = '';
+  const edit = !!state.goalsEdit, gx = state.goalsX;
+  const items = g.items.map((x) => [x, 'gto']).concat(gx ? gx.items.filter((x) => x.category === 'exploit').map((x) => [x, 'exploit']) : []);
   $('goals-edit').textContent = edit ? 'terminé' : 'modifier';
-  $('goals-list').innerHTML = g.items.map((x) => `<li class="goal${x.done ? ' done' : ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(x.label_fr)}</span>`
-    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
+  $('goals-list').innerHTML = items.map(([x, m]) => `<li class="goal${x.done ? ' done' : ''}" data-cat="${x.category || ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(goalLabel(x, m))}</span>`
+    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-m="${m}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-m="${m}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
     + `</div><div class="sbar"><i style="width:${Math.round(100 * x.progress)}%"></i></div><small>${escT(x.text_fr)}</small></li>`).join('');
   $('goals-note').textContent = g.days_left > 0 ? `Encore ${g.days_left} jour${g.days_left > 1 ? 's' : ''} cette semaine.` : 'Dernier jour de la semaine.';
   const lw = g.last_week, seen = store.get('goals_seen') === g.week;
@@ -1129,10 +1282,13 @@ $('goals-retry').addEventListener('click', () => loadGoals());
 $('goals-edit').addEventListener('click', () => { state.goalsEdit = !state.goalsEdit; if (state.goals) renderGoals(state.goals); });
 $('goals-list').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-k]'); if (!b) return;
-  const x = state.goals.items.find((i) => i.kind === b.dataset.k), step = x.kind === 'precision' ? 1 : 1;
-  const t = Math.min(x.max, Math.max(x.min, x.target + step * +b.dataset.d)); if (t === x.target) return;
-  try { renderGoals(await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: mode(), kind: x.kind, target: t, tz: tzOffset() }) })); }
-  catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
+  const m = b.dataset.m || 'gto', src = m === 'exploit' ? state.goalsX : state.goals;
+  const x = src && src.items.find((i) => i.kind === b.dataset.k); if (!x) return;
+  const t = Math.min(x.max, Math.max(x.min, x.target + +b.dataset.d)); if (t === x.target) return;
+  try {
+    const r = await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: m, kind: x.kind, target: t, tz: tzOffset() }) });
+    if (m === 'exploit') { state.goalsX = r; renderGoals(state.goals); } else renderGoals(r);
+  } catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
 });
 // défis (programme de travail, étape 5)
 async function loadChallenges() {
@@ -1146,7 +1302,7 @@ async function loadChallenges() {
   $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
   const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
   $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
-  const card = (x, i) => `<li class="ch ch-${x.status}${x.locked ? ' ch-locked' : ''}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.locked ? '🔒 ' : x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
+  const card = (x, i) => `<li class="ch ch-${x.status}${x.locked ? ' ch-locked' : ''}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}${x.category && CAT_FR[x.category] ? ` · ${escT(CAT_FR[x.category])}` : ''}</small><b>${x.locked ? '🔒 ' : x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
     + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">${x.action.type === 'resume' ? 'Reprendre' : 'Relever'}</button>` : '') + `</div>`
     + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}`
     + (x.next_fr ? `<small class="ch-next">${escT(x.next_fr)}</small>` : '') + '</li>';
@@ -1280,6 +1436,9 @@ async function rangeSubmit() {
   refreshStats();
 }
 $('range-btn').addEventListener('click', () => { state.inToday = false; rangeStart(); });
+$('profils-start').addEventListener('click', () => { if (exploitLocked()) { notify(`Les Profils ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; } state.inToday = false; start({ mode: 'exploit', family: 'read' }); });   // catégorie Profils : une série de lecture du vilain
+$('equity-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'equity' }); });   // catégorie Équités (docs/api/QUIZ_EQUITES.md)
+$('equity-kinds').addEventListener('click', (e) => { const b = e.target.closest('[data-kind]'); if (b) { state.inToday = false; start({ mode: 'equity', kind: b.dataset.kind }); } });
 $('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });
 $('rg-submit').addEventListener('click', rangeSubmit);
 $('rg-again').addEventListener('click', () => (state.inToday ? todayContinue() : rangeStart()));

@@ -73,7 +73,7 @@ const tabOf = (p, sel) => p.evaluate((s) => { const el = document.querySelector(
   const mist = await p.innerText('#screen-summary');
   ok('10 : bilan en mots français au niveau 1', !/Ton coup : (FOLD|CALL|ALL-IN|RAISE TO|CHECK)\b/.test(mist) && !/Meilleur coup : (FOLD|CALL|ALL-IN|RAISE TO|CHECK)\b/.test(mist), mist.slice(0, 400));
   ok('8-9 : plus de « accueil » sur le bilan', !/accueil/i.test(mist));
-  ok('8 : le retour nomme l\'onglet de départ', /Retour à l'onglet GTO/.test(await p.textContent('#back-home')), await p.textContent('#back-home'));
+  ok('8 : le retour nomme l\'onglet de départ', /Retour au quiz GTO/.test(await p.textContent('#back-home')), await p.textContent('#back-home'));
   await p.click('#back-home'); await p.waitForSelector('#screen-gto:not([hidden])', { timeout: 10000 });
   ok('4 : retour sur l\'onglet d\'où la série est partie (GTO)', true);
   ok('4 : plus de « Reprendre » une fois la série finie', await p.isHidden('#resume-card') && await p.isHidden('#badge-defis') || !(await p.isVisible('#resume-card')));

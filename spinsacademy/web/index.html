@@ -61,6 +61,7 @@
         <p class="note" id="today-explain" hidden>15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.</p>
       </section>
       </div>
+      <button class="link defis-expl" id="defis-expl-today" type="button" hidden>Séance du jour Exploitant : ouvrir le Quiz Exploitant</button>
       <div class="slot" id="slot-defis-worst"></div>
       <section class="goal-card" id="goal-card" hidden aria-live="polite"></section>
       <section class="challenges" id="challenges" hidden aria-labelledby="ch-title">
@@ -72,9 +73,15 @@
     </section>
 
     <!-- Onglet GTO -->
-    <section id="screen-gto" class="screen tab-page" data-tab="gto" hidden aria-labelledby="gto-title">
-      <h1 id="gto-title">GTO</h1>
-      <p class="lead">La stratégie théorique, contre des joueurs qui jouent juste.</p>
+    <section id="screen-gto" class="screen tab-page" data-tab="quiz" data-side="gto" hidden aria-labelledby="gto-title">
+      <!-- réorganisation du 11/11 : onglet Quiz, deux boutons en haut (comme les premières versions) ; ici le côté GTO -->
+      <h1 id="gto-title">Quiz</h1>
+      <div class="quiz-switch" role="group" aria-label="Quiz GTO ou Exploitant"><button type="button" data-side="gto" aria-pressed="true">GTO</button><button type="button" data-side="expl" aria-pressed="false"><span class="qs-label">Exploitant</span></button></div>
+      <p class="lead">GTO : la théorie, contre des joueurs qui jouent juste.</p>
+      <!-- catégories (10/11) : une carte par catégorie ; le bloc d'entraînement est le corps de la carte Préflop -->
+      <section class="cat-card" id="cat-gto" data-cat="gto" aria-labelledby="cat-gto-title">
+        <div class="cat-head"><span class="cat-ic ic-pre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="11" height="16" rx="2"/><path d="M9 7l3 4-3 4"/></svg></span><div><h2 class="cat-title" id="cat-gto-title">Préflop</h2><p class="cat-sub">Séries de 5 décisions, thèmes de ton niveau</p></div></div>
+        <p class="cat-meter" id="cat-gto-meter"></p>
       <div class="slot" id="slot-gto-train">
         <div class="train" id="train">
       <button class="link" id="resume" hidden>Reprendre la série en cours</button>
@@ -82,12 +89,6 @@
       <p class="note" id="review-note" hidden></p>
       <button class="primary big" id="quick-start">Série recommandée</button>
       <p class="note" id="quick-explain" hidden>Une série de 5 décisions, en dehors de ta séance du jour : pour jouer un peu plus quand tu veux.</p>
-      <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
-        <div class="chips" data-name="chrono">
-          <button type="button" data-value="0" aria-pressed="false">Sans</button>
-          <button type="button" data-value="15" aria-pressed="true">15 s</button>
-          <button type="button" data-value="8" aria-pressed="false">8 s</button>
-        </div></div>
       <div class="slot" id="slot-train-worst">
       <section class="worst" id="worst" hidden aria-labelledby="worst-title">           <!-- N2 : les 3 erreurs les plus coûteuses du jour ; sur Défis à l'arrivée (retest 10) -->
         <h2 class="free-title" id="worst-title">Tes 3 plus coûteuses aujourd'hui</h2>
@@ -143,24 +144,56 @@
       </details>
         </div>
       </div>
+      </section>
     </section>
 
     <!-- Onglet Exploitant (niveau 4) -->
-    <section id="screen-expl" class="screen tab-page" data-tab="expl" hidden aria-labelledby="expl-title">
-      <div class="tab-head"><h1 id="expl-title">Exploitant</h1><span class="tag-paid" id="expl-paid">Offre payante, ouverte pendant le test</span></div>
-      <p class="lead">Contre les vrais joueurs d'Expresso : lis leurs stats, adapte-toi à leurs défauts.</p>
+    <section id="screen-expl" class="screen tab-page" data-tab="quiz" data-side="expl" hidden aria-labelledby="expl-title">
+      <h1 id="expl-title">Quiz</h1>
+      <div class="quiz-switch" role="group" aria-label="Quiz GTO ou Exploitant"><button type="button" data-side="gto" aria-pressed="false">GTO</button><button type="button" data-side="expl" aria-pressed="true"><span class="qs-label">Exploitant</span></button></div>
+      <div class="tab-head"><p class="lead">Exploitant : contre les vrais joueurs d'Expresso, profite de leurs erreurs.</p><span class="tag-paid" id="expl-paid">Offre payante, ouverte pendant le test</span></div>
       <div class="slot" id="slot-expl-today"></div>
-      <div class="slot" id="slot-expl-train"></div>
+      <section class="cat-card" id="cat-exploit" data-cat="exploit" aria-labelledby="cat-exploit-title">
+        <div class="cat-head"><span class="cat-ic ic-pre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><div><h2 class="cat-title" id="cat-exploit-title">Préflop contre le field</h2><p class="cat-sub">La bonne décision contre un profil de joueur</p></div></div>
+        <p class="cat-meter" id="cat-exploit-meter"></p>
+        <div class="slot" id="slot-expl-train"></div>
+      </section>
+      <button class="link" id="expl-to-profils" type="button">Lire les profils des adversaires (Exercices → Profils)</button>
+    </section>
+
+    <!-- Onglet Exercices (11/11) : tous les formats autres que les quiz préflop -->
+    <section id="screen-exos" class="screen tab-page" data-tab="exos" hidden aria-labelledby="exos-title">
+      <h1 id="exos-title">Exercices</h1>
+      <p class="lead">Les autres formats : dessiner une range, calculer ses chances, reconnaître un joueur.</p>
+      <section class="cat-card" id="cat-ranges" data-cat="ranges" aria-labelledby="cat-ranges-title">
+        <div class="cat-head"><span class="cat-ic ic-ranges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><div><h2 class="cat-title" id="cat-ranges-title">Ranges</h2><p class="cat-sub">Dessine la range d'une situation, main par main</p></div></div>
+        <p class="cat-meter" id="cat-ranges-meter"></p>
+        <button class="secondary" id="range-btn" type="button">Construire une range</button>
+      </section>
+      <section class="cat-card" id="cat-equites" data-cat="equites" aria-labelledby="cat-equites-title">
+        <div class="cat-head"><span class="cat-ic ic-eq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><div><h2 class="cat-title" id="cat-equites-title">Équités</h2><p class="cat-sub">Ta main : ses forces et ses chances au flop</p></div></div>
+        <p class="cat-meter" id="cat-equites-meter"></p>
+        <button class="secondary" id="equity-start" type="button">Une série de 5 questions</button>
+        <div class="eq-kinds" id="equity-kinds" role="group" aria-label="Une seule sorte de question">
+          <button class="secondary small" type="button" data-kind="hit">Toucher le flop</button>
+          <button class="secondary small" type="button" data-kind="equity">Équité contre une range</button>
+          <button class="secondary small" type="button" data-kind="labels">Forces et faiblesses</button>
+        </div>
+      </section>
+      <section class="cat-card" id="cat-profils" data-cat="profils" aria-labelledby="cat-profils-title">
+        <div class="cat-head"><span class="cat-ic ic-prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3 19c1-3 3.5-5 6-5s5 2 6 5M16 7h5M16 11h5M18 15h3"/></svg></span><div><h2 class="cat-title" id="cat-profils-title">Profils</h2><p class="cat-sub">Lis les stats et reconnais le joueur en face</p><span class="tag-paid cat-paid" id="profils-paid">Profils : offre payante, ouverte pendant le test</span></div></div>
+        <p class="cat-meter" id="cat-profils-meter"></p>
+        <button class="secondary" id="profils-start" type="button">Quelle pastille ? Une série de lecture</button>
+      </section>
     </section>
 
     <!-- Onglet Outils -->
     <section id="screen-outils" class="screen tab-page" data-tab="outils" hidden aria-labelledby="outils-title">
       <h1 id="outils-title">Outils</h1>
-      <p class="lead">Ce qu'on ouvre entre deux parties.</p>
+      <p class="lead">Ce qu'on ouvre entre deux parties. Les exercices sont dans l'onglet Exercices.</p>
       <div class="tools-grid">
       <a class="secondary conseil-link" href="conseil">Comment jouer ma main ?</a>
       <button class="secondary" id="fiches-btn">Fiches à emporter</button>
-      <button class="secondary" id="range-btn">Construis ta range</button>
         <button class="secondary" id="tools-lex" type="button">Lexique</button>
         <button class="secondary" id="import-btn" type="button">Importer mes mains</button>
       </div>
@@ -187,10 +220,13 @@
       <div class="qtimer" id="q-timer" hidden role="timer" aria-live="off"><i></i><span></span></div>
       <h2 id="q-title" class="sr-only">Question</h2>
       <p class="seat-line" id="seat-line"></p>
+      <p class="q-cat" id="q-cat" hidden></p>
       <div class="table-wrap" id="table-wrap">
         <div class="table-view" id="table-view" aria-hidden="true"></div>
+        <button class="replay-skip" id="replay-skip" type="button" hidden>Passer</button>
         <div class="hero-zone" aria-hidden="true"><div class="cards hole" id="hero-cards"></div><div class="hero-seat" id="hero-seat"></div></div>
       </div>
+      <div class="eq-hand" id="eq-hand" hidden aria-hidden="true"><div class="cards" id="eq-cards"></div><p class="eq-kind" id="eq-kind"></p></div>
       <div class="villain" id="villain" hidden></div>
       <ol class="history sr-only" id="history" aria-label="Historique du coup"></ol>
       <p class="sr-only" id="prompt-full"></p>
@@ -208,6 +244,7 @@
       <div class="avis" id="a-avis" hidden></div>
       <p class="essential" id="a-essential"></p>
       <p class="remember" id="a-remember" hidden></p>
+      <div class="eq-box" id="a-equity" hidden></div>
       <a class="link conseil-from" id="a-conseil" hidden>Voir cette situation dans le conseiller</a>
       <details class="reveal" id="a-more">
         <summary>Précisions</summary>
@@ -248,11 +285,12 @@
     <!-- Bilan -->
     <section id="screen-summary" class="screen" hidden aria-labelledby="s-title">
       <h2 id="s-title">Bilan de la série</h2>
+      <p class="q-cat" id="s-cat" hidden></p>
       <div class="score" id="s-score"></div>
       <ul class="verdicts" id="s-verdicts"></ul>
       <h3>À revoir</h3>
       <ul class="errors" id="s-errors"></ul>
-      <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes mains » dans l'onglet GTO ou Exploitant).</p>
+      <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes mains » dans le Quiz, côté GTO ou Exploitant).</p>
       <button class="primary big" id="again-btn">Nouvelle série</button>
       <button class="link" id="back-home">Retour aux défis</button>
     </section>
@@ -273,9 +311,9 @@
         <p class="lead">Proposé d'après ton expérience. Tu passes au niveau suivant tout seul, quand tes résultats le montrent.</p>
         <div class="ob-levels" id="ob-levels"></div>
         <div class="ob-exploit" id="ob-exploit">
-          <p class="ob-exploit-head"><b>Mode Exploitant</b> <span class="tag-paid">Offre payante</span></p>
+          <p class="ob-exploit-head"><b>Quiz Exploitant</b> <span class="tag-paid">Offre payante</span></p>
           <p>Le niveau 4, « Exploiter le field » : tu joues contre les vrais joueurs d'Expresso, tu lis leurs stats et tu t'adaptes à leurs défauts.</p>
-          <p class="note" id="ob-exploit-access">Ouvert à tous pendant le test : tu peux l'essayer quand tu veux, avec l'onglet Exploitant.</p>
+          <p class="note" id="ob-exploit-access">Ouvert à tous pendant le test : tu peux l'essayer quand tu veux, dans le Quiz, côté Exploitant.</p>
         </div>
       </div>
       <div id="ob-3" hidden>
@@ -382,7 +420,12 @@
         <ul class="level-crit" id="st-level-crit"></ul>
         <p class="note">Changer de niveau :</p>
         <div class="chips" id="st-level-pick"></div>
-        <div class="level-expl" id="st-level-expl" hidden><p id="st-level-expl-name"></p><button class="secondary small" id="st-level-expl-go" type="button">Ouvrir l'onglet Exploitant</button></div>
+        <div class="level-expl" id="st-level-expl" hidden><p id="st-level-expl-name"></p><button class="secondary small" id="st-level-expl-go" type="button">Ouvrir le Quiz Exploitant</button></div>
+      </section>
+      <section class="cats" id="st-cats" hidden aria-labelledby="st-cats-title">
+        <h3 id="st-cats-title">Par catégorie</h3>
+        <ul class="cats-list" id="st-cats-list"></ul>
+        <p class="note">Chaque catégorie a son propre chiffre ; les BB perdus seulement là où un coup coûte des BB (Préflop).</p>
       </section>
       <details class="extras" id="extras" open>                       <!-- retest 10 : dépliés pour tous -->
         <summary id="extras-sum">Objectifs de la semaine</summary>
@@ -405,17 +448,8 @@
       <p class="note evo-x" aria-hidden="true">← plus ancienne · plus récente →</p>
       <h3>Par thème</h3>
       <div id="st-themes"></div>
-      <h3 id="st-adapt-title">Exercices adaptatifs</h3>
-      <div class="adapt" id="st-adapt">
-        <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
-        <p class="note" id="adapt-rule"></p>
-        <div id="adapt-themes"></div>
-        <button class="link" id="adapt-reset">Réinitialiser l'adaptation</button>
-      </div>
       <p class="note" id="st-note"></p>
       <button class="link" id="st-back">Retour aux défis</button>
-      <button class="link" id="st-export">Exporter mes données</button>
-      <button class="link danger" id="st-delete">Effacer mes données</button>
     </section>
 
     <div class="sheet" id="profile" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title"><div class="sheet-in">
@@ -427,18 +461,39 @@
         <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche à côté des adversaires que tu as assez observés (une question sur deux : l'autre te laisse lire ses stats), et sur les questions « Quelle pastille ? ».</p>
         <div id="past-rows"></div>
       </details>
-      <button class="secondary" id="pf-data" type="button">Mes données (exporter, effacer)</button>
+      <section class="pf-settings" aria-labelledby="pf-set-title">
+        <h3 id="pf-set-title">Réglages</h3>
+        <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono des questions</span>
+        <div class="chips" data-name="chrono">
+          <button type="button" data-value="0" aria-pressed="false">Sans</button>
+          <button type="button" data-value="15" aria-pressed="true">15 s</button>
+          <button type="button" data-value="8" aria-pressed="false">8 s</button>
+        </div></div>
+        <p class="note">Le temps pour chaque décision, dans toutes les séries (sauf les équités et la lecture du vilain).</p>
+      <div class="adapt" id="st-adapt" hidden>
+        <h4 id="st-adapt-title">Exercices adaptatifs</h4>
+        <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
+        <p class="note" id="adapt-rule"></p>
+        <div id="adapt-themes"></div>
+        <button class="link" id="adapt-reset">Réinitialiser l'adaptation</button>
+      </div>
+      </section>
+      <section class="pf-data" aria-labelledby="pf-data-title">
+        <h3 id="pf-data-title">Mes données</h3>
+        <button class="link" id="st-export" type="button">Exporter mes données</button>
+        <button class="link danger" id="st-delete" type="button">Effacer mes données</button>
+      </section>
     </div></div>
     <div class="loading" id="loading" hidden>Chargement…</div>
     <div class="notice" id="notice" role="alert" hidden><span id="notice-text"></span>
       <button class="secondary" id="notice-retry" hidden>Réessayer</button><button class="link" id="notice-close" aria-label="Fermer le message">✕</button></div>
   </main>
   <nav class="tabs" id="tabs" aria-label="Pages de l'application" hidden><div class="tabs-in">
-    <button class="tab" type="button" id="tab-outils" data-tab="outils"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span>Outils</span></button>
-    <button class="tab" type="button" id="tab-gto" data-tab="gto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span>GTO</span><b class="badge" id="badge-gto" hidden></b></button>
+    <button class="tab" type="button" id="tab-quiz" data-tab="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="3" width="12" height="17" rx="2"/><path d="M19 7v12a2 2 0 0 1-2 2H9"/><path d="M8.5 8.5l2 3-2 3"/></svg><span>Quiz</span><b class="badge" id="badge-quiz" hidden></b></button>
+    <button class="tab" type="button" id="tab-exos" data-tab="exos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Exercices</span></button>
     <button class="tab center" type="button" id="tab-defis" data-tab="defis"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><span>Défis</span><b class="badge" id="badge-defis" hidden></b></button>
-    <button class="tab" type="button" id="tab-expl" data-tab="expl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span id="tab-expl-label">Exploitant</span><b class="badge" id="badge-expl" hidden></b></button>
     <button class="tab" type="button" id="stats-btn" data-tab="prog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Progression</span></button>
+    <button class="tab" type="button" id="tab-outils" data-tab="outils"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span>Outils</span></button>
   </div></nav>
   <script src="/static/app.js"></script>
 </body>

@@ -190,7 +190,7 @@ const DEMO = (() => {
   function summary(s) {
     const rows = answered(s); const n = rows.length; const pts = rows.reduce((a, [, r]) => a + r.points, 0);
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
-      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out })).sort((a, b) => b.regret_mbb - a.regret_mbb);
+      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out, ...(r.equity ? { value_fr: r.equity.value_fr || null, loss_fr: null } : {}) })).sort((a, b) => b.regret_mbb - a.regret_mbb);   // équités : valeur exacte, comme l'API
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
     const ev = rows.filter(([, r]) => !(r.field && r.field.read) && !r.equity); const lost = ev.reduce((a, [, r]) => a + Math.round((r.regret_mbb || 0) / 10) / 100, 0);   // somme des coûts affichés
     return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length,
@@ -562,8 +562,9 @@ const DEMO = (() => {
   function weekValues(mode, start) {
     const lo = start.getTime(), hi = lo + 7 * DAY, inw = (at) => { const t = Date.parse(at); return t >= lo && t < hi; }, db = load();
     const days = new Set((db.ranges || []).filter((r) => inw(r.at)).map((r) => dayOf(r.at))); let n = 0, lost = 0;   // jours d'entraînement : séries finies et ranges
-    for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s)) {
-      if (Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));
+    for (const s of Object.values(db.sessions)) if (own(s)) {
+      if (Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));       // jours : hors catégorie, tout mode compte
+      if (s.mode !== mode) continue;
       for (const r of (s.plan === 'placement' ? [] : Object.values(s.answers))) if (r.at && inw(r.at) && !(r.field && r.field.read)) { n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10); }
     }
     const good = (db.ranges || []).filter((r) => inw(r.at) && r.accuracy_pct >= G.range_good).length;
@@ -684,7 +685,7 @@ const DEMO = (() => {
         w.forEach((e, k) => { purposes[k] = `Rejeu de ton erreur du jour (${e.cost_fr})`; });
       } else if (plan === 'placement') {                               // audit AU7
         // 10 mains sur les trois profondeurs du parcours GTO
-        if (mode !== 'gto') return [422, { detail: 'le test de placement se joue en mode GTO' }];
+        if (mode !== 'gto') return [422, { detail: 'le test de placement se joue sur la banque GTO' }];
         picked = [];
         const cnt = {}, okb = []; for (const [lv, n] of PL.bands) { cnt[lv] = n; const L = LV.levels[lv]; if (draw('gto', { min_stack: L.depth[0], max_stack: L.depth[1] }, 1)) okb.push(lv); }
         if (!okb.length) return [422, { detail: 'aucune situation pour le test de placement' }];

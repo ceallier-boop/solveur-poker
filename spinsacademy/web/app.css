@@ -644,3 +644,98 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .resume-card { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: 10px 14px; }
 .resume-card span { flex: 1 1 180px; font-weight: 600; }
 .level-expl { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; } .level-expl p { margin: 0 0 6px; }
+
+/* Rejouée de la main (10/11) : cartes, blindes, bulles d'action et jetons ; état final direct si la réduction des mouvements est demandée */
+.table-wrap { position: relative; }
+.table-wrap.undealt #hero-cards { visibility: hidden; }
+.hero-seat { position: relative; }
+.replay-skip { position: absolute; bottom: 70px; right: 8px; z-index: 3; min-height: 36px; padding: 4px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.7);
+  background: rgba(0,0,0,.45); color: #fff; font-weight: 700; font-size: .85rem; }
+.bubble { position: absolute; left: 50%; top: calc(100% + 66px); transform: translateX(-50%); z-index: 2; white-space: nowrap; padding: 3px 9px; border-radius: 10px;
+  background: #fff; color: #0b3f2d; font-size: .78rem; font-weight: 750; box-shadow: 0 2px 6px rgba(0,0,0,.35); animation: bubble-in .18s ease-out; }
+.hero-seat .bubble { top: auto; bottom: calc(100% + 92px); }                     /* au-dessus de tes cartes */
+.stake { display: inline-flex; align-items: flex-end; gap: 2px; margin-right: 5px; vertical-align: -2px; }
+.stake.fresh { animation: chips-in .22s ease-out; }
+.stake .pile { display: flex; flex-direction: column-reverse; }
+.stake .pile i { display: block; width: 20px; height: 5px; margin-top: -1px; border-radius: 3px; background: #ff5a4a; border: 1px solid #fff; box-shadow: 0 1px 0 rgba(0,0,0,.35); box-sizing: content-box; }
+.stake.c-allin .pile i { background: #4f9bff; }
+.stake.c-limp .pile i, .stake.c-blind .pile i { width: 18px; height: 18px; margin: 0; border-radius: 50%; border: 3px dashed #fff; background: #ff5a4a; box-sizing: border-box; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.stake.c-blind .pile i { background: #c9d1cc; border-color: #fff; }
+@keyframes bubble-in { from { opacity: 0; transform: translate(-50%, 4px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes chips-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bubble, .stake.fresh { animation: none; } }
+
+.table-view .betnum { white-space: nowrap; }                           /* jetons et montant sur une ligne */
+.bubble.to-r, .bubble.to-l { top: 50%; transform: translateY(-50%); animation-name: bubble-side; }
+.bubble.to-r { left: calc(100% + 8px); } .bubble.to-l { left: auto; right: calc(100% + 8px); }
+@keyframes bubble-side { from { opacity: 0; } to { opacity: 1; } }
+
+/* Catégories (10/11) : une carte par catégorie dans GTO et Exploitant, un tableau dans Progression, une étiquette sur la question et le bilan */
+.cat-card { display: flex; flex-direction: column; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.cat-head { display: flex; align-items: center; gap: 10px; }
+.cat-ic { flex: none; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; }
+.cat-ic svg { width: 20px; height: 20px; }
+.ic-pre { background: #e5f4e4; color: #0f5a40; } .ic-ranges { background: #e7f1fb; color: #1f5f99; }
+.ic-eq { background: #f9eeda; color: #8a5a00; } .ic-prof { background: #efedff; color: #4b3fb0; }
+.cat-title { margin: 0; font-size: 1.1rem; color: var(--text); }
+.cat-sub { margin: 0; color: var(--muted); font-size: .88rem; }
+.cat-meter { margin: 0; font-size: .9rem; font-weight: 600; }
+.cat-card .slot, .cat-card .train { display: flex; flex-direction: column; gap: 12px; }
+.cat-soon { opacity: .85; } .cat-soon .cat-meter { font-weight: 400; color: var(--muted); }
+.soon { font-size: .7rem; font-weight: 700; vertical-align: middle; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+.cats-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.cat-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; }
+.cat-row + .cat-row { border-top: 1px solid var(--line); }
+.cat-row span { display: flex; flex-direction: column; } .cat-row small { color: var(--muted); font-size: .82rem; }
+.cats-num { font-variant-numeric: tabular-nums; color: var(--accent); white-space: nowrap; } .cat-row.cat-later .cats-num { color: var(--muted); font-weight: 600; }
+.q-cat { align-self: flex-start; margin: 0; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; background: #e5f4e4; color: #0b3f2d; }
+.q-cat[data-cat="profils"] { background: #efedff; color: #3a2f99; } .q-cat[data-cat="exploit"] { background: #f9eeda; color: #5a3d00; }
+@media (prefers-color-scheme: dark) {
+  .ic-pre, .q-cat { background: #1d3a2c; color: #bfe8cf; } .ic-ranges { background: #1b2c40; color: #a9cdf2; }
+  .ic-eq, .q-cat[data-cat="exploit"] { background: #3a2e17; color: #f0d29a; } .ic-prof, .q-cat[data-cat="profils"] { background: #29254a; color: #cdc6ff; }
+}
+
+/* Équités (10/11) : une main seule, des tranches en grille ou des affirmations en liste ; correction sans BB */
+.eq-kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.eq-hand { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 12px; border-radius: 18px; background: var(--felt); }
+.eq-hand .cards { display: flex; gap: 10px; }
+.eq-hand .cards .card { width: 64px; height: 90px; font-size: 1.7rem; box-shadow: 0 3px 10px rgba(0,0,0,.35); }
+.eq-kind { margin: 0; color: #e5f4e4; font-size: .9rem; font-weight: 600; }
+.ask:not(.sr-only) { font-size: 1.1rem; font-weight: 650; line-height: 1.4; }
+.actions.bands .mainrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.actions.bands .mainrow button { min-height: 56px; }
+.q-cat[data-cat="equites"] { background: #f9eeda; color: #5a3d00; }
+.eq-box { display: flex; flex-direction: column; gap: 8px; }
+.eq-bands, .eq-statements { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.eq-bands li, .eq-statements li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.eq-bands li.good, .eq-statements li.good { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.eq-bands li.mine:not(.good) { border-style: dashed; }
+.eq-bands small { color: var(--muted); font-weight: 600; } .eq-bands li.good small { color: var(--accent); }
+.eq-statements b { flex: none; } .eq-statements li.good b { color: var(--accent); } .eq-statements li.bad b { color: var(--muted); }
+.eq-statements span { flex: 1 1 60%; } .eq-statements .why { flex-basis: 100%; color: var(--muted); font-size: .85rem; }
+.eq-box h4 { margin: 6px 0 0; font-size: .95rem; } .eq-box ul.plus, .eq-box ul.minus { margin: 0; padding-left: 20px; }
+.cat-kinds { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: .82rem; }
+.cat-kinds li { display: flex; gap: 8px; align-items: baseline; } .cat-kinds b { margin-left: auto; } .cat-kinds small { color: var(--muted); min-width: 76px; text-align: right; }
+@media (prefers-color-scheme: dark) { .q-cat[data-cat="equites"] { background: #3a2e17; color: #f0d29a; } }
+.actions.stmts .mainrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.actions.stmts .mainrow button { min-height: 52px; text-align: left; padding: 10px 14px; }
+
+/* Réglages et données dans la feuille du profil (10/11) */
+.pf-settings, .pf-data { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pf-settings h3, .pf-data h3 { margin: 0; } .pf-settings h4 { margin: 6px 0 0; font-size: .95rem; }
+.pf-data .link { align-self: flex-start; padding-left: 0; }
+
+/* Onglet Quiz (11/11) : deux boutons en haut, GTO | Exploitant ; onglet Exercices */
+.quiz-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--accent); border-radius: 999px; overflow: hidden; padding: 0; }
+.quiz-switch button { min-height: 44px; border: 0; border-radius: 0; background: var(--surface); color: var(--accent); font-weight: 700; font-size: 1rem; }
+.quiz-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
+.cat-paid { align-self: flex-start; }
+
+/* retest 11 : liens vers la séance exploitante (Défis) et vers Profils (Quiz Exploitant) */
+.defis-expl, #expl-to-profils { align-self: flex-start; padding-left: 0; text-align: left; }
+
+/* Composant de cartes (11/11) : dos de carte, tableau en trois temps (flop · turn · river), pour les équités avec tableau */
+.card.back { background: repeating-linear-gradient(45deg, #b3261e 0 4px, #8f1d17 4px 8px); border: 2px solid #fff; }
+.board { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.board .street { display: flex; gap: 4px; }
+.board .street + .street { padding-left: 10px; border-left: 2px dashed rgba(255,255,255,.35); }

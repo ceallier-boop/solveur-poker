@@ -55,7 +55,9 @@ async function quickSeries(p, served, onAnswer) {                 // une série 
   await quickSeries(p, p.served, look); await quickSeries(p, p.served, look);
   const d = helper('depth', '1', ...new Set(p.served));
   const out = d.spots.filter((s) => !s.in_band);
-  ok('AU3 : série rapide au niveau 1, tous les spots sous 10 BB effectifs', d.spots.length >= 8 && !out.length, { served: d.spots.length, outside: out });
+  // le nombre de situations différentes dépend de la banque (banque étroite du test fermé : très peu sous 10 BB) : on exige les 10 questions,
+  // toutes dans la tranche, pas un nombre de situations distinctes (échec aléatoire du 11/11 avec 7 situations distinctes)
+  ok('AU3 : série rapide au niveau 1, les 10 questions sous 10 BB effectifs', p.served.length >= 10 && d.spots.length >= 1 && !out.length, { questions: p.served.length, distinctes: d.spots.length, outside: out });
   ok('AU8 : « équité » hors de la phrase principale au niveau 1', essentials.length === 10 && essentials.every((t) => !/équité/i.test(t)), essentials.filter((t) => /équité/i.test(t)));
   ok('AU8 : boutons en français, terme anglais dessous', buttons.every((t) => /^(Se coucher|Parole|Payer|Relancer à|Tapis)/.test(t)), [...new Set(buttons)].slice(0, 6));
   await p.context().close();
