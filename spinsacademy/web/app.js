@@ -333,6 +333,7 @@ function renderQuestion(data) {
   progress(`Question ${state.index + 1} / ${state.size}`);
   const noHand = !q.hand || !!(q.field && q.field.ask_fr);           // questions de lecture du vilain : sans main ni table
   $('table-wrap').hidden = noHand;
+  $('q-cat').hidden = false; $('q-cat').textContent = CAT_FR[catOf(q)]; $('q-cat').dataset.cat = catOf(q);   // étiquette de catégorie (10/11)
   if (!noHand) { renderTable(q); renderCards(q.hand_display); }
   $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
@@ -546,6 +547,7 @@ async function summary() {
   if (state.sid && state.sid === store.get('placement_sid')) return placementResult();   // AU7 : le test de placement a son propre écran
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
   store.del('sid'); progress('');
+  if (state.q) { $('s-cat').hidden = false; $('s-cat').textContent = CAT_FR[catOf(state.q)]; $('s-cat').dataset.cat = catOf(state.q); }
   $('s-score').innerHTML = `${bb(s.points)} / ${s.questions}<small>${pc(s.score_pct)} des points</small>`
     + (s.ev_questions ? `<small class="bblost">${s.bb_lost > 0 ? `Cette série t'a coûté ${bb(s.bb_lost)} BB par rapport aux meilleurs coups (ses ${s.ev_questions} décisions)` : 'Aucun BB perdu sur cette série'}.`   // AU2 : un seul chiffre BB par écran, son périmètre écrit
       + '</small>' : '')
@@ -581,7 +583,39 @@ function themeRow(x, min) {
 // progression hors connexion : la dernière progression reçue est gardée sur l'appareil et réaffichée, datée, si le réseau
 // ou le serveur manque ; elle se met à jour à chaque ouverture en ligne et à la fin de chaque série
 const STATS_KEY = 'stats_cache';
-function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); if (state.homeReady) lightHome(); }
+function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().toISOString(), s })); homeSummary(); renderCats(s); if (state.homeReady) lightHome(); }
+// catégories (10/11) : Préflop GTO, Préflop exploitant, Profils, Ranges (onglet GTO ou Exploitant), Équités (à venir). Les chiffres viennent de
+// GET /users/me/stats : par mode, la lecture du vilain (famille « read ») comptée à part en Profils ; elle n'a pas de BB (pas d'EV)
+const CAT_FR = { gto: 'Préflop GTO', exploit: 'Préflop exploitant', profils: 'Profils', ranges: 'Ranges', equites: 'Équités' };
+const catOf = (q) => (q && q.field && q.field.ask_fr ? 'profils' : q && q.mode === 'exploit' ? 'exploit' : 'gto');
+function catNumbers(s) {
+  const by = (s && s.by) || {}, m = (k) => (by.mode || []).find((x) => x.filters.mode === k), read = (by.family || []).find((x) => x.filters.family === 'read');
+  const pts = (x) => (x ? (x.score_pct || 0) * x.questions / 100 : 0);
+  const g = m('gto'), e = m('exploit'), eq = e ? e.questions - (read ? read.questions : 0) : 0;
+  const r = (s && s.ranges) || {};
+  return {
+    gto: g && g.questions ? { q: g.questions, pct: g.score_pct, bb: g.bb_per_100 } : null,
+    exploit: eq > 0 ? { q: eq, pct: 100 * (pts(e) - pts(read)) / eq, bb: e.bb_per_100 } : null,
+    profils: read && read.questions ? { q: read.questions, ok: Math.round(pts(read)), pct: read.score_pct } : null,
+    ranges: r.count ? { n: r.count, acc: r.accuracy_pct } : null,
+  };
+}
+const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
+function catLine(key, v) {
+  if (key === 'equites') return 'Ta main et ses chances au flop';
+  if (!v) return key === 'ranges' ? 'Pas encore de range dessinée.' : 'Pas encore commencé.';
+  if (key === 'profils') return `${plural(v.ok, 'lecture')} juste${v.ok > 1 ? 's' : ''} sur ${v.q}`;
+  if (key === 'ranges') return `${plural(v.n, 'range')} · ${nfr1(v.acc)} % de mains bien classées en moyenne`;
+  return `${Math.round(v.pct)} % de bonnes réponses · ${plural(v.q, 'décision')}` + (v.bb != null ? ` · ${nfr1(v.bb)} BB perdus pour 100` : '');
+}
+function renderCats(s) {
+  const n = catNumbers(s);
+  for (const k of ['gto', 'exploit', 'profils', 'ranges']) $(`cat-${k}-meter`).textContent = catLine(k, n[k]);
+  const head = (k, v) => (k === 'equites' ? 'bientôt' : !v ? '–' : k === 'ranges' ? `${Math.round(v.acc)} %` : `${Math.round(v.pct)} %`);
+  $('st-cats').hidden = false;
+  $('st-cats-list').innerHTML = Object.keys(CAT_FR).filter((k) => k !== 'exploit' && k !== 'profils' || !exploitLocked())
+    .map((k) => `<li class="cat-row${k === 'equites' ? ' cat-later' : ''}" data-cat="${k}"><span><b>${CAT_FR[k]}</b><small>${escT(catLine(k, n[k]))}</small></span><b class="cats-num">${head(k, n[k])}</b></li>`).join('');
+}
 // AU4 : accueil d'un nouveau joueur (moins de 3 jours d'entraînement) : un seul bouton principal, la séance et la série rapide
 // expliquées, objectifs et défis repliés (toujours accessibles)
 function daysPlayed() { const c = cachedStats(), ev = (c && c.s && c.s.evolution) || []; return new Set(ev.map((e) => (e.date || '').slice(0, 10)).filter(Boolean)).size; }
@@ -590,6 +624,7 @@ function lightHome() {
   $('today-explain').hidden = !fresh; $('quick-explain').hidden = !fresh;
   // retest 10 : les objectifs de la semaine sont dépliés dans Progression, pour tous (le pli reste au joueur)
 }
+function refreshCats() { const c = cachedStats(); if (c && c.s) renderCats(c.s); api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : les derniers chiffres gardés */ }); }
 function homeSummary() { /* I9 : l'onglet Progression remplace le bouton « Ma progression » de l'accueil */ }
 function cachedStats() { try { return JSON.parse(store.get(STATS_KEY) || 'null'); } catch (e) { return null; } }
 function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { /* hors ligne : on garde la dernière */ }); }
@@ -857,7 +892,6 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
-  $('range-btn').textContent = mode() === 'gto' ? 'Construis ta range' : 'Construis ta range (théorie)';   // test joueurs 7 : aussi en exploitant, sur la stratégie de référence
   reviews(); if (state.homeReady && ['defis', 'gto', 'expl'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
@@ -906,7 +940,7 @@ async function home() {
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
   const tab = ['defis', 'gto', 'expl'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
   if (setMode(tabMode(tab))) onMode(true);
-  placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
+  placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); refreshCats(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   const showResume = (on, s) => {                                    // retest 10 : la série abandonnée se voit aussi depuis Défis, avec un badge
     $('resume').hidden = !on; $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
@@ -1193,7 +1227,7 @@ async function loadChallenges() {
   $('challenges').hidden = false; $('ch-box').hidden = false; $('ch-error').hidden = true;
   const d = c.daily[0], dTxt = d.status === 'won' ? 'réussi ✓' : d.action && d.action.type === 'resume' ? 'à finir' : d.status === 'tried' ? 'fait, nouveau défi demain' : 'à relever';
   $('ch-sum').textContent = `Défi du jour : ${dTxt} · + ${all.length - 1} autres`;   // test joueurs 9 : les défis repliés en une ligne
-  const card = (x, i) => `<li class="ch ch-${x.status}${x.locked ? ' ch-locked' : ''}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}</small><b>${x.locked ? '🔒 ' : x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
+  const card = (x, i) => `<li class="ch ch-${x.status}${x.locked ? ' ch-locked' : ''}"><div class="ch-top"><span><small>${escT(x.window === 'jour' ? "Aujourd'hui" : x.window === 'semaine' ? 'Cette semaine' : 'Ce mois-ci')}${x.category && CAT_FR[x.category] ? ` · ${escT(CAT_FR[x.category])}` : ''}</small><b>${x.locked ? '🔒 ' : x.status === 'won' ? '✓ ' : ''}${escT(x.title_fr)}</b></span>`
     + (x.action && x.status !== 'won' ? `<button class="secondary small" data-i="${i}">${x.action.type === 'resume' ? 'Reprendre' : 'Relever'}</button>` : '') + `</div>`
     + `<p>${escT(x.rule_fr)}${x.theme_fr ? ` Thème : ${escT(x.theme_fr)}.` : ''}</p>${x.result_fr ? `<small>${x.status === 'won' ? 'Réussi' : 'Ton résultat'} : ${escT(x.result_fr)}</small>` : ''}`
     + (x.next_fr ? `<small class="ch-next">${escT(x.next_fr)}</small>` : '') + '</li>';
@@ -1327,6 +1361,7 @@ async function rangeSubmit() {
   refreshStats();
 }
 $('range-btn').addEventListener('click', () => { state.inToday = false; rangeStart(); });
+$('profils-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'exploit', family: 'read' }); });   // catégorie Profils : une série de lecture du vilain
 $('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });
 $('rg-submit').addEventListener('click', rangeSubmit);
 $('rg-again').addEventListener('click', () => (state.inToday ? todayContinue() : rangeStart()));
