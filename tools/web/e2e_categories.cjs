@@ -18,14 +18,16 @@ const cards = (p, tab) => p.$$eval(`#screen-${tab} .cat-card`, (xs) => xs.map((x
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
 
   await p.openTab('gto');
-  ok('GTO : Préflop, Ranges, Équités', JSON.stringify(await cards(p, 'gto')) === '["gto","ranges","equites"]', await cards(p, 'gto'));
+  ok('Quiz GTO : la carte Préflop', JSON.stringify(await cards(p, 'gto')) === '["gto"]', await cards(p, 'gto'));   // 11/11 : les autres formats sont dans Exercices
+  await p.openTab('exos');
+  ok('Exercices : Ranges, Équités, Profils', JSON.stringify(await cards(p, 'exos')) === '["ranges","equites","profils"]', await cards(p, 'exos'));
   ok('Équités : une série possible depuis sa carte', await p.isVisible('#equity-start'));
   ok('la série rapide est dans la carte Préflop', await p.evaluate(() => !!document.querySelector('#cat-gto #quick-start')));
   ok('nouveau joueur : « Pas encore commencé »', /Pas encore commencé/.test(await p.textContent('#cat-gto-meter')));
   await p.openTab('outils');
   ok('Outils : plus de « Construis ta range »', !(await p.$('#screen-outils #range-btn')) && !/Construis ta range/.test(await p.innerText('#screen-outils')));
   await p.openTab('expl');
-  ok('Exploitant : Préflop contre le field, Profils', JSON.stringify(await cards(p, 'expl')) === '["exploit","profils"]', await cards(p, 'expl'));
+  ok('Quiz Exploitant : la carte Préflop contre le field', JSON.stringify(await cards(p, 'expl')) === '["exploit"]', await cards(p, 'expl'));
 
   // une série Préflop GTO : étiquette sur la question et le bilan, puis les chiffres de la carte et de Progression
   await p.openTab('gto'); await p.click('#quick-start'); await p.waitForSelector('#screen-question:not([hidden])');
@@ -43,7 +45,7 @@ const cards = (p, tab) => p.$$eval(`#screen-${tab} .cat-card`, (xs) => xs.map((x
   ok('Profils : une question de lecture, étiquette Profils', (await p.textContent('#q-cat')).trim() === 'Profils' && await p.isHidden('#table-wrap'));
   await series(p);
   ok('bilan : étiquette Profils', (await p.textContent('#s-cat')).trim() === 'Profils');
-  await p.click('#back-home'); await p.waitForSelector('#screen-expl:not([hidden])');
+  await p.click('#back-home'); await p.waitForSelector('#screen-exos:not([hidden])');   // Profils : retour à l'onglet Exercices
   await p.waitForFunction(() => /sur 5$/.test(document.getElementById('cat-profils-meter').textContent), null, { timeout: 10000 }).catch(() => {});
   ok('carte Profils : lectures justes sur 5', /lectures? justes? sur 5$/.test(await p.textContent('#cat-profils-meter')), await p.textContent('#cat-profils-meter'));
   ok('Préflop exploitant : la lecture n\'y compte pas', /Pas encore commencé/.test(await p.textContent('#cat-exploit-meter')), await p.textContent('#cat-exploit-meter'));

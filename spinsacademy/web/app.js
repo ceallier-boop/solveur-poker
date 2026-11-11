@@ -58,8 +58,9 @@ async function api(path, opts = {}) {
 }
 
 // I9 : cinq onglets fixes en bas ; la barre n'apparaît que sur les pages des onglets (ni au premier lancement, ni pendant une série)
-const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', prog: 'stats', outils: 'outils' };
-const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour à l\'onglet GTO', expl: 'Retour à l\'onglet Exploitant' };
+const TAB_SCREEN = { defis: 'home', gto: 'gto', expl: 'expl', exos: 'exos', prog: 'stats', outils: 'outils' };   // gto / expl : les deux côtés de l'onglet Quiz (11/11)
+const barTab = (t) => (t === 'gto' || t === 'expl' ? 'quiz' : t);
+const BACK_LABEL = { defis: 'Retour aux défis', gto: 'Retour au quiz GTO', expl: 'Retour au quiz Exploitant', exos: 'Retour aux exercices' };
 function show(name) {
   if (name !== 'question' && state.timer) stopTimer();
   if (name !== 'question') stopReplay();
@@ -67,7 +68,8 @@ function show(name) {
   $('loading').hidden = true;
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
   $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab);
-  if (tab) { state.tab = tab; for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === tab), b.dataset.tab === tab && b.setAttribute('aria-current', 'page'); }
+  if (tab) { state.tab = tab; const bt = barTab(tab); for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === bt), b.dataset.tab === bt && b.setAttribute('aria-current', 'page');
+    for (const q of document.querySelectorAll('.quiz-switch [data-side]')) q.setAttribute('aria-pressed', String(q.dataset.side === tab)); }
   else $('back-home').textContent = $('td-home').textContent = BACK_LABEL[state.tab] || BACK_LABEL.defis;   // retest 10 : le lien de retour nomme l'onglet où il ramène
   window.scrollTo(0, 0);
 }
@@ -857,15 +859,20 @@ function placeBlocks(tab) {                                          // les bloc
   $(tab === 'expl' ? 'slot-expl-train' : 'slot-gto-train').appendChild($('train'));
   $(tab === 'defis' ? 'slot-defis-worst' : 'slot-train-worst').appendChild($('worst'));   // retest 10 : les erreurs du jour à l'arrivée (décision du 09/11)
 }
+const quizSide = () => (store.get('quiz_side') === 'expl' && !exploitLocked() ? 'expl' : 'gto');   // dernier choix gardé, GTO par défaut
 function goTab(tab) {
+  if (tab === 'quiz') tab = quizSide();
   if (tab === 'expl' && exploitLocked()) { notify(`L'onglet Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
   if (tab === 'prog') { openStats(); return; }
   if (tab === 'outils') { progress(''); show('outils'); return; }
+  if (tab === 'exos') { placeBlocks('exos'); if (setMode('gto')) onMode(true); progress(''); show('exos'); return; }   // Ranges, Équités, Profils
+  if (tab === 'gto' || tab === 'expl') store.set('quiz_side', tab);   // côté du Quiz gardé ; Défis ne l'efface pas
   placeBlocks(tab); const changed = setMode(tabMode(tab));
   progress(''); show(TAB_SCREEN[tab]);
   if (changed) onMode(true);                                         // séance, recommandations, erreurs du jour… suivent le mode
 }
 $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab'); if (b) goTab(b.dataset.tab); });
+for (const q of document.querySelectorAll('.quiz-switch')) q.addEventListener('click', (e) => { const b = e.target.closest('[data-side]'); if (b && b.dataset.side !== state.tab) goTab(b.dataset.side); });   // GTO | Exploitant
 function setBadge(id, n) { const b = $(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); }
 const defisBadge = () => setBadge('badge-defis', (state.badgeDaily || 0) + (state.badgeResume || 0));   // défi du jour à relever + série à reprendre
 $('tools-lex').addEventListener('click', () => $('lex-btn').click());
@@ -896,7 +903,7 @@ $('review-btn').addEventListener('click', () => { state.inToday = false; start({
 async function reviews() {
   $('review-btn').hidden = true; $('review-note').hidden = true;
   const m = mode(); let r; try { r = await api(`/users/me/reviews?mode=${m}&tz=${tzOffset()}`); } catch (e) { return; }
-  setBadge(m === 'exploit' ? 'badge-expl' : 'badge-gto', r.due);    // I9 : les mains à revoir sur l'onglet du mode
+  setBadge('badge-quiz', r.due);                                    // les mains à revoir, sur l'onglet Quiz
   if (r.due > 0) {
     $('review-btn').textContent = `Revoir mes mains (${r.due} main${r.due > 1 ? 's' : ''} prête${r.due > 1 ? 's' : ''})`;
     $('review-btn').title = r.rule_fr; $('review-btn').hidden = false;
@@ -915,7 +922,8 @@ function renderExploitAccess() {
   b.classList.toggle('locked', locked);                               // pas d'aria-disabled : il masque les puces de filtre
   b.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';
   $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, avec l\'onglet Exploitant.';
-  $('tab-expl-label').innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // I9 : le cadenas est sur l'onglet
+  for (const l of document.querySelectorAll('.quiz-switch .qs-label')) l.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // le cadenas est sur le bouton Exploitant du quiz
+  $('profils-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open.replace('à tous ', '');
   $('expl-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open;
   if (locked && mode() === 'exploit') { setMode('gto'); onMode(); }
 }
@@ -930,7 +938,7 @@ const DEPTHS_OF = { gto: ['', '0-9', '10-16', '17-25'], exploit: ['', '0-9', '10
 function onMode(e) {
   store.set('mode', mode());                                         // gardé après un rechargement
   if (e) api('/users/me/preferences', { method: 'PUT', body: JSON.stringify({ mode: mode() }) }).catch(() => { /* hors ligne : gardé sur l'appareil */ });   // test joueurs 9 : et sur le serveur
-  reviews(); if (state.homeReady && ['defis', 'gto', 'expl'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
+  reviews(); if (state.homeReady && ['defis', 'gto', 'expl', 'exos'].includes(state.tab) && !$(`screen-${TAB_SCREEN[state.tab]}`).hidden) { loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadChallenges(); loadLevel(); renderGoalCard(); homeWins(); }   // séance, recommandations, objectifs et niveau suivent le mode
   $('mode-note').textContent = MODE_NOTE[mode()] + (mode() === 'exploit' ? ` ${PAID_NOTE.open}` : '');
   for (const [name, allowed] of [['family', FAMILIES_OF[mode()]], ['depth', DEPTHS_OF[mode()]]]) {
     const grp = document.querySelector(`.chips[data-name="${name}"]`);
@@ -976,7 +984,7 @@ async function home() {
     try { const lv = await api('/users/me/level'); state.level = lv; state.promo = lv.promoted_to; if (!lv.onboarded) { onboard(lv); return; } } catch (e) { /* hors ligne : accueil normal */ }
   }
   state.homeReady = true;                                            // test joueurs 9 : pas de séance calculée avant le premier lancement
-  const tab = ['defis', 'gto', 'expl'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
+  const tab = ['defis', 'gto', 'expl', 'exos'].includes(state.tab) ? state.tab : 'defis';   // I9 : le retour se fait sur l'onglet d'où l'on vient
   if (setMode(tabMode(tab))) onMode(true);
   placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); refreshCats(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
@@ -1409,7 +1417,7 @@ async function rangeSubmit() {
   refreshStats();
 }
 $('range-btn').addEventListener('click', () => { state.inToday = false; rangeStart(); });
-$('profils-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'exploit', family: 'read' }); });   // catégorie Profils : une série de lecture du vilain
+$('profils-start').addEventListener('click', () => { if (exploitLocked()) { notify(`Les Profils ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; } state.inToday = false; start({ mode: 'exploit', family: 'read' }); });   // catégorie Profils : une série de lecture du vilain
 $('equity-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'equity' }); });   // catégorie Équités (docs/api/QUIZ_EQUITES.md)
 $('equity-kinds').addEventListener('click', (e) => { const b = e.target.closest('[data-kind]'); if (b) { state.inToday = false; start({ mode: 'equity', kind: b.dataset.kind }); } });
 $('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });

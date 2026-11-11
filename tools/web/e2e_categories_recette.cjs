@@ -30,7 +30,9 @@ async function onboard(p) {
   await p.click('#ob-exp button[data-v="confirme"]'); await p.click('#ob-goal button[data-v="bases"]'); await p.click('#ob-next'); await p.click('#ob-next'); await p.click('#ob-next');
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(800);
 }
-const tab = async (p, t) => { await p.evaluate((x) => document.querySelector(`.tab[data-tab="${x}"]`).click(), t); await p.waitForTimeout(800); };
+const tab = async (p, t) => { await p.evaluate((x) => { const side = x === 'gto' || x === 'expl' ? x : null;   // 11/11 : gto / expl = onglet Quiz + bouton GTO ou Exploitant
+  document.querySelector(`.tab[data-tab="${side ? 'quiz' : x}"]`).click();
+  if (side) { const q = [...document.querySelectorAll(`.quiz-switch [data-side="${side}"]`)].find((y) => y.offsetParent); if (q && q.getAttribute('aria-pressed') !== 'true') q.click(); } }, t); await p.waitForTimeout(800); };
 async function openChallenges(p) {
   await tab(p, 'defis'); await p.waitForSelector('#challenges:not([hidden])', { timeout: 15000 });
   if (await p.isVisible('#ch-box summary') && !(await p.$eval('#ch-box', (d) => d.open))) await p.click('#ch-box summary');

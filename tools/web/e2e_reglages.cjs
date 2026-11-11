@@ -22,9 +22,11 @@ const visible = (p, sel) => p.$eval(sel, (x) => x.innerText).catch(() => '');
   if (await p.isVisible('#screen-onboard')) await p.click('#ob-skip');
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
   const texts = {};
-  for (const tab of ['defis', 'gto', 'expl', 'outils', 'prog']) {
-    await p.click(`.tab[data-tab="${tab}"]`); await p.waitForTimeout(900);
-    texts[tab] = await visible(p, `.tab-page[data-tab="${tab}"]`);
+  for (const tab of ['defis', 'quiz', 'quiz:expl', 'exos', 'outils', 'prog']) {      // 11/11 : Quiz (GTO puis Exploitant), Exercices
+    const [t, side] = tab.split(':');
+    await p.click(`.tab[data-tab="${t}"]`); await p.waitForTimeout(900);
+    if (side) { await p.click(`.quiz-switch [data-side="${side}"] >> visible=true`); await p.waitForTimeout(900); }
+    texts[tab] = await visible(p, '.tab-page:not([hidden])');
   }
   ok('onglets : aucun « mode » GTO ou Exploitant', Object.values(texts).every((t) => !MODE_RE.test(t)), Object.entries(texts).filter(([, t]) => MODE_RE.test(t)).map(([k, t]) => [k, t.match(/.{0,40}mode.{0,40}/i)[0]]));
   ok('carte Préflop : plus de chrono', !(await p.$('#screen-gto .chrono-row')) && !(await p.$('#train .chrono-row')));
@@ -45,7 +47,7 @@ const visible = (p, sel) => p.$eval(sel, (x) => x.innerText).catch(() => '');
   await p.screenshot({ path: `${OUT}/reglages_profil.png`, fullPage: true });
   await p.click('#profile .chips[data-name="chrono"] [data-value="8"]'); await p.click('#pf-close');
   // le chrono choisi vaut pour la série suivante, et reste après rechargement
-  await p.click('.tab[data-tab="gto"]'); await p.waitForTimeout(500); await p.click('#quick-start');
+  await p.click('.tab[data-tab="quiz"]'); await p.waitForTimeout(500); await p.click('.quiz-switch [data-side="gto"] >> visible=true'); await p.waitForTimeout(500); await p.click('#quick-start');
   await p.waitForSelector('#screen-question:not([hidden])'); await p.waitForSelector('#q-timer:not([hidden])', { timeout: 5000 }).catch(() => {});
   const t = await p.textContent('#q-timer span').catch(() => '');
   ok('chrono à 8 s appliqué à la série', /^[1-8] s$/.test(t.trim()), t);

@@ -50,7 +50,9 @@ const watch = (p) => p.evaluate(() => {                              // question
   };
 });
 const lastQ = (p) => p.evaluate(() => window.__q); const atts = (p) => p.evaluate(() => window.__att);
-const tab = async (p, t) => { await p.evaluate((x) => document.querySelector(`.tab[data-tab="${x}"]`).click(), t); await p.waitForTimeout(700); };
+const tab = async (p, t) => { await p.evaluate((x) => { const side = x === 'gto' || x === 'expl' ? x : null;   // 11/11 : gto / expl = onglet Quiz + bouton GTO ou Exploitant
+  document.querySelector(`.tab[data-tab="${side ? 'quiz' : x}"]`).click();
+  if (side) { const q = [...document.querySelectorAll(`.quiz-switch [data-side="${side}"]`)].find((y) => y.offsetParent); if (q && q.getAttribute('aria-pressed') !== 'true') q.click(); } }, t); await p.waitForTimeout(700); };
 
 (async () => {
   const b = await chromium.launch(); const errs = [];

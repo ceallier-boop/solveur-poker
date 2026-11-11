@@ -6,8 +6,14 @@
 const MODE_TAB = { gto: 'gto', exploit: 'expl' };
 const cssOf = (sel) => (typeof sel === 'string' ? sel.split(' >> ')[0].trim() : null);
 
+// onglets du 11/11 : Quiz (côtés gto et expl, deux boutons en haut) · Exercices (exos) · Défis · Progression · Outils.
+// openTab('gto') / openTab('expl') : onglet Quiz, puis le bouton GTO ou Exploitant ; les anciens noms restent valables.
 async function openTab(page, tab) {
-  await page.evaluate((t) => { const b = document.querySelector(`.tab[data-tab="${t}"]`); if (b) b.click(); }, tab);
+  await page.evaluate((t) => {
+    const side = t === 'gto' || t === 'expl' ? t : null;
+    const b = document.querySelector(`.tab[data-tab="${side ? 'quiz' : t}"]`); if (b) b.click();
+    if (side) { const q = [...document.querySelectorAll(`.quiz-switch [data-side="${side}"]`)].find((x) => x.offsetParent); if (q && q.getAttribute('aria-pressed') !== 'true') q.click(); }
+  }, tab);
   await page.waitForTimeout(400);
 }
 
@@ -23,7 +29,7 @@ async function reveal(page, sel) {                                   // ouvre l'
   const tab = await page.evaluate((s) => {
     let el = null; try { el = document.querySelector(s.replace(/:not\(\[hidden\]\)/g, '')); } catch (e) { return null; }   // un bloc encore caché : son onglet quand même
     const pg = el && el.closest('.tab-page'), bar = document.getElementById('tabs');
-    return pg && pg.hidden && bar && !bar.hidden ? pg.dataset.tab : null;
+    return pg && pg.hidden && bar && !bar.hidden ? (pg.dataset.side || pg.dataset.tab) : null;   // Quiz : le côté (gto ou expl)
   }, css).catch(() => null);
   if (!tab) return false;
   await openTab(page, tab); return true;

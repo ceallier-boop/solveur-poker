@@ -72,9 +72,11 @@
     </section>
 
     <!-- Onglet GTO -->
-    <section id="screen-gto" class="screen tab-page" data-tab="gto" hidden aria-labelledby="gto-title">
-      <h1 id="gto-title">GTO</h1>
-      <p class="lead">La théorie : trois catégories pour jouer juste.</p>
+    <section id="screen-gto" class="screen tab-page" data-tab="quiz" data-side="gto" hidden aria-labelledby="gto-title">
+      <!-- réorganisation du 11/11 : onglet Quiz, deux boutons en haut (comme les premières versions) ; ici le côté GTO -->
+      <h1 id="gto-title">Quiz</h1>
+      <div class="quiz-switch" role="group" aria-label="Quiz GTO ou Exploitant"><button type="button" data-side="gto" aria-pressed="true">GTO</button><button type="button" data-side="expl" aria-pressed="false"><span class="qs-label">Exploitant</span></button></div>
+      <p class="lead">GTO : la théorie, contre des joueurs qui jouent juste.</p>
       <!-- catégories (10/11) : une carte par catégorie ; le bloc d'entraînement est le corps de la carte Préflop -->
       <section class="cat-card" id="cat-gto" data-cat="gto" aria-labelledby="cat-gto-title">
         <div class="cat-head"><span class="cat-ic ic-pre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="11" height="16" rx="2"/><path d="M9 7l3 4-3 4"/></svg></span><div><h2 class="cat-title" id="cat-gto-title">Préflop</h2><p class="cat-sub">Séries de 5 décisions, thèmes de ton niveau</p></div></div>
@@ -142,6 +144,25 @@
         </div>
       </div>
       </section>
+    </section>
+
+    <!-- Onglet Exploitant (niveau 4) -->
+    <section id="screen-expl" class="screen tab-page" data-tab="quiz" data-side="expl" hidden aria-labelledby="expl-title">
+      <h1 id="expl-title">Quiz</h1>
+      <div class="quiz-switch" role="group" aria-label="Quiz GTO ou Exploitant"><button type="button" data-side="gto" aria-pressed="false">GTO</button><button type="button" data-side="expl" aria-pressed="true"><span class="qs-label">Exploitant</span></button></div>
+      <div class="tab-head"><p class="lead">Exploitant : contre les vrais joueurs d'Expresso, profite de leurs erreurs.</p><span class="tag-paid" id="expl-paid">Offre payante, ouverte pendant le test</span></div>
+      <div class="slot" id="slot-expl-today"></div>
+      <section class="cat-card" id="cat-exploit" data-cat="exploit" aria-labelledby="cat-exploit-title">
+        <div class="cat-head"><span class="cat-ic ic-pre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><div><h2 class="cat-title" id="cat-exploit-title">Préflop contre le field</h2><p class="cat-sub">La bonne décision contre un profil de joueur</p></div></div>
+        <p class="cat-meter" id="cat-exploit-meter"></p>
+        <div class="slot" id="slot-expl-train"></div>
+      </section>
+    </section>
+
+    <!-- Onglet Exercices (11/11) : tous les formats autres que les quiz préflop -->
+    <section id="screen-exos" class="screen tab-page" data-tab="exos" hidden aria-labelledby="exos-title">
+      <h1 id="exos-title">Exercices</h1>
+      <p class="lead">Les autres formats : dessiner une range, calculer ses chances, reconnaître un joueur.</p>
       <section class="cat-card" id="cat-ranges" data-cat="ranges" aria-labelledby="cat-ranges-title">
         <div class="cat-head"><span class="cat-ic ic-ranges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></span><div><h2 class="cat-title" id="cat-ranges-title">Ranges</h2><p class="cat-sub">Dessine la range d'une situation, main par main</p></div></div>
         <p class="cat-meter" id="cat-ranges-meter"></p>
@@ -157,19 +178,8 @@
           <button class="secondary small" type="button" data-kind="labels">Forces et faiblesses</button>
         </div>
       </section>
-    </section>
-
-    <!-- Onglet Exploitant (niveau 4) -->
-    <section id="screen-expl" class="screen tab-page" data-tab="expl" hidden aria-labelledby="expl-title">
-      <div class="tab-head"><h1 id="expl-title">Exploitant</h1><span class="tag-paid" id="expl-paid">Offre payante, ouverte pendant le test</span></div>
-      <p class="lead">Le field : deux catégories pour profiter des erreurs des vrais joueurs d'Expresso.</p>
-      <div class="slot" id="slot-expl-today"></div>
-      <section class="cat-card" id="cat-exploit" data-cat="exploit" aria-labelledby="cat-exploit-title">
-        <div class="cat-head"><span class="cat-ic ic-pre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><div><h2 class="cat-title" id="cat-exploit-title">Préflop contre le field</h2><p class="cat-sub">La bonne décision contre un profil de joueur</p></div></div>
-        <p class="cat-meter" id="cat-exploit-meter"></p>
-        <div class="slot" id="slot-expl-train"></div>
-      </section>
       <section class="cat-card" id="cat-profils" data-cat="profils" aria-labelledby="cat-profils-title">
+        <span class="tag-paid cat-paid" id="profils-paid">Offre payante, ouverte pendant le test</span>
         <div class="cat-head"><span class="cat-ic ic-prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3 19c1-3 3.5-5 6-5s5 2 6 5M16 7h5M16 11h5M18 15h3"/></svg></span><div><h2 class="cat-title" id="cat-profils-title">Profils</h2><p class="cat-sub">Lis les stats et reconnais le joueur en face</p></div></div>
         <p class="cat-meter" id="cat-profils-meter"></p>
         <button class="secondary" id="profils-start" type="button">Quelle pastille ? Une série de lecture</button>
@@ -179,7 +189,7 @@
     <!-- Onglet Outils -->
     <section id="screen-outils" class="screen tab-page" data-tab="outils" hidden aria-labelledby="outils-title">
       <h1 id="outils-title">Outils</h1>
-      <p class="lead">Ce qu'on ouvre entre deux parties. Les exercices sont rangés dans GTO et Exploitant.</p>
+      <p class="lead">Ce qu'on ouvre entre deux parties. Les exercices sont dans l'onglet Exercices.</p>
       <div class="tools-grid">
       <a class="secondary conseil-link" href="conseil">Comment jouer ma main ?</a>
       <button class="secondary" id="fiches-btn">Fiches à emporter</button>
@@ -478,11 +488,11 @@
       <button class="secondary" id="notice-retry" hidden>Réessayer</button><button class="link" id="notice-close" aria-label="Fermer le message">✕</button></div>
   </main>
   <nav class="tabs" id="tabs" aria-label="Pages de l'application" hidden><div class="tabs-in">
-    <button class="tab" type="button" id="tab-outils" data-tab="outils"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span>Outils</span></button>
-    <button class="tab" type="button" id="tab-gto" data-tab="gto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg><span>GTO</span><b class="badge" id="badge-gto" hidden></b></button>
+    <button class="tab" type="button" id="tab-quiz" data-tab="quiz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="3" width="12" height="17" rx="2"/><path d="M19 7v12a2 2 0 0 1-2 2H9"/><path d="M8.5 8.5l2 3-2 3"/></svg><span>Quiz</span><b class="badge" id="badge-quiz" hidden></b></button>
+    <button class="tab" type="button" id="tab-exos" data-tab="exos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Exercices</span></button>
     <button class="tab center" type="button" id="tab-defis" data-tab="defis"><span class="disc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span><span>Défis</span><b class="badge" id="badge-defis" hidden></b></button>
-    <button class="tab" type="button" id="tab-expl" data-tab="expl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg><span id="tab-expl-label">Exploitant</span><b class="badge" id="badge-expl" hidden></b></button>
     <button class="tab" type="button" id="stats-btn" data-tab="prog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Progression</span></button>
+    <button class="tab" type="button" id="tab-outils" data-tab="outils"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span>Outils</span></button>
   </div></nav>
   <script src="/static/app.js"></script>
 </body>
