@@ -39,7 +39,7 @@ function wire(page) {
   const click = page.click.bind(page), tap = page.tap.bind(page), wait = page.waitForSelector.bind(page);
   page.click = async (sel, opts) => {
     const m = /^\.mode-switch \[data-value="(gto|exploit)"\]$/.exec(cssOf(sel) || '');
-    if (m) { await page.evaluate((t) => { const b = document.querySelector(`.tab[data-tab="${t}"]`); if (b) b.click(); }, MODE_TAB[m[1]]); return; }
+    if (m) { await openTab(page, MODE_TAB[m[1]]); return; }   // ancien choix de mode : onglet Quiz + bouton GTO ou Exploitant (11/11)
     if (await inSheet(page, sel)) { await setSheet(page, true); try { return await click(sel, opts); } finally { await setSheet(page, false); } }   // réglages et données : feuille du profil
     await reveal(page, sel); return click(sel, opts);
   };

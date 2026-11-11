@@ -65,7 +65,7 @@ const tab = async (p, t) => { await p.evaluate((x) => { const side = x === 'gto'
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(600);
 
   // ---------------------------------------------------------------- équités : une série mêlée, réponses voulues
-  await tab(p, 'gto'); await p.click('#equity-start');
+  await tab(p, 'exos'); await p.click('#equity-start');   // 11/11 : Équités dans l'onglet Exercices
   const plan = ['juste', 'voisine', 'loin', 'juste', 'loin']; const eqErr = [], uiErr = []; const expect = [];
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(200);
@@ -105,7 +105,7 @@ const tab = async (p, t) => { await p.evaluate((x) => { const side = x === 'gto'
   await p.click('#back-home'); await p.waitForTimeout(800);
 
   // une seule sorte
-  await tab(p, 'gto'); const before = (await atts(p)).length; await p.click('#equity-kinds [data-kind="hit"]');
+  await tab(p, 'exos'); const before = (await atts(p)).length; await p.click('#equity-kinds [data-kind="hit"]');
   for (let i = 0; i < 5; i++) { await p.waitForSelector('#screen-question:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(150); await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])'); await p.click('#next-btn'); }
   await p.waitForSelector('#screen-summary:not([hidden])'); await p.click('#back-home'); await p.waitForTimeout(800);
   const one = (await atts(p)).slice(before).map((x) => x.q.kind);

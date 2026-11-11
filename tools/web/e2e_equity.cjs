@@ -15,7 +15,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   if (await p.isVisible('#screen-onboard')) await p.click('#ob-skip');
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
 
-  await p.openTab('gto');
+  await p.openTab('exos');                                           // 11/11 : la carte Équités est dans l'onglet Exercices
   ok('carte Équités active : série et trois sortes', await p.isVisible('#equity-start') && (await p.$$('#equity-kinds [data-kind]')).length === 3 && !/bientôt/i.test(await p.innerText('#cat-equites')));
   ok('nouveau joueur : « Pas encore commencé »', /Pas encore commencé/.test(await p.textContent('#cat-equites-meter')));
   await p.click('#equity-start'); await p.waitForSelector('#screen-question:not([hidden])', { timeout: 15000 });
