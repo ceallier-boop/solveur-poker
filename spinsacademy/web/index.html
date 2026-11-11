@@ -61,6 +61,7 @@
         <p class="note" id="today-explain" hidden>15 minutes guidées : tes mains à revoir, puis deux séries sur ton thème du jour, puis une range à dessiner.</p>
       </section>
       </div>
+      <button class="link defis-expl" id="defis-expl-today" type="button" hidden>Séance du jour Exploitant : ouvrir le Quiz Exploitant</button>
       <div class="slot" id="slot-defis-worst"></div>
       <section class="goal-card" id="goal-card" hidden aria-live="polite"></section>
       <section class="challenges" id="challenges" hidden aria-labelledby="ch-title">
@@ -157,6 +158,7 @@
         <p class="cat-meter" id="cat-exploit-meter"></p>
         <div class="slot" id="slot-expl-train"></div>
       </section>
+      <button class="link" id="expl-to-profils" type="button">Lire les profils des adversaires (Exercices → Profils)</button>
     </section>
 
     <!-- Onglet Exercices (11/11) : tous les formats autres que les quiz préflop -->
@@ -179,8 +181,7 @@
         </div>
       </section>
       <section class="cat-card" id="cat-profils" data-cat="profils" aria-labelledby="cat-profils-title">
-        <span class="tag-paid cat-paid" id="profils-paid">Offre payante, ouverte pendant le test</span>
-        <div class="cat-head"><span class="cat-ic ic-prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3 19c1-3 3.5-5 6-5s5 2 6 5M16 7h5M16 11h5M18 15h3"/></svg></span><div><h2 class="cat-title" id="cat-profils-title">Profils</h2><p class="cat-sub">Lis les stats et reconnais le joueur en face</p></div></div>
+        <div class="cat-head"><span class="cat-ic ic-prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="9" r="3"/><path d="M3 19c1-3 3.5-5 6-5s5 2 6 5M16 7h5M16 11h5M18 15h3"/></svg></span><div><h2 class="cat-title" id="cat-profils-title">Profils</h2><p class="cat-sub">Lis les stats et reconnais le joueur en face</p><span class="tag-paid cat-paid" id="profils-paid">Profils : offre payante, ouverte pendant le test</span></div></div>
         <p class="cat-meter" id="cat-profils-meter"></p>
         <button class="secondary" id="profils-start" type="button">Quelle pastille ? Une série de lecture</button>
       </section>
@@ -289,7 +290,7 @@
       <ul class="verdicts" id="s-verdicts"></ul>
       <h3>À revoir</h3>
       <ul class="errors" id="s-errors"></ul>
-      <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes mains » dans l'onglet GTO ou Exploitant).</p>
+      <p class="note" id="s-review" hidden>Ces mains reviendront en révision demain, puis 3 jours et 7 jours plus tard (bouton « Revoir mes mains » dans le Quiz, côté GTO ou Exploitant).</p>
       <button class="primary big" id="again-btn">Nouvelle série</button>
       <button class="link" id="back-home">Retour aux défis</button>
     </section>
@@ -310,9 +311,9 @@
         <p class="lead">Proposé d'après ton expérience. Tu passes au niveau suivant tout seul, quand tes résultats le montrent.</p>
         <div class="ob-levels" id="ob-levels"></div>
         <div class="ob-exploit" id="ob-exploit">
-          <p class="ob-exploit-head"><b>Onglet Exploitant</b> <span class="tag-paid">Offre payante</span></p>
+          <p class="ob-exploit-head"><b>Quiz Exploitant</b> <span class="tag-paid">Offre payante</span></p>
           <p>Le niveau 4, « Exploiter le field » : tu joues contre les vrais joueurs d'Expresso, tu lis leurs stats et tu t'adaptes à leurs défauts.</p>
-          <p class="note" id="ob-exploit-access">Ouvert à tous pendant le test : tu peux l'essayer quand tu veux, avec l'onglet Exploitant.</p>
+          <p class="note" id="ob-exploit-access">Ouvert à tous pendant le test : tu peux l'essayer quand tu veux, dans le Quiz, côté Exploitant.</p>
         </div>
       </div>
       <div id="ob-3" hidden>
@@ -419,7 +420,7 @@
         <ul class="level-crit" id="st-level-crit"></ul>
         <p class="note">Changer de niveau :</p>
         <div class="chips" id="st-level-pick"></div>
-        <div class="level-expl" id="st-level-expl" hidden><p id="st-level-expl-name"></p><button class="secondary small" id="st-level-expl-go" type="button">Ouvrir l'onglet Exploitant</button></div>
+        <div class="level-expl" id="st-level-expl" hidden><p id="st-level-expl-name"></p><button class="secondary small" id="st-level-expl-go" type="button">Ouvrir le Quiz Exploitant</button></div>
       </section>
       <section class="cats" id="st-cats" hidden aria-labelledby="st-cats-title">
         <h3 id="st-cats-title">Par catégorie</h3>

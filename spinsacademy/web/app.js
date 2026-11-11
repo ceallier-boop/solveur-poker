@@ -124,7 +124,7 @@ async function start(f, review = false, plan = null, challenge = null) {
   $('home-error').hidden = true; loading(true);
   try {
     const s = await api('/sessions', { method: 'POST', body: JSON.stringify({ mode: f.mode || mode(), review, plan, challenge, tz: tzOffset(), filters: Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode')) }) });
-    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id); store.set('sid_tab', state.tab || 'defis');   // retest 10 : onglet d'origine, pour le retour
+    state.sid = s.session_id; state.size = s.size; state.mode = s.mode; store.set('sid', s.session_id); store.set('sid_tab', state.tab || 'defis'); store.set('sid_mode', s.mode || '');   // retest 10 : onglet d'origine, pour le retour
     if (plan === 'placement') store.set('placement_sid', s.session_id); else if (store.get('placement_sid') !== s.session_id) store.del('placement_sid');   // AU7 : reconnu même après une reprise
     state.filters = review ? (state.filters || {}) : Object.fromEntries(Object.entries(f).filter(([k]) => k !== 'mode'));   // A1 : « Nouvelle série » les reprend
     store.set('filters', JSON.stringify(state.filters));
@@ -854,7 +854,10 @@ document.addEventListener('keydown', (e) => {
 const openStats = () => stats().catch((e) => { loading(false); notify(netMsg(e, "ta progression n'a pas pu être chargée"), openStats); });
 // I9 : les onglets ; GTO et Exploitant fixent le mode, l'onglet central est la séance GTO et les défis
 const tabMode = (tab) => (tab === 'expl' ? 'exploit' : 'gto');
+// retest 11 : côté Quiz, « Reprendre la série en cours » seulement du côté de la série abandonnée (la carte de Défis reste commune)
+function syncResume(tab) { const m = store.get('sid_mode') || 'gto'; $('resume').hidden = !(state.resumable && (tab === 'expl' ? m === 'exploit' : m === 'gto')); }
 function placeBlocks(tab) {                                          // les blocs uniques vont dans l'onglet affiché
+  syncResume(tab);
   $(tab === 'expl' ? 'slot-expl-today' : 'slot-defis-today').appendChild($('today'));
   $(tab === 'expl' ? 'slot-expl-train' : 'slot-gto-train').appendChild($('train'));
   $(tab === 'defis' ? 'slot-defis-worst' : 'slot-train-worst').appendChild($('worst'));   // retest 10 : les erreurs du jour à l'arrivée (décision du 09/11)
@@ -862,7 +865,7 @@ function placeBlocks(tab) {                                          // les bloc
 const quizSide = () => (store.get('quiz_side') === 'expl' && !exploitLocked() ? 'expl' : 'gto');   // dernier choix gardé, GTO par défaut
 function goTab(tab) {
   if (tab === 'quiz') tab = quizSide();
-  if (tab === 'expl' && exploitLocked()) { notify(`L'onglet Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
+  if (tab === 'expl' && exploitLocked()) { notify(`Le Quiz Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
   if (tab === 'prog') { openStats(); return; }
   if (tab === 'outils') { progress(''); show('outils'); return; }
   if (tab === 'exos') { placeBlocks('exos'); if (setMode('gto')) onMode(true); progress(''); show('exos'); return; }   // Ranges, Équités, Profils
@@ -921,15 +924,16 @@ function renderExploitAccess() {
   const locked = exploitLocked(), b = document.querySelector('.mode-switch [data-value="exploit"]');
   b.classList.toggle('locked', locked);                               // pas d'aria-disabled : il masque les puces de filtre
   b.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';
-  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, avec l\'onglet Exploitant.';
+  $('ob-exploit-access').textContent = locked ? "Disponible avec l'offre payante." : 'Ouvert à tous pendant le test : tu peux l\'essayer quand tu veux, dans le Quiz, côté Exploitant.';
   for (const l of document.querySelectorAll('.quiz-switch .qs-label')) l.innerHTML = locked ? 'Exploitant <span aria-hidden="true">🔒</span><span class="sr-only"> (offre payante)</span>' : 'Exploitant';   // le cadenas est sur le bouton Exploitant du quiz
-  $('profils-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open.replace('à tous ', '');
+  $('profils-paid').textContent = `Profils : ${(locked ? PAID_NOTE.locked : PAID_NOTE.open.replace('à tous ', '')).replace(/^./, (c) => c.toLowerCase()).replace(/\.$/, '')}`;   // retest 11 : l'étiquette nomme Profils
+  $('defis-expl-today').hidden = locked;                            // retest 11 : la séance exploitante annoncée sur Défis
   $('expl-paid').textContent = locked ? PAID_NOTE.locked : PAID_NOTE.open;
   if (locked && mode() === 'exploit') { setMode('gto'); onMode(); }
 }
 document.querySelector('.mode-switch').addEventListener('click', (e) => {     // verrouillé : le bouton ne change pas de mode
   const b = e.target.closest('button'); if (!b || b.dataset.value !== 'exploit' || !exploitLocked()) return;
-  e.stopImmediatePropagation(); notify(`L'onglet Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
+  e.stopImmediatePropagation(); notify(`Le Quiz Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
 }, true);
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
@@ -989,7 +993,7 @@ async function home() {
   placeBlocks(tab); progress(''); show(TAB_SCREEN[tab]); homeSummary(); renderGoalCard(); lightHome(); homeWins(); refreshCats(); loadToday().then(() => { loadRecs(); loadWorst(); }); loadGoals(); loadLevel(); loadChallenges();
   const sid = store.get('sid');
   const showResume = (on, s) => {                                    // retest 10 : la série abandonnée se voit aussi depuis Défis, avec un badge
-    $('resume').hidden = !on; $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
+    state.resumable = on; syncResume(state.tab); $('resume-card').hidden = !on; state.badgeResume = on ? 1 : 0; defisBadge();
     if (on) $('resume-card-text').textContent = s && s.size ? `Ta série n'est pas finie : ${s.questions || 0} décision${(s.questions || 0) > 1 ? 's' : ''} sur ${s.size}.` : 'Ta série n\'est pas finie.';
   };
   showResume(false); reviews();
@@ -1109,8 +1113,8 @@ async function obFinish(skip) {
 function renderGoalCard() {
   const goal = state.level && state.level.goal, box = $('goal-card');
   const card = goal === 'recreatifs' && mode() !== 'exploit'
-    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> L'onglet Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
-      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> L'onglet Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir l'onglet Exploitant</button>`)
+    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le Quiz Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
+      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le Quiz Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir le Quiz Exploitant</button>`)
     : goal === 'ranges' ? `<p><b>Ton but : affûter tes ranges.</b> Dessine la range d'une situation, main par main, et vois où tu te trompes.</p><button class="secondary small" id="goal-go" data-go="range">Construis ta range</button>`
     : '';
   box.hidden = !card; box.innerHTML = card;
@@ -1209,7 +1213,7 @@ function renderLevel(lv) {
   $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number < 4).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
   const four = lv.levels.find((l) => l.number === 4);
   $('st-level-expl').hidden = !four || exploitLocked();
-  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : l'onglet Exploitant, ouvert en continu.`;
+  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : le côté Exploitant du Quiz, ouvert en continu.`;
 }
 $('st-level-pick').addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1217,6 +1221,8 @@ $('st-level-pick').addEventListener('click', async (e) => {
   catch (err) { notify(netMsg(err, "le niveau n'a pas été changé")); }
 });
 $('st-level-expl-go').addEventListener('click', () => goTab('expl'));
+$('defis-expl-today').addEventListener('click', () => goTab('expl'));   // retest 11 : un seul bloc de séance par côté, un lien depuis Défis
+$('expl-to-profils').addEventListener('click', () => { goTab('exos'); $('cat-profils').scrollIntoView({ block: 'start' }); });
 $('today-level').addEventListener('click', () => { state.scrollLevel = true; $('stats-btn').click(); });
 
 // recommandations (programme de travail, étape 2) : au plus deux, un constat chiffré et une action en un toucher

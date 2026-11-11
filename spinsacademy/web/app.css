@@ -730,3 +730,6 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .quiz-switch button { min-height: 44px; border: 0; border-radius: 0; background: var(--surface); color: var(--accent); font-weight: 700; font-size: 1rem; }
 .quiz-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); }
 .cat-paid { align-self: flex-start; }
+
+/* retest 11 : liens vers la séance exploitante (Défis) et vers Profils (Quiz Exploitant) */
+.defis-expl, #expl-to-profils { align-self: flex-start; padding-left: 0; text-align: left; }

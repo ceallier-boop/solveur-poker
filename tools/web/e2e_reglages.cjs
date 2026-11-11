@@ -18,7 +18,7 @@ const visible = (p, sel) => p.$eval(sel, (x) => x.innerText).catch(() => '');
   let ob2 = '', ob3 = '';
   if (ob) { await p.click('#ob-exp button[data-v="debut"]'); await p.click('#ob-goal button[data-v="bases"]'); await p.click('#ob-next'); ob2 = await visible(p, '#screen-onboard');
     await p.click('#ob-next'); ob3 = await visible(p, '#screen-onboard'); }
-  ok('premier lancement : « Onglet Exploitant », pas de « mode »', !ob || (/Onglet Exploitant/.test(ob2) && !MODE_RE.test(ob + ob2 + ob3)), ob2.slice(0, 400));
+  ok('premier lancement : « Quiz Exploitant », pas de « mode »', !ob || (/Quiz Exploitant/.test(ob2) && !MODE_RE.test(ob + ob2 + ob3)), ob2.slice(0, 400));
   if (await p.isVisible('#screen-onboard')) await p.click('#ob-skip');
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 });
   const texts = {};
