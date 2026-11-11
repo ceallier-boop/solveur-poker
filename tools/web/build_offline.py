@@ -52,7 +52,7 @@ def equity_items(per_kind=EQUITY_PER_KIND, seed=13):
     niveau et par sorte, sans jamais les mêler aux séries GTO ou exploitant"""
     out = []; seen = set()
     for lv in (1, 2):
-        for kind in equity_quiz.KINDS:
+        for kind in equity_quiz.KINDS:                     # « outs » (avec tableau) : tirée seulement sur demande (filtre kind), comme l'API
             for sid, h in equity_quiz.draw(lv, per_kind, seed=seed * 10 + lv, kind=kind):
                 if (sid, h) in seen: continue
                 seen.add((sid, h)); q = equity_quiz.question(sid, h)
@@ -126,7 +126,7 @@ const DEMO = (() => {
   // CE3 : questions d'équités, mêmes règles que equity_quiz.draw (sortes en alternance, une main ne revient pas), au niveau du joueur
   function drawEquity(f, size) {
     const lv = levelRow().level <= 1 ? 1 : 2;
-    const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === 'equity' && it.lv === lv && (!f.kind || it.k === f.kind)).map(([, i]) => i);
+    const pool = ITEMS.map((it, i) => [it, i]).filter(([it]) => it.m === 'equity' && it.lv === lv && (f.kind ? it.k === f.kind : EQ_DEFAULT.includes(it.k))).map(([, i]) => i);
     const kinds = uniq(pool.map((i) => ITEMS[i].k)); let order = [];
     while (order.length < size && kinds.length) order = order.concat(kinds.slice().sort(() => Math.random() - 0.5));
     const seen = new Set(), used = new Set(), out = [];
@@ -199,7 +199,7 @@ const DEMO = (() => {
   }
 
   // CE3 : bloc « Équités » des statistiques (equity_quiz.stats), hors score GTO et BB/100
-  const EQ_KIND_FR = __EQ_KIND_FR__;
+  const EQ_KIND_FR = __EQ_KIND_FR__, EQ_DEFAULT = __EQ_DEFAULT__;
   function equityStats() {
     const rows = Object.values(load().sessions).filter((s) => s.mode === 'equity' && own(s)).flatMap((s) => answered(s).map(([it, r]) => [s.id, it, r]));
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; const by = {};
@@ -664,7 +664,7 @@ const DEMO = (() => {
       const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null;
       if (mode === 'equity') {                                         // CE3 : mêmes règles que l'API (mode à part, filtre kind seulement)
         if (body.challenge || body.plan) return [422, { detail: "défis, séance du jour et placement ne s'appliquent pas aux questions d'équités" }];
-        if (Object.keys(f).some((k) => k !== 'kind')) return [422, { detail: "seul le filtre kind (hit, equity, labels) s'applique aux équités" }];
+        if (Object.keys(f).some((k) => k !== 'kind')) return [422, { detail: "seul le filtre kind (hit, equity, labels, outs) s'applique aux équités" }];
       } else delete f.kind;
       if (body.challenge) {                                            // défis : mêmes règles que le serveur
         plan = `challenge_${body.challenge}`; const ud = new Date(); const utc = `${ud.getUTCFullYear()}${pad(ud.getUTCMonth() + 1)}${pad(ud.getUTCDate())}`;
@@ -853,7 +853,7 @@ def build(out, k_gto, exploit_max=2500):
             f'<script>\n{open(os.path.join(WEB, "winamax.js")).read()}\n</script>\n'                  # lecteur d'historiques Winamax (import de mains)
             f'<script>window.SA_LEXIQUE = {open(os.path.join(WEB, "lexique.json")).read()};</script>\n'
             f'<script>const DATASETS = {json.dumps(dict(gto=gto, exploit=fld))};</script>\n'
-            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__EQ_KIND_FR__", json.dumps(equity_quiz.KIND_FR, ensure_ascii=False)).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS, profile_min=wins.PROFILE_MIN, range_good=wins.RANGE_GOOD, range_avg_min=wins.RANGE_AVG_MIN))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES, category=challenges.CATEGORY, access=challenges.ACCESS, ad_kinds=list(challenges.AD_KINDS), gto_bank=list(challenges.GTO_BANK), categories=[dict(key=k, label_fr=l, available=a, challenge=c) for k, l, a, c in challenges.CATEGORIES]), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
+            f'<script>\n{SHIM.replace("__HU_SHARE__", str(quiz.HU_SHARE)).replace("__RANGE_FR__", json.dumps(today.RANGE_FR, ensure_ascii=False)).replace("__RANGE_EXPLOIT_FR__", json.dumps(today.RANGE_EXPLOIT_FR, ensure_ascii=False)).replace("__FAMILY_SHARE__", json.dumps(field.FAMILY_SHARE)).replace("__MAX_TRAPS__", str(field.MAX_TRAPS)).replace("__MAX_READ__", str(field.MAX_READ)).replace("__EASY_SHARE__", str(quiz.EASY_SHARE)).replace("__MIN_ANSWERS__", str(adaptive.MIN_ANSWERS)).replace("__MIN_ERRORS__", str(adaptive.MIN_ERRORS)).replace("__WEAK_RATE__", str(adaptive.WEAK_RATE)).replace("__INTERVALS__", json.dumps(list(review.INTERVALS_DAYS))).replace("__BUILD__", build_id).replace("__EQ_KIND_FR__", json.dumps(equity_quiz.KIND_FR, ensure_ascii=False)).replace("__EQ_DEFAULT__", json.dumps(list(equity_quiz.DEFAULT_KINDS))).replace("__REVIEW_RULE__", json.dumps(review.RULE_FR, ensure_ascii=False)).replace("__THEMES__", json.dumps(today.THEMES, ensure_ascii=False)).replace("__WINS__", json.dumps(dict(bb_days=wins.BB_DAYS, bb_min=wins.BB_MIN, bb_gain=wins.BB_GAIN, bb_rel=wins.BB_REL, err_days=wins.ERR_DAYS, err_min=wins.ERR_MIN, err_gain=wins.ERR_GAIN, err_rel=wins.ERR_REL, review_days=wins.REVIEW_DAYS, review_min=wins.REVIEW_MIN, level_days=wins.LEVEL_DAYS, effort_days=wins.EFFORT_DAYS, profile_min=wins.PROFILE_MIN, range_good=wins.RANGE_GOOD, range_avg_min=wins.RANGE_AVG_MIN))).replace("__CHALLENGES__", json.dumps(dict(info=challenges.INFO, daily_win=challenges.DAILY_WIN, pressure_win=challenges.PRESSURE_WIN, range_bb=challenges.RANGE_BB, range_acc=challenges.RANGE_ACC, reader_profiles=challenges.READER_PROFILES, category=challenges.CATEGORY, access=challenges.ACCESS, ad_kinds=list(challenges.AD_KINDS), gto_bank=list(challenges.GTO_BANK), categories=[dict(key=k, label_fr=l, available=a, challenge=c) for k, l, a, c in challenges.CATEGORIES]), ensure_ascii=False)).replace("__PLACEMENT__", json.dumps(dict(bands=levels.PLACEMENT_BANDS, passes=levels.PLACEMENT_PASS))).replace("__LEVELS__", json.dumps(dict(levels={k: dict(name=v['name'], depth=v['depth'], mode=v['mode'], themes=v['themes']) for k, v in levels.LEVELS.items()}, decisions=levels.DECISIONS, bb_target=levels.BB_TARGET, ranges_l1=levels.RANGES_L1, range_good=levels.RANGE_GOOD, recent=levels.RECENT, start=levels.START_LEVEL, experiences=levels.EXPERIENCE_FR, goals=levels.GOAL_FR, depth_fr=levels.DEPTH_FR, review_cap=today.REVIEW_CAP), ensure_ascii=False)).replace("__GOALS__", json.dumps(dict(kinds=goals.KINDS, default=goals.DEFAULT, default_new=goals.DEFAULT_NEW, default_bb=goals.DEFAULT_BB, min_decisions=goals.MIN_DECISIONS, range_good=goals.RANGE_GOOD, bounds=goals.BOUNDS, label=goals.LABEL), ensure_ascii=False))}\nDEMO.ready.then(() => {{\n{js}\n}});\n</script>\n')
     open(out, 'w').write(page)
     return len(data), len(page)
 

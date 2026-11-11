@@ -113,7 +113,7 @@ class Filters(BaseModel):
     family: Optional[str] = Field(None, pattern='^(first_in|vs_limp|vs_raise|vs_allin|read)$')     # read : lecture du vilain (mode Field)
     min_stack: Optional[float] = None
     max_stack: Optional[float] = None
-    kind: Optional[str] = Field(None, pattern='^(hit|equity|labels)$')     # mode « equity » seulement : une seule sorte de question d'équités
+    kind: Optional[str] = Field(None, pattern='^(hit|equity|labels|outs)$')     # mode « equity » seulement : une seule sorte de question d'équités
 
 
 class NewSession(BaseModel):
@@ -268,7 +268,7 @@ def _equity_session(body, x_player_id):
     if body.challenge or body.plan or body.review:
         raise HTTPException(422, "révision, défis, séance du jour et placement ne s'appliquent pas aux questions d'équités")
     pid = player(x_player_id); kind = body.filters.kind
-    if set(body.filters.model_dump(exclude_none=True)) - {'kind'}: raise HTTPException(422, "seul le filtre kind (hit, equity, labels) s'applique aux équités")
+    if set(body.filters.model_dump(exclude_none=True)) - {'kind'}: raise HTTPException(422, "seul le filtre kind (hit, equity, labels, outs) s'applique aux équités")
     with closing(connect()) as con:
         level = _level_row(con, pid)['level'] if pid else 1
         recent = _recent(con, pid)[1]

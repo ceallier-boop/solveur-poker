@@ -74,3 +74,64 @@ La route `POST /attempts` le permet sans changement de schéma. `action_id` est 
 ## Démo autonome
 
 `tools/web/build_offline.py` embarque 40 questions par sorte et par niveau, calculées par le même code Python (même énoncé, même correction). Le moteur local de la page tire la série au niveau du joueur, applique les mêmes refus que l'API et garde ces réponses hors des statistiques GTO. Test : `DEMO_URL=… node tools/web/e2e_equity_demo.cjs`.
+
+## v2 : questions avec tableau, sorte « outs » (11/11/2026, `spinsacademy/equity_board.py`)
+
+Ces questions se demandent avec `POST /sessions {"mode": "equity", "filters": {"kind": "outs"}}`. Elles n'entrent pas dans une série d'équités sans filtre (`equity_quiz.DEFAULT_KINDS`) tant que l'écran qui affiche le tableau n'est pas livré.
+
+**Définition (décision du porteur du 11/11).** Une carte « améliore ta main » si ta main monte de catégorie plus que le tableau seul :
+
+```
+Δ main    = catégorie(main + tableau + carte) − catégorie(main + tableau)
+Δ tableau = catégorie(tableau + carte) − catégorie(tableau)
+la carte compte si Δ main > Δ tableau
+```
+
+Les catégories, de la plus basse à la plus haute : carte haute, paire, double paire, brelan, suite, couleur, full, carré, quinte flush.
+
+Conséquences :
+- une carte qui paire seulement le tableau ne compte pas ;
+- une carte qui transforme un brelan en full compte.
+
+Il n'y a pas de main adverse : améliorer ne veut pas dire passer devant, et la correction le rappelle. Jusqu'à la river, on applique la même règle aux deux cartes, en énumérant les 1 081 couples de turn et river possibles ; les améliorations qui demandent les deux cartes sont comptées.
+
+**Tirage des questions.**
+- Le flop n'est jamais pairé.
+- La main a au plus une paire.
+- Entre 2 et 21 cartes l'améliorent.
+- 60 % des questions sont tirées sur une main avec un tirage suite ou couleur.
+
+| `topic` | Question | Réponses |
+|---|---|---|
+| `nombre` | « Combien de cartes améliorent ta main au turn ? » (au niveau 2 et plus : « Combien d'outs (cartes qui améliorent ta main) … ») | quatre nombres espacés de 3 (niveau 1) ou de 2 ; nombre exact = correct, nombre voisin = imprécision |
+| `turn` | « Quelle est la probabilité d'améliorer ta main au turn ? » (outs ÷ 47) | tranches, marge de 1,5 point |
+| `river` (niveaux 2 et plus) | « … au turn ou à la river ? » (calcul exact sur les 1 081 suites) | tranches, marge de 1,5 point |
+
+**Champs ajoutés à la question.**
+- `street: "flop"`.
+- `board: ["Q♠", "7♠", "2♦"]` (affichage) et `board_cards: ["Qs", "7s", "2d"]` (rang, puis couleur parmi `shdc`).
+- `hand_cards: ["As", "Ks"]`. `hand` vaut la main exacte (« AsKs ») et `hand_display` vaut « A♠K♠ ».
+- `villain_hand: null`.
+
+Pour les questions sans tableau, `board` et `board_cards` sont vides et `street` vaut `null`.
+
+**Correction.** Comme pour les autres sortes, avec en plus :
+- `essential_fr`, la valeur exacte ;
+- `method_fr`, la règle de comptage ;
+- dans `details_fr`, la liste des cartes groupées par main obtenue (« couleur : 9 cartes (A♠, …) ; paire : 6 cartes (…) »), les probabilités exactes au turn et jusqu'à la river, la règle des 2 et 4 comparée à la valeur exacte (« la règle surestime de 4,8 points ») et l'avertissement « améliorer n'est pas toujours passer devant ».
+
+Le bloc `equity` contient en plus :
+- `outs` : `[{card, display, category_fr}]` ;
+- `outs_count`, `turn_bp` et `river_bp` ;
+- `rule_turn_pct` et `rule_river_pct` (2 × outs et 4 × outs) ;
+- `board` et `street`.
+
+**Vérification.** `tests/test_equity_board.py` recompte tout avec un évaluateur indépendant, écrit en pur Python sans le kernel `evaln` :
+- 3 000 catégories de 3 à 7 cartes ;
+- 300 situations de turn ;
+- 4 situations complètes jusqu'à la river ;
+- cinq cas connus (AsKs sur Qs7s2d = 15 cartes, 7h7d sur Ks9c2s = 2…).
+
+La démo embarque 10 questions d'outs par niveau (+11 Ko).
+
+**Suite de la v2.** Équité d'une main sur un flop connu, puis les exercices de range, puis turn et river.
