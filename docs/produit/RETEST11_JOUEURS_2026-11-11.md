@@ -60,7 +60,19 @@ Rien de ce que les profils utilisaient n'a disparu.
 
 ## 5. Recettes
 
-RECETTES
+| Recette | Application, banque du test fermé | Application, banque de référence | Démo, banque du test fermé | Démo, banque de référence |
+|---|---|---|---|---|
+| `e2e_audit_recette.cjs` | 10/10 | 10/10 | — | — |
+| `e2e_placement_recette.cjs` | 19/19 | 19/19 | 19/19 | 19/19 |
+| `e2e_test_ferme.cjs` | 7/7 | — | — | — |
+| `e2e_rythme_recette.cjs` | 13/13 | 13/13 | 10/10 | 10/10 |
+| `e2e_fiches_recette.cjs` | 8/8 | 8/8 | 8/8 | 8/8 |
+| `e2e_categories_recette.cjs` | 18/18 | 18/18 | 18/18 | 18/18 |
+| `e2e_equites_recette.cjs` | 6/6 | 6/6 | 6/6 | 6/6 |
+| `e2e_replay_recette.cjs` | 6/6 | 6/6 | 6/6 | 6/6 |
+| `e2e_ui_categories_recette.cjs` | 11/11 | 11/11 | 11/11 | 11/11 |
+
+31 passages sur 31, une base neuve par passage, même `SPINSACADEMY_DATASET` que le serveur ou la démo. Toutes passent par `tools/web/nav_helper.cjs` (onglet Quiz puis bouton GTO ou Exploitant). Le contrôle AU3 de `e2e_audit_recette` n'exige plus un nombre de situations distinctes (échec aléatoire sur la banque étroite) mais les 10 questions dans la tranche.
 
 ## 6. Ce qui plaît
 - Exercices : « enfin rangé » (Sofiane) ; les trois formats en une page.
