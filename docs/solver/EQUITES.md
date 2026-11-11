@@ -20,13 +20,15 @@ Toutes les valeurs sont des entiers en **dix-millièmes** (10 000 = 100 %) ; l'�
 | connectée | rangs qui se suivent et tirage quinte à 8 outs ≥ 3 % (exclut AK, AQ) |
 | paire de poche | deux cartes du même rang (set 10,8 %) |
 | cartes hautes | les deux rangs ≥ T |
-| fait souvent la top paire ou mieux / rarement | top paire ou mieux au flop ≥ 25 % / < 12 % |
+| fait souvent la top paire ou mieux / rarement | sans paire de poche : top paire ou mieux au flop ≥ 25 % / < 12 % |
 | beaucoup de tirages | tirage couleur ≥ 10 % ou tirage quinte à 8 outs ≥ 9 % |
 | bloque les As | contient un As |
 | forte / faible contre une main au hasard | équité ≥ 60 % / < 45 % |
 | cartes éloignées | écart ≥ 2 rangs, sans paire, tirage quinte à 8 outs < 2 % |
 | dominée | ≥ 30 % des 20 % meilleures mains la dominent (même carte haute avec un meilleur second rang, ou même second rang avec une meilleure carte haute) |
-| quand elle touche, souvent une paire faible | ≥ 60 % des touches sont une paire basse, intermédiaire ou de poche sous le tableau |
+| quand elle touche, souvent une paire faible | sans paire de poche : ≥ 60 % des touches sont une paire basse ou intermédiaire |
+
+Les paires de poche ne reçoivent que « paire de poche » (et les étiquettes qui ont un sens pour elles : bloque les As, forte ou faible contre une main au hasard) : leur « top paire ou mieux » comprend la double paire avec une paire du tableau, ce qui ne dit rien de la force de la main. `measures_of(main)` donne les mesures de toutes les règles pour n'importe quelle main (domination, part de paire faible, équité contre une main au hasard, chances de toucher), qu'une étiquette s'applique ou non ; la part de paire faible est 0 pour une paire de poche et ne s'y lit pas.
 
 ## Pièges traités
 

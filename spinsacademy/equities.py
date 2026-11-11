@@ -35,6 +35,7 @@ DRAWS_FR = {'tirage_couleur': "tirage couleur (quatre cartes de la même couleur
             'tirage_couleur_et_quinte': "tirage couleur et tirage quinte en même temps"}
 DRAWS = list(DRAWS_FR)
 KEYS = HITS + list(CUMUL) + DRAWS
+MESURES = ['domination', 'part_paire_faible']        # mesures des règles qui ne sont pas déjà dans `flop` ; pour toutes les mains, appliquées ou non
 
 # Règles des étiquettes. `test` reçoit les mesures de la main (voir measures) et renvoie la valeur mesurée si l'étiquette s'applique, sinon None.
 # Les seuils sont des nombres ronds posés d'après la distribution des 169 mains (quartiles de la table).
@@ -47,8 +48,8 @@ LABELS = [
          test=lambda m: m['set'] if m['pair'] else None, unite='dix-millièmes de set au flop'),
     dict(id='cartes_hautes', groupe='force', fr="deux cartes hautes (dix ou plus)", regle_fr="les deux rangs sont T, J, Q, K ou A (rang d'au moins 8, avec 0 = 2)", seuil=8, sens='>=',
          test=lambda m: m['hi'] if (not m['pair'] and m['lo'] >= 8) else None, unite='rang de la plus haute carte (0 = 2, 12 = A)'),
-    dict(id='top_paire_souvent', groupe='force', fr="fait souvent la top paire ou mieux", regle_fr="top paire ou mieux au flop au moins 25 % du temps", seuil=2500, sens='>=',
-         test=lambda m: m['au_moins_top_paire'] if m['au_moins_top_paire'] >= 2500 else None, unite='dix-millièmes'),
+    dict(id='top_paire_souvent', groupe='force', fr="fait souvent la top paire ou mieux", regle_fr="sans paire de poche : top paire ou mieux au flop au moins 25 % du temps", seuil=2500, sens='>=',
+         test=lambda m: m['au_moins_top_paire'] if (not m['pair'] and m['au_moins_top_paire'] >= 2500) else None, unite='dix-millièmes'),
     dict(id='beaucoup_de_tirages', groupe='force', fr="beaucoup de tirages au flop", regle_fr="tirage couleur au moins 10 % du temps, ou tirage quinte à 8 outs au moins 9 %",
          seuil=[1000, 900], sens='>=', test=lambda m: max(m['tirage_couleur'], m['tirage_quinte_8']) if (m['tirage_couleur'] >= 1000 or m['tirage_quinte_8'] >= 900) else None,
          unite='dix-millièmes (le plus grand des deux tirages)'),
@@ -63,10 +64,10 @@ LABELS = [
     dict(id='dominee', groupe='faiblesse', fr="dominée : souvent battue par les mains fortes qui partagent une carte", regle_fr="au moins 30 % des 20 % meilleures mains (équité contre une main au hasard) la dominent : "
          "même carte haute avec un meilleur second rang, ou même second rang avec une meilleure carte haute", seuil=3000, sens='>=',
          test=lambda m: m['domination'] if m['domination'] >= 3000 else None, unite='dix-millièmes des combinaisons fortes qui la dominent'),
-    dict(id='top_paire_rarement', groupe='faiblesse', fr="fait rarement la top paire", regle_fr="top paire ou mieux au flop moins de 12 % du temps", seuil=1200, sens='<',
-         test=lambda m: m['au_moins_top_paire'] if m['au_moins_top_paire'] < 1200 else None, unite='dix-millièmes'),
-    dict(id='paire_faible', groupe='faiblesse', fr="quand elle touche, c'est souvent une paire faible", regle_fr="au moins 60 % des fois où elle touche, c'est une paire basse, intermédiaire ou de poche sous le tableau", seuil=6000, sens='>=',
-         test=lambda m: m['part_paire_faible'] if (m['au_moins_paire'] > 0 and m['part_paire_faible'] >= 6000) else None, unite='dix-millièmes des flops touchés'),
+    dict(id='top_paire_rarement', groupe='faiblesse', fr="fait rarement la top paire", regle_fr="sans paire de poche : top paire ou mieux au flop moins de 12 % du temps", seuil=1200, sens='<',
+         test=lambda m: m['au_moins_top_paire'] if (not m['pair'] and m['au_moins_top_paire'] < 1200) else None, unite='dix-millièmes'),
+    dict(id='paire_faible', groupe='faiblesse', fr="quand elle touche, c'est souvent une paire faible", regle_fr="sans paire de poche : au moins 60 % des fois où elle touche, c'est une paire basse ou intermédiaire", seuil=6000, sens='>=',
+         test=lambda m: m['part_paire_faible'] if (not m['pair'] and m['au_moins_paire'] > 0 and m['part_paire_faible'] >= 6000) else None, unite='dix-millièmes des flops touchés'),
     dict(id='faible_contre_au_hasard', groupe='faiblesse', fr="faible contre une main au hasard", regle_fr="équité de moins de 45 % contre une main au hasard", seuil=4500, sens='<',
          test=lambda m: m['equity_random'] if m['equity_random'] < 4500 else None, unite='dix-millièmes'),
 ]
@@ -94,7 +95,7 @@ def measures(i, name, hit_bp, draw_bp, eq_random, domination):
     m = dict(suited=s == 's', pair=a == b, hi=a, lo=b, gap=a - b - 1 if a != b else None, has_ace=12 in (a, b), equity_random=eq_random, domination=domination, **d)
     for k, (_, parts) in CUMUL.items(): m[k] = sum(h[p] for p in parts)
     m['set'] = h['set']
-    weak = h['paire_poche_sous_tableau'] + h['paire_basse'] + h['paire_intermediaire']
+    weak = h['paire_basse'] + h['paire_intermediaire']                  # paires de poche exclues : la mesure ne vaut que pour les mains sans paire
     m['part_paire_faible'] = round(10000 * weak / m['au_moins_paire']) if m['au_moins_paire'] else 0
     return m
 
@@ -121,12 +122,13 @@ def build():
                 if c == d: continue
                 if (c == a and d > b and d != a) or (d == a and c > b and c != a) or (d == b and c > a) or (c == b and d > a): num += int(W[j])
         dom.append(round(10000 * num / sum(int(W[j]) for j in strong)))
-    flop = []; labels = []; lab_defs = [{k: v for k, v in L.items() if k != 'test'} for L in LABELS]
+    flop = []; labels = []; mesures = []; lab_defs = [{k: v for k, v in L.items() if k != 'test'} for L in LABELS]
     for i, name in enumerate(NAMES):
         hit_bp = _bp(list(hits[i]), int(n[i])); draw_bp = [round(10000 * int(x) / int(n[i])) for x in draws[i]]
         m = measures(i, name, hit_bp, draw_bp, eq_random[i], dom[i])
         flop.append(hit_bp + [m[k] for k in CUMUL] + draw_bp)
         labels.append([[L['id'], v] for L in LABELS for v in [L['test'](m)] if v is not None])
+        mesures.append([m[k] for k in MESURES])
     _, spots = quiz.load(BANK); ranges = []
     for rid, label, table, stack, hero, node, act in RANGES:
         sp = next(s for s in spots.values() if s['table'] == table and s['stacks_bb'] == [float(stack)] * len(s['stacks_bb']) and s['hero'] == hero and s['node_key'] == node)
@@ -137,7 +139,7 @@ def build():
         ranges.append(dict(id=rid, label_fr=label, spot=sp['spot_id'], hero=hero, share=round(10000 * float((W * q).sum() / W.sum())),
                            equity=[None if np.isnan(x) else round(10000 * float(x)) for x in eq]))
     return dict(version=VERSION, date=DATE, bank=BANK, unite="dix-millièmes (10 000 = 100 %) ; égalité = une moitié", hands=list(NAMES), keys=KEYS, hits=HITS, cumul=list(CUMUL),
-                draws=DRAWS, flop=flop, equity_random=eq_random, ranges=ranges, labels_def=lab_defs, labels=labels)
+                draws=DRAWS, flop=flop, equity_random=eq_random, ranges=ranges, labels_def=lab_defs, labels=labels, mesures_keys=MESURES, mesures=mesures)
 
 
 def _dump(data):
@@ -174,6 +176,14 @@ def equity_vs_range(hand, range_id):
     """équité (dix-millièmes) de la classe contre la range ; None si la range est vide une fois la main retirée du paquet"""
     r = next(r for r in table()['ranges'] if r['id'] == range_id)
     return r['equity'][_i(hand)]
+
+
+def measures_of(hand):
+    """toutes les mesures utilisées par les règles d'étiquettes, pour n'importe quelle main : les chances de toucher, les tirages, l'équité contre une main au hasard
+    et `domination`, `part_paire_faible` (dix-millièmes) ; `part_paire_faible` ne vaut que pour les mains sans paire de poche"""
+    out = dict(hit_chances(hand)); out['equity_random'] = equity_random(hand)
+    out.update(zip(table()['mesures_keys'], table()['mesures'][_i(hand)]))
+    return out
 
 
 def labels(hand):
