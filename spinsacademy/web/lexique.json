@@ -404,14 +404,14 @@
    "def": "L'ensemble des joueurs que tu croises aux tables d'Expresso, surtout des joueurs récréatifs. « Exploiter le field », c'est adapter ton jeu à leurs défauts habituels plutôt que jouer la stratégie théorique."
   },
   {
-   "term": "Mode exploitant",
+   "term": "Exploitant (onglet)",
    "cat": "profils",
    "match": [
     "exploitant",
     "exploiter",
     "adaptation"
    ],
-   "def": "Mode qui t'apprend à t'écarter de la théorie pour profiter des erreurs des vrais joueurs d'Expresso : tu lis leurs stats, puis tu choisis le coup le plus rentable contre eux."
+   "def": "L'onglet qui t'apprend à t'écarter de la théorie pour profiter des erreurs des vrais joueurs d'Expresso : tu lis leurs stats, puis tu choisis le coup le plus rentable contre eux."
   },
   {
    "term": "Nit (serré)",
@@ -458,7 +458,7 @@
     "action de référence",
     "référence"
    ],
-   "def": "Ce que joue le solveur dans la situation : les actions jouées au moins 10 % du temps, arrondies à 5 %. En mode exploitant : le coup le plus rentable contre ce vilain."
+   "def": "Ce que joue le solveur dans la situation : les actions jouées au moins 10 % du temps, arrondies à 5 %. Dans l'onglet Exploitant : le coup le plus rentable contre ce vilain."
   },
   {
    "term": "<0,02 BB",
@@ -757,7 +757,7 @@
     "construis ta range",
     "mains bien classées"
    ],
-   "def": "Exercice du mode GTO : colorie sur la grille toutes les mains avec lesquelles tu joues l'action demandée, puis compare avec la référence. Vert : à jouer, bien vu ; rouge : jouée à tort ; contour rouge : oubliée ; hachuré : main mixte, les deux réponses sont acceptées. La note donne la part des mains bien classées et les BB perdus pour 100 mains jouées dans cette situation."
+   "def": "Exercice de la catégorie Ranges (onglet GTO) : colorie sur la grille toutes les mains avec lesquelles tu joues l'action demandée, puis compare avec la référence. Vert : à jouer, bien vu ; rouge : jouée à tort ; contour rouge : oubliée ; hachuré : main mixte, les deux réponses sont acceptées. La note donne la part des mains bien classées et les BB perdus pour 100 mains jouées dans cette situation."
   },
   {
    "term": "Chrono",
