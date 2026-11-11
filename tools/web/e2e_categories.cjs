@@ -33,9 +33,9 @@ const cards = (p, tab) => p.$$eval(`#screen-${tab} .cat-card`, (xs) => xs.map((x
   await series(p);
   ok('bilan : étiquette Préflop GTO', (await p.textContent('#s-cat')).trim() === 'Préflop GTO');
   await p.click('#back-home'); await p.waitForSelector('#screen-gto:not([hidden])');
-  await p.waitForFunction(() => /de bonnes réponses · 5 décisions/.test(document.getElementById('cat-gto-meter').textContent), null, { timeout: 10000 }).catch(() => {});
+  await p.waitForFunction(() => /des points · 5 décisions/.test(document.getElementById('cat-gto-meter').textContent), null, { timeout: 10000 }).catch(() => {});
   const gm = await p.textContent('#cat-gto-meter');
-  ok('carte Préflop : score et décisions', /^\d+ % de bonnes réponses · 5 décisions/.test(gm), gm);
+  ok('carte Préflop : score et décisions', /^\d+ % des points · 5 décisions/.test(gm), gm);
   await p.screenshot({ path: `${OUT}/categories_gto.png`, fullPage: true });
 
   // une série Profils (lecture du vilain) : étiquette Profils, comptée à part du Préflop exploitant

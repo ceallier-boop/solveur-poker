@@ -644,7 +644,7 @@ function catLine(key, v) {
   if (key === 'equites') return `${Math.round(v.pct)} % des points · ${plural(v.q, 'question')}`;
   if (key === 'profils') return `${plural(v.ok, 'lecture')} juste${v.ok > 1 ? 's' : ''} sur ${v.q}`;
   if (key === 'ranges') return `${plural(v.n, 'range')} · ${nfr1(v.acc)} % de mains bien classées en moyenne`;
-  return `${Math.round(v.pct)} % de bonnes réponses · ${plural(v.q, 'décision')}` + (v.bb != null ? ` · ${nfr1(v.bb)} BB perdus pour 100` : '');
+  return `${Math.round(v.pct)} % des points · ${plural(v.q, 'décision')}`   // score en points (imprécision = demi-point), comme Équités + (v.bb != null ? ` · ${nfr1(v.bb)} BB perdus pour 100` : '');
 }
 function renderCats(s) {
   const n = catNumbers(s);
