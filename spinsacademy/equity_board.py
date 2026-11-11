@@ -210,3 +210,174 @@ def _rule_gap(rule, exact):
     d = rule - exact
     if abs(d) < 1.5: return f"(valeur exacte {str(round(exact, 1)).replace('.', ',')} % : la règle tombe juste)"
     return f"(valeur exacte {str(round(exact, 1)).replace('.', ',')} % : la règle {'surestime' if d > 0 else 'sous-estime'} de {str(round(abs(d), 1)).replace('.', ',')} point{'s' if abs(d) >= 2 else ''})"
+
+
+# ================================================================== sorte « board_equity » : équité d'une main sur un flop connu
+# Équité exacte d'une main précise contre une main au hasard ou contre la range de tapis du SB (banque du solveur), une fois le flop
+# connu : les 1 081 turns et rivers possibles, chaque main adverse pondérée par sa fréquence, cartes bloquées retirées, égalité pour
+# moitié. Le héros paie le tapis : sa main est tirée dans la range de call du BB à ce tapis (main au hasard : n'importe quelle main).
+# Identifiant : eq:board_equity:{hasard | huN_sb_tapis}:L{niveau}:{flop}:w{largeur}:n{tranches}:p{rang} ; main exacte dans hand.
+from functools import lru_cache
+from numba import njit
+from .postflop.kernels import CC, CLASS_OF
+
+EQ_TOPICS_L1 = ('hasard', 'hu8_sb_tapis', 'hu12_sb_tapis')
+EQ_TOPICS = ('hasard', 'hu6_sb_tapis', 'hu8_sb_tapis', 'hu10_sb_tapis', 'hu12_sb_tapis')
+CALLER = {f'hu{n}_sb_tapis': f'hu{n}_bb_paie' for n in (6, 8, 10, 12)}
+
+
+@njit(cache=True)
+def hero_equity(h0, h1, flop, opp, CC):
+    """(gain, total) : masse adverse battue (égalité pour moitié) et masse adverse compatible, sommées sur les 1 081 turns et rivers"""
+    used = np.zeros(52, np.bool_); used[h0] = True; used[h1] = True
+    for k in range(3): used[flop[k]] = True
+    cards = np.zeros(7, np.int64); cards[2] = flop[0]; cards[3] = flop[1]; cards[4] = flop[2]
+    hc = np.zeros(7, np.int64); hc[0] = h0; hc[1] = h1; hc[2] = flop[0]; hc[3] = flop[1]; hc[4] = flop[2]
+    win = 0.0; tot = 0.0
+    for t in range(52):
+        if used[t]: continue
+        for r in range(t + 1, 52):
+            if used[r]: continue
+            hc[5] = t; hc[6] = r; me = evaln(hc, 7)
+            cards[5] = t; cards[6] = r
+            for c in range(1326):
+                w = opp[c]
+                if w <= 0: continue
+                a = CC[c, 0]; b = CC[c, 1]
+                if used[a] or used[b] or a == t or a == r or b == t or b == r: continue
+                cards[0] = a; cards[1] = b; v = evaln(cards, 7)
+                tot += w
+                if me > v: win += w
+                elif me == v: win += 0.5 * w
+    return win, tot
+
+
+@lru_cache(maxsize=16)
+def class_weights(rid):
+    """poids (0 à 1) de chaque classe de main dans une range de la banque : atteinte × fréquence de l'action (comme equities.build)"""
+    from . import equities, quiz
+    from .cards import NAMES
+    rid_table = {r[0]: r for r in equities.RANGES}
+    _, table, stack, hero, node, act = rid_table[rid][1:]
+    _, spots = quiz.load(equities.BANK)
+    sp = next(s for s in spots.values() if s['table'] == table and s['stacks_bb'] == [float(stack)] * len(s['stacks_bb']) and s['hero'] == hero and s['node_key'] == node)
+    types = [a['type'] for a in sp['actions']]
+    j = types.index('allin') if act == 'allin' else types.index('call_allin') if 'call_allin' in types else types.index('call')
+    return tuple(round(sp['hands'][h]['reach'] * sp['hands'][h]['freq'][j], 4) for h in NAMES)
+
+
+def combo_weights(topic):
+    if topic == 'hasard': return np.ones(1326)
+    w = np.array(class_weights(topic)); return w[np.asarray(CLASS_OF)]
+
+
+@lru_cache(maxsize=4096)
+def equity_on_board(topic, hand_s, board_s):
+    """équité exacte (dix-millièmes) de la main sur le flop contre la range"""
+    hand, board = cards_of(hand_s), cards_of(board_s)
+    win, tot = hero_equity(hand[0], hand[1], np.array(board, np.int64), combo_weights(topic), CC)
+    return round(10000 * win / tot)
+
+
+def range_view(topic):
+    """la range pour l'écran : {who, label_fr, pct, hands: {classe: poids}}"""
+    from . import equities
+    from .cards import NAMES
+    r = next(x for x in equities.ranges() if x['id'] == topic)
+    w = class_weights(topic)
+    return dict(who='villain', label_fr=f"SB, tapis à {topic[2:-9]} BB en heads-up ({round(r['share'] / 100)} %)", pct=round(r['share'] / 100, 1),
+                hands={h: x for h, x in zip(NAMES, w) if x > 0})
+
+
+def situation_fr(hand, board):
+    """ce que la main a pour l'instant, sans attribuer au joueur ce qui est sur le tableau"""
+    c, cb = category(hand + board), category(board)
+    if c <= cb: return f"rien de plus que le tableau ({CAT_FR[cb]} sur le tableau)" if cb else "carte haute"
+    return CAT_FR[c] + (" (avec la paire du tableau)" if cb == 1 and c == 2 else "")
+
+
+def eq_spot_id(topic, level, board, w, n, pos): return f"eq:board_equity:{topic}:L{level}:{''.join(name(c) for c in board)}:w{w}:n{n}:p{pos}"
+
+
+def eq_parse(sid):
+    p = sid.split(':')
+    if len(p) != 8 or p[0] != 'eq' or p[1] != 'board_equity' or p[2] not in EQ_TOPICS: raise ValueError
+    board = cards_of(p[4])
+    if len(board) != 3: raise ValueError
+    return dict(kind='board_equity', topic=p[2], level=int(p[3][1:]), board=board, w=int(p[5][1:]), n=int(p[6][1:]), pos=int(p[7][1:]))
+
+
+def eq_built(q, hand_s):
+    from . import equity_quiz as E
+    hand = cards_of(hand_s)
+    if len(hand) != 2 or set(hand) & set(q['board']): raise ValueError
+    if q['level'] == 1 and q['topic'] not in EQ_TOPICS_L1: raise ValueError
+    v = equity_on_board(q['topic'], hand_s, ''.join(name(c) for c in q['board']))
+    f = E.frontiers(v, q['w'], q['n'], q['pos'])
+    if f is None: raise ValueError
+    return dict(q, hand=hand, value=v, f=f, options=E.band_labels(f), correct=q['pos'])
+
+
+def _hand_from(topic, rnd, board, avoid):
+    """main exacte du héros : n'importe laquelle (main au hasard), sinon tirée dans la range de call du BB, pondérée"""
+    from .cards import NAMES
+    live = [c for c in range(1326) if CC[c, 0] not in board and CC[c, 1] not in board]
+    w = np.ones(1326) if topic == 'hasard' else np.array(class_weights(CALLER[topic]))[np.asarray(CLASS_OF)]
+    for _ in range(20):
+        c = rnd.choices(live, [w[i] for i in live])[0]
+        hs = ''.join(name(x) for x in sorted((int(CC[c, 0]), int(CC[c, 1])), reverse=True))
+        if hs not in avoid: return hs
+    return hs
+
+
+def eq_draw_one(level, rnd, avoid=frozenset(), topic=None):
+    from . import equity_quiz as E
+    topics = EQ_TOPICS_L1 if level == 1 else EQ_TOPICS
+    for _ in range(40):
+        t = topic or rnd.choice(topics)
+        board = sorted(rnd.sample(range(52), 3), reverse=True)
+        hs = _hand_from(t, rnd, board, avoid)
+        n = 4 if level == 1 else rnd.choice((5, 6))
+        v = equity_on_board(t, hs, ''.join(name(c) for c in board))
+        if not 300 <= v <= 9700: continue                       # 3 % à 97 % : pas de question jouée d'avance
+        opts = E.feasible(v, level, n)
+        if not opts: continue
+        pos = rnd.choice(sorted({p for _, p in opts})); w = next(w for w, p in opts if p == pos)
+        return eq_spot_id(t, level, board, w, n, pos), hs
+    return None
+
+
+def eq_prompt(q, hand_s):
+    hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in q['board'])
+    if q['topic'] == 'hasard':
+        return (f"Tu as {hd}, le flop est {bd}. Contre une main au hasard, quelles sont tes chances de gagner à la fin du coup ? (une égalité compte pour moitié)"
+                if q['level'] == 1 else f"Tu as {hd}, le flop est {bd}. Quelle est ton équité contre une main au hasard ?")
+    n = q['topic'][2:-9]
+    return (f"Le SB part à tapis à {n} BB en heads-up, tu paies avec {hd}. Le flop est {bd}. Quelles sont tes chances de gagner maintenant ?"
+            if q['level'] == 1 else f"Tu as payé le tapis du SB à {n} BB en heads-up avec {hd}. Le flop est {bd}. Quelle est ton équité contre sa range ?")
+
+
+def eq_question_extra(q, hand_s):
+    return dict(street='flop', board=[name(c) for c in q['board']], board_display=[disp(c) for c in q['board']], hero_cards=[hand_s[:2], hand_s[2:]],
+                hand_display=hand_display(hand_s), villain_cards=None, ranges=[] if q['topic'] == 'hasard' else [range_view(q['topic'])], dead_cards=[])
+
+
+def eq_correction(b, hand_s):
+    from . import equity_quiz as E, equities
+    from .cards import NAMES
+    hand, board = b['hand'], b['board']; hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in board); v = b['value']
+    a, c = sorted(hand, reverse=True); cls = RANKS[a >> 2] + RANKS[c >> 2] + ('' if a >> 2 == c >> 2 else 's' if a % 4 == c % 4 else 'o')
+    pre = equities.equity_random(cls) if b['topic'] == 'hasard' else equities.equity_vs_range(cls, b['topic'])
+    who = "une main au hasard" if b['topic'] == 'hasard' else f"la range de tapis du SB à {b['topic'][2:-9]} BB"
+    essential = f"Sur {bd}, {hd} a {E.pct_fr(v)} d'équité contre {who}."
+    method = ("Calcul : les 1 081 turns et rivers possibles, contre chaque main adverse" + ("" if b['topic'] == 'hasard' else " de la range, pondérée par sa fréquence dans la banque du solveur")
+              + " ; les cartes déjà vues (ta main, le flop) sont retirées ; une égalité compte pour moitié.")
+    d = (v - pre) / 100
+    move = ("le flop t'aide nettement" if d >= 3 else "le flop te dessert nettement" if d <= -3 else "le flop change peu de chose")
+    now = situation_fr(hand, board); o = outs(hand, board)
+    lines = [f"Avant le flop : {E.pct_fr(pre)} ({cls}, toutes couleurs confondues) ; au flop : {E.pct_fr(v)} : {move} ({'+' if d >= 0 else '−'}{str(round(abs(d), 1)).replace('.', ',')} points).",
+             f"Ta main pour l'instant : {now} ; {_plural(len(o))} l'améliorent au turn.",
+             "L'équité dit qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent : la position et les mises à venir comptent aussi."]
+    extra = dict(value_bp=v, value_fr=E.pct_fr(v), board=[name(x) for x in board], street='flop', range_id=None if b['topic'] == 'hasard' else b['topic'],
+                 by_street=[dict(street='preflop', value_bp=pre), dict(street='flop', value_bp=v)], hand_category_fr=now, outs_count=len(o))
+    return essential, method, lines, extra

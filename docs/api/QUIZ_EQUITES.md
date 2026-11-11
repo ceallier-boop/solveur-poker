@@ -135,3 +135,41 @@ Le bloc `equity` contient en plus :
 La démo embarque 10 questions d'outs par niveau (+11 Ko).
 
 **Suite de la v2.** Équité d'une main sur un flop connu, puis les exercices de range, puis turn et river.
+
+## v2 : sorte « board_equity », équité d'une main sur un flop connu (11/11/2026)
+
+`POST /sessions {"mode": "equity", "filters": {"kind": "board_equity"}}`. Comme les outs, cette sorte n'entre pas encore dans les séries sans filtre.
+
+**Questions.**
+
+| `topic` | Énoncé (niveau 2 et plus) | Main du héros |
+|---|---|---|
+| `hasard` | « Tu as A♦2♦, le flop est K♦ 8♣ 5♥. Quelle est ton équité contre une main au hasard ? » | n'importe quelle main |
+| `huN_sb_tapis` (N = 6, 8, 10 ou 12) | « Tu as payé le tapis du SB à N BB en heads-up avec … Le flop est … Quelle est ton équité contre sa range ? » | tirée dans la range de call du BB à ce tapis, pondérée par sa fréquence |
+
+Au niveau 1, l'énoncé parle de « chances de gagner », et seuls `hasard`, `hu8_sb_tapis` et `hu12_sb_tapis` sont posés.
+
+**Valeur exacte.**
+- On énumère les 1 081 turns et rivers possibles. Chaque main adverse est pondérée par sa fréquence dans la banque du solveur, les cartes vues sont retirées, et une égalité compte pour moitié. Kernel : `equity_board.hero_equity`, environ 0,2 s par question, avec un cache.
+- Les questions jouées d'avance (équité sous 3 % ou au-dessus de 97 %) ne sont pas posées.
+- Tranches : 4 au niveau 1, 5 ou 6 ensuite, avec une marge de 1,5 point.
+
+**Question.** Mêmes champs que pour les outs. Pour une range, `ranges = [{who: "villain", label_fr: "SB, tapis à 8 BB en heads-up (44 %)", pct, hands: {classe: poids de 0 à 1}}]`. Pour une main au hasard, `ranges = []`.
+
+**Correction.**
+- La valeur exacte et la méthode.
+- L'équité avant le flop, celle de la classe de main toutes couleurs confondues, lue dans la table de la v1, comparée à celle du flop : « le flop t'aide nettement / te dessert nettement / change peu de chose », avec un seuil de 3 points.
+- Ce que la main a pour l'instant, sans attribuer au joueur la paire du tableau : « rien de plus que le tableau (paire sur le tableau) », « double paire (avec la paire du tableau) ».
+- Le nombre de cartes qui l'améliorent au turn.
+- La nuance : « L'équité dit qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent. »
+
+Le bloc `equity` contient en plus :
+- `value_bp` et `value_fr` ;
+- `by_street` : `[{street: "preflop", value_bp}, {street: "flop", value_bp}]` ;
+- `hand_category_fr`, `outs_count` et `range_id`.
+
+**Vérification.** `tests/test_equity_board.py` contrôle :
+- l'équité main contre main sur trois cas, recalculée par un évaluateur complet en pur Python sur les 990 suites ;
+- l'équité contre une range de trois mains pondérées, égale à la moyenne pondérée de ces équités main contre main.
+
+La démo embarque 10 questions par niveau.
