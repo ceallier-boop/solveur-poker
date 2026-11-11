@@ -34,9 +34,15 @@ const { chromium } = require('playwright');
     const [, stats] = await api('/users/me/stats'); out.stats = { questions: stats.questions, ev: stats.ev_questions, equity: stats.equity.questions, modes: stats.by.mode.map((m) => m.filters.mode) };
     const [bad] = await api('/sessions', { mode: 'equity', filters: { table: 'heads-up' } }); out.badFilter = bad;
     const [, one] = await api('/sessions', { mode: 'equity', size: 3, filters: { kind: 'labels' } }); const [, n1] = await api(`/quiz/next?session_id=${one.session_id}`); out.labelsOnly = n1.question.kind;
+    const [, o] = await api('/sessions', { mode: 'equity', size: 3, filters: { kind: 'outs' } }); out.outs = [];      // v2 : outs avec tableau
+    for (let i = 0; i < 3; i++) {
+      const [, n] = await api(`/quiz/next?session_id=${o.session_id}`); const q = n.question;
+      const [, a] = await api('/attempts', { session_id: o.session_id, question_index: i, action_id: q.options[0].id });
+      out.outs.push(q.kind === 'outs' && q.board.length === 3 && q.hand_cards.length === 2 && a.equity.outs_count >= 2 && a.regret_mbb === 0);
+    }
     return out;
   });
   const ok = res.create === 201 && new Set(res.kinds).size === 3 && !res.checks.length && res.summary.complete && res.summary.bb === null && res.gtoEquity === 0
-    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && !errs.length;
+    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && !res.kinds.includes('outs') && !errs.length;
   console.log(JSON.stringify(Object.assign(res, { errs, ok }), null, 1)); await b.close(); process.exit(ok ? 0 : 1);
 })();

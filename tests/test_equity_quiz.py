@@ -124,7 +124,7 @@ def test_api_equity_series_and_stats(client):
         kinds.add(q['kind']); hands.append(q['hand'])
         a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': q['options'][0]['id']}).json()
         assert a['verdict'] in ('correct', 'imprécision', 'erreur') and a['regret_mbb'] == 0 and a['equity']['options'] == [o['label_fr'] for o in q['options']]
-    assert kinds == set(E.KINDS) and len(set(hands)) == 5
+    assert kinds == set(E.DEFAULT_KINDS) and len(set(hands)) == 5
     s = client.get(f'/sessions/{sid}/summary').json()
     assert s['complete'] and s['bb_per_100'] is None and s['ev_questions'] == 0 and s['category_fr'] == 'Équités'
     # une série GTO à côté : le BB/100 et le score GTO ne voient pas les équités
@@ -134,7 +134,7 @@ def test_api_equity_series_and_stats(client):
         client.post('/attempts', json={'session_id': g, 'question_index': i, 'action_id': q['options'][0]['id']})
     st = client.get('/users/me/stats', headers=H).json()
     assert st['questions'] == 5 and st['ev_questions'] == 5 and [m['filters']['mode'] for m in st['by']['mode']] == ['gto']
-    assert st['equity']['questions'] == 5 and st['equity']['sessions'] == 1 and {k['kind'] for k in st['equity']['by_kind']} == set(E.KINDS)
+    assert st['equity']['questions'] == 5 and st['equity']['sessions'] == 1 and {k['kind'] for k in st['equity']['by_kind']} == set(E.DEFAULT_KINDS)
     # une seule sorte
     one = client.post('/sessions', json={'mode': 'equity', 'filters': {'kind': 'labels'}, 'size': 3}).json()['session_id']
     for i in range(3):
