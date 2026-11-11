@@ -720,7 +720,7 @@ async function stats() {
     + (f.examples && f.examples[0] ? `<p class="note">Exemple : ${f.examples[0].replace(' Que fais-tu ?', '')}</p>` : '')
     + (f.filters && !offline ? '<button class="primary" id="train-focus">M\'entraîner sur ce thème</button>' : '');
   if (f.filters && !offline) $('train-focus').addEventListener('click', () => { state.inToday = false; start(f.filters); });
-  const groups = Object.entries(s.by).filter(([, rows]) => rows.length);          // pas de carte vide
+  const groups = Object.entries(s.by).filter(([k, rows]) => k !== 'mode' && rows.length);   // pas de carte vide ; GTO / Exploitant : le tableau « Par catégorie » (10/11)
   const old = s.untracked_questions || 0;                                         // démo : réponses d'une version précédente, sans description
   const cards = groups.map(([k, rows]) => `<div class="theme-group"><b>${DIM_FR[k]}</b>${rows.map((x) => themeRow(x, s.min_sample)).join('')}</div>`).join('');
   const anyScore = groups.some(([k, rows]) => k !== 'mode' && rows.some((x) => x.reliable));
@@ -858,7 +858,7 @@ function placeBlocks(tab) {                                          // les bloc
   $(tab === 'defis' ? 'slot-defis-worst' : 'slot-train-worst').appendChild($('worst'));   // retest 10 : les erreurs du jour à l'arrivée (décision du 09/11)
 }
 function goTab(tab) {
-  if (tab === 'expl' && exploitLocked()) { notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
+  if (tab === 'expl' && exploitLocked()) { notify(`L'onglet Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`); return; }
   if (tab === 'prog') { openStats(); return; }
   if (tab === 'outils') { progress(''); show('outils'); return; }
   placeBlocks(tab); const changed = setMode(tabMode(tab));
@@ -869,13 +869,12 @@ $('tabs').addEventListener('click', (e) => { const b = e.target.closest('.tab');
 function setBadge(id, n) { const b = $(id); b.hidden = !n; b.textContent = n > 9 ? '9+' : String(n || ''); }
 const defisBadge = () => setBadge('badge-defis', (state.badgeDaily || 0) + (state.badgeResume || 0));   // défi du jour à relever + série à reprendre
 $('tools-lex').addEventListener('click', () => $('lex-btn').click());
-$('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); });
+$('profile-btn').addEventListener('click', () => { $('profile').hidden = false; $('pf-close').focus(); adaptation().catch(() => {}); });   // réglages du profil : chrono, exercices adaptatifs, données
 $('pf-close').addEventListener('click', () => { $('profile').hidden = true; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('profile').hidden) { $('profile').hidden = true; $('profile-btn').focus(); } });   // retest 10 : Échap ferme la feuille
 $('pf-history').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-evo-title').scrollIntoView({ block: 'start' }), 600); });
 $('profile').addEventListener('click', (e) => { if (e.target.id === 'profile') $('profile').hidden = true; });
 $('pf-level').addEventListener('click', () => { $('profile').hidden = true; state.scrollLevel = true; goTab('prog'); });
-$('pf-data').addEventListener('click', () => { $('profile').hidden = true; goTab('prog'); setTimeout(() => $('st-export').scrollIntoView({ block: 'center' }), 600); });
 $('st-back').addEventListener('click', () => { state.tab = 'defis'; home(); });
 $('notice-close').addEventListener('click', () => { $('notice').hidden = true; resumeTimer(); });
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
@@ -922,7 +921,7 @@ function renderExploitAccess() {
 }
 document.querySelector('.mode-switch').addEventListener('click', (e) => {     // verrouillé : le bouton ne change pas de mode
   const b = e.target.closest('button'); if (!b || b.dataset.value !== 'exploit' || !exploitLocked()) return;
-  e.stopImmediatePropagation(); notify(`Le mode Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
+  e.stopImmediatePropagation(); notify(`L'onglet Exploitant ${PAID_NOTE.locked.charAt(0).toLowerCase()}${PAID_NOTE.locked.slice(1)}`);
 }, true);
 const MODE_NOTE = { gto: 'La stratégie théorique, contre des joueurs qui jouent juste.',
   exploit: "Contre les vrais joueurs d'Expresso (4 à 25 BB). Sans info, le vilain est un joueur passif. Ses stats te disent s'il pousse, relance, limpe ou paie trop." };
@@ -1102,8 +1101,8 @@ async function obFinish(skip) {
 function renderGoalCard() {
   const goal = state.level && state.level.goal, box = $('goal-card');
   const card = goal === 'recreatifs' && mode() !== 'exploit'
-    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
-      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> Le mode Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir l'onglet Exploitant</button>`)
+    ? (exploitLocked() ? `<p><b>Ton but : gagner plus contre les récréatifs.</b> L'onglet Exploitant y répond : il t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante</span></p>`
+      : `<p><b>Ton but : gagner plus contre les récréatifs.</b> L'onglet Exploitant t'entraîne contre les vrais joueurs d'Expresso. <span class="tag-paid">Offre payante, ouverte pendant le test</span></p><button class="secondary small" id="goal-go" data-go="exploit">Ouvrir l'onglet Exploitant</button>`)
     : goal === 'ranges' ? `<p><b>Ton but : affûter tes ranges.</b> Dessine la range d'une situation, main par main, et vois où tu te trompes.</p><button class="secondary small" id="goal-go" data-go="range">Construis ta range</button>`
     : '';
   box.hidden = !card; box.innerHTML = card;
@@ -1153,7 +1152,7 @@ async function loadLevel() {
   const b = $('today-level'), m = mode() === 'gto';
   b.hidden = false;                                                  // test joueurs 9 : pas de chiffre BB ici (celui de l'accueil est l'objectif)
   b.innerHTML = m ? `<b>Niveau ${lv.level} · ${escT(lv.name)}</b>${lv.status.final ? '' : `<small>${lv.status.criteria.filter((c) => c.kind !== 'bb').map((c) => `${c.ok ? '✓ ' : ''}${critText(c)}`).join(' · ')}</small>`}`
-    : '<b>Niveau 4 · Exploiter le field</b><small>mode exploitant, ouvert en continu</small>';
+    : '<b>Niveau 4 · Exploiter le field</b><small>contre le field, ouvert en continu</small>';
   return lv;
 }
 function celebrate(lv) {
@@ -1202,7 +1201,7 @@ function renderLevel(lv) {
   $('st-level-pick').innerHTML = lv.levels.filter((l) => l.number < 4).map((l) => `<button type="button" data-v="${l.number}" aria-pressed="${l.number === lv.level}">${l.number} · ${escT(l.name)}</button>`).join('');
   const four = lv.levels.find((l) => l.number === 4);
   $('st-level-expl').hidden = !four || exploitLocked();
-  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : le mode Exploitant, ouvert en continu, dans son onglet.`;
+  if (four) $('st-level-expl-name').innerHTML = `<b>Niveau 4 · ${escT(four.name)}</b> : l'onglet Exploitant, ouvert en continu.`;
 }
 $('st-level-pick').addEventListener('click', async (e) => {
   const b = e.target.closest('button'); if (!b) return;

@@ -86,12 +86,6 @@
       <p class="note" id="review-note" hidden></p>
       <button class="primary big" id="quick-start">Série recommandée</button>
       <p class="note" id="quick-explain" hidden>Une série de 5 décisions, en dehors de ta séance du jour : pour jouer un peu plus quand tu veux.</p>
-      <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono</span>
-        <div class="chips" data-name="chrono">
-          <button type="button" data-value="0" aria-pressed="false">Sans</button>
-          <button type="button" data-value="15" aria-pressed="true">15 s</button>
-          <button type="button" data-value="8" aria-pressed="false">8 s</button>
-        </div></div>
       <div class="slot" id="slot-train-worst">
       <section class="worst" id="worst" hidden aria-labelledby="worst-title">           <!-- N2 : les 3 erreurs les plus coûteuses du jour ; sur Défis à l'arrivée (retest 10) -->
         <h2 class="free-title" id="worst-title">Tes 3 plus coûteuses aujourd'hui</h2>
@@ -306,7 +300,7 @@
         <p class="lead">Proposé d'après ton expérience. Tu passes au niveau suivant tout seul, quand tes résultats le montrent.</p>
         <div class="ob-levels" id="ob-levels"></div>
         <div class="ob-exploit" id="ob-exploit">
-          <p class="ob-exploit-head"><b>Mode Exploitant</b> <span class="tag-paid">Offre payante</span></p>
+          <p class="ob-exploit-head"><b>Onglet Exploitant</b> <span class="tag-paid">Offre payante</span></p>
           <p>Le niveau 4, « Exploiter le field » : tu joues contre les vrais joueurs d'Expresso, tu lis leurs stats et tu t'adaptes à leurs défauts.</p>
           <p class="note" id="ob-exploit-access">Ouvert à tous pendant le test : tu peux l'essayer quand tu veux, avec l'onglet Exploitant.</p>
         </div>
@@ -443,17 +437,8 @@
       <p class="note evo-x" aria-hidden="true">← plus ancienne · plus récente →</p>
       <h3>Par thème</h3>
       <div id="st-themes"></div>
-      <h3 id="st-adapt-title">Exercices adaptatifs</h3>
-      <div class="adapt" id="st-adapt">
-        <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
-        <p class="note" id="adapt-rule"></p>
-        <div id="adapt-themes"></div>
-        <button class="link" id="adapt-reset">Réinitialiser l'adaptation</button>
-      </div>
       <p class="note" id="st-note"></p>
       <button class="link" id="st-back">Retour aux défis</button>
-      <button class="link" id="st-export">Exporter mes données</button>
-      <button class="link danger" id="st-delete">Effacer mes données</button>
     </section>
 
     <div class="sheet" id="profile" hidden role="dialog" aria-modal="true" aria-labelledby="pf-title"><div class="sheet-in">
@@ -465,7 +450,28 @@
         <p class="note">Choisis la couleur de chaque profil, comme dans ton client de jeu. Elle s'affiche à côté des adversaires que tu as assez observés (une question sur deux : l'autre te laisse lire ses stats), et sur les questions « Quelle pastille ? ».</p>
         <div id="past-rows"></div>
       </details>
-      <button class="secondary" id="pf-data" type="button">Mes données (exporter, effacer)</button>
+      <section class="pf-settings" aria-labelledby="pf-set-title">
+        <h3 id="pf-set-title">Réglages</h3>
+        <div class="chrono-row" role="group" aria-labelledby="chrono-label"><span id="chrono-label">Chrono des questions</span>
+        <div class="chips" data-name="chrono">
+          <button type="button" data-value="0" aria-pressed="false">Sans</button>
+          <button type="button" data-value="15" aria-pressed="true">15 s</button>
+          <button type="button" data-value="8" aria-pressed="false">8 s</button>
+        </div></div>
+        <p class="note">Le temps pour chaque décision, dans toutes les séries (sauf les équités et la lecture du vilain).</p>
+      <div class="adapt" id="st-adapt" hidden>
+        <h4 id="st-adapt-title">Exercices adaptatifs</h4>
+        <label class="switch"><input type="checkbox" id="adapt-on"> Adapter les séries recommandées à mes erreurs</label>
+        <p class="note" id="adapt-rule"></p>
+        <div id="adapt-themes"></div>
+        <button class="link" id="adapt-reset">Réinitialiser l'adaptation</button>
+      </div>
+      </section>
+      <section class="pf-data" aria-labelledby="pf-data-title">
+        <h3 id="pf-data-title">Mes données</h3>
+        <button class="link" id="st-export" type="button">Exporter mes données</button>
+        <button class="link danger" id="st-delete" type="button">Effacer mes données</button>
+      </section>
     </div></div>
     <div class="loading" id="loading" hidden>Chargement…</div>
     <div class="notice" id="notice" role="alert" hidden><span id="notice-text"></span>

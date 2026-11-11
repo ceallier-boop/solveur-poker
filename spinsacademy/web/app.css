@@ -719,3 +719,8 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 @media (prefers-color-scheme: dark) { .q-cat[data-cat="equites"] { background: #3a2e17; color: #f0d29a; } }
 .actions.stmts .mainrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .actions.stmts .mainrow button { min-height: 52px; text-align: left; padding: 10px 14px; }
+
+/* Réglages et données dans la feuille du profil (10/11) */
+.pf-settings, .pf-data { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pf-settings h3, .pf-data h3 { margin: 0; } .pf-settings h4 { margin: 6px 0 0; font-size: .95rem; }
+.pf-data .link { align-self: flex-start; padding-left: 0; }
