@@ -671,7 +671,7 @@ function refreshStats() { api('/users/me/stats').then(cacheStats).catch(() => { 
 async function stats() {
   loading(true);
   let s, offline = null;
-  try { s = await api('/users/me/stats'); cacheStats(s); }
+  try { s = await api('/users/me/stats'); cacheStats(s); loadGoals(); }   // objectifs à jour (l'objectif exploitant dépend des statistiques)
   catch (e) {
     const c = (!e || !e.status || e.status >= 500) ? cachedStats() : null;      // coupure réseau ou panne du serveur
     if (!c) throw e;
@@ -1219,21 +1219,28 @@ async function loadRecs() {
   $('recs-list').innerHTML = state.recs.map((x, i) => `<li class="rec rec-${x.kind}"><p>${escT(x.text_fr)}</p><button class="secondary small" data-i="${i}">${escT(x.label_fr)}</button></li>`).join('');
 }
 // objectifs de la semaine (programme de travail, étape 3) : trois cibles, modifiables, et le bilan de la semaine passée
+// objectifs de la semaine : comme le niveau (retest 10), ils ne suivent pas l'onglet ouvert. Toujours ceux de GTO ; si le joueur a déjà joué
+// en exploitant, son objectif « BB perdus » de Préflop exploitant s'ajoute (jours et ranges valent pour toutes les catégories)
+const exploitPlayed = () => { const c = cachedStats(), m = c && c.s && c.s.by && (c.s.by.mode || []).find((x) => x.filters.mode === 'exploit'); return !!(m && m.questions); };
 async function loadGoals() {
-  let g; try { g = await api(`/users/me/goals?mode=${mode()}&tz=${tzOffset()}`); }
+  let g; try { g = await api(`/users/me/goals?mode=gto&tz=${tzOffset()}`); }
   catch (e) {                                                        // test joueurs 9 : un message plutôt qu'un bloc vide
     if (e && e.status && e.status < 500 && e.status !== 429) { $('goals').hidden = true; return null; }
     $('goals').hidden = false; $('goals-list').innerHTML = ''; $('goals-note').textContent = ''; $('last-week').hidden = true; $('goals-error').hidden = false; return null;
   }
+  state.goalsX = null;
+  if (!exploitLocked() && exploitPlayed()) { try { state.goalsX = await api(`/users/me/goals?mode=exploit&tz=${tzOffset()}`); } catch (e) { state.goalsX = null; } }
   $('goals-error').hidden = true; renderGoals(g); return g;
 }
+const goalLabel = (x, m) => (x.category === 'gto' || x.category === 'exploit' ? `${x.label_fr} ${m === 'exploit' ? 'exploitant' : 'GTO'}` : x.label_fr);   // « … de Préflop GTO »
 function renderGoals(g) {
   state.goals = g; $('goals').hidden = false;
-  $('goals-mode').textContent = `· ${g.mode === 'exploit' ? 'Exploitant' : 'GTO'}`;   // test joueurs 9 : les objectifs sont propres à chaque mode
-  const edit = !!state.goalsEdit;
+  $('goals-mode').textContent = '';
+  const edit = !!state.goalsEdit, gx = state.goalsX;
+  const items = g.items.map((x) => [x, 'gto']).concat(gx ? gx.items.filter((x) => x.category === 'exploit').map((x) => [x, 'exploit']) : []);
   $('goals-edit').textContent = edit ? 'terminé' : 'modifier';
-  $('goals-list').innerHTML = g.items.map((x) => `<li class="goal${x.done ? ' done' : ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(x.label_fr)}</span>`
-    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
+  $('goals-list').innerHTML = items.map(([x, m]) => `<li class="goal${x.done ? ' done' : ''}" data-cat="${x.category || ''}"><div class="goal-top"><span>${x.done ? '✓ ' : ''}${escT(goalLabel(x, m))}</span>`
+    + (edit ? `<span class="goal-step"><button class="secondary small" data-k="${x.kind}" data-m="${m}" data-d="-1" aria-label="Baisser la cible">−</button><b>${String(x.target).replace('.', ',')}</b><button class="secondary small" data-k="${x.kind}" data-m="${m}" data-d="1" aria-label="Monter la cible">+</button></span>` : '')
     + `</div><div class="sbar"><i style="width:${Math.round(100 * x.progress)}%"></i></div><small>${escT(x.text_fr)}</small></li>`).join('');
   $('goals-note').textContent = g.days_left > 0 ? `Encore ${g.days_left} jour${g.days_left > 1 ? 's' : ''} cette semaine.` : 'Dernier jour de la semaine.';
   const lw = g.last_week, seen = store.get('goals_seen') === g.week;
@@ -1248,10 +1255,13 @@ $('goals-retry').addEventListener('click', () => loadGoals());
 $('goals-edit').addEventListener('click', () => { state.goalsEdit = !state.goalsEdit; if (state.goals) renderGoals(state.goals); });
 $('goals-list').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-k]'); if (!b) return;
-  const x = state.goals.items.find((i) => i.kind === b.dataset.k), step = x.kind === 'precision' ? 1 : 1;
-  const t = Math.min(x.max, Math.max(x.min, x.target + step * +b.dataset.d)); if (t === x.target) return;
-  try { renderGoals(await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: mode(), kind: x.kind, target: t, tz: tzOffset() }) })); }
-  catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
+  const m = b.dataset.m || 'gto', src = m === 'exploit' ? state.goalsX : state.goals;
+  const x = src && src.items.find((i) => i.kind === b.dataset.k); if (!x) return;
+  const t = Math.min(x.max, Math.max(x.min, x.target + +b.dataset.d)); if (t === x.target) return;
+  try {
+    const r = await api('/users/me/goals', { method: 'PUT', body: JSON.stringify({ mode: m, kind: x.kind, target: t, tz: tzOffset() }) });
+    if (m === 'exploit') { state.goalsX = r; renderGoals(state.goals); } else renderGoals(r);
+  } catch (err) { notify(netMsg(err, "l'objectif n'a pas été changé")); }
 });
 // défis (programme de travail, étape 5)
 async function loadChallenges() {
