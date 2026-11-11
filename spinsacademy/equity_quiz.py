@@ -18,12 +18,14 @@ part, comme pour les autres questions. Exemples :
 Réponses : action_id « b0 » à « b5 » (tranche) ou « o0 » à « o3 » (affirmation).
 """
 import math, random
-from . import equities, grading
+from . import equities, equity_board, grading
 from .cards import NAMES
 
 REF = f'equites/{equities.DATE}'
-KINDS = ('hit', 'equity', 'labels')
-KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses'}
+KINDS = ('hit', 'equity', 'labels', 'outs')
+DEFAULT_KINDS = ('hit', 'equity', 'labels')     # série sans filtre ; « outs » (avec tableau, v2) seulement sur demande tant que l'écran n'est pas prêt
+BOARD_KINDS = ('outs',)                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
+KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs'}
 CATEGORY_FR = 'Équités'
 MARGIN = 1.5                          # points : écart minimal entre la valeur exacte et toute frontière de tranche
 MIN_BP = 50                           # valeur minimale d'un sujet (0,5 %) : un « 0 % » ou presque n'apprend rien
@@ -252,6 +254,7 @@ def parse(spot_id):
     p = spot_id.split(':')
     try:
         if p[0] != 'eq' or p[1] not in KINDS: raise ValueError
+        if p[1] in BOARD_KINDS: return equity_board.parse(spot_id)
         level = int(p[3][1:])
         if p[1] == 'labels':
             ids = p[4].split('.')
@@ -264,8 +267,11 @@ def parse(spot_id):
 
 def _built(spot_id, hand):
     """reconstruit la question et vérifie qu'elle reste valable : dict(kind, …, value, f, options, correct) ; ValueError sinon"""
-    if hand not in NAMES: raise ValueError(f'main inconnue : {hand}')
     q = parse(spot_id)
+    if q['kind'] in BOARD_KINDS:
+        try: return equity_board.built(q, hand)
+        except ValueError: raise ValueError(f'question d\'équité invalide pour {hand} : {spot_id}')
+    if hand not in NAMES: raise ValueError(f'main inconnue : {hand}')
     if q['kind'] == 'labels':
         cl = [clarity(i, hand) for i in q['ids']]
         want = True if q['mode'] == 'vraie' else False
@@ -293,6 +299,7 @@ def _hand(rnd, ok, avoid):
 
 def draw_one(kind, level, rnd, avoid=frozenset(), topic=None):
     """(spot_id, main) d'une sorte donnée, ou None après plusieurs essais"""
+    if kind in BOARD_KINDS: return equity_board.draw_one(level, rnd, avoid, topic)
     for _ in range(200):
         if kind == 'labels':
             h = _hand(rnd, lambda h: True, avoid); r = make_labels(h, level, rnd)
@@ -313,7 +320,7 @@ def draw(level, size=SERIES_SIZE, seed=None, kind=None, avoid_hands=frozenset())
     """[(spot_id, main)] : les trois sortes en alternance (ordre au hasard), une main ne revient pas dans la série, un sujet non plus
     tant que possible. kind : une seule sorte. avoid_hands : mains des dernières séries, évitées si possible"""
     rnd = random.Random(seed); level = level_of(level)
-    kinds = [kind] if kind else list(KINDS)
+    kinds = [kind] if kind else list(DEFAULT_KINDS)
     order = []
     while len(order) < size:
         k = kinds[:]; rnd.shuffle(k); order += k
@@ -337,7 +344,9 @@ def _hd(hand):
 
 
 def prompt(spot_id, hand):
-    q = parse(spot_id); hd = _hd(hand)
+    q = parse(spot_id)
+    if q['kind'] in BOARD_KINDS: return equity_board.prompt(q, hand)
+    hd = _hd(hand)
     if q['kind'] == 'hit':
         return f"Tu as {hd}. Quelle est la chance de toucher {HIT_TOPICS[q['topic']]['fr']} au flop ?"
     if q['kind'] == 'equity':
@@ -353,7 +362,8 @@ def prompt(spot_id, hand):
 def question(spot_id, hand):
     """ce que voit le joueur, sans la solution"""
     b = _built(spot_id, hand); pre = 'b' if b['kind'] != 'labels' else 'o'
-    return dict(spot_id=spot_id, hand=hand, hand_display=_hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity',
+    board = equity_board.question_extra(b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_cards=[], hand_cards=None, villain_hand=None)
+    return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display', None) or _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
                 category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=KIND_FR[b['kind']], topic=b.get('topic') or b.get('mode'), level=b['level'],
                 answer='band' if pre == 'b' else 'statement', multiple=False,
                 table=None, players=[], stacks_bb=[], hero=None, history=[], history_fr=[], pot_bb=None, to_call_bb=None, difficulty=None,
@@ -419,16 +429,19 @@ def correct(spot_id, hand, action_id):
         verdict = 'correct' if j == c else 'erreur'
     else:
         verdict = 'correct' if j == c else 'imprécision' if abs(j - c) == 1 else 'erreur'
-    forces, faiblesses = strengths(hand, level); hd = _hd(hand)
+    forces, faiblesses = ([], []) if b['kind'] in BOARD_KINDS else strengths(hand, level)
     extra = {}
-    if b['kind'] == 'hit':
+    if b['kind'] in BOARD_KINDS:
+        essential, method, board_lines, extra = equity_board.correction(b, hand)
+    elif b['kind'] == 'hit':
+        hd = _hd(hand)
         t = HIT_TOPICS[b['topic']]; v = b['value']
         value_fr = pct_fr(v); n = round(N_FLOPS * v / 10000)
         essential = f"{hd} touche {t['fr']} au flop {value_fr} du temps, environ une fois sur {max(1, round(10000 / v))}."
         method = f"Calcul : sur les {_int_fr(N_FLOPS)} flops possibles une fois tes deux cartes retirées du paquet, environ {_int_fr(n)} donnent {t['what']}."
         extra = dict(value_bp=v, value_fr=value_fr, flops=N_FLOPS)
     elif b['kind'] == 'equity':
-        v = b['value']; value_fr = pct_fr(v)
+        hd = _hd(hand); v = b['value']; value_fr = pct_fr(v)
         if b['topic'] == 'hasard':
             essential = (f"Contre une main au hasard, {hd} gagne {value_fr} du temps (égalités comptées pour moitié)." if level == 1
                          else f"L'équité de {hd} contre une main au hasard est de {value_fr}.")
@@ -447,7 +460,11 @@ def correct(spot_id, hand, action_id):
         extra = dict(statements=[dict(id=ids[i], label_fr=b['options'][i], label_id=b['ids'][i], true=bool(truth[i]),
                                       why_fr=_why_statement(b['ids'][i], hand, truth[i])) for i in range(4)])
     lines = [essential, method]
-    if b['kind'] != 'labels':
+    if b['kind'] in BOARD_KINDS:
+        lines.append(f"Bonne réponse : {b['options'][c]}." + ('' if verdict == 'correct' else f" Ta réponse : {b['options'][j]}"
+                                                                    + (" (réponse voisine : demi-point)." if verdict == 'imprécision' else ".")))
+        lines += board_lines
+    elif b['kind'] != 'labels':
         lines.append(f"Bonne tranche : {b['options'][c]}." + ('' if verdict == 'correct' else f" Ta réponse : {b['options'][j]}"
                                                                    + (" (tranche voisine : demi-point)." if verdict == 'imprécision' else ".")))
     else:
