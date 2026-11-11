@@ -103,7 +103,9 @@ const bankGto = (m) => (m.version ? isGto(m.version) : m.body.mode === 'gto');  
   ok('API : category sur les étapes de la séance', t.steps.every((s) => ['gto', 'exploit', 'profils', 'ranges'].includes(s.category)) && t.steps.some((s) => s.kind === 'range' && s.category === 'ranges'), t.steps.map((s) => [s.kind, s.category]));
   const gl = g.goals || g.items || [];
   ok('API : category sur les objectifs (jours hors catégorie)', gl.length && gl.every((x) => x.kind === 'days' ? x.category === null : !!x.category), gl.map((x) => [x.kind, x.category]));
-  await tab(p, 'prog'); ok('Progression : Équités jamais affichée', !/Équités/.test(await p.innerText('#screen-stats')));
+  // depuis l'écran des équités (Plan, 10/11) : Progression a sa ligne « Équités » (tableau par catégorie) ; aucun défi ni gain Équités en revanche
+  await tab(p, 'prog'); ok('Progression : aucun défi ni gain Équités', !/Équités/.test(await p.$eval('#st-challenges', (x) => x.innerText).catch(() => ''))
+    && !/Équités/.test(await p.$eval('#st-wins', (x) => x.innerText).catch(() => '')));
 
   // un autre joueur, venu de l'onglet GTO : les mêmes mains au défi du jour
   const p2 = await page(); await onboard(p2); await tab(p2, 'gto'); await openChallenges(p2); await reset(p2);
