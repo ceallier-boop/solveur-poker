@@ -71,6 +71,12 @@ def test_table_matches_values_computable_by_hand():
         assert abs(T['equity_random'][IDX[h]] - eq) <= 25, (h, T['equity_random'][IDX[h]])
 
 
+def test_table_gives_no_two_rank_rule_to_a_pocket_pair():
+    """défaut du 10/11 corrigé par Moteur GTO : aucune paire de poche ne porte une étiquette pensée pour deux rangs différents"""
+    bad = {h: [l for l, _ in T['labels'][IDX[h]] if l in PAIR_UNCLEAR] for h in T['hands'] if len(h) == 2}
+    assert not any(bad.values()), {h: ls for h, ls in bad.items() if ls}
+
+
 # ------------------------------------------------------------------ tranches
 @pytest.mark.parametrize('kind', ['hit', 'equity'])
 def test_band_contains_the_exact_value_with_a_margin(client, kind):
