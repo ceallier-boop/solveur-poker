@@ -1,4 +1,4 @@
-// Rangement par catégorie (10/11, maquette retenue), avec assertions : GTO = Préflop, Ranges, Équités (bientôt) ; Exploitant =
+// Rangement par catégorie (10/11, maquette retenue), avec assertions : GTO = Préflop, Ranges, Équités ; Exploitant =
 // Préflop contre le field, Profils ; « Construis ta range » quitte Outils pour la carte Ranges ; étiquette de catégorie sur la question et
 // le bilan ; chiffres de chaque carte et tableau « Par catégorie » dans Progression, Profils compté à part du Préflop exploitant ;
 // catégorie sur les défis de la semaine, défi du jour en Préflop GTO.
@@ -19,7 +19,7 @@ const cards = (p, tab) => p.$$eval(`#screen-${tab} .cat-card`, (xs) => xs.map((x
 
   await p.openTab('gto');
   ok('GTO : Préflop, Ranges, Équités', JSON.stringify(await cards(p, 'gto')) === '["gto","ranges","equites"]', await cards(p, 'gto'));
-  ok('Équités : annoncé, sans bouton', /bientôt/.test(await p.innerText('#cat-equites')) && !(await p.$('#cat-equites button')));
+  ok('Équités : une série possible depuis sa carte', await p.isVisible('#equity-start'));
   ok('la série rapide est dans la carte Préflop', await p.evaluate(() => !!document.querySelector('#cat-gto #quick-start')));
   ok('nouveau joueur : « Pas encore commencé »', /Pas encore commencé/.test(await p.textContent('#cat-gto-meter')));
   await p.openTab('outils');

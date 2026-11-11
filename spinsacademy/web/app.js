@@ -288,7 +288,7 @@ function resumeTimer() {                                             // reprise 
 }
 function startTimer(q, leftMs) {
   stopTimer(); if (leftMs == null) state.timedOut = false;
-  const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr)) return;   // pas de chrono pour la lecture du vilain
+  const secs = chrono(); if (!secs || !q.hand || (q.field && q.field.ask_fr) || q.mode === 'equity') return;   // pas de chrono pour la lecture du vilain ni les équités (on calcule)
   const end = Date.now() + (leftMs == null ? secs * 1000 : leftMs), box = $('q-timer'); box.hidden = false; state.timerEnd = end;
   const tick = () => {
     const left = Math.max(0, end - Date.now());
@@ -331,28 +331,30 @@ function renderQuestion(data) {
   $('purpose').className = `purpose ${data.purpose || ''}`;
   const q = state.q;
   progress(`Question ${state.index + 1} / ${state.size}`);
-  const noHand = !q.hand || !!(q.field && q.field.ask_fr);           // questions de lecture du vilain : sans main ni table
+  const eq = q.mode === 'equity';                                    // Équités : une main seule, sans table (players et history vides)
+  const noHand = eq || !q.hand || !!(q.field && q.field.ask_fr);     // questions de lecture du vilain : sans main ni table
   $('table-wrap').hidden = noHand;
   $('q-cat').hidden = false; $('q-cat').textContent = CAT_FR[catOf(q)]; $('q-cat').dataset.cat = catOf(q);   // étiquette de catégorie (10/11)
   if (!noHand) { renderTable(q); renderCards(q.hand_display); }
-  $('history').innerHTML = q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
+  $('history').innerHTML = eq ? '' : q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
+  $('eq-hand').hidden = !eq; if (eq) { renderCards(q.hand_display, 'eq-cards'); $('eq-kind').textContent = q.kind_fr || ''; }
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
   $('ask').className = noHand ? 'ask' : 'ask sr-only';               // la table suffit ; la question reste lue par les lecteurs d'écran
-  $('ask').innerHTML = !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}︎</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
+  $('ask').innerHTML = eq ? escT(q.prompt_fr) : !noHand ? `Avec ${q.hand_display.replace(/([♠♥♦♣])/g, (m) => `<span class="suit-${SUIT[m]}">${m}︎</span>`)}, que fais-tu ?` : escT(q.field.ask_fr);
   $('kbd-hint').textContent = `Raccourcis clavier : touches 1 à ${q.options.length}.`;
   renderFieldStats(q, noHand);
   const box = $('actions'); box.innerHTML = '';
   const main = document.createElement('div'); main.className = 'mainrow';
   const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
-  const read = noHand; box.classList.toggle('read', read);
+  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); box.classList.toggle('bands', eq && q.answer === 'band'); box.classList.toggle('stmts', eq && q.answer === 'statement');   // tranches : en grille ; affirmations : en liste
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
     b.innerHTML = actionHTML(o.label_fr) + `<span class="key">${k + 1}</span>`; b.dataset.id = o.id; b.dataset.k = k + 1;
     if (/^Fold$/.test(o.label_fr)) b.classList.add('fold');
     b.addEventListener('click', () => answer(o.id));
-    (read || k < 3 ? main : extra).appendChild(b);
+    (read || eq || k < 3 ? main : extra).appendChild(b);
   });
   main.style.setProperty('--n', String(main.children.length));
   box.appendChild(main); if (extra.children.length) box.appendChild(extra);
@@ -410,7 +412,38 @@ function recapLine(q) {
   const hist = (q.history_fr || []).map((t) => t.replace(/^Le /, '')).join(' · ') || 'premier à parler';
   return `<b>${q.hero}</b> · ${q.table === 'heads-up' ? 'heads-up' : '3 joueurs'} · ${bb(eff)} BB effectifs<br><span>${escT(hist)}</span>`;
 }
+// Équités : la correction dit la bonne tranche (ou la bonne affirmation), la valeur exacte en une phrase, le calcul, les forces et
+// faiblesses ; jamais de BB perdus (regret_mbb = 0, loss_fr = null). Format : docs/api/QUIZ_EQUITES.md
+function renderEquityAnswer(r) {
+  const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
+  const best = r.best_label || '';
+  const sub = band ? (r.verdict === 'correct' ? `Bonne tranche : ${best}.` : r.verdict === 'imprécision' ? `Tranche voisine, un demi-point : la bonne est ${best}.` : `La bonne tranche : ${best}.`)
+    : r.verdict === 'correct' ? `Bonne réponse : « ${best} ».` : `La bonne réponse : « ${best} ».`;
+  v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? 'Bonne tranche' : title}<small>${escT(sub)}</small>`;
+  stopTimer();
+  for (const id of ['a-avis', 'a-choice', 'a-conseil', 'a-next-box', 'a-grid-box', 'a-strategy-title', 'a-strategy', 'a-exploit']) $(id).hidden = true;
+  renderCards(q.hand_display, 'a-cards'); $('a-cards').hidden = false;
+  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b> · ${escT(q.hand_display)}`;
+  $('a-essential').textContent = band ? r.essential_fr || '' : '';      // affirmations : le verdict dit déjà la bonne réponse
+  const how = (r.method_fr || '').replace(/^Calcul : /, '');            // « Calcul : … » : le titre le dit déjà
+  $('a-remember').hidden = !how; $('a-remember').innerHTML = how ? `<b>Le calcul</b><span class="eline">${escT(how.charAt(0).toUpperCase() + how.slice(1))}</span>` : '';
+  const list = (xs, cls2, t) => (xs && xs.length ? `<h4 class="${cls2}">${t}</h4><ul class="${cls2}">${xs.map((x) => `<li>${escT(x)}</li>`).join('')}</ul>` : '');
+  const rows = band
+    ? `<ol class="eq-bands">${(e.options || []).map((l, i) => { const id = `b${i}`, good = id === e.correct_option, mine = id === r.chosen_action;
+      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
+    : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
+  $('a-equity').hidden = false;
+  $('a-equity').innerHTML = rows + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
+  const det = r.details_fr || []; $('a-more').open = false;
+  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
+  $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
+  resetReport();
+  for (const id of ['a-essential', 'a-remember', 'a-equity']) glossify($(id));
+  show('answer'); v.focus({ preventScroll: true });
+}
 function renderAnswer(r) {
+  if (state.q && state.q.mode === 'equity') { renderEquityAnswer(r); return; }
+  $('a-equity').hidden = true;
   const [cls, title] = VERDICT[r.verdict];
   const v = $('a-verdict'); v.className = `verdict ${cls}`;
   const many = (r.good_labels || []).length > 1 && (r.good_actions || []).includes(r.chosen_action);
@@ -543,6 +576,10 @@ async function sendReport(e) {
 }
 
 // ------------------------------------------------------------------ bilan
+function errLine(e) {                                              // une ligne par erreur du bilan ; Équités : la valeur exacte, jamais de BB
+  if (e.value_fr !== undefined || state.mode === 'equity' || /^eq:/.test(e.spot_id || '')) return `Ta réponse : ${escT(e.chosen)} · bonne réponse : <b>${escT(e.best)}</b>${e.value_fr ? ` (valeur exacte : ${escT(e.value_fr)})` : ''}`;
+  return `${e.timed_out ? `Temps écoulé (${frLabel(e.chosen)} automatique)` : `Ton coup : ${frLabel(e.chosen)} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${frLabel(e.best)}</b>`;
+}
 async function summary() {
   if (state.sid && state.sid === store.get('placement_sid')) return placementResult();   // AU7 : le test de placement a son propre écran
   const s = await api(`/sessions/${encodeURIComponent(state.sid)}/summary`);
@@ -555,9 +592,9 @@ async function summary() {
   $('s-verdicts').innerHTML = [['correct', 'Bonnes'], ['imprécision', 'Imprécisions'], ['erreur', 'Erreurs']]
     .map(([k, t]) => `<li><b>${s.verdicts[k] || 0}</b>${t}</li>`).join('');
   $('s-errors').innerHTML = s.errors.length
-    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${e.timed_out ? `Temps écoulé (${frLabel(e.chosen)} automatique)` : `Ton coup : ${frLabel(e.chosen)} (coûte ${e.loss_fr || gainBB(e.regret_mbb)})`} · Meilleur coup : <b>${frLabel(e.best)}</b></li>`).join('')
+    ? s.errors.map((e) => `<li><em class="vtag ${e.verdict === 'erreur' ? 'bad' : 'warn'}">${e.verdict === 'erreur' ? 'Erreur' : 'Imprécision'}</em> ${e.prompt_fr}<br>${errLine(e)}</li>`).join('')
     : '<li>Rien à revoir sur cette série.</li>';
-  $('s-review').hidden = !s.errors.length;
+  $('s-review').hidden = !s.errors.length || state.mode === 'equity';   // pas de révision pour les équités (décision du 10/11)
   $('again-btn').textContent = state.inToday ? 'Suite de la séance' : 'Nouvelle série';
   if (state.challenge) {                                               // étape 5 : résultat du défi
     const kind = state.challenge; state.challenge = null; state.forceChrono = null;
@@ -587,7 +624,7 @@ function cacheStats(s) { store.set(STATS_KEY, JSON.stringify({ at: new Date().to
 // catégories (10/11) : Préflop GTO, Préflop exploitant, Profils, Ranges (onglet GTO ou Exploitant), Équités (à venir). Les chiffres viennent de
 // GET /users/me/stats : par mode, la lecture du vilain (famille « read ») comptée à part en Profils ; elle n'a pas de BB (pas d'EV)
 const CAT_FR = { gto: 'Préflop GTO', exploit: 'Préflop exploitant', profils: 'Profils', ranges: 'Ranges', equites: 'Équités' };
-const catOf = (q) => (q && q.field && q.field.ask_fr ? 'profils' : q && q.mode === 'exploit' ? 'exploit' : 'gto');
+const catOf = (q) => (q && q.mode === 'equity' ? 'equites' : q && q.field && q.field.ask_fr ? 'profils' : q && q.mode === 'exploit' ? 'exploit' : 'gto');
 function catNumbers(s) {
   const by = (s && s.by) || {}, m = (k) => (by.mode || []).find((x) => x.filters.mode === k), read = (by.family || []).find((x) => x.filters.family === 'read');
   const pts = (x) => (x ? (x.score_pct || 0) * x.questions / 100 : 0);
@@ -598,23 +635,25 @@ function catNumbers(s) {
     exploit: eq > 0 ? { q: eq, pct: 100 * (pts(e) - pts(read)) / eq, bb: e.bb_per_100 } : null,
     profils: read && read.questions ? { q: read.questions, ok: Math.round(pts(read)), pct: read.score_pct } : null,
     ranges: r.count ? { n: r.count, acc: r.accuracy_pct } : null,
+    equites: s && s.equity && s.equity.questions ? { q: s.equity.questions, pct: s.equity.score_pct, kinds: s.equity.by_kind || [] } : null,   // bloc « equity » (hors score GTO)
   };
 }
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`;
 function catLine(key, v) {
-  if (key === 'equites') return 'Ta main et ses chances au flop';
   if (!v) return key === 'ranges' ? 'Pas encore de range dessinée.' : 'Pas encore commencé.';
+  if (key === 'equites') return `${Math.round(v.pct)} % des points · ${plural(v.q, 'question')}`;
   if (key === 'profils') return `${plural(v.ok, 'lecture')} juste${v.ok > 1 ? 's' : ''} sur ${v.q}`;
   if (key === 'ranges') return `${plural(v.n, 'range')} · ${nfr1(v.acc)} % de mains bien classées en moyenne`;
   return `${Math.round(v.pct)} % de bonnes réponses · ${plural(v.q, 'décision')}` + (v.bb != null ? ` · ${nfr1(v.bb)} BB perdus pour 100` : '');
 }
 function renderCats(s) {
   const n = catNumbers(s);
-  for (const k of ['gto', 'exploit', 'profils', 'ranges']) $(`cat-${k}-meter`).textContent = catLine(k, n[k]);
-  const head = (k, v) => (k === 'equites' ? 'bientôt' : !v ? '–' : k === 'ranges' ? `${Math.round(v.acc)} %` : `${Math.round(v.pct)} %`);
+  for (const k of ['gto', 'exploit', 'profils', 'ranges', 'equites']) $(`cat-${k}-meter`).textContent = catLine(k, n[k]);
+  const head = (k, v) => (!v ? '–' : k === 'ranges' ? `${Math.round(v.acc)} %` : `${Math.round(v.pct)} %`);
+  const kinds = (v) => (v && v.kinds.length ? `<ul class="cat-kinds">${v.kinds.map((x) => `<li>${escT(x.label_fr)}<b>${Math.round(x.score_pct)} %</b><small>${plural(x.questions, 'question')}</small></li>`).join('')}</ul>` : '');
   $('st-cats').hidden = false;
   $('st-cats-list').innerHTML = Object.keys(CAT_FR).filter((k) => k !== 'exploit' && k !== 'profils' || !exploitLocked())
-    .map((k) => `<li class="cat-row${k === 'equites' ? ' cat-later' : ''}" data-cat="${k}"><span><b>${CAT_FR[k]}</b><small>${escT(catLine(k, n[k]))}</small></span><b class="cats-num">${head(k, n[k])}</b></li>`).join('');
+    .map((k) => `<li class="cat-row" data-cat="${k}"><span><b>${CAT_FR[k]}</b><small>${escT(catLine(k, n[k]))}</small>${k === 'equites' ? kinds(n[k]) : ''}</span><b class="cats-num">${head(k, n[k])}</b></li>`).join('');   // Équités : le détail par sorte de question
 }
 // AU4 : accueil d'un nouveau joueur (moins de 3 jours d'entraînement) : un seul bouton principal, la séance et la série rapide
 // expliquées, objectifs et défis repliés (toujours accessibles)
@@ -1362,6 +1401,8 @@ async function rangeSubmit() {
 }
 $('range-btn').addEventListener('click', () => { state.inToday = false; rangeStart(); });
 $('profils-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'exploit', family: 'read' }); });   // catégorie Profils : une série de lecture du vilain
+$('equity-start').addEventListener('click', () => { state.inToday = false; start({ mode: 'equity' }); });   // catégorie Équités (docs/api/QUIZ_EQUITES.md)
+$('equity-kinds').addEventListener('click', (e) => { const b = e.target.closest('[data-kind]'); if (b) { state.inToday = false; start({ mode: 'equity', kind: b.dataset.kind }); } });
 $('rg-clear').addEventListener('click', () => { state.range.sel.clear(); renderRangeGrid(); });
 $('rg-submit').addEventListener('click', rangeSubmit);
 $('rg-again').addEventListener('click', () => (state.inToday ? todayContinue() : rangeStart()));

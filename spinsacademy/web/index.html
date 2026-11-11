@@ -153,9 +153,15 @@
         <p class="cat-meter" id="cat-ranges-meter"></p>
         <button class="secondary" id="range-btn" type="button">Construire une range</button>
       </section>
-      <section class="cat-card cat-soon" id="cat-equites" data-cat="equites" aria-labelledby="cat-equites-title">
-        <div class="cat-head"><span class="cat-ic ic-eq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><div><h2 class="cat-title" id="cat-equites-title">Équités <span class="soon">bientôt</span></h2><p class="cat-sub">Ta main : ses forces et ses chances au flop</p></div></div>
-        <p class="cat-meter">Arrive bientôt : une main, quatre tranches, la valeur exacte et ses forces en mots simples.</p>
+      <section class="cat-card" id="cat-equites" data-cat="equites" aria-labelledby="cat-equites-title">
+        <div class="cat-head"><span class="cat-ic ic-eq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span><div><h2 class="cat-title" id="cat-equites-title">Équités</h2><p class="cat-sub">Ta main : ses forces et ses chances au flop</p></div></div>
+        <p class="cat-meter" id="cat-equites-meter"></p>
+        <button class="secondary" id="equity-start" type="button">Une série de 5 questions</button>
+        <div class="eq-kinds" id="equity-kinds" role="group" aria-label="Une seule sorte de question">
+          <button class="secondary small" type="button" data-kind="hit">Toucher le flop</button>
+          <button class="secondary small" type="button" data-kind="equity">Équité contre une range</button>
+          <button class="secondary small" type="button" data-kind="labels">Forces et faiblesses</button>
+        </div>
       </section>
     </section>
 
@@ -215,6 +221,7 @@
         <button class="replay-skip" id="replay-skip" type="button" hidden>Passer</button>
         <div class="hero-zone" aria-hidden="true"><div class="cards hole" id="hero-cards"></div><div class="hero-seat" id="hero-seat"></div></div>
       </div>
+      <div class="eq-hand" id="eq-hand" hidden aria-hidden="true"><div class="cards" id="eq-cards"></div><p class="eq-kind" id="eq-kind"></p></div>
       <div class="villain" id="villain" hidden></div>
       <ol class="history sr-only" id="history" aria-label="Historique du coup"></ol>
       <p class="sr-only" id="prompt-full"></p>
@@ -232,6 +239,7 @@
       <div class="avis" id="a-avis" hidden></div>
       <p class="essential" id="a-essential"></p>
       <p class="remember" id="a-remember" hidden></p>
+      <div class="eq-box" id="a-equity" hidden></div>
       <a class="link conseil-from" id="a-conseil" hidden>Voir cette situation dans le conseiller</a>
       <details class="reveal" id="a-more">
         <summary>Précisions</summary>
