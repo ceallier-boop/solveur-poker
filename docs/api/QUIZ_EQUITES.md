@@ -107,13 +107,13 @@ Il n'y a pas de main adverse : améliorer ne veut pas dire passer devant, et la 
 | `turn` | « Quelle est la probabilité d'améliorer ta main au turn ? » (outs ÷ 47) | tranches, marge de 1,5 point |
 | `river` (niveaux 2 et plus) | « … au turn ou à la river ? » (calcul exact sur les 1 081 suites) | tranches, marge de 1,5 point |
 
-**Champs ajoutés à la question.**
+**Champs ajoutés à la question** (alignés sur la demande d'Interface du 11/11) :
 - `street: "flop"`.
-- `board: ["Q♠", "7♠", "2♦"]` (affichage) et `board_cards: ["Qs", "7s", "2d"]` (rang, puis couleur parmi `shdc`).
-- `hand_cards: ["As", "Ks"]`. `hand` vaut la main exacte (« AsKs ») et `hand_display` vaut « A♠K♠ ».
-- `villain_hand: null`.
+- `board: ["Qs", "7s", "2d"]` : cartes précises, de 3 à 5, dans l'ordre du tableau. Chaque carte est codée sur deux caractères, le rang (23456789TJQKA) puis la couleur (`s`, `h`, `d` ou `c`, en minuscule). `board_display: ["Q♠", "7♠", "2♦"]` sert pour le texte.
+- `hero_cards: ["As", "Ks"]` : le héros a toujours ses deux cartes connues. `hand` vaut la main exacte (« AsKs ») et `hand_display` vaut « A♠K♠ ».
+- `villain_cards: null`, `ranges: []`, `dead_cards: []` : ces champs sont prévus pour les sortes suivantes. Pour la main contre main, la main adverse pourra être `["??","??"]`, puis dévoilée dans `equity.villain_cards`. Pour les ranges, chaque entrée aura la forme `[{who, label_fr, pct, hands: {classe: poids}}]`, avec les deux ranges pour un exercice de range contre range.
 
-Pour les questions sans tableau, `board` et `board_cards` sont vides et `street` vaut `null`.
+Pour les questions sans tableau, `board` est vide, `street` vaut `null` et `hero_cards` vaut `null` (la v1 porte sur une classe de mains, pas sur des cartes précises).
 
 **Correction.** Comme pour les autres sortes, avec en plus :
 - `essential_fr`, la valeur exacte ;
@@ -121,7 +121,7 @@ Pour les questions sans tableau, `board` et `board_cards` sont vides et `street`
 - dans `details_fr`, la liste des cartes groupées par main obtenue (« couleur : 9 cartes (A♠, …) ; paire : 6 cartes (…) »), les probabilités exactes au turn et jusqu'à la river, la règle des 2 et 4 comparée à la valeur exacte (« la règle surestime de 4,8 points ») et l'avertissement « améliorer n'est pas toujours passer devant ».
 
 Le bloc `equity` contient en plus :
-- `outs` : `[{card, display, category_fr}]` ;
+- `outs` : `[{card, display, category_fr, why_fr}]`, où `why_fr` vaut par exemple « fait la couleur », ainsi que `outs_fr`, le résumé en une phrase ;
 - `outs_count`, `turn_bp` et `river_bp` ;
 - `rule_turn_pct` et `rule_river_pct` (2 × outs et 4 × outs) ;
 - `board` et `street`.

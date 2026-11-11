@@ -25,6 +25,7 @@ RANKS = '23456789TJQKA'
 SUITS = 'shdc'
 SYM = {'s': '♠', 'h': '♥', 'd': '♦', 'c': '♣'}
 CAT_FR = ['carte haute', 'paire', 'double paire', 'brelan', 'suite', 'couleur', 'full', 'carré', 'quinte flush']
+WHY_FR = ['', 'fait une paire', 'fait une double paire', 'fait un brelan', 'fait la suite', 'fait la couleur', 'fait un full', 'fait un carré', 'fait la quinte flush']
 TOPICS = ('nombre', 'turn', 'river')
 TOPICS_L1 = ('nombre', 'turn')
 N_TURN = 47
@@ -169,8 +170,8 @@ def prompt(q, hand_s):
 
 def question_extra(q, hand_s):
     """champs propres aux questions avec tableau"""
-    return dict(street='flop', board=[disp(c) for c in q['board']], board_cards=[name(c) for c in q['board']],
-                hand_cards=[hand_s[:2], hand_s[2:]], hand_display=hand_display(hand_s), villain_hand=None)
+    return dict(street='flop', board=[name(c) for c in q['board']], board_display=[disp(c) for c in q['board']],
+                hero_cards=[hand_s[:2], hand_s[2:]], hand_display=hand_display(hand_s), villain_cards=None, ranges=[], dead_cards=[])
 
 
 def correction(b, hand_s):
@@ -195,9 +196,10 @@ def correction(b, hand_s):
              + _rule_gap(4 * N, river_bp / 100) + ".",
              "Attention : une carte qui t'améliore ne te fait pas toujours passer devant (elle peut aussi donner une suite ou une couleur à l'adversaire)."]
     extra = dict(value=b['value'], value_fr=(_plural(b['value']) if b['topic'] == 'nombre' else E.pct_fr(b['value'])),
-                 value_bp=None if b['topic'] == 'nombre' else b['value'], outs=[dict(card=name(c), display=disp(c), category_fr=CAT_FR[cat]) for c, cat in o],
+                 value_bp=None if b['topic'] == 'nombre' else b['value'], outs=[dict(card=name(c), display=disp(c), category_fr=CAT_FR[cat], why_fr=WHY_FR[cat]) for c, cat in o],
+                 outs_fr=detail,
                  outs_count=N, turn_bp=turn_bp, river_bp=river_bp, rule_turn_pct=2 * N, rule_river_pct=4 * N,
-                 board=[disp(c) for c in board], street='flop')
+                 board=[name(c) for c in board], street='flop')
     return essential, method, lines, extra
 
 
