@@ -562,8 +562,9 @@ const DEMO = (() => {
   function weekValues(mode, start) {
     const lo = start.getTime(), hi = lo + 7 * DAY, inw = (at) => { const t = Date.parse(at); return t >= lo && t < hi; }, db = load();
     const days = new Set((db.ranges || []).filter((r) => inw(r.at)).map((r) => dayOf(r.at))); let n = 0, lost = 0;   // jours d'entraînement : séries finies et ranges
-    for (const s of Object.values(db.sessions)) if (s.mode === mode && own(s)) {
-      if (Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));
+    for (const s of Object.values(db.sessions)) if (own(s)) {
+      if (Object.keys(s.answers).length >= s.items.length && inw(s.created_at)) days.add(dayOf(s.created_at));       // jours : hors catégorie, tout mode compte
+      if (s.mode !== mode) continue;
       for (const r of (s.plan === 'placement' ? [] : Object.values(s.answers))) if (r.at && inw(r.at) && !(r.field && r.field.read)) { n += 1; lost += 10 * Math.round((r.regret_mbb || 0) / 10); }
     }
     const good = (db.ranges || []).filter((r) => inw(r.at) && r.accuracy_pct >= G.range_good).length;

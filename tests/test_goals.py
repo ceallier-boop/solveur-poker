@@ -69,3 +69,16 @@ def test_goal_categories():
     from spinsacademy import goals
     assert [goals.category(k, 'gto') for k in goals.KINDS] == [None, 'gto', 'ranges']
     assert goals.category('precision', 'exploit') == 'exploit'
+
+
+def test_training_days_count_every_mode_api(client):
+    """retest 10 : une série d'équités finie aujourd'hui fait avancer « Jours d'entraînement » de l'objectif GTO (hors catégorie)"""
+    r = client.post('/sessions', json={'mode': 'equity', 'size': 3}, headers=H)
+    assert r.status_code == 201, r.text
+    sid = r.json()['session_id']
+    for i in range(r.json()['size']):
+        q = client.get(f'/quiz/next?session_id={sid}', headers=H).json()['question']
+        client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': q['options'][0]['id']}, headers=H)
+    g = client.get('/users/me/goals?mode=gto', headers=H).json()
+    days = next(x for x in g['items'] if x['kind'] == 'days')
+    assert days['value'] >= 1, days

@@ -686,7 +686,7 @@ def _goal_data(con, pid, mode):
     sess = [dict(r) for r in con.execute(
         'SELECT s.created_at, s.plan, s.size, s.dataset_version, (SELECT COUNT(*) FROM attempts a WHERE a.session_id = s.id) AS answered '
         'FROM sessions s WHERE s.player_id = ?', (pid,))]
-    sess = [x for x in sess if quiz.mode_of(x['dataset_version']) == mode]
+    # « Jours d'entraînement » est hors catégorie : toute série finie compte, GTO, exploitant ou équités (retest 10)
     rgs = [dict(r) for r in con.execute('SELECT answered_at, accuracy_pct FROM range_attempts WHERE player_id = ?', (pid,))]
     return _mode_rows(con, pid, mode, None), sess, rgs
 
