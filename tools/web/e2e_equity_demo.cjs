@@ -38,7 +38,7 @@ const { chromium } = require('playwright');
     for (let i = 0; i < 3; i++) {
       const [, n] = await api(`/quiz/next?session_id=${o.session_id}`); const q = n.question;
       const [, a] = await api('/attempts', { session_id: o.session_id, question_index: i, action_id: q.options[0].id });
-      out.outs.push(q.kind === 'outs' && q.board.length === 3 && q.hand_cards.length === 2 && a.equity.outs_count >= 2 && a.regret_mbb === 0);
+      out.outs.push(q.kind === 'outs' && q.board.length === 3 && q.hero_cards.length === 2 && a.equity.outs_count >= 2 && a.regret_mbb === 0);
     }
     return out;
   });

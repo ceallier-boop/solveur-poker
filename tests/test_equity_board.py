@@ -104,8 +104,9 @@ def test_correction_and_grading():
     assert r['regret_mbb'] == 0 and r['loss_fr'] is None and r['equity']['outs_count'] == 15 and r['equity']['rule_river_pct'] == 60
     assert 'couleur : 9 cartes' in r['explanation_fr'] and 'Règle des 2 et 4' in r['explanation_fr'] and 'passer devant' in r['explanation_fr']
     q = E.question(sid, 'AsKs')
-    assert q['board'] == ['Q♠', '7♠', '2♦'] and q['board_cards'] == ['Qs', '7s', '2d'] and q['hand_display'] == 'A♠K♠' and q['street'] == 'flop'
-    assert q['villain_hand'] is None and q['kind'] == 'outs' and q['category_fr'] == 'Équités'
+    assert q['board'] == ['Qs', '7s', '2d'] and q['board_display'] == ['Q♠', '7♠', '2♦'] and q['hand_display'] == 'A♠K♠' and q['street'] == 'flop'
+    assert q['hero_cards'] == ['As', 'Ks'] and q['villain_cards'] is None and q['ranges'] == []
+    assert {o['why_fr'] for o in r['equity']['outs']} == {'fait la couleur', 'fait une paire'} and q['kind'] == 'outs' and q['category_fr'] == 'Équités'
     assert 'outs_count' not in str(q) and '15' not in str(q['prompt_fr'])
     assert not E.valid(sid, 'AsQs')                  # main en double avec le tableau
     assert not E.valid(B.spot_id('river', 1, B.cards_of('Qs7s2d'), 10, 4, 1), 'AsKs')     # niveau 1 : pas de question « river »
@@ -128,7 +129,7 @@ def test_api_outs_series(client):
     sid = r.json()['session_id']
     for i in range(4):
         q = client.get('/quiz/next', params={'session_id': sid}).json()['question']
-        assert q['kind'] == 'outs' and len(q['board']) == 3 and len(q['hand_cards']) == 2
+        assert q['kind'] == 'outs' and len(q['board']) == 3 and len(q['hero_cards']) == 2
         a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': q['options'][0]['id']}).json()
         assert a['verdict'] in ('correct', 'imprécision', 'erreur') and a['regret_mbb'] == 0
     s = client.get(f'/sessions/{sid}/summary').json()
