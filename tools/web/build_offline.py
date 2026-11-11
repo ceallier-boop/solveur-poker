@@ -190,7 +190,7 @@ const DEMO = (() => {
   function summary(s) {
     const rows = answered(s); const n = rows.length; const pts = rows.reduce((a, [, r]) => a + r.points, 0);
     const errors = rows.filter(([, r]) => r.verdict !== 'correct').map(([it, r]) => ({ prompt_fr: it ? it.q.prompt_fr.replace(' Que fais-tu ?', '') : 'Question d\'une version précédente de la démo',
-      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out })).sort((a, b) => b.regret_mbb - a.regret_mbb);
+      chosen: r.chosen_label, best: r.best_label, regret_mbb: r.regret_mbb, verdict: r.verdict, timed_out: !!r.timed_out, ...(r.equity ? { value_fr: r.equity.value_fr || null, loss_fr: null } : {}) })).sort((a, b) => b.regret_mbb - a.regret_mbb);   // équités : valeur exacte, comme l'API
     const verdicts = { correct: 0, 'imprécision': 0, erreur: 0 }; for (const [, r] of rows) verdicts[r.verdict] += 1;
     const ev = rows.filter(([, r]) => !(r.field && r.field.read) && !r.equity); const lost = ev.reduce((a, [, r]) => a + Math.round((r.regret_mbb || 0) / 10) / 100, 0);   // somme des coûts affichés
     return { questions: n, points: pts, score_pct: n ? Math.round(1000 * pts / n) / 10 : 0, bb_lost: Math.round(100 * lost) / 100, ev_questions: ev.length,
