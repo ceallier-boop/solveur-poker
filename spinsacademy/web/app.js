@@ -354,8 +354,8 @@ function renderQuestion(data) {
   $('history').innerHTML = eq ? '' : q.history_fr.length ? q.history_fr.map((t) => `<li>${t}</li>`).join('') : '<li>Tu parles en premier</li>';   // lecteurs d'écran
   $('eq-hand').hidden = !eq;
   if (eq) {                                                          // équités v2 : le tableau (3 à 5 cartes) au-dessus de ta main
-    const bc = q.board_cards || []; $('eq-board').hidden = !bc.length; $('eq-board').innerHTML = bc.length ? boardHTML(bc) : '';
-    renderCardRow($('eq-cards'), (q.hand_cards || []).length ? q.hand_cards : q.hand_display, 'Ta main'); $('eq-kind').textContent = q.kind_fr || '';
+    const bc = q.board || []; $('eq-board').hidden = !bc.length; $('eq-board').innerHTML = bc.length ? boardHTML(bc) : '';   // board : cartes précises (« Qs »), docs/api/QUIZ_EQUITES.md v2
+    renderCardRow($('eq-cards'), (q.hero_cards || []).length ? q.hero_cards : q.hand_display, 'Ta main'); $('eq-kind').textContent = q.kind_fr || '';
   }
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
@@ -441,7 +441,7 @@ function outsHTML(e) {
   const rows = Object.entries(groups).map(([cat, cs]) => `<li><span class="oc-cat">${escT(cat.charAt(0).toUpperCase() + cat.slice(1))}</span><span class="cards mini">${cardsHTML(cs)}</span><small>${cs.length} carte${cs.length > 1 ? 's' : ''}</small></li>`).join('');
   const odds = e.turn_bp != null ? `<p class="eq-odds">Au turn : <b>${pct1(e.turn_bp)}</b>${e.river_bp != null ? ` · jusqu'à la river : <b>${pct1(e.river_bp)}</b>` : ''}`
     + (e.rule_turn_pct != null ? `<br><small>Règle des 2 et 4 : ${e.rule_turn_pct} % au turn, ${e.rule_river_pct} % jusqu'à la river.</small>` : '') + '</p>' : '';
-  return `<h4>Les ${e.outs.length} carte${e.outs.length > 1 ? 's' : ''} qui t'améliorent</h4>` + (rows ? `<ul class="eq-outs">${rows}</ul>` : '<p class="note">Aucune carte n\'améliore ta main.</p>') + odds;
+  return `<h4>Les ${e.outs.length} carte${e.outs.length > 1 ? 's' : ''} qui t'améliorent</h4>` + (e.outs_fr ? `<p class="note">${escT(e.outs_fr)}</p>` : '') + (rows ? `<ul class="eq-outs">${rows}</ul>` : '<p class="note">Aucune carte n\'améliore ta main.</p>') + odds;
 }
 function renderEquityAnswer(r) {
   const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
@@ -453,9 +453,9 @@ function renderEquityAnswer(r) {
   v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? (count ? 'Bon nombre' : 'Bonne tranche') : title}<small>${escT(sub)}</small>`;
   stopTimer();
   for (const id of ['a-avis', 'a-choice', 'a-conseil', 'a-next-box', 'a-grid-box', 'a-strategy-title', 'a-strategy', 'a-exploit']) $(id).hidden = true;
-  renderCardRow($('a-cards'), (q.hand_cards || []).length ? q.hand_cards : q.hand_display, 'Ta main'); $('a-cards').hidden = false;
-  const bc = q.board_cards || []; $('a-board').hidden = !bc.length; $('a-board').innerHTML = bc.length ? boardHTML(bc) : '';
-  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b> · ${escT(q.hand_display)}${(q.board || []).length ? ` sur ${escT(q.board.join(' '))}` : ''}`;
+  renderCardRow($('a-cards'), (q.hero_cards || []).length ? q.hero_cards : q.hand_display, 'Ta main'); $('a-cards').hidden = false;
+  const bc = q.board || []; $('a-board').hidden = !bc.length; $('a-board').innerHTML = bc.length ? boardHTML(bc) : '';
+  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b> · ${escT(q.hand_display)}${bc.length ? ` sur ${escT((q.board_display || bc).join(' '))}` : ''}`;
   $('a-essential').textContent = band ? r.essential_fr || '' : '';      // affirmations : le verdict dit déjà la bonne réponse
   const how = (r.method_fr || '').replace(/^Calcul : /, '');            // « Calcul : … » : le titre le dit déjà
   $('a-remember').hidden = !how; $('a-remember').innerHTML = how ? `<b>Le calcul</b><span class="eline">${escT(how.charAt(0).toUpperCase() + how.slice(1))}</span>` : '';
