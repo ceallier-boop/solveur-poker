@@ -362,7 +362,7 @@ def prompt(spot_id, hand):
 def question(spot_id, hand):
     """ce que voit le joueur, sans la solution"""
     b = _built(spot_id, hand); pre = 'b' if b['kind'] != 'labels' else 'o'
-    board = equity_board.question_extra(b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_cards=[], hand_cards=None, villain_hand=None)
+    board = equity_board.question_extra(b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_display=[], hero_cards=None, villain_cards=None, ranges=[], dead_cards=[])
     return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display', None) or _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
                 category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=KIND_FR[b['kind']], topic=b.get('topic') or b.get('mode'), level=b['level'],
                 answer='band' if pre == 'b' else 'statement', multiple=False,
