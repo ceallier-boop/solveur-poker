@@ -216,3 +216,38 @@ def test_board_equity_questions():
                 n += 1
     assert n == 24
     assert all(not s.startswith('eq:board_equity') for sd in range(10) for s, _ in E.draw(2, 5, seed=sd))     # hors séries par défaut
+
+
+# ------------------------------------------------------------------ sorte « flop_help » : ce flop t'aide-t-il plus que la range adverse ?
+def test_flop_help_questions():
+    import numpy as np
+    from spinsacademy import allin
+    from spinsacademy.cards import NAMES
+    seen = set()
+    for lv in (1, 2):
+        for sd in range(3):
+            for sid, h in E.draw(lv, 3, seed=sd, kind='flop_help'):
+                q = B.help_parse(sid); b = E._built(sid, h); hand = B.cards_of(h)
+                n, hero, mine, opp = B.scenario(q['topic'])
+                assert mine[NAMES.index(B.class_of(hand))] > 0                                  # la main est dans la range du héros
+                pre = round(10000 * float(allin.equity_vs_range(np.array(opp))[NAMES.index(B.class_of(hand))]))
+                assert b['pre'] == pre
+                d = (b['value'] - pre) / 100
+                assert (d >= 4.5 and b['correct'] == 0) or (d <= -4.5 and b['correct'] == 2) or (abs(d) <= 1.5 and b['correct'] == 1)
+                assert len({c >> 2 for c in q['board']}) > 1
+                qq = E.question(sid, h); assert qq['kind'] == 'flop_help' and qq['ranges'][0]['who'] == 'villain' and len(qq['options']) == 3
+                r = E.correct(sid, h, f"b{b['correct']}"); assert r['verdict'] == 'correct' and r['equity']['delta_bp'] == b['value'] - pre
+                other = f"b{2 - b['correct']}" if b['correct'] != 1 else 'b0'
+                assert E.correct(sid, h, other)['verdict'] == ('erreur' if b['correct'] != 1 else 'imprécision')
+                seen.add(b['correct'])
+    assert seen == {0, 1, 2}
+
+
+def test_flop_help_value_matches_board_equity_kernel():
+    """au flop, la valeur est l'équité exacte de la main contre la range adverse, recalculée ici avec les poids de la banque"""
+    import numpy as np
+    from spinsacademy.postflop.kernels import CC, CLASS_OF
+    sid, h = E.draw(2, 1, seed=4, kind='flop_help')[0]
+    q = B.help_parse(sid); hand = B.cards_of(h); opp = np.array(B.scenario(q['topic'])[3])[np.asarray(CLASS_OF)]
+    win, tot = B.hero_equity(hand[0], hand[1], np.array(q['board'], np.int64), opp, CC)
+    assert E._built(sid, h)['value'] == round(10000 * win / tot)
