@@ -134,3 +134,85 @@ def test_api_outs_series(client):
         assert a['verdict'] in ('correct', 'imprécision', 'erreur') and a['regret_mbb'] == 0
     s = client.get(f'/sessions/{sid}/summary').json()
     assert s['complete'] and s['bb_per_100'] is None and s['by_theme'][0]['kind'] == 'outs'
+
+
+# ------------------------------------------------------------------ sorte « board_equity » : équité sur un flop connu
+def ref_rank(cards):
+    """valeur complète d'une main de 7 cartes (pur Python, indépendant d'evaln) : meilleure combinaison de 5 cartes"""
+    best = None
+    for five in itertools.combinations(cards, 5):
+        rs = sorted((c // 4 for c in five), reverse=True); ss = {c % 4 for c in five}
+        cnt = sorted(((rs.count(r), r) for r in set(rs)), reverse=True)
+        flush = len(ss) == 1; u = sorted(set(rs), reverse=True)
+        st = u[0] if len(u) == 5 and u[0] - u[4] == 4 else 3 if u == [12, 3, 2, 1, 0] else None
+        if st is not None and flush: v = (8, st)
+        elif cnt[0][0] == 4: v = (7, cnt[0][1], cnt[1][1])
+        elif cnt[0][0] == 3 and cnt[1][0] == 2: v = (6, cnt[0][1], cnt[1][1])
+        elif flush: v = (5, *rs)
+        elif st is not None: v = (4, st)
+        elif cnt[0][0] == 3: v = (3, cnt[0][1], *[r for c, r in cnt[1:]])
+        elif cnt[0][0] == 2 and cnt[1][0] == 2: v = (2, cnt[0][1], cnt[1][1], cnt[2][1])
+        elif cnt[0][0] == 2: v = (1, cnt[0][1], *[r for c, r in cnt[1:]])
+        else: v = (0, *rs)
+        best = v if best is None or v > best else best
+    return best
+
+
+def ref_equity_vs(hand, villain, board):
+    live = [c for c in range(52) if c not in hand + villain + board]
+    win = 0.0; n = 0
+    for t, r in itertools.combinations(live, 2):
+        a, b = ref_rank(hand + board + [t, r]), ref_rank(villain + board + [t, r])
+        win += 1.0 if a > b else 0.5 if a == b else 0.0; n += 1
+    return win / n
+
+
+def _combo_index(cs):
+    from spinsacademy.postflop.kernels import CC
+    a, b = sorted(cs)
+    return next(i for i in range(1326) if sorted((int(CC[i, 0]), int(CC[i, 1]))) == [a, b])
+
+
+@pytest.mark.parametrize('hand,villain,board', [('AsKs', 'QhQd', 'Kd7s2s'), ('9s8s', 'AhKd', 'Ts7d2c'), ('7h7d', '7c6c', 'Ks9c2s')])
+def test_hero_equity_against_reference(hand, villain, board):
+    import numpy as np
+    from spinsacademy.postflop.kernels import CC
+    h, v, b = B.cards_of(hand), B.cards_of(villain), B.cards_of(board)
+    opp = np.zeros(1326); opp[_combo_index(v)] = 1.0
+    win, tot = B.hero_equity(h[0], h[1], np.array(b, np.int64), opp, CC)
+    assert abs(win / tot - ref_equity_vs(h, v, b)) < 1e-9
+
+
+def test_range_equity_is_weighted_mean():
+    """contre une range de trois mains pondérées : moyenne pondérée des équités main contre main (chaque main adverse a 990 suites)"""
+    import numpy as np
+    from spinsacademy.postflop.kernels import CC
+    h, b = B.cards_of('JhTh'), B.cards_of('Qs9d2h')
+    vill = {('AsAd'): 1.0, ('KcQc'): 0.5, ('8c8d'): 0.25}
+    opp = np.zeros(1326)
+    for v, w in vill.items(): opp[_combo_index(B.cards_of(v))] = w
+    win, tot = B.hero_equity(h[0], h[1], np.array(b, np.int64), opp, CC)
+    ref = sum(w * ref_equity_vs(h, B.cards_of(v), b) for v, w in vill.items()) / sum(vill.values())
+    assert abs(win / tot - ref) < 1e-9
+
+
+def test_board_equity_questions():
+    n = 0
+    for lv in (1, 2):
+        for sd in range(4):
+            for sid, h in E.draw(lv, 3, seed=sd, kind='board_equity'):
+                q = B.eq_parse(sid); b = E._built(sid, h)
+                assert lv == 2 or q['topic'] in B.EQ_TOPICS_L1
+                f = b['f']; x = b['value'] / 100; c = b['correct']
+                lo = f[c - 1] if c else 0; hi = f[c] if c < len(f) else 100
+                assert lo <= x < hi and all(abs(x - y) >= E.MARGIN for y in f)
+                qq = E.question(sid, h)
+                assert len(qq['board']) == 3 and qq['hero_cards'] == [h[:2], h[2:]] and qq['kind'] == 'board_equity'
+                assert (qq['ranges'] == []) == (q['topic'] == 'hasard')
+                if qq['ranges']: assert qq['ranges'][0]['who'] == 'villain' and 0 < max(qq['ranges'][0]['hands'].values()) <= 1
+                r = E.correct(sid, h, qq['options'][c]['id'])
+                assert r['verdict'] == 'correct' and r['regret_mbb'] == 0 and [s['street'] for s in r['equity']['by_street']] == ['preflop', 'flop']
+                assert 'qui gagnera l\'argent' in r['explanation_fr']
+                n += 1
+    assert n == 24
+    assert all(not s.startswith('eq:board_equity') for sd in range(10) for s, _ in E.draw(2, 5, seed=sd))     # hors séries par défaut

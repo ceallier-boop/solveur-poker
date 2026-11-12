@@ -22,10 +22,10 @@ from . import equities, equity_board, grading
 from .cards import NAMES
 
 REF = f'equites/{equities.DATE}'
-KINDS = ('hit', 'equity', 'labels', 'outs')
+KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity')
 DEFAULT_KINDS = ('hit', 'equity', 'labels')     # série sans filtre ; « outs » (avec tableau, v2) seulement sur demande tant que l'écran n'est pas prêt
-BOARD_KINDS = ('outs',)                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
-KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs'}
+BOARD_KINDS = ('outs', 'board_equity')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
+KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop'}
 CATEGORY_FR = 'Équités'
 MARGIN = 1.5                          # points : écart minimal entre la valeur exacte et toute frontière de tranche
 MIN_BP = 50                           # valeur minimale d'un sujet (0,5 %) : un « 0 % » ou presque n'apprend rien
@@ -254,7 +254,8 @@ def parse(spot_id):
     p = spot_id.split(':')
     try:
         if p[0] != 'eq' or p[1] not in KINDS: raise ValueError
-        if p[1] in BOARD_KINDS: return equity_board.parse(spot_id)
+        if p[1] == 'outs': return equity_board.parse(spot_id)
+        if p[1] == 'board_equity': return equity_board.eq_parse(spot_id)
         level = int(p[3][1:])
         if p[1] == 'labels':
             ids = p[4].split('.')
@@ -269,7 +270,7 @@ def _built(spot_id, hand):
     """reconstruit la question et vérifie qu'elle reste valable : dict(kind, …, value, f, options, correct) ; ValueError sinon"""
     q = parse(spot_id)
     if q['kind'] in BOARD_KINDS:
-        try: return equity_board.built(q, hand)
+        try: return (equity_board.built if q['kind'] == 'outs' else equity_board.eq_built)(q, hand)
         except ValueError: raise ValueError(f'question d\'équité invalide pour {hand} : {spot_id}')
     if hand not in NAMES: raise ValueError(f'main inconnue : {hand}')
     if q['kind'] == 'labels':
@@ -299,7 +300,8 @@ def _hand(rnd, ok, avoid):
 
 def draw_one(kind, level, rnd, avoid=frozenset(), topic=None):
     """(spot_id, main) d'une sorte donnée, ou None après plusieurs essais"""
-    if kind in BOARD_KINDS: return equity_board.draw_one(level, rnd, avoid, topic)
+    if kind == 'outs': return equity_board.draw_one(level, rnd, avoid, topic)
+    if kind == 'board_equity': return equity_board.eq_draw_one(level, rnd, avoid, topic)
     for _ in range(200):
         if kind == 'labels':
             h = _hand(rnd, lambda h: True, avoid); r = make_labels(h, level, rnd)
@@ -345,7 +347,7 @@ def _hd(hand):
 
 def prompt(spot_id, hand):
     q = parse(spot_id)
-    if q['kind'] in BOARD_KINDS: return equity_board.prompt(q, hand)
+    if q['kind'] in BOARD_KINDS: return (equity_board.prompt if q['kind'] == 'outs' else equity_board.eq_prompt)(q, hand)
     hd = _hd(hand)
     if q['kind'] == 'hit':
         return f"Tu as {hd}. Quelle est la chance de toucher {HIT_TOPICS[q['topic']]['fr']} au flop ?"
@@ -362,7 +364,7 @@ def prompt(spot_id, hand):
 def question(spot_id, hand):
     """ce que voit le joueur, sans la solution"""
     b = _built(spot_id, hand); pre = 'b' if b['kind'] != 'labels' else 'o'
-    board = equity_board.question_extra(b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_display=[], hero_cards=None, villain_cards=None, ranges=[], dead_cards=[])
+    board = (equity_board.question_extra if b['kind'] == 'outs' else equity_board.eq_question_extra)(b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_display=[], hero_cards=None, villain_cards=None, ranges=[], dead_cards=[])
     return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display', None) or _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
                 category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=KIND_FR[b['kind']], topic=b.get('topic') or b.get('mode'), level=b['level'],
                 answer='band' if pre == 'b' else 'statement', multiple=False,
@@ -432,7 +434,7 @@ def correct(spot_id, hand, action_id):
     forces, faiblesses = ([], []) if b['kind'] in BOARD_KINDS else strengths(hand, level)
     extra = {}
     if b['kind'] in BOARD_KINDS:
-        essential, method, board_lines, extra = equity_board.correction(b, hand)
+        essential, method, board_lines, extra = (equity_board.correction if b['kind'] == 'outs' else equity_board.eq_correction)(b, hand)
     elif b['kind'] == 'hit':
         hd = _hd(hand)
         t = HIT_TOPICS[b['topic']]; v = b['value']
