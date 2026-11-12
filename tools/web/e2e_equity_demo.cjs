@@ -46,9 +46,15 @@ const { chromium } = require('playwright');
       const [, a] = await api('/attempts', { session_id: be.session_id, question_index: i, action_id: q.options[0].id });
       out.boardEq.push(q.kind === 'board_equity' && q.board.length === 3 && a.equity.by_street.length === 2 && a.regret_mbb === 0);
     }
+    const [, fh] = await api('/sessions', { mode: 'equity', size: 2, filters: { kind: 'flop_help' } }); out.flopHelp = [];      // v2 : ce flop t'aide-t-il ?
+    for (let i = 0; i < 2; i++) {
+      const [, n] = await api(`/quiz/next?session_id=${fh.session_id}`); const q = n.question;
+      const [, a] = await api('/attempts', { session_id: fh.session_id, question_index: i, action_id: q.options[0].id });
+      out.flopHelp.push(q.kind === 'flop_help' && q.options.length === 3 && q.ranges.length === 1 && typeof a.equity.delta_bp === 'number');
+    }
     return out;
   });
   const ok = res.create === 201 && new Set(res.kinds).size === 3 && !res.checks.length && res.summary.complete && res.summary.bb === null && res.gtoEquity === 0
-    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && !res.kinds.includes('outs') && !errs.length;
+    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && res.flopHelp.length === 2 && res.flopHelp.every(Boolean) && !res.kinds.includes('outs') && !errs.length;
   console.log(JSON.stringify(Object.assign(res, { errs, ok }), null, 1)); await b.close(); process.exit(ok ? 0 : 1);
 })();

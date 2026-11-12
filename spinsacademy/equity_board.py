@@ -218,7 +218,7 @@ def _rule_gap(rule, exact):
 # moitié. Le héros paie le tapis : sa main est tirée dans la range de call du BB à ce tapis (main au hasard : n'importe quelle main).
 # Identifiant : eq:board_equity:{hasard | huN_sb_tapis}:L{niveau}:{flop}:w{largeur}:n{tranches}:p{rang} ; main exacte dans hand.
 from functools import lru_cache
-from numba import njit
+from numba import njit, prange
 from .postflop.kernels import CC, CLASS_OF
 
 EQ_TOPICS_L1 = ('hasard', 'hu8_sb_tapis', 'hu12_sb_tapis')
@@ -226,29 +226,38 @@ EQ_TOPICS = ('hasard', 'hu6_sb_tapis', 'hu8_sb_tapis', 'hu10_sb_tapis', 'hu12_sb
 CALLER = {f'hu{n}_sb_tapis': f'hu{n}_bb_paie' for n in (6, 8, 10, 12)}
 
 
-@njit(cache=True)
+@njit(parallel=True, cache=True)
 def hero_equity(h0, h1, flop, opp, CC):
-    """(gain, total) : masse adverse battue (égalité pour moitié) et masse adverse compatible, sommées sur les 1 081 turns et rivers"""
+    """(gain, total) : masse adverse battue (égalité pour moitié) et masse adverse compatible, sommées sur les 1 081 turns et rivers ;
+    turns réparties entre les cœurs (somme exacte, l'ordre des additions ne change le résultat qu'au-delà de la 12e décimale)"""
     used = np.zeros(52, np.bool_); used[h0] = True; used[h1] = True
     for k in range(3): used[flop[k]] = True
+    win = 0.0; tot = 0.0
+    for t in prange(52):
+        if used[t]: continue
+        w1, t1 = _turn_part(h0, h1, flop, opp, CC, used, t)
+        win += w1; tot += t1
+    return win, tot
+
+
+@njit(cache=True)
+def _turn_part(h0, h1, flop, opp, CC, used, t):
     cards = np.zeros(7, np.int64); cards[2] = flop[0]; cards[3] = flop[1]; cards[4] = flop[2]
     hc = np.zeros(7, np.int64); hc[0] = h0; hc[1] = h1; hc[2] = flop[0]; hc[3] = flop[1]; hc[4] = flop[2]
     win = 0.0; tot = 0.0
-    for t in range(52):
-        if used[t]: continue
-        for r in range(t + 1, 52):
-            if used[r]: continue
-            hc[5] = t; hc[6] = r; me = evaln(hc, 7)
-            cards[5] = t; cards[6] = r
-            for c in range(1326):
-                w = opp[c]
-                if w <= 0: continue
-                a = CC[c, 0]; b = CC[c, 1]
-                if used[a] or used[b] or a == t or a == r or b == t or b == r: continue
-                cards[0] = a; cards[1] = b; v = evaln(cards, 7)
-                tot += w
-                if me > v: win += w
-                elif me == v: win += 0.5 * w
+    for r in range(t + 1, 52):
+        if used[r]: continue
+        hc[5] = t; hc[6] = r; me = evaln(hc, 7)
+        cards[5] = t; cards[6] = r
+        for c in range(1326):
+            w = opp[c]
+            if w <= 0: continue
+            a = CC[c, 0]; b = CC[c, 1]
+            if used[a] or used[b] or a == t or a == r or b == t or b == r: continue
+            cards[0] = a; cards[1] = b; v = evaln(cards, 7)
+            tot += w
+            if me > v: win += w
+            elif me == v: win += 0.5 * w
     return win, tot
 
 
@@ -381,3 +390,151 @@ def eq_correction(b, hand_s):
     extra = dict(value_bp=v, value_fr=E.pct_fr(v), board=[name(x) for x in board], street='flop', range_id=None if b['topic'] == 'hasard' else b['topic'],
                  by_street=[dict(street='preflop', value_bp=pre), dict(street='flop', value_bp=v)], hand_category_fr=now, outs_count=len(o))
     return essential, method, lines, extra
+
+
+# ================================================================== sorte « flop_help » : ce flop t'aide-t-il plus que la range adverse ?
+# Pot limpé en heads-up (le cas le plus fréquent de 8 à 12 BB : le SB complète 59 à 73 % de ses mains, le BB checke 51 à 59 %) : on
+# compare l'équité de la main contre la range adverse avant le flop (classe de main, table des équités préflop) et au flop (exacte,
+# 1 081 suites). Trois réponses : elle monte nettement (+3 points ou plus), change peu (moins de 3 points), baisse nettement.
+# La variation n'est jamais à moins de 1,5 point d'une frontière : |écart| ≥ 4,5 points ou ≤ 1,5 point.
+# Identifiant : eq:flop_help:huN_limp_{bb|sb}:L{niveau}:{flop}:w3:n3:p{rang} ; main exacte dans hand.
+HELP_SCENARIOS = tuple(f'hu{n}_limp_{h}' for n in (8, 10, 12) for h in ('bb', 'sb'))
+HELP_STEP = 3                                           # points : frontière entre « change peu » et « monte / baisse nettement »
+HELP_OPTIONS = ("elle monte nettement (+3 points ou plus)", "elle change peu (moins de 3 points)", "elle baisse nettement (−3 points ou plus)")
+HELP_OPTIONS_L1 = ("elles augmentent nettement", "elles changent peu", "elles baissent nettement")
+
+
+@lru_cache(maxsize=16)
+def node_weights(stack, node, aid):
+    """poids (0 à 1) par classe d'une action de la banque en heads-up : atteinte × fréquence"""
+    from . import equities, quiz
+    from .cards import NAMES
+    _, spots = quiz.load(equities.BANK)
+    sp = next(s for s in spots.values() if s['table'] == 'heads-up' and s['stacks_bb'] == [float(stack)] * 2 and s['node_key'] == node)
+    j = [a['id'] for a in sp['actions']].index(aid)
+    return tuple(round(sp['hands'][h]['reach'] * sp['hands'][h]['freq'][j], 4) for h in NAMES)
+
+
+def scenario(sc):
+    """(tapis, poste du héros, poids du héros par classe, poids adverses par classe)"""
+    n, hero = int(sc[2:].split('_')[0]), sc.rsplit('_', 1)[1]
+    sb, bb = node_weights(n, 'root', 'C'), node_weights(n, 'SB-call', 'X')
+    return n, hero.upper(), (bb if hero == 'bb' else sb), (sb if hero == 'bb' else bb)
+
+
+@lru_cache(maxsize=16)
+def _pre_equities(sc):
+    from . import allin
+    return tuple(float(x) for x in allin.equity_vs_range(np.array(scenario(sc)[3])))
+
+
+def class_of(hand):
+    a, c = sorted(hand, reverse=True)
+    return RANKS[a >> 2] + RANKS[c >> 2] + ('' if a >> 2 == c >> 2 else 's' if a % 4 == c % 4 else 'o')
+
+
+@lru_cache(maxsize=4096)
+def help_values(sc, hand_s, board_s):
+    """(équité avant le flop, équité au flop) en dix-millièmes contre la range adverse"""
+    from .cards import NAMES
+    hand, board = cards_of(hand_s), cards_of(board_s)
+    pre = round(10000 * _pre_equities(sc)[NAMES.index(class_of(hand))])
+    opp = np.array(scenario(sc)[3])[np.asarray(CLASS_OF)]
+    win, tot = hero_equity(hand[0], hand[1], np.array(board, np.int64), opp, CC)
+    return pre, round(10000 * win / tot)
+
+
+def help_answer(pre, flop):
+    """rang de la bonne réponse (0 monte, 1 change peu, 2 baisse) ou None si l'écart est trop près d'une frontière"""
+    d = (flop - pre) / 100
+    if d >= HELP_STEP + 1.5: return 0
+    if d <= -HELP_STEP - 1.5: return 2
+    if abs(d) <= HELP_STEP - 1.5: return 1
+    return None
+
+
+def help_spot_id(sc, level, board, pos): return f"eq:flop_help:{sc}:L{level}:{''.join(name(c) for c in board)}:w{HELP_STEP}:n3:p{pos}"
+
+
+def help_parse(sid):
+    p = sid.split(':')
+    if len(p) != 8 or p[0] != 'eq' or p[1] != 'flop_help' or p[2] not in HELP_SCENARIOS or p[5] != f'w{HELP_STEP}' or p[6] != 'n3': raise ValueError
+    board = cards_of(p[4])
+    if len(board) != 3: raise ValueError
+    return dict(kind='flop_help', topic=p[2], level=int(p[3][1:]), board=board, w=HELP_STEP, n=3, pos=int(p[7][1:]))
+
+
+def help_built(q, hand_s):
+    from .cards import NAMES
+    hand = cards_of(hand_s)
+    if len(hand) != 2 or set(hand) & set(q['board']): raise ValueError
+    if scenario(q['topic'])[2][NAMES.index(class_of(hand))] <= 0: raise ValueError        # la main doit être dans la range du héros
+    pre, v = help_values(q['topic'], hand_s, ''.join(name(c) for c in q['board']))
+    if help_answer(pre, v) != q['pos']: raise ValueError
+    return dict(q, hand=hand, value=v, pre=pre, options=list(HELP_OPTIONS_L1 if q['level'] == 1 else HELP_OPTIONS), correct=q['pos'])
+
+
+def help_draw_one(level, rnd, avoid=frozenset(), topic=None):
+    """la bonne réponse d'abord (monte, change peu, baisse : à parts égales), puis un flop et une main de la range du héros qui la donnent"""
+    want = rnd.randrange(3); fallback = None
+    for k in range(60):
+        if k >= 40 and fallback: return fallback                # après 40 essais (environ 1 s) : la première question valable
+        sc = topic or rnd.choice(HELP_SCENARIOS)
+        board = sorted(rnd.sample(range(52), 3), reverse=True)
+        live = [c for c in range(1326) if CC[c, 0] not in board and CC[c, 1] not in board]
+        w = np.array(scenario(sc)[2])[np.asarray(CLASS_OF)]
+        c = rnd.choices(live, [w[i] for i in live])[0]
+        hs = ''.join(name(x) for x in sorted((int(CC[c, 0]), int(CC[c, 1])), reverse=True))
+        if hs in avoid: continue
+        if len({x >> 2 for x in board}) == 1: continue          # flop à brelan : rien à lire
+        pre, v = help_values(sc, hs, ''.join(name(x) for x in board)); a = help_answer(pre, v)
+        if a is None: continue
+        if a == want: return help_spot_id(sc, level, board, want), hs
+        fallback = fallback or (help_spot_id(sc, level, board, a), hs)
+    return fallback
+
+
+def _help_context(sc):
+    n, hero, _, _ = scenario(sc)
+    return (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+
+
+def help_prompt(q, hand_s):
+    hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in q['board'])
+    if q['level'] == 1:
+        return f"{_help_context(q['topic'])}, avec {hd}. Le flop est {bd}. Par rapport à avant le flop, tes chances de gagner contre ses mains possibles…"
+    return f"{_help_context(q['topic'])}, avec {hd}. Le flop est {bd}. Par rapport à avant le flop, ton équité contre sa range…"
+
+
+def help_question_extra(q, hand_s):
+    from .cards import NAMES
+    n, hero, _, opp = scenario(q['topic'])
+    who = 'SB, complète (limp)' if hero == 'BB' else 'BB, checke après le limp'
+    pct = round(100 * sum(w * (6 if len(h) == 2 else 4 if h[2] == 's' else 12) for h, w in zip(NAMES, opp)) / 1326, 1)
+    rng = dict(who='villain', label_fr=f"{who} à {n} BB ({round(pct)} %)", pct=pct, hands={h: x for h, x in zip(NAMES, opp) if x > 0})
+    return dict(street='flop', board=[name(c) for c in q['board']], board_display=[disp(c) for c in q['board']], hero_cards=[hand_s[:2], hand_s[2:]],
+                hand_display=hand_display(hand_s), villain_cards=None, ranges=[rng], dead_cards=[])
+
+
+def help_correction(b, hand_s):
+    from . import equity_quiz as E
+    hand, board = b['hand'], b['board']; hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in board)
+    pre, v = b['pre'], b['value']; d = (v - pre) / 100; o = outs(hand, board)
+    verdict = ("le flop t'aide plus que sa range" if d > 0 else "le flop aide plus sa range que ta main") if b['correct'] != 1 else "le flop ne change presque rien au rapport de force"
+    essential = f"Contre sa range, {hd} passe de {E.pct_fr(pre)} avant le flop à {E.pct_fr(v)} sur {bd} ({'+' if d >= 0 else '−'}{str(round(abs(d), 1)).replace('.', ',')} point{'s' if abs(d) >= 2 else ''}) : {verdict}."
+    method = ("Calcul : avant le flop, équité exacte de ta main (toutes couleurs confondues) contre chaque main de sa range ; au flop, les 1 081 turns et "
+              "rivers possibles contre chaque main de sa range encore possible, pondérée par sa fréquence dans la banque du solveur ; égalité pour moitié.")
+    lines = [f"Ta main pour l'instant : {situation_fr(hand, board)} ; {_plural(len(o))} l'améliorent au turn.",
+             "Une équité qui monte veut dire que ce flop touche plus souvent ta main que les mains qu'il peut avoir ; qui baisse, l'inverse.",
+             "L'équité dit qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent : la position et les mises à venir comptent aussi."]
+    extra = dict(value_bp=v, value_fr=E.pct_fr(v), preflop_bp=pre, delta_bp=v - pre, board=[name(x) for x in board], street='flop', scenario=b['topic'],
+                 by_street=[dict(street='preflop', value_bp=pre), dict(street='flop', value_bp=v)], hand_category_fr=situation_fr(hand, board), outs_count=len(o))
+    return essential, method, lines, extra
+
+
+# ================================================================== aiguillage par sorte (utilisé par equity_quiz)
+HANDLERS = {
+    'outs': dict(parse=parse, built=built, draw=draw_one, prompt=prompt, extra=question_extra, correction=correction),
+    'board_equity': dict(parse=eq_parse, built=eq_built, draw=eq_draw_one, prompt=eq_prompt, extra=eq_question_extra, correction=eq_correction),
+    'flop_help': dict(parse=help_parse, built=help_built, draw=help_draw_one, prompt=help_prompt, extra=help_question_extra, correction=help_correction),
+}

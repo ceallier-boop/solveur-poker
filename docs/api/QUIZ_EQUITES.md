@@ -173,3 +173,47 @@ Le bloc `equity` contient en plus :
 - l'équité contre une range de trois mains pondérées, égale à la moyenne pondérée de ces équités main contre main.
 
 La démo embarque 10 questions par niveau.
+
+## v2 : sorte « flop_help », « Ce flop t'aide-t-il plus que la range adverse ? » (12/11/2026)
+
+`POST /sessions {"mode": "equity", "filters": {"kind": "flop_help"}}`. C'est le premier exercice de range demandé par le porteur, côté main.
+
+**Situation.** Un pot limpé en heads-up à 8, 10 ou 12 BB : le SB complète, le BB checke. C'est le flop le plus fréquent à ces tapis : le SB complète 59 à 73 % de ses mains, le BB checke 51 à 59 %. Le scénario « relance à 2 BB » est écarté, car le SB relance moins de 4 % de ses mains.
+- Le héros est au BB (`huN_limp_bb`) ou au SB (`huN_limp_sb`).
+- Sa main est tirée dans sa range de la banque.
+- L'adversaire a la range de l'autre siège.
+
+**Question.** « Par rapport à avant le flop, ton équité contre sa range… » Trois réponses :
+- `b0` « elle monte nettement (+3 points ou plus) » ;
+- `b1` « elle change peu (moins de 3 points) » ;
+- `b2` « elle baisse nettement (−3 points ou plus) ».
+
+Au niveau 1, l'énoncé parle de « chances de gagner », sans chiffres dans les réponses.
+
+**Valeurs et marge.**
+- Avant le flop : l'équité exacte de la classe de main contre la range adverse (`allin.equity_vs_range`, cartes bloquées comprises).
+- Au flop : l'équité exacte sur les 1 081 suites (`hero_equity`, calcul réparti sur les cœurs, environ 25 ms).
+- L'écart n'est jamais à moins de 1,5 point d'une frontière : on n'interroge que si |écart| ≥ 4,5 points ou ≤ 1,5 point.
+- La bonne réponse est tirée d'abord, à parts égales. Après 40 essais, on garde la première question valable, pour borner le temps de tirage. Une série de 5 questions prend environ 3,4 s.
+- Les flops à brelan sont exclus.
+
+**Notation.** La réponse exacte est « correct ». La réponse voisine (« change peu » au lieu de « monte » ou de « baisse », ou l'inverse) est une « imprécision ». L'opposé est une « erreur ».
+
+**Question.** `ranges = [{who: "villain", label_fr: "SB, complète (limp) à 10 BB (59 %)", pct, hands}]`, et les mêmes champs de tableau que les autres sortes.
+
+**Correction.**
+- « Contre sa range, 9♥6♣ passe de 41,3 % avant le flop à 24,7 % sur A♦ K♣ 7♦ (−16,6 points) : le flop aide plus sa range que ta main. »
+- La méthode.
+- Ce que la main a pour l'instant, et le nombre de cartes qui l'améliorent.
+- Le sens d'une équité qui monte ou qui baisse.
+- La nuance sur l'argent.
+
+Le bloc `equity` contient en plus `preflop_bp`, `value_bp`, `delta_bp`, `by_street`, `scenario`, `hand_category_fr` et `outs_count`.
+
+**Vérification.** `tests/test_equity_board.py` contrôle :
+- la marge et la bonne réponse ;
+- que la main est bien dans la range du héros ;
+- la valeur avant le flop, recalculée ;
+- la valeur au flop, recalculée avec les poids de la banque, le kernel étant lui-même vérifié contre l'évaluateur indépendant.
+
+**Suite : « range contre range ».** Seuils proposés au porteur et aux coachs avant le code, voir le message à Plan.
