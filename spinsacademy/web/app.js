@@ -369,7 +369,8 @@ function renderQuestion(data) {
   const box = $('actions'); box.innerHTML = '';
   const main = document.createElement('div'); main.className = 'mainrow';
   const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
-  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); box.classList.toggle('bands', eq && q.answer === 'band'); box.classList.toggle('stmts', eq && q.answer === 'statement');   // tranches : en grille ; affirmations : en liste
+  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); const wordy = eq && q.kind === 'flop_help';                        // « elles augmentent / changent peu / baissent » : du texte, sur une colonne
+  box.classList.toggle('bands', eq && q.answer === 'band' && !wordy); box.classList.toggle('stmts', eq && (q.answer === 'statement' || wordy));   // tranches : en grille ; affirmations : en liste
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
     b.innerHTML = actionHTML(o.label_fr) + `<span class="key">${k + 1}</span>`; b.dataset.id = o.id; b.dataset.k = k + 1;
@@ -467,10 +468,12 @@ function renderEquityAnswer(r) {
   const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
   const best = r.best_label || '';
   const count = q.kind === 'outs' && q.topic === 'nombre';              // « 14 cartes » : un nombre, pas une tranche
-  const sub = count ? (r.verdict === 'correct' ? `Bon nombre : ${best}.` : r.verdict === 'imprécision' ? `Nombre voisin, un demi-point : le bon est ${best}.` : `Le bon nombre : ${best}.`)
+  const wordy = q.kind === 'flop_help';                                 // une phrase, ni tranche ni nombre
+  const sub = wordy ? (r.verdict === 'correct' ? `Bonne réponse : ${best}.` : `La bonne réponse : ${best}.`)
+    : count ? (r.verdict === 'correct' ? `Bon nombre : ${best}.` : r.verdict === 'imprécision' ? `Nombre voisin, un demi-point : le bon est ${best}.` : `Le bon nombre : ${best}.`)
     : band ? (r.verdict === 'correct' ? `Bonne tranche : ${best}.` : r.verdict === 'imprécision' ? `Tranche voisine, un demi-point : la bonne est ${best}.` : `La bonne tranche : ${best}.`)
     : r.verdict === 'correct' ? `Bonne réponse : « ${best} ».` : `La bonne réponse : « ${best} ».`;
-  v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? (count ? 'Bon nombre' : 'Bonne tranche') : title}<small>${escT(sub)}</small>`;
+  v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? (wordy ? 'Bonne réponse' : count ? 'Bon nombre' : 'Bonne tranche') : title}<small>${escT(sub)}</small>`;
   stopTimer();
   for (const id of ['a-avis', 'a-choice', 'a-conseil', 'a-next-box', 'a-grid-box', 'a-strategy-title', 'a-strategy', 'a-exploit']) $(id).hidden = true;
   renderCardRow($('a-cards'), (q.hero_cards || []).length ? q.hero_cards : q.hand_display, 'Ta main'); $('a-cards').hidden = false;
@@ -482,7 +485,7 @@ function renderEquityAnswer(r) {
   const list = (xs, cls2, t) => (xs && xs.length ? `<h4 class="${cls2}">${t}</h4><ul class="${cls2}">${xs.map((x) => `<li>${escT(x)}</li>`).join('')}</ul>` : '');
   const rows = band
     ? `<ol class="eq-bands">${(e.options || []).map((l, i) => { const id = `b${i}`, good = id === e.correct_option, mine = id === r.chosen_action;
-      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
+      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.delta_bp != null ? `${e.delta_bp > 0 ? '+' : e.delta_bp < 0 ? '−' : ''}${String(Math.round(Math.abs(e.delta_bp) / 10) / 10).replace('.', ',')} point${Math.abs(e.delta_bp) >= 200 ? 's' : ''}` : e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
     : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
   $('a-equity').hidden = false;
   $('a-equity').innerHTML = rows + outsHTML(e) + streetsHTML(e) + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
