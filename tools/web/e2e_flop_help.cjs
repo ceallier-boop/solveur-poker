@@ -28,6 +28,8 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     rows: [...document.querySelectorAll('#a-equity .st-row')].length, essential: document.getElementById('a-essential').textContent, text: document.getElementById('screen-answer').innerText }));
   ok('correction : verdict sans « tranche »', !/tranche/i.test(a.verdict) && /(Bonne réponse|La bonne réponse)/.test(a.verdict), a.verdict);
   ok('correction : l\'écart en points sur la bonne ligne', /✓ [+−]?[\d,]+ points?( · ta réponse)?$/.test(a.good), a.good);
+  const num = (t) => ((t || '').match(/([+−]?[\d,]+) points?/) || [])[1];   // l'écart de la bonne ligne = celui de la phrase du serveur
+  ok('correction : même écart que la phrase du serveur', num(a.good) && num(a.good).replace('+', '') === (num(a.essential) || '').replace('+', ''), [a.good, a.essential]);
   ok('correction : avant le flop puis au flop, et la phrase de l\'écart', a.rows === 2 && /avant le flop .* points?\)/.test(a.essential), a.essential);
   ok('correction : jamais de BB perdus', !/BB perdus|coûte/.test(a.text));
   await p.screenshot({ path: `${OUT}/flop_help_correction.png`, fullPage: true });
