@@ -94,3 +94,27 @@ Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 
 - **Régie publicitaire :** le porteur s'en occupera à la préparation de la version finale de la bêta.
 - **Mains Winamax :** le porteur en enverra ; compléter ensuite par les dépôts volontaires.
 - **Test fermé :** feu vert pour publier la banque `2026.11.07-s2` (8 à 16 BB).
+
+## Décisions du 10 au 12/11
+
+**Tranchées par le porteur**
+- « Mes mains » : offre validée (import et bilan global gratuits, détail payant) ; **bêta entièrement gratuite** pour encourager les dépôts ; contribution volontaire acceptée (case décochée : un consentement doit être un acte positif) ; essais MM2 et MM3 dès l'envoi de son nouveau jeu de mains ; import dans l'application demandé et livré (écran dans Outils, lecteur Winamax en navigateur).
+- Régie publicitaire : le porteur s'en occupe à la préparation de la version finale de la bêta.
+- Test fermé : banque `2026.11.07-s2` autorisée (publication dans `/admin` au premier déploiement).
+- Catégories d'exercices : Préflop GTO, Préflop exploitant, Profils, Ranges, Équités ; un défi par catégorie dans la semaine ; **défi du jour unique = quiz GTO uniquement**.
+- Équités : format validé (main seule, réponse par tranches, valeur exacte et forces/faiblesses ensuite) ; questions avec tableau demandées (tirages et outs, équité sur un flop connu, exercices de range) ; **« out » = carte qui améliore la catégorie de la main** (définition simple) ; tableau de 3 à 5 cartes affiché.
+- Jeu : la main est rejouée à la table (tapis, cartes, blindes, actions dans l'ordre) ; limp = 1 jeton, relance = plusieurs jetons, tapis = plusieurs colonnes.
+- Menus : cinq onglets Quiz · Exercices · Défis (centre) · Progression · Outils ; Quiz avec deux boutons GTO | Exploitant en haut, comme les premières versions ; Exercices regroupe Ranges, Équités et Profils.
+- Navigation : test joueurs sur la navigation avec les 6 profils (et non 3).
+
+**Prises par Plan, à confirmer par le porteur**
+- Défis (option A, provisoire, revue après le test fermé) : « Série parfaite » devient le défi hebdomadaire exploitant, sans publicité ; seule « Range au cordeau » garde la publicité ; « Lecteur de vilain » reste payant ; Équités : aucune règle d'accès.
+- Séance du jour GTO en tête de Défis, un lien vers la séance Exploitant ; Profils placé dans Exercices avec son étiquette d'offre payante.
+- Jours d'entraînement : toutes les séries comptent, tous modes confondus.
+- Banque étroite (8 à 16 BB) : séance du thème raccourcie au lieu d'un refus ; test de placement sur les tranches servies, niveau proposé plafonné à 2.
+- Les six sortes d'équités entrent dans les séries par défaut (5 questions différentes sur 6).
+
+**En attente de réponse**
+- Exercices de range : seuils proposés (frontière 2 points, marge 1 point au lieu de 1,5, interrogation si écart d'au moins 3 ou d'au plus 1 point) ; avis des coachs à recueillir ; alternative : pots relancés à 3 joueurs.
+- Option A ou B sur « Série parfaite » ; règle d'accès au défi Équités.
+- Essai de l'import avec les vrais fichiers Winamax, puis envoi des comptages.
