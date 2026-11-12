@@ -114,7 +114,11 @@ Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 
 - Banque étroite (8 à 16 BB) : séance du thème raccourcie au lieu d'un refus ; test de placement sur les tranches servies, niveau proposé plafonné à 2.
 - Les six sortes d'équités entrent dans les séries par défaut (5 questions différentes sur 6).
 
-**En attente de réponse**
-- Exercices de range : seuils proposés (frontière 2 points, marge 1 point au lieu de 1,5, interrogation si écart d'au moins 3 ou d'au plus 1 point) ; avis des coachs à recueillir ; alternative : pots relancés à 3 joueurs.
-- Option A ou B sur « Série parfaite » ; règle d'accès au défi Équités.
-- Essai de l'import avec les vrais fichiers Winamax, puis envoi des comptages.
+**Réponses du 12/11**
+- Exercices de range : seuils **validés**, dont la dérogation (frontière 2 points, marge 1 point, interrogation si écart d'au moins 3 points ou d'au plus 1 point) ; les coachs pourront les revoir.
+- Défis, option A : **confirmée**.
+- Accès gratuit ou payant (défi Équités, catégorie Équités) : **décidé à la fin de la bêta**.
+- Fichiers Winamax : le porteur regarde comment les envoyer.
+
+**En attente**
+- Essai de l'import avec les vrais fichiers Winamax, puis envoi des comptages (essais MM2 et MM3 ensuite).
