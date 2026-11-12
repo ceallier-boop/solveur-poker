@@ -42,7 +42,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     }
     await p.click('#next-btn');
   }
-  if (withRange) ok('range adverse : grille 13 × 13 teintée et son libellé', withRange.cells === 169 && withRange.weighted > 0 && withRange.weighted < 169 && /Contre : .+ %/.test(withRange.label), withRange);
+  if (withRange) ok('range adverse : grille 13 × 13 teintée et son libellé', withRange.cells === 169 && withRange.weighted > 0 && withRange.weighted < 169 && /^Lui : .+ %/.test(withRange.label), withRange);
   else ok('au moins une question contre une range sur 5 (sinon : relancer)', !!plain, { plain });   // les deux sujets alternent ; « contre une main au hasard » n'a pas de grille
   if (plain) ok('contre une main au hasard : pas de grille', plain.cells === 0, plain);
   ok('aucune erreur JavaScript', !errs.length, errs);

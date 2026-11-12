@@ -23,7 +23,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     stmts: document.getElementById('actions').classList.contains('stmts'), opts: [...document.querySelectorAll('#actions button b')].map((x) => x.textContent),
     page: document.getElementById('screen-question').innerText }));
   ok('question : le flop, pas de main du héros, les deux ranges', q.kind === 'Mains très fortes' && q.flop === 3 && !q.handShown && q.grids === 2
-    && /^Ta range : /.test(q.titles[0]) && /^Contre : /.test(q.titles[1]), q);
+    && /^Toi, /.test(q.titles[0]) && /^Lui : /.test(q.titles[1]), q);
   ok('question : trois réponses en texte sur une colonne, jamais « null »', q.opts.length === 3 && q.stmts && !/\bnull\b/.test(q.page), q.opts);
   await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');
   const a = await p.evaluate(() => ({ verdict: document.getElementById('a-verdict').innerText, good: (document.querySelector('#a-equity .eq-bands li.good small') || {}).textContent || '',

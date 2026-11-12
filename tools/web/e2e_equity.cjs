@@ -20,14 +20,15 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('nouveau joueur : « Pas encore commencé »', /Pas encore commencé/.test(await p.textContent('#cat-equites-meter')));
   await p.click('#equity-start'); await p.waitForSelector('#screen-question:not([hidden])', { timeout: 15000 });
   // série par défaut (12/11) : 5 questions de sortes différentes parmi les six ; chaque question contrôlée selon sa sorte
-  const KIND = { 'Toucher le flop': 'hit', 'Équité contre une range': 'equity', 'Forces et faiblesses': 'labels', 'Tirages et outs': 'outs', 'Équité sur le flop': 'board_equity', 'Ce flop t\'aide-t-il ?': 'flop_help' };
+  const KIND = { 'Toucher le flop': 'hit', 'Équité contre une range': 'equity', 'Forces et faiblesses': 'labels', 'Tirages et outs': 'outs', 'Équité sur le flop': 'board_equity', 'Ce flop t\'aide-t-il ?': 'flop_help', 'Range contre range': 'range_help', 'Mains très fortes': 'nut_help' };   // huit sortes (12/11)
   const look = () => p.evaluate(() => ({
     kind: document.getElementById('eq-kind').textContent, cat: document.getElementById('q-cat').textContent, table: !document.getElementById('table-wrap').hidden,
     hand: !document.getElementById('eq-hand').hidden, cards: document.querySelectorAll('#eq-cards .card').length, ask: document.getElementById('ask').className,
     askText: document.getElementById('ask').textContent, bands: document.getElementById('actions').classList.contains('bands'),
     stmts: document.getElementById('actions').classList.contains('stmts'), n: document.querySelectorAll('#actions button').length,
     timer: !document.getElementById('q-timer').hidden, skip: !document.getElementById('replay-skip').hidden, opts: !document.getElementById('actions').hidden }));
-  const layoutOk = (k, q) => (k === 'labels' ? q.stmts && q.n === 4 : k === 'flop_help' ? q.stmts && q.n === 3 : q.bands && q.n >= 4 && q.n <= 6);
+  const WORDY = ['flop_help', 'range_help', 'nut_help'], NO_HAND = ['range_help', 'nut_help'];   // trois phrases ; pas de main du héros
+  const layoutOk = (k, q) => (k === 'labels' ? q.stmts && q.n === 4 : WORDY.includes(k) ? q.stmts && q.n === 3 : q.bands && q.n >= 4 && q.n <= 6);
   const readAnswer = () => p.evaluate(() => ({
     verdict: document.getElementById('a-verdict').innerText, essential: document.getElementById('a-essential').textContent,
     calc: document.getElementById('a-remember').innerText, box: !document.getElementById('a-equity').hidden, text: document.getElementById('screen-answer').innerText,
@@ -38,7 +39,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     await p.waitForSelector('#screen-question:not([hidden])');
     const q = await look(), k = KIND[q.kind] || q.kind; kinds.push(k);
     if (i === 0) {
-      ok('question : étiquette Équités, sans table, la main en grand', q.cat === 'Équités' && !q.table && q.hand && q.cards === 2, q);
+      ok('question : étiquette Équités, sans table, la main en grand (sauf range contre range)', q.cat === 'Équités' && !q.table && q.hand && (NO_HAND.includes(k) ? q.cards === 0 : q.cards === 2), q);
       ok('question : énoncé visible, ni chrono ni rejouée', q.ask === 'ask' && q.askText.length > 30 && !q.timer && !q.skip && q.opts, q);
       await p.screenshot({ path: `${OUT}/equity_question.png` });
     }
