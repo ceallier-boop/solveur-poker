@@ -68,7 +68,12 @@ const tab = (p, t) => openTab(p, t).then(() => p.waitForTimeout(300));   // ongl
   const plan = ['juste', 'voisine', 'loin', 'juste', 'loin']; const eqErr = [], uiErr = []; const expect = [];
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(200);
-    const q = await lastQ(p); const tr = truth(q); let choice, want;
+    const q = await lastQ(p);
+    if (!['hit', 'equity', 'labels'].includes(q.kind)) {             // 12/11 : la série par défaut tire aussi outs, board_equity, flop_help (leurs propres e2e) ;
+      await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');   // la table brute de cette recette ne les recalcule pas
+      const a = (await atts(p)).slice(-1)[0].a; expect.push({ q, tr: { kind: 'other' }, verdict: a.verdict, points: a.points }); await p.click('#next-btn'); continue;
+    }
+    const tr = truth(q); let choice, want;
     const ui = await p.evaluate(() => ({ table: !!document.querySelector('#table-wrap') && getComputedStyle(document.querySelector('#table-wrap')).display !== 'none' && !document.querySelector('#table-wrap').hidden,
       timer: !document.getElementById('q-timer').hidden, skip: !document.getElementById('replay-skip').hidden, cat: document.getElementById('q-cat').textContent }));
     if (ui.table || ui.timer || ui.skip || ui.cat !== 'Équités') uiErr.push({ q: q.spot_id, ...ui });
