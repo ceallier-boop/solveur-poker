@@ -749,3 +749,13 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .eq-outs .oc-cat { font-weight: 650; min-width: 96px; } .eq-outs .cards.mini { margin: 0; flex-wrap: wrap; } .eq-outs small { color: var(--muted); margin-left: auto; }
 .eq-odds { margin: 4px 0 0; }
 .eq-outs .card small, .a-board .card small { font-size: .9rem; }
+
+/* Équités v2, équité sur le flop (12/11) : la range adverse en petite grille, l'équité avant et après le flop */
+.eq-range { display: flex; flex-direction: column; gap: 6px; }
+.eq-range-title { margin: 0; font-size: .9rem; }
+.mini-grid { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 1px; width: min(100%, 286px); background: var(--line); border: 1px solid var(--line); }
+.mini-grid i { aspect-ratio: 1; background: color-mix(in srgb, var(--accent) calc(var(--w) * 100%), var(--surface)); }
+.eq-streets { display: flex; flex-direction: column; gap: 6px; }
+.st-row { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: 8px; font-size: .9rem; }
+.st-row em { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; } .st-row em i { display: block; height: 100%; background: var(--accent); }
+.st-row b { text-align: right; font-variant-numeric: tabular-nums; }
