@@ -40,6 +40,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('correction : la valeur exacte (cartes sur 47)', /sur 47 améliorent ta main/.test(a.essential) || /%/.test(a.essential), a.essential);
   ok('correction : turn, river et règle des 2 et 4', /Au turn : [\d,]+ %/.test(a.odds) && /Règle des 2 et 4/.test(a.odds), a.odds);
   ok('correction : jamais de BB perdus', !/BB perdus|coûte/.test(a.text));
+  ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant)', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')));
   await p.screenshot({ path: `${OUT}/outs_correction.png`, fullPage: true });
   // une question sans tableau : pas de tableau affiché
   await p.click('#home-btn'); await p.openTab('exos'); await p.click('#equity-kinds [data-kind="hit"]'); await p.waitForSelector('#screen-question:not([hidden])');

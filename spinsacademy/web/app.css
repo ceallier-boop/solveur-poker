@@ -759,3 +759,12 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .st-row { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: 8px; font-size: .9rem; }
 .st-row em { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; } .st-row em i { display: block; height: 100%; background: var(--accent); }
 .st-row b { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Équités v2, range contre range (12/11) : deux grilles côte à côte, le tableau des deux ranges */
+.eq-range.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.eq-range-one { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mini-grid.mine i { background: color-mix(in srgb, #1f5f99 calc(var(--w) * 100%), var(--surface)); }
+.eq-vs { border-collapse: collapse; font-size: .9rem; } .eq-vs th, .eq-vs td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.eq-vs th[scope="row"] { text-align: left; font-weight: 600; } .eq-vs thead th { font-weight: 650; color: var(--muted); }
+.eq-caveat { margin: 4px 0 0; padding: 8px 12px; border-radius: 10px; background: #f9eeda; color: #5a3d00; font-size: .9rem; }
+@media (prefers-color-scheme: dark) { .eq-caveat { background: #3a2e17; color: #f0d29a; } }

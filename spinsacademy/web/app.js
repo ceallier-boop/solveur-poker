@@ -355,10 +355,11 @@ function renderQuestion(data) {
   $('eq-hand').hidden = !eq;
   if (eq) {                                                          // équités v2 : le tableau (3 à 5 cartes) au-dessus de ta main
     const bc = q.board || []; $('eq-board').hidden = !bc.length; $('eq-board').innerHTML = bc.length ? boardHTML(bc) : '';   // board : cartes précises (« Qs »), docs/api/QUIZ_EQUITES.md v2
-    renderCardRow($('eq-cards'), (q.hero_cards || []).length ? q.hero_cards : q.hand_display, 'Ta main'); $('eq-kind').textContent = q.kind_fr || '';
+    const mine = (q.hero_cards || []).length ? q.hero_cards : q.hand_display;   // « range contre range » : pas de main, ta range à la place
+    $('eq-cards').hidden = !mine; if (mine) renderCardRow($('eq-cards'), mine, 'Ta main'); $('eq-kind').textContent = q.kind_fr || '';
   }
-  const vr = eq ? (q.ranges || []).find((r) => r.who === 'villain') : null;   // équité sur le flop : la range adverse, en petite grille
-  $('eq-range').hidden = !vr; $('eq-range').innerHTML = vr ? rangeMiniHTML(vr) : '';
+  const rgs = eq ? ['hero', 'villain'].map((w) => (q.ranges || []).find((r) => r.who === w)).filter(Boolean) : [];   // ta range (range contre range) puis la sienne
+  $('eq-range').hidden = !rgs.length; $('eq-range').classList.toggle('two', rgs.length === 2); $('eq-range').innerHTML = rgs.map(rangeMiniHTML).join('');
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
@@ -369,7 +370,7 @@ function renderQuestion(data) {
   const box = $('actions'); box.innerHTML = '';
   const main = document.createElement('div'); main.className = 'mainrow';
   const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
-  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); const wordy = eq && q.kind === 'flop_help';                        // « elles augmentent / changent peu / baissent » : du texte, sur une colonne
+  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); const wordy = eq && ['flop_help', 'range_help', 'nut_help'].includes(q.kind);                        // « elles augmentent / changent peu / baissent » : du texte, sur une colonne
   box.classList.toggle('bands', eq && q.answer === 'band' && !wordy); box.classList.toggle('stmts', eq && (q.answer === 'statement' || wordy));   // tranches : en grille ; affirmations : en liste
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
@@ -446,7 +447,9 @@ function rangeMiniHTML(r) {
     const a = RANKS13[i], b = RANKS13[j], k = i === j ? a + a : i < j ? a + b + 's' : b + a + 'o', w = Math.max(0, Math.min(1, h[k] || 0));
     cells += `<i style="--w:${w.toFixed(2)}" title="${k}${w ? ` ${Math.round(100 * w)} %` : ''}"></i>`;
   }
-  return `<p class="eq-range-title">Contre : <b>${escT(r.label_fr || 'la range adverse')}</b></p><div class="mini-grid" role="img" aria-label="Range adverse : ${escT(r.label_fr || '')}">${cells}</div>`;
+  const mine = r.who === 'hero', label = (r.label_fr || '').replace(/^Toi, /, '');
+  return `<div class="eq-range-one"><p class="eq-range-title">${mine ? 'Ta range' : 'Contre'} : <b>${escT(label || 'la range adverse')}</b></p>`
+    + `<div class="mini-grid${mine ? ' mine' : ''}" role="img" aria-label="${mine ? 'Ta range' : 'Range adverse'} : ${escT(label)}">${cells}</div></div>`;
 }
 // équité sur le flop : avant le flop, puis au flop, en deux barres ; ce que la main a et ses cartes qui l'améliorent
 function streetsHTML(e) {
@@ -455,6 +458,22 @@ function streetsHTML(e) {
   const rows = e.by_street.map((x) => `<div class="st-row"><span>${NAME[x.street] || escT(x.street)}</span><em><i style="width:${(x.value_bp / 100).toFixed(1)}%"></i></em><b>${pct1(x.value_bp)}</b></div>`).join('');
   const has = e.hand_category_fr ? `<p class="note">Ta main pour l'instant : ${escT(e.hand_category_fr)}${e.outs_count != null ? ` ; ${e.outs_count} carte${e.outs_count > 1 ? 's' : ''} l'améliore${e.outs_count > 1 ? 'nt' : ''} au turn` : ''}.</p>` : '';
   return `<h4>Ton équité, avant et après le flop</h4><div class="eq-streets">${rows}</div>${has}`;
+}
+// range contre range : les deux ranges avant le flop et au flop, puis leur part de double paire ou mieux (non notée)
+// écart en points : celui que le serveur écrit (equity.delta_fr, ou sa phrase) ; à défaut, la différence des deux valeurs arrondies
+function deltaFr(e, phrase) {
+  if (e.delta_fr) return e.delta_fr;                                 // demandé à Équité : l'écart tel que le serveur l'écrit
+  const m = /\(([+−-]?[\d,]+ points?)\)/.exec(phrase || ''); if (m) return m[1].replace(/^-/, '−');   // sinon, celui de sa phrase (mêmes arrondis)
+  const d = e.preflop_bp != null && e.value_bp != null ? Math.round(e.value_bp / 10) - Math.round(e.preflop_bp / 10) : Math.round(e.delta_bp / 10);   // en dixièmes de point
+  return `${d > 0 ? '+' : d < 0 ? '−' : ''}${String(Math.abs(d) / 10).replace('.', ',')} point${Math.abs(d) >= 20 ? 's' : ''}`;
+}
+function rangesVsHTML(e) {
+  if (!e || (e.villain_flop_bp == null && e.strong_hero_bp == null)) return '';
+  const nuts = e.kind === 'nut_help';                               // « Mains très fortes » : seulement leur part, pas d'équité
+  const row = (t, a, b) => `<tr><th scope="row">${t}</th><td>${pct1(a)}</td><td>${pct1(b)}</td></tr>`;
+  return `<h4>${nuts ? 'Les mains très fortes de chaque range' : 'Les deux ranges, avant et après le flop'}</h4><table class="eq-vs"><thead><tr><th></th><th>Ta range</th><th>La sienne</th></tr></thead><tbody>`
+    + (e.villain_flop_bp != null ? row('Avant le flop', e.preflop_bp, e.villain_preflop_bp) + row('Au flop', e.value_bp, e.villain_flop_bp) : '')
+    + (e.strong_hero_bp != null ? row(nuts ? 'Mains très fortes' : 'Double paire ou mieux', e.strong_hero_bp, e.strong_villain_bp) : '') + '</tbody></table>';
 }
 function outsHTML(e) {
   if (!e || !Array.isArray(e.outs)) return '';
@@ -468,7 +487,7 @@ function renderEquityAnswer(r) {
   const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
   const best = r.best_label || '';
   const count = q.kind === 'outs' && q.topic === 'nombre';              // « 14 cartes » : un nombre, pas une tranche
-  const wordy = q.kind === 'flop_help';                                 // une phrase, ni tranche ni nombre
+  const wordy = ['flop_help', 'range_help', 'nut_help'].includes(q.kind);   // une phrase, ni tranche ni nombre
   const sub = wordy ? (r.verdict === 'correct' ? `Bonne réponse : ${best}.` : `La bonne réponse : ${best}.`)
     : count ? (r.verdict === 'correct' ? `Bon nombre : ${best}.` : r.verdict === 'imprécision' ? `Nombre voisin, un demi-point : le bon est ${best}.` : `Le bon nombre : ${best}.`)
     : band ? (r.verdict === 'correct' ? `Bonne tranche : ${best}.` : r.verdict === 'imprécision' ? `Tranche voisine, un demi-point : la bonne est ${best}.` : `La bonne tranche : ${best}.`)
@@ -476,19 +495,21 @@ function renderEquityAnswer(r) {
   v.className = `verdict ${cls}`; v.innerHTML = `${band && r.verdict === 'correct' ? (wordy ? 'Bonne réponse' : count ? 'Bon nombre' : 'Bonne tranche') : title}<small>${escT(sub)}</small>`;
   stopTimer();
   for (const id of ['a-avis', 'a-choice', 'a-conseil', 'a-next-box', 'a-grid-box', 'a-strategy-title', 'a-strategy', 'a-exploit']) $(id).hidden = true;
-  renderCardRow($('a-cards'), (q.hero_cards || []).length ? q.hero_cards : q.hand_display, 'Ta main'); $('a-cards').hidden = false;
+  const mine = (q.hero_cards || []).length ? q.hero_cards : q.hand_display;
+  $('a-cards').hidden = !mine; if (mine) renderCardRow($('a-cards'), mine, 'Ta main');
   const bc = q.board || []; $('a-board').hidden = !bc.length; $('a-board').innerHTML = bc.length ? boardHTML(bc) : '';
-  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b> · ${escT(q.hand_display)}${bc.length ? ` sur ${escT((q.board_display || bc).join(' '))}` : ''}`;
+  $('a-recap').innerHTML = `<b>${escT(q.kind_fr || 'Équités')}</b>${q.hand_display ? ` · ${escT(q.hand_display)}` : ''}${bc.length ? ` sur ${escT((q.board_display || bc).join(' '))}` : ''}`;
   $('a-essential').textContent = band ? r.essential_fr || '' : '';      // affirmations : le verdict dit déjà la bonne réponse
   const how = (r.method_fr || '').replace(/^Calcul : /, '');            // « Calcul : … » : le titre le dit déjà
   $('a-remember').hidden = !how; $('a-remember').innerHTML = how ? `<b>Le calcul</b><span class="eline">${escT(how.charAt(0).toUpperCase() + how.slice(1))}</span>` : '';
   const list = (xs, cls2, t) => (xs && xs.length ? `<h4 class="${cls2}">${t}</h4><ul class="${cls2}">${xs.map((x) => `<li>${escT(x)}</li>`).join('')}</ul>` : '');
   const rows = band
     ? `<ol class="eq-bands">${(e.options || []).map((l, i) => { const id = `b${i}`, good = id === e.correct_option, mine = id === r.chosen_action;
-      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.delta_bp != null ? `${e.delta_bp > 0 ? '+' : e.delta_bp < 0 ? '−' : ''}${String(Math.round(Math.abs(e.delta_bp) / 10) / 10).replace('.', ',')} point${Math.abs(e.delta_bp) >= 200 ? 's' : ''}` : e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
+      return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.delta_bp != null ? deltaFr(e, r.essential_fr) : e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
     : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
   $('a-equity').hidden = false;
-  $('a-equity').innerHTML = rows + outsHTML(e) + streetsHTML(e) + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
+  const caveat = (r.details_fr || []).find((l) => /argent|passer devant/i.test(l));   // la nuance (l'équité n'est pas l'argent ; améliorer n'est pas passer devant), visible
+  $('a-equity').innerHTML = rows + outsHTML(e) + (e.villain_flop_bp != null || e.kind === 'nut_help' ? rangesVsHTML(e) : streetsHTML(e)) + (caveat ? `<p class="eq-caveat">${escT(caveat)}</p>` : '') + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
   const det = r.details_fr || []; $('a-more').open = false;
   $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
