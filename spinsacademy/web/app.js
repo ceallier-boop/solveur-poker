@@ -370,7 +370,7 @@ function renderQuestion(data) {
   const box = $('actions'); box.innerHTML = '';
   const main = document.createElement('div'); main.className = 'mainrow';
   const extra = document.createElement('div'); extra.className = 'presets';           // au-delà de trois actions : colonne à droite, au-dessus
-  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); const wordy = eq && (q.kind === 'flop_help' || q.kind === 'range_help');                        // « elles augmentent / changent peu / baissent » : du texte, sur une colonne
+  const read = noHand && !(eq && q.answer === 'band'); box.classList.toggle('read', read); const wordy = eq && ['flop_help', 'range_help', 'nut_help'].includes(q.kind);                        // « elles augmentent / changent peu / baissent » : du texte, sur une colonne
   box.classList.toggle('bands', eq && q.answer === 'band' && !wordy); box.classList.toggle('stmts', eq && (q.answer === 'statement' || wordy));   // tranches : en grille ; affirmations : en liste
   q.options.forEach((o, k) => {
     const b = document.createElement('button');
@@ -468,11 +468,12 @@ function deltaFr(e, phrase) {
   return `${d > 0 ? '+' : d < 0 ? '−' : ''}${String(Math.abs(d) / 10).replace('.', ',')} point${Math.abs(d) >= 20 ? 's' : ''}`;
 }
 function rangesVsHTML(e) {
-  if (!e || e.villain_flop_bp == null) return '';
+  if (!e || (e.villain_flop_bp == null && e.strong_hero_bp == null)) return '';
+  const nuts = e.kind === 'nut_help';                               // « Mains très fortes » : seulement leur part, pas d'équité
   const row = (t, a, b) => `<tr><th scope="row">${t}</th><td>${pct1(a)}</td><td>${pct1(b)}</td></tr>`;
-  return `<h4>Les deux ranges, avant et après le flop</h4><table class="eq-vs"><thead><tr><th></th><th>Ta range</th><th>La sienne</th></tr></thead><tbody>`
-    + row('Avant le flop', e.preflop_bp, e.villain_preflop_bp) + row('Au flop', e.value_bp, e.villain_flop_bp)
-    + (e.strong_hero_bp != null ? row('Double paire ou mieux', e.strong_hero_bp, e.strong_villain_bp) : '') + '</tbody></table>';
+  return `<h4>${nuts ? 'Les mains très fortes de chaque range' : 'Les deux ranges, avant et après le flop'}</h4><table class="eq-vs"><thead><tr><th></th><th>Ta range</th><th>La sienne</th></tr></thead><tbody>`
+    + (e.villain_flop_bp != null ? row('Avant le flop', e.preflop_bp, e.villain_preflop_bp) + row('Au flop', e.value_bp, e.villain_flop_bp) : '')
+    + (e.strong_hero_bp != null ? row(nuts ? 'Mains très fortes' : 'Double paire ou mieux', e.strong_hero_bp, e.strong_villain_bp) : '') + '</tbody></table>';
 }
 function outsHTML(e) {
   if (!e || !Array.isArray(e.outs)) return '';
@@ -486,7 +487,7 @@ function renderEquityAnswer(r) {
   const q = state.q, e = r.equity || {}, band = q.answer === 'band', [cls, title] = VERDICT[r.verdict], v = $('a-verdict');
   const best = r.best_label || '';
   const count = q.kind === 'outs' && q.topic === 'nombre';              // « 14 cartes » : un nombre, pas une tranche
-  const wordy = q.kind === 'flop_help' || q.kind === 'range_help';      // une phrase, ni tranche ni nombre
+  const wordy = ['flop_help', 'range_help', 'nut_help'].includes(q.kind);   // une phrase, ni tranche ni nombre
   const sub = wordy ? (r.verdict === 'correct' ? `Bonne réponse : ${best}.` : `La bonne réponse : ${best}.`)
     : count ? (r.verdict === 'correct' ? `Bon nombre : ${best}.` : r.verdict === 'imprécision' ? `Nombre voisin, un demi-point : le bon est ${best}.` : `Le bon nombre : ${best}.`)
     : band ? (r.verdict === 'correct' ? `Bonne tranche : ${best}.` : r.verdict === 'imprécision' ? `Tranche voisine, un demi-point : la bonne est ${best}.` : `La bonne tranche : ${best}.`)
@@ -507,7 +508,8 @@ function renderEquityAnswer(r) {
       return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.delta_bp != null ? deltaFr(e, r.essential_fr) : e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
     : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
   $('a-equity').hidden = false;
-  $('a-equity').innerHTML = rows + outsHTML(e) + (e.villain_flop_bp != null ? rangesVsHTML(e) : streetsHTML(e)) + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
+  const caveat = (r.details_fr || []).find((l) => /argent|passer devant/i.test(l));   // la nuance (l'équité n'est pas l'argent ; améliorer n'est pas passer devant), visible
+  $('a-equity').innerHTML = rows + outsHTML(e) + (e.villain_flop_bp != null || e.kind === 'nut_help' ? rangesVsHTML(e) : streetsHTML(e)) + (caveat ? `<p class="eq-caveat">${escT(caveat)}</p>` : '') + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
   const det = r.details_fr || []; $('a-more').open = false;
   $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
