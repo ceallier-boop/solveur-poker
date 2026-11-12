@@ -362,3 +362,14 @@ def test_nut_help_questions():
                 seen.add(b['correct'])
     assert seen == {0, 1, 2}
     assert all(E.parse(s)['kind'] != 'nut_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))
+
+
+def test_delta_fr_and_caveat_fields():
+    """demande d'Interface (12/11) : l'écart tel qu'écrit dans essential_fr, et la phrase de nuance dans un champ dédié"""
+    for kind in ('flop_help', 'range_help', 'nut_help'):
+        sid, h = E.draw(2, 1, seed=2, kind=kind)[0]; b = E._built(sid, h)
+        r = E.correct(sid, h, f"b{b['correct']}")
+        assert r['equity']['delta_fr'] and f"({r['equity']['delta_fr']})" in r['essential_fr']
+    for kind, word in (('outs', 'passer devant'), ('board_equity', 'argent'), ('flop_help', 'argent'), ('range_help', 'argent')):
+        sid, h = E.draw(2, 1, seed=3, kind=kind)[0]; r = E.correct(sid, h, 'b0')
+        assert word in r['equity']['caveat_fr'] and r['equity']['caveat_fr'] in r['details_fr']
