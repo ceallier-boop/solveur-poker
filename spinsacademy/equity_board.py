@@ -548,6 +548,7 @@ def help_correction(b, hand_s):
 RANGE_STEP = 2.0            # points : frontière entre « à peu près pareil » et « ma range / la sienne » (porteur, 12/11)
 RANGE_MARGIN = 1.0          # points : écart minimal à cette frontière (dérogation validée à la marge habituelle de 1,5 point)
 RANGE_OPTIONS = ("ma range", "à peu près pareil", "la sienne")
+RANGE_OPTIONS_L1 = ("mes mains possibles", "à peu près pareil", "ses mains possibles")     # niveau 1 : sans le mot « range »
 RANGE_HAND = 'range'
 
 
@@ -631,7 +632,7 @@ def range_built(q, hand_s):
     if hand_s != RANGE_HAND: raise ValueError
     v = range_values(q['topic'], ''.join(name(c) for c in q['board']))
     if range_answer(v['pre'], v['flop']) != q['pos']: raise ValueError
-    return dict(q, hand=None, value=v['flop'], pre=v['pre'], values=v, options=list(RANGE_OPTIONS), correct=q['pos'])
+    return dict(q, hand=None, value=v['flop'], pre=v['pre'], values=v, options=list(RANGE_OPTIONS_L1 if q['level'] == 1 else RANGE_OPTIONS), correct=q['pos'])
 
 
 def range_draw_one(level, rnd, avoid=frozenset(), topic=None):
@@ -658,6 +659,7 @@ def _range_entry(who, label, w):
 def range_prompt(q, hand_s):
     n, hero, _, _ = scenario(q['topic']); bd = ' '.join(disp(c) for c in q['board'])
     ctx = (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+    if q['level'] == 1: return f"{ctx}. Le flop est {bd}. Ce flop aide-t-il plus l'ensemble de tes mains possibles, ou l'ensemble des siennes ?"
     return f"{ctx}. Le flop est {bd}. Ce flop aide-t-il plus ta range ou la sienne ?"
 
 
@@ -698,6 +700,7 @@ def range_correction(b, hand_s):
 NUT_STEP = 2.0             # points (proposition du 12/11 validée avec Q1 par le porteur, à confirmer par les coachs)
 NUT_MARGIN = 1.0
 NUT_OPTIONS = ("ma range", "à peu près autant", "la sienne")
+NUT_OPTIONS_L1 = ("moi", "à peu près autant", "lui")
 
 
 @lru_cache(maxsize=1024)
@@ -730,7 +733,7 @@ def nut_built(q, hand_s):
     if hand_s != RANGE_HAND: raise ValueError
     h, v = nut_values(q['topic'], ''.join(name(c) for c in q['board']))
     if nut_answer(h, v) != q['pos']: raise ValueError
-    return dict(q, hand=None, value=h, villain=v, options=list(NUT_OPTIONS), correct=q['pos'])
+    return dict(q, hand=None, value=h, villain=v, options=list(NUT_OPTIONS_L1 if q['level'] == 1 else NUT_OPTIONS), correct=q['pos'])
 
 
 def nut_draw_one(level, rnd, avoid=frozenset(), topic=None):
@@ -751,6 +754,7 @@ def nut_draw_one(level, rnd, avoid=frozenset(), topic=None):
 def nut_prompt(q, hand_s):
     n, hero, _, _ = scenario(q['topic']); bd = ' '.join(disp(c) for c in q['board'])
     ctx = (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+    if q['level'] == 1: return f"{ctx}. Le flop est {bd}. Parmi toutes vos mains possibles, qui a le plus de mains très fortes sur ce flop ?"
     return f"{ctx}. Le flop est {bd}. Qui a le plus de mains très fortes sur ce flop ?"
 
 
