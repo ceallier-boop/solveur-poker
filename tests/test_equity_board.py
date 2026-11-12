@@ -112,9 +112,15 @@ def test_correction_and_grading():
     assert not E.valid(B.spot_id('river', 1, B.cards_of('Qs7s2d'), 10, 4, 1), 'AsKs')     # niveau 1 : pas de question « river »
 
 
-def test_default_series_has_no_board_question():
-    for sd in range(20):
-        assert all(not sid.startswith('eq:outs:') for sid, _ in E.draw(2, 5, seed=sd))
+def test_default_series_mix_board_kinds():
+    """12/11 : l'écran du tableau est livré, les sortes avec tableau entrent dans les séries sans filtre (6 sortes, 5 questions : une sorte manque à chaque série)"""
+    kinds = set()
+    for sd in range(8):
+        ks = [E.parse(sid)['kind'] for sid, _ in E.draw(2, 5, seed=sd)]; kinds |= set(ks)
+        assert len(set(ks)) == 5
+    assert kinds == {'hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help'}
+    for lv in (1, 2):
+        for sid, h in E.draw(lv, 5, seed=3): assert E.valid(sid, h)
 
 
 @pytest.fixture()
@@ -215,7 +221,6 @@ def test_board_equity_questions():
                 assert 'qui gagnera l\'argent' in r['explanation_fr']
                 n += 1
     assert n == 24
-    assert all(not s.startswith('eq:board_equity') for sd in range(10) for s, _ in E.draw(2, 5, seed=sd))     # hors séries par défaut
 
 
 # ------------------------------------------------------------------ sorte « flop_help » : ce flop t'aide-t-il plus que la range adverse ?
