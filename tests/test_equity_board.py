@@ -256,3 +256,63 @@ def test_flop_help_value_matches_board_equity_kernel():
     q = B.help_parse(sid); hand = B.cards_of(h); opp = np.array(B.scenario(q['topic'])[3])[np.asarray(CLASS_OF)]
     win, tot = B.hero_equity(hand[0], hand[1], np.array(q['board'], np.int64), opp, CC)
     assert E._built(sid, h)['value'] == round(10000 * win / tot)
+
+
+# ------------------------------------------------------------------ sorte « range_help » : ce flop aide-t-il plus ta range ou la sienne ?
+def test_range_flop_against_independent_evaluator():
+    """équité range contre range au flop, petites ranges : évaluateur indépendant de Tests (pur Python, tools/web/eval_independant.py)"""
+    import os, sys
+    import numpy as np
+    from spinsacademy.postflop.kernels import CC, CLASS_OF
+    from spinsacademy.cards import NAMES
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools', 'web'))
+    import eval_independant as EV
+    board_s = 'Ts9d2c'; board = B.cards_of(board_s)
+    hero = {'AKs': 1.0, '87s': 0.5}; vill = {'QQ': 1.0, 'T9s': 0.4}
+    cl = np.asarray(CLASS_OF)
+    h = np.array([hero.get(n, 0.0) for n in NAMES])[cl]; o = np.array([vill.get(n, 0.0) for n in NAMES])[cl]
+    W, T = B.range_flop(np.array(board, np.int64), o, CC)
+    ok = T > 0; got = float((h * W)[ok].sum() / (h * T)[ok].sum())
+    num = den = 0.0; bs = [board_s[i:i + 2] for i in (0, 2, 4)]
+    for c in range(1326):
+        if h[c] <= 0: continue
+        hc = [B.name(int(CC[c, 0])), B.name(int(CC[c, 1]))]
+        if set(hc) & set(bs): continue
+        mass = sum(o[d] for d in range(1326) if o[d] > 0 and not ({B.name(int(CC[d, 0])), B.name(int(CC[d, 1]))} & (set(hc) | set(bs))))
+        if mass <= 0: continue
+        e = EV.equity(hc, bs, vill) / 1e4                 # arrondi au dix-millième par l'évaluateur
+        num += h[c] * mass * e; den += h[c] * mass
+    assert abs(got - num / den) < 1.5e-4
+
+
+def test_preflop_range_equity_symmetry_and_formula():
+    import numpy as np
+    from spinsacademy import allin
+    from spinsacademy.cards import DISJOINT
+    n, hero, mine, opp = B.scenario('hu10_limp_bb')
+    a = B.preflop_range_equity(mine, opp); b = B.preflop_range_equity(opp, mine)
+    assert abs(a + b - 1) < 1e-9                                   # les deux ranges se partagent 100 %
+    e = np.asarray(allin.equity_vs_range(np.array(opp)))            # même valeur par la moyenne des équités de classe, pondérée par la masse compatible
+    m = np.array(mine) * (DISJOINT * np.array(opp)[None, :]).sum(1)
+    assert abs(float(np.nansum(m * e) / m[~np.isnan(e)].sum()) - a) < 1e-9
+
+
+def test_range_help_questions():
+    seen = set()
+    for lv in (1, 2):
+        for sd in range(3):
+            for sid, h in E.draw(lv, 3, seed=sd, kind='range_help'):
+                assert h == B.RANGE_HAND
+                b = E._built(sid, h); v = b['values']; d = (v['flop'] - v['pre']) / 100
+                assert (d >= 3 and b['correct'] == 0) or (d <= -3 and b['correct'] == 2) or (abs(d) <= 1 and b['correct'] == 1)
+                q = E.question(sid, h)
+                assert q['hero_cards'] is None and q['hand_display'] is None and [r['who'] for r in q['ranges']] == ['hero', 'villain']
+                assert q['options'][0]['label_fr'] == 'ma range' and len(q['board']) == 3
+                r = E.correct(sid, h, f"b{b['correct']}")
+                assert r['verdict'] == 'correct' and r['regret_mbb'] == 0
+                assert r['equity']['villain_flop_bp'] == 10000 - v['flop'] and r['equity']['thresholds'] == {'step': 2.0, 'margin': 1.0}
+                assert 'non noté' in r['explanation_fr']
+                seen.add(b['correct'])
+    assert seen == {0, 1, 2}
+    assert not E.valid(sid, 'AsKs')                                 # pas de main du héros pour cette sorte
+    assert all(E.parse(s)['kind'] != 'range_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))   # hors séries par défaut (écran à deux ranges à venir)

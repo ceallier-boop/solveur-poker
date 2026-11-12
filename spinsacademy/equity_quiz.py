@@ -22,10 +22,10 @@ from . import equities, equity_board, grading
 from .cards import NAMES
 
 REF = f'equites/{equities.DATE}'
-KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help')
+KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help', 'range_help')
 DEFAULT_KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help')   # série sans filtre (écran du tableau livré le 12/11)
-BOARD_KINDS = ('outs', 'board_equity', 'flop_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
-KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?'}
+BOARD_KINDS = ('outs', 'board_equity', 'flop_help', 'range_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
+KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?', 'range_help': 'Range contre range'}
 CATEGORY_FR = 'Équités'
 MARGIN = 1.5                          # points : écart minimal entre la valeur exacte et toute frontière de tranche
 MIN_BP = 50                           # valeur minimale d'un sujet (0,5 %) : un « 0 % » ou presque n'apprend rien
@@ -363,7 +363,7 @@ def question(spot_id, hand):
     """ce que voit le joueur, sans la solution"""
     b = _built(spot_id, hand); pre = 'b' if b['kind'] != 'labels' else 'o'
     board = equity_board.HANDLERS[b['kind']]['extra'](b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_display=[], hero_cards=None, villain_cards=None, ranges=[], dead_cards=[])
-    return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display', None) or _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
+    return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display') if 'hand_display' in board else _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
                 category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=KIND_FR[b['kind']], topic=b.get('topic') or b.get('mode'), level=b['level'],
                 answer='band' if pre == 'b' else 'statement', multiple=False,
                 table=None, players=[], stacks_bb=[], hero=None, history=[], history_fr=[], pot_bb=None, to_call_bb=None, difficulty=None,

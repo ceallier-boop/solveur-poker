@@ -217,3 +217,47 @@ Le bloc `equity` contient en plus `preflop_bp`, `value_bp`, `delta_bp`, `by_stre
 - la valeur au flop, recalculée avec les poids de la banque, le kernel étant lui-même vérifié contre l'évaluateur indépendant.
 
 **Suite : « range contre range ».** Seuils proposés au porteur et aux coachs avant le code, voir le message à Plan.
+
+## v2 : sorte « range_help », « Ce flop aide-t-il plus ta range ou la sienne ? » (12/11/2026)
+
+`POST /sessions {"mode": "equity", "filters": {"kind": "range_help"}}`. Les seuils ont été validés par le porteur le 12/11. Ils restent à confirmer par les coachs ; ce sont des constantes nommées dans `spinsacademy/equity_board.py` : `RANGE_STEP = 2` points et `RANGE_MARGIN = 1` point. Cette sorte n'entre pas dans les séries sans filtre tant que l'écran à deux ranges n'est pas livré.
+
+**Situation.** Le même pot limpé en heads-up que `flop_help` (8, 10 ou 12 BB, héros au SB ou au BB), avec les ranges de la banque. Il n'y a **pas de main du héros** : la colonne `hand` vaut « range », et `hero_cards` et `hand_display` valent `null`.
+
+**Définitions.**
+- *Équité de range* : Σ_a Σ_b h_a·o_b·gain(a, b) / Σ_a Σ_b h_a·o_b, sur les couples de mains sans carte commune, où h et o sont les poids de la banque.
+  - Avant le flop : équités exactes préflop par classe et combinaisons disjointes (`preflop_range_equity`).
+  - Au flop : les 1 081 turns et rivers, avec le kernel `range_flop` réparti sur les cœurs, environ 0,1 s par flop. Égalité pour moitié.
+- *Écart* : équité de ta range au flop moins équité avant le flop, en points.
+  - « ma range » si l'écart est d'au moins +3 ;
+  - « la sienne » s'il est d'au plus −3 ;
+  - « à peu près pareil » si sa valeur absolue est d'au plus 1 ;
+  - entre les deux, la question n'est pas posée.
+- *Part des meilleures mains* : la part pondérée de chaque range qui a au moins une double paire au flop avec ses propres cartes (même règle que les outs). Elle est affichée pour information et n'est pas notée.
+
+**Tirage.** La bonne réponse est tirée d'abord, à parts égales. Après 12 essais, on garde le premier flop valable. Les flops à brelan sont exclus. Une série de 5 questions prend environ 4 s.
+
+**Question.**
+- Énoncé : « Heads-up à 10 BB : le SB complète (limp), tu checkes au BB. Le flop est A♦ K♣ 7♦. Ce flop aide-t-il plus ta range ou la sienne ? »
+- Réponses : `b0` « ma range », `b1` « à peu près pareil », `b2` « la sienne ».
+- `ranges = [{who: "hero", label_fr: "Toi, BB qui checke à 10 BB (54 %)", …}, {who: "villain", label_fr: "SB qui complète (limp) à 10 BB (59 %)", …}]`.
+
+**Notation.** Bonne réponse = correct. Réponse voisine (à peu près pareil d'un côté ou de l'autre) = imprécision. Réponse opposée = erreur.
+
+**Correction.**
+- L'équité de ta range avant et après le flop, et celle de la sienne.
+- La part des meilleures mains de chacune (non notée).
+- La règle chiffrée.
+- Une phrase d'explication et la nuance sur l'argent.
+
+Le bloc `equity` contient en plus :
+- `preflop_bp`, `value_bp` et `delta_bp` ;
+- `villain_preflop_bp` et `villain_flop_bp` ;
+- `strong_hero_bp` et `strong_villain_bp` ;
+- `by_street` et `scenario` ;
+- `thresholds: {step, margin}`.
+
+**Vérification.**
+- L'équité range contre range au flop est recalculée avec l'évaluateur indépendant de Tests (`tools/web/eval_independant.py`) sur deux petites ranges pondérées.
+- La formule avant le flop est contrôlée par symétrie (les deux équités font 100 %) et par une seconde façon de calculer la même moyenne.
+- La marge et la bonne réponse sont vérifiées sur des questions tirées.
