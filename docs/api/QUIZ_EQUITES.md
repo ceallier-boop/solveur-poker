@@ -233,7 +233,7 @@ Le bloc `equity` contient en plus `preflop_bp`, `value_bp`, `delta_bp`, `by_stre
   - « la sienne » s'il est d'au plus −3 ;
   - « à peu près pareil » si sa valeur absolue est d'au plus 1 ;
   - entre les deux, la question n'est pas posée.
-- *Part des meilleures mains* : la part pondérée de chaque range qui a au moins une double paire au flop avec ses propres cartes (même règle que les outs). Elle est affichée pour information et n'est pas notée.
+- *Part des meilleures mains* : la part pondérée de chaque range qui a une main très forte au flop (`is_strong`, voir la section `nut_help`). Elle est affichée pour information et n'est pas notée.
 
 **Tirage.** La bonne réponse est tirée d'abord, à parts égales. Après 12 essais, on garde le premier flop valable. Les flops à brelan sont exclus. Une série de 5 questions prend environ 4 s.
 
@@ -261,3 +261,41 @@ Le bloc `equity` contient en plus :
 - L'équité range contre range au flop est recalculée avec l'évaluateur indépendant de Tests (`tools/web/eval_independant.py`) sur deux petites ranges pondérées.
 - La formule avant le flop est contrôlée par symétrie (les deux équités font 100 %) et par une seconde façon de calculer la même moyenne.
 - La marge et la bonne réponse sont vérifiées sur des questions tirées.
+
+## v2 : sorte « nut_help », « Qui a le plus de mains très fortes sur ce flop ? » (12/11/2026)
+
+`POST /sessions {"mode": "equity", "filters": {"kind": "nut_help"}}`. C'est la Q2 des exercices de range. Comme `range_help`, elle se joue sur demande jusqu'à l'écran à deux ranges.
+
+**Situation.** Le même pot limpé en heads-up que `range_help`, avec le même format de question : deux ranges (`who: hero` puis `villain`), pas de main du héros (`hand` vaut « range »).
+
+**Main très forte** (`is_strong`, constante `STRONG_GAIN = 2`) : une main qui monte d'au moins deux catégories au-dessus du tableau seul.
+- Sur un flop sans paire : double paire avec ses deux cartes, brelan ou mieux.
+- Sur un flop pairé : brelan ou mieux. La double paire « paire du tableau + paire de poche » ne compte pas.
+
+La part des meilleures mains affichée dans `range_help` suit la même règle depuis le 12/11.
+
+**Écart.** Part de mains très fortes de ta range moins part de la sienne, en points. Chaque range est pondérée par la banque, et les cartes du flop sont retirées.
+- « ma range » si l'écart est d'au moins +3 ;
+- « la sienne » s'il est d'au plus −3 ;
+- « à peu près autant » si sa valeur absolue est d'au plus 1 ;
+- entre les deux, la question n'est pas posée.
+
+Les constantes sont `NUT_STEP = 2` et `NUT_MARGIN = 1`, à confirmer par les coachs.
+
+**Tirage.** La bonne réponse est tirée d'abord, à parts égales. Le calcul est rapide : environ 0,8 s par série de 5 questions.
+
+**Réponses.** `b0` « ma range », `b1` « à peu près autant », `b2` « la sienne ». La notation est celle de `range_help`.
+
+**Correction.**
+- Les deux parts et l'écart.
+- La définition de la main très forte.
+- La règle chiffrée.
+- Pourquoi c'est utile : la range qui en a le plus peut mettre la pression.
+- La part de AA, KK et QQ que chaque range garde avant le flop, lue dans la banque. À 8 BB, par exemple, le BB checke presque toujours ces paires, alors qu'à 10 et 12 BB il les relance.
+
+Le bloc `equity` contient en plus `strong_hero_bp`, `strong_villain_bp`, `delta_bp` et `thresholds: {step, margin, strong_gain}`.
+
+**Vérification.**
+- Les parts sont recalculées avec l'évaluateur indépendant de Tests sur quatre flops (dont un pairé et un monocolore) et deux situations.
+- La règle du flop pairé est vérifiée.
+- La marge et la bonne réponse sont contrôlées.

@@ -576,14 +576,21 @@ def preflop_range_equity(hero_w, opp_w):
     return float((J * EQ169).sum() / J.sum())
 
 
+STRONG_GAIN = 2            # main très forte : au moins deux catégories au-dessus du tableau seul (flop sans paire : double paire, brelan
+                           # ou mieux ; flop pairé : brelan ou mieux, la double paire « paire du tableau + paire de poche » ne compte pas)
+
+
+def is_strong(hand, board): return category(hand + board) >= category(board) + STRONG_GAIN
+
+
 def strong_share(weights_combo, board):
-    """part pondérée (dix-millièmes) des mains de la range qui ont au moins une double paire au flop avec leurs propres cartes"""
-    cb = category(board); s = t = 0.0
+    """part pondérée (dix-millièmes) des mains très fortes de la range sur ce flop (is_strong)"""
+    s = t = 0.0
     for c in range(1326):
         w = weights_combo[c]
         if w <= 0 or CC[c, 0] in board or CC[c, 1] in board: continue
-        k = category([int(CC[c, 0]), int(CC[c, 1])] + board); t += w
-        if k >= 2 and k > cb: s += w
+        t += w
+        if is_strong([int(CC[c, 0]), int(CC[c, 1])], board): s += w
     return round(10000 * s / t)
 
 
@@ -670,7 +677,7 @@ def range_correction(b, hand_s):
     method = ("Calcul : chaque main de ta range contre chaque main de la sienne, pondérées par leur fréquence dans la banque du solveur, sans carte commune ; "
               "avant le flop avec les équités exactes préflop, au flop sur les 1 081 turns et rivers possibles ; égalité pour moitié.")
     lines = [f"Sa range : {E.pct_fr(10000 - v['pre'])} avant le flop, {E.pct_fr(10000 - v['flop'])} au flop.",
-             f"Double paire ou mieux avec ses propres cartes sur ce flop : ta range {E.pct_fr(v['strong_hero'])}, la sienne {E.pct_fr(v['strong_villain'])} (pour information, non noté).",
+             f"Mains très fortes sur ce flop (double paire ou mieux avec ses propres cartes ; brelan ou mieux si le flop est pairé) : ta range {E.pct_fr(v['strong_hero'])}, la sienne {E.pct_fr(v['strong_villain'])} (pour information, non noté).",
              f"Règle : « ma range » ou « la sienne » à partir de {str(RANGE_STEP + RANGE_MARGIN).replace('.0', '')} points d'écart, « à peu près pareil » sous {str(RANGE_STEP - RANGE_MARGIN).replace('.0', '')} point.",
              "Une range profite d'un flop quand ses mains fréquentes touchent ce tableau (hauteurs, couleurs, suites) plus souvent que celles de l'autre.",
              "L'équité dit qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent : la position et les mises à venir comptent aussi."]
@@ -681,10 +688,101 @@ def range_correction(b, hand_s):
     return essential, method, lines, extra
 
 
+# ================================================================== sorte « nut_help » : qui a le plus de mains très fortes sur ce flop ?
+# Q2 des exercices de range (Plan, 12/11 ; seuils à confirmer par les coachs). Même pot limpé que range_help, pas de main du héros.
+# Écart = part de mains très fortes de ta range − part de la sienne (points ; is_strong, poids de la banque, cartes du flop retirées).
+# « ma range » si écart ≥ NUT_STEP + NUT_MARGIN, « la sienne » si écart ≤ −(NUT_STEP + NUT_MARGIN), « à peu près autant » si
+# |écart| ≤ NUT_STEP − NUT_MARGIN ; sinon pas de question. Identifiant : eq:nut_help:huN_limp_{bb|sb}:L{niveau}:{flop}:w2:n3:p{rang}.
+NUT_STEP = 2.0             # points (proposition du 12/11 validée avec Q1 par le porteur, à confirmer par les coachs)
+NUT_MARGIN = 1.0
+NUT_OPTIONS = ("ma range", "à peu près autant", "la sienne")
+
+
+@lru_cache(maxsize=1024)
+def nut_values(sc, board_s):
+    """(part de mains très fortes du héros, de l'adversaire) en dix-millièmes"""
+    _, _, mine, opp = scenario(sc); board = cards_of(board_s); cl = np.asarray(CLASS_OF)
+    return strong_share(np.array(mine)[cl], board), strong_share(np.array(opp)[cl], board)
+
+
+def nut_answer(hero, vill):
+    d = (hero - vill) / 100
+    if d >= NUT_STEP + NUT_MARGIN: return 0
+    if d <= -(NUT_STEP + NUT_MARGIN): return 2
+    if abs(d) <= NUT_STEP - NUT_MARGIN: return 1
+    return None
+
+
+def nut_spot_id(sc, level, board, pos): return f"eq:nut_help:{sc}:L{level}:{''.join(name(c) for c in board)}:w2:n3:p{pos}"
+
+
+def nut_parse(sid):
+    p = sid.split(':')
+    if len(p) != 8 or p[0] != 'eq' or p[1] != 'nut_help' or p[2] not in HELP_SCENARIOS or p[5] != 'w2' or p[6] != 'n3': raise ValueError
+    board = cards_of(p[4])
+    if len(board) != 3 or len({c >> 2 for c in board}) == 1: raise ValueError
+    return dict(kind='nut_help', topic=p[2], level=int(p[3][1:]), board=board, w=2, n=3, pos=int(p[7][1:]))
+
+
+def nut_built(q, hand_s):
+    if hand_s != RANGE_HAND: raise ValueError
+    h, v = nut_values(q['topic'], ''.join(name(c) for c in q['board']))
+    if nut_answer(h, v) != q['pos']: raise ValueError
+    return dict(q, hand=None, value=h, villain=v, options=list(NUT_OPTIONS), correct=q['pos'])
+
+
+def nut_draw_one(level, rnd, avoid=frozenset(), topic=None):
+    """la bonne réponse d'abord (à parts égales), puis un flop qui la donne (calcul rapide : jusqu'à 300 essais)"""
+    want = rnd.randrange(3); fallback = None
+    for k in range(300):
+        if k >= 200 and fallback: return fallback
+        sc = topic or rnd.choice(HELP_SCENARIOS)
+        board = sorted(rnd.sample(range(52), 3), reverse=True)
+        if len({c >> 2 for c in board}) == 1: continue
+        a = nut_answer(*nut_values(sc, ''.join(name(c) for c in board)))
+        if a is None: continue
+        if a == want: return nut_spot_id(sc, level, board, a), RANGE_HAND
+        fallback = fallback or (nut_spot_id(sc, level, board, a), RANGE_HAND)
+    return fallback
+
+
+def nut_prompt(q, hand_s):
+    n, hero, _, _ = scenario(q['topic']); bd = ' '.join(disp(c) for c in q['board'])
+    ctx = (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+    return f"{ctx}. Le flop est {bd}. Qui a le plus de mains très fortes sur ce flop ?"
+
+
+def _premium_line(sc):
+    """part des paires AA, KK, QQ que chaque range garde (lue dans la banque) : une range qui les relance avant le flop en a moins ici"""
+    from .cards import NAMES
+    _, hero, mine, opp = scenario(sc)
+    share = lambda w: round(100 * sum(w[NAMES.index(h)] for h in ('AA', 'KK', 'QQ')) / 3)
+    a, b = share(mine), share(opp)
+    rest = " (les autres ont été relancées ou mises à tapis)" if min(a, b) < 100 else ""
+    return (f"Avant le flop, ta range garde {a} % de ses AA, KK et QQ, la sienne {b} %{rest} : "
+            "une range qui garde ses meilleures paires a plus de mains très fortes sur les flops.")
+
+
+def nut_correction(b, hand_s):
+    from . import equity_quiz as E
+    h, v = b['value'], b['villain']; d = (h - v) / 100; bd = ' '.join(disp(c) for c in b['board'])
+    verdict = {0: "ta range a plus de mains très fortes", 1: "les deux ranges en ont à peu près autant", 2: "sa range a plus de mains très fortes"}[b['correct']]
+    essential = f"Sur {bd}, {E.pct_fr(h)} de ta range a une main très forte, contre {E.pct_fr(v)} de la sienne ({_pts(d)}) : {verdict}."
+    method = ("Calcul : chaque main de chaque range, pondérée par sa fréquence dans la banque du solveur (sans les cartes du flop) ; main très forte = au moins "
+              "deux catégories au-dessus du tableau seul : double paire, brelan ou mieux sur un flop sans paire, brelan ou mieux sur un flop pairé.")
+    lines = [f"Règle : « ma range » ou « la sienne » à partir de {str(NUT_STEP + NUT_MARGIN).replace('.0', '')} points d'écart, « à peu près autant » sous {str(NUT_STEP - NUT_MARGIN).replace('.0', '')} point.",
+             "Les mains très fortes sont celles qui peuvent miser gros sans crainte : la range qui en a le plus peut mettre plus de pression sur ce flop.",
+             _premium_line(b['topic'])]
+    extra = dict(value_bp=h, value_fr=E.pct_fr(h), strong_hero_bp=h, strong_villain_bp=v, delta_bp=h - v, board=[name(x) for x in b['board']], street='flop',
+                 scenario=b['topic'], thresholds=dict(step=NUT_STEP, margin=NUT_MARGIN, strong_gain=STRONG_GAIN))
+    return essential, method, lines, extra
+
+
 # ================================================================== aiguillage par sorte (utilisé par equity_quiz)
 HANDLERS = {
     'outs': dict(parse=parse, built=built, draw=draw_one, prompt=prompt, extra=question_extra, correction=correction),
     'board_equity': dict(parse=eq_parse, built=eq_built, draw=eq_draw_one, prompt=eq_prompt, extra=eq_question_extra, correction=eq_correction),
     'flop_help': dict(parse=help_parse, built=help_built, draw=help_draw_one, prompt=help_prompt, extra=help_question_extra, correction=help_correction),
     'range_help': dict(parse=range_parse, built=range_built, draw=range_draw_one, prompt=range_prompt, extra=range_question_extra, correction=range_correction),
+    'nut_help': dict(parse=nut_parse, built=nut_built, draw=nut_draw_one, prompt=nut_prompt, extra=range_question_extra, correction=nut_correction),
 }

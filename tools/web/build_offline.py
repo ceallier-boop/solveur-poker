@@ -131,7 +131,7 @@ const DEMO = (() => {
     while (order.length < size && kinds.length) order = order.concat(kinds.slice().sort(() => Math.random() - 0.5));
     const seen = new Set(), used = new Set(), out = [];
     for (const k of order.slice(0, size)) {
-      const cand = pool.filter((i) => ITEMS[i].k === k && (!ITEMS[i].q.hero_cards && ITEMS[i].k === 'range_help' || !seen.has(ITEMS[i].q.hand)) && !used.has(i));   // range contre range : pas de main du héros
+      const cand = pool.filter((i) => ITEMS[i].k === k && (!ITEMS[i].q.hero_cards && ['range_help', 'nut_help'].includes(ITEMS[i].k) || !seen.has(ITEMS[i].q.hand)) && !used.has(i));   // range contre range : pas de main du héros
       if (!cand.length) return null;
       const i = rnd(cand); seen.add(ITEMS[i].q.hand); used.add(i); out.push(i);
     }
@@ -665,7 +665,7 @@ const DEMO = (() => {
       const size = body.size || 5; const purposes = {}; let plan = body.plan || null, seeded = null;
       if (mode === 'equity') {                                         // CE3 : mêmes règles que l'API (mode à part, filtre kind seulement)
         if (body.challenge || body.plan) return [422, { detail: "défis, séance du jour et placement ne s'appliquent pas aux questions d'équités" }];
-        if (Object.keys(f).some((k) => k !== 'kind')) return [422, { detail: "seul le filtre kind (hit, equity, labels, outs, board_equity, flop_help, range_help) s'applique aux équités" }];
+        if (Object.keys(f).some((k) => k !== 'kind')) return [422, { detail: "seul le filtre kind (hit, equity, labels, outs, board_equity, flop_help, range_help, nut_help) s'applique aux équités" }];
       } else delete f.kind;
       if (body.challenge) {                                            // défis : mêmes règles que le serveur
         plan = `challenge_${body.challenge}`; const ud = new Date(); const utc = `${ud.getUTCFullYear()}${pad(ud.getUTCMonth() + 1)}${pad(ud.getUTCDate())}`;
