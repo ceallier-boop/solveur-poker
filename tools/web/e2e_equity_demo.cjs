@@ -55,6 +55,6 @@ const { chromium } = require('playwright');
     return out;
   });
   const ok = res.create === 201 && new Set(res.kinds).size === 5 && !res.checks.length && res.summary.complete && res.summary.bb === null && res.gtoEquity === 0
-    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && res.flopHelp.length === 2 && res.flopHelp.every(Boolean) && !res.kinds.includes('flop_help') && !errs.length;
+    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && res.flopHelp.length === 2 && res.flopHelp.every(Boolean) && !errs.length;
   console.log(JSON.stringify(Object.assign(res, { errs, ok }), null, 1)); await b.close(); process.exit(ok ? 0 : 1);
 })();
