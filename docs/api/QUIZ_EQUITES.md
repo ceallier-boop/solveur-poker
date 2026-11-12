@@ -77,7 +77,7 @@ La route `POST /attempts` le permet sans changement de schéma. `action_id` est 
 
 ## v2 : questions avec tableau, sorte « outs » (11/11/2026, `spinsacademy/equity_board.py`)
 
-Ces questions se demandent avec `POST /sessions {"mode": "equity", "filters": {"kind": "outs"}}`. Elles n'entrent pas dans une série d'équités sans filtre (`equity_quiz.DEFAULT_KINDS`) tant que l'écran qui affiche le tableau n'est pas livré.
+Ces questions se demandent avec `POST /sessions {"mode": "equity", "filters": {"kind": "outs"}}`. Depuis le 12/11, l'écran qui affiche le tableau étant livré, elles entrent aussi dans les séries d'équités sans filtre (`equity_quiz.DEFAULT_KINDS` : hit, equity, labels, outs, board_equity). Une série de 5 questions sans filtre contient une question de chaque sorte, dans un ordre tiré au hasard.
 
 **Définition (décision du porteur du 11/11).** Une carte « améliore ta main » si ta main monte de catégorie plus que le tableau seul :
 
@@ -138,7 +138,7 @@ La démo embarque 10 questions d'outs par niveau (+11 Ko).
 
 ## v2 : sorte « board_equity », équité d'une main sur un flop connu (11/11/2026)
 
-`POST /sessions {"mode": "equity", "filters": {"kind": "board_equity"}}`. Comme les outs, cette sorte n'entre pas encore dans les séries sans filtre.
+`POST /sessions {"mode": "equity", "filters": {"kind": "board_equity"}}`. Comme les outs, cette sorte entre dans les séries sans filtre depuis le 12/11.
 
 **Questions.**
 
@@ -176,7 +176,7 @@ La démo embarque 10 questions par niveau.
 
 ## v2 : sorte « flop_help », « Ce flop t'aide-t-il plus que la range adverse ? » (12/11/2026)
 
-`POST /sessions {"mode": "equity", "filters": {"kind": "flop_help"}}`. C'est le premier exercice de range demandé par le porteur, côté main.
+`POST /sessions {"mode": "equity", "filters": {"kind": "flop_help"}}`. C'est le premier exercice de range demandé par le porteur, côté main. Pour l'instant, cette sorte ne se joue que sur demande : elle n'entre pas dans les séries sans filtre en attendant le feu vert de Plan.
 
 **Situation.** Un pot limpé en heads-up à 8, 10 ou 12 BB : le SB complète, le BB checke. C'est le flop le plus fréquent à ces tapis : le SB complète 59 à 73 % de ses mains, le BB checke 51 à 59 %. Le scénario « relance à 2 BB » est écarté, car le SB relance moins de 4 % de ses mains.
 - Le héros est au BB (`huN_limp_bb`) ou au SB (`huN_limp_sb`).

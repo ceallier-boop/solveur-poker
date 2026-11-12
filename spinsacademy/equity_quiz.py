@@ -23,7 +23,7 @@ from .cards import NAMES
 
 REF = f'equites/{equities.DATE}'
 KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help')
-DEFAULT_KINDS = ('hit', 'equity', 'labels')     # série sans filtre ; « outs » (avec tableau, v2) seulement sur demande tant que l'écran n'est pas prêt
+DEFAULT_KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity')   # série sans filtre (écran du tableau livré le 12/11) ; flop_help : sur demande en attendant le feu vert
 BOARD_KINDS = ('outs', 'board_equity', 'flop_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
 KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?'}
 CATEGORY_FR = 'Équités'
