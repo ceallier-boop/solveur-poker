@@ -77,7 +77,7 @@ La route `POST /attempts` le permet sans changement de schéma. `action_id` est 
 
 ## v2 : questions avec tableau, sorte « outs » (11/11/2026, `spinsacademy/equity_board.py`)
 
-Ces questions se demandent avec `POST /sessions {"mode": "equity", "filters": {"kind": "outs"}}`. Depuis le 12/11, l'écran qui affiche le tableau étant livré, elles entrent aussi dans les séries d'équités sans filtre (`equity_quiz.DEFAULT_KINDS` : hit, equity, labels, outs, board_equity et flop_help). Une série de 5 questions sans filtre a 5 sortes différentes, tirées dans un ordre au hasard : chaque série en laisse donc une de côté.
+Ces questions se demandent avec `POST /sessions {"mode": "equity", "filters": {"kind": "outs"}}`. Depuis le 12/11, l'écran qui affiche le tableau étant livré, elles entrent aussi dans les séries d'équités sans filtre (`equity_quiz.DEFAULT_KINDS`, huit sortes : hit, equity, labels, outs, board_equity, flop_help, range_help et nut_help). Une série de 5 questions sans filtre tire 5 sortes différentes, dans un ordre au hasard.
 
 **Définition (décision du porteur du 11/11).** Une carte « améliore ta main » si ta main monte de catégorie plus que le tableau seul :
 
@@ -220,7 +220,7 @@ Le bloc `equity` contient en plus `preflop_bp`, `value_bp`, `delta_bp`, `by_stre
 
 ## v2 : sorte « range_help », « Ce flop aide-t-il plus ta range ou la sienne ? » (12/11/2026)
 
-`POST /sessions {"mode": "equity", "filters": {"kind": "range_help"}}`. Les seuils ont été validés par le porteur le 12/11. Ils restent à confirmer par les coachs ; ce sont des constantes nommées dans `spinsacademy/equity_board.py` : `RANGE_STEP = 2` points et `RANGE_MARGIN = 1` point. Cette sorte n'entre pas dans les séries sans filtre tant que l'écran à deux ranges n'est pas livré.
+`POST /sessions {"mode": "equity", "filters": {"kind": "range_help"}}`. Les seuils ont été validés par le porteur le 12/11. Ils restent à confirmer par les coachs ; ce sont des constantes nommées dans `spinsacademy/equity_board.py` : `RANGE_STEP = 2` points et `RANGE_MARGIN = 1` point. Elle entre dans les séries sans filtre depuis le 12/11, l'écran à deux ranges étant livré. Au niveau 1, l'énoncé ne dit pas « range » : « Ce flop aide-t-il plus l'ensemble de tes mains possibles, ou l'ensemble des siennes ? », avec les réponses « mes mains possibles / à peu près pareil / ses mains possibles ».
 
 **Situation.** Le même pot limpé en heads-up que `flop_help` (8, 10 ou 12 BB, héros au SB ou au BB), avec les ranges de la banque. Il n'y a **pas de main du héros** : la colonne `hand` vaut « range », et `hero_cards` et `hand_display` valent `null`.
 
@@ -264,7 +264,7 @@ Le bloc `equity` contient en plus :
 
 ## v2 : sorte « nut_help », « Qui a le plus de mains très fortes sur ce flop ? » (12/11/2026)
 
-`POST /sessions {"mode": "equity", "filters": {"kind": "nut_help"}}`. C'est la Q2 des exercices de range. Comme `range_help`, elle se joue sur demande jusqu'à l'écran à deux ranges.
+`POST /sessions {"mode": "equity", "filters": {"kind": "nut_help"}}`. C'est la Q2 des exercices de range. Elle entre aussi dans les séries sans filtre depuis le 12/11. Au niveau 1 : « Parmi toutes vos mains possibles, qui a le plus de mains très fortes sur ce flop ? », avec les réponses « moi / à peu près autant / lui ».
 
 **Situation.** Le même pot limpé en heads-up que `range_help`, avec le même format de question : deux ranges (`who: hero` puis `villain`), pas de main du héros (`hand` vaut « range »).
 

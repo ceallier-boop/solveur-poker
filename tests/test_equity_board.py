@@ -115,10 +115,10 @@ def test_correction_and_grading():
 def test_default_series_mix_board_kinds():
     """12/11 : l'écran du tableau est livré, les sortes avec tableau entrent dans les séries sans filtre (6 sortes, 5 questions : une sorte manque à chaque série)"""
     kinds = set()
-    for sd in range(8):
+    for sd in range(12):
         ks = [E.parse(sid)['kind'] for sid, _ in E.draw(2, 5, seed=sd)]; kinds |= set(ks)
         assert len(set(ks)) == 5
-    assert kinds == {'hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help'}
+    assert kinds == set(E.DEFAULT_KINDS) and len(E.DEFAULT_KINDS) == 8
     for lv in (1, 2):
         for sid, h in E.draw(lv, 5, seed=3): assert E.valid(sid, h)
 
@@ -307,7 +307,7 @@ def test_range_help_questions():
                 assert (d >= 3 and b['correct'] == 0) or (d <= -3 and b['correct'] == 2) or (abs(d) <= 1 and b['correct'] == 1)
                 q = E.question(sid, h)
                 assert q['hero_cards'] is None and q['hand_display'] is None and [r['who'] for r in q['ranges']] == ['hero', 'villain']
-                assert q['options'][0]['label_fr'] == 'ma range' and len(q['board']) == 3
+                assert q['options'][0]['label_fr'] == ('mes mains possibles' if lv == 1 else 'ma range') and len(q['board']) == 3
                 r = E.correct(sid, h, f"b{b['correct']}")
                 assert r['verdict'] == 'correct' and r['regret_mbb'] == 0
                 assert r['equity']['villain_flop_bp'] == 10000 - v['flop'] and r['equity']['thresholds'] == {'step': 2.0, 'margin': 1.0}
@@ -315,7 +315,6 @@ def test_range_help_questions():
                 seen.add(b['correct'])
     assert seen == {0, 1, 2}
     assert not E.valid(sid, 'AsKs')                                 # pas de main du héros pour cette sorte
-    assert all(E.parse(s)['kind'] != 'range_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))   # hors séries par défaut (écran à deux ranges à venir)
 
 
 # ------------------------------------------------------------------ sorte « nut_help » : qui a le plus de mains très fortes sur ce flop ?
@@ -361,7 +360,6 @@ def test_nut_help_questions():
                 assert r['verdict'] == 'correct' and r['equity']['delta_bp'] == b['value'] - b['villain'] and r['equity']['thresholds']['strong_gain'] == 2
                 seen.add(b['correct'])
     assert seen == {0, 1, 2}
-    assert all(E.parse(s)['kind'] != 'nut_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))
 
 
 def test_delta_fr_and_caveat_fields():
