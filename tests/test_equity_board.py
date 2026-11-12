@@ -113,9 +113,12 @@ def test_correction_and_grading():
 
 
 def test_default_series_mix_board_kinds():
-    """12/11 : l'écran du tableau est livré, outs et équité sur le flop entrent dans les séries sans filtre ; flop_help reste sur demande"""
-    kinds = {E.parse(sid)['kind'] for sd in range(6) for sid, _ in E.draw(2, 5, seed=sd)}
-    assert kinds == {'hit', 'equity', 'labels', 'outs', 'board_equity'}
+    """12/11 : l'écran du tableau est livré, les sortes avec tableau entrent dans les séries sans filtre (6 sortes, 5 questions : une sorte manque à chaque série)"""
+    kinds = set()
+    for sd in range(8):
+        ks = [E.parse(sid)['kind'] for sid, _ in E.draw(2, 5, seed=sd)]; kinds |= set(ks)
+        assert len(set(ks)) == 5
+    assert kinds == {'hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help'}
     for lv in (1, 2):
         for sid, h in E.draw(lv, 5, seed=3): assert E.valid(sid, h)
 

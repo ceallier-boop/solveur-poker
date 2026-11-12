@@ -90,7 +90,7 @@ def test_level1_plain_words():
             q = E.question(sid, h); r = E.correct(sid, h, q['options'][0]['id'])
             text = q['prompt_fr'] + ' '.join(o['label_fr'] for o in q['options']) + r['explanation_fr']
             assert 'outs' not in text and 'range' not in q['prompt_fr'] and 'équité de' not in q['prompt_fr']
-            assert q['category_fr'] == 'Équités' and q['mode'] == 'equity' and len(q['options']) in (4,)
+            assert q['category_fr'] == 'Équités' and q['mode'] == 'equity' and len(q['options']) in ((3,) if q['kind'] == 'flop_help' else (4,))
             for name in ('Lucho', 'Lucky', 'PA '): assert name not in text       # aucun nom d'expert
 
 
@@ -124,7 +124,7 @@ def test_api_equity_series_and_stats(client):
         kinds.add(q['kind']); hands.append(q['hand'])
         a = client.post('/attempts', json={'session_id': sid, 'question_index': i, 'action_id': q['options'][0]['id']}).json()
         assert a['verdict'] in ('correct', 'imprécision', 'erreur') and a['regret_mbb'] == 0 and a['equity']['options'] == [o['label_fr'] for o in q['options']]
-    assert kinds == set(E.DEFAULT_KINDS) and len(set(hands)) == 5
+    assert kinds <= set(E.DEFAULT_KINDS) and len(kinds) == 5 and len(set(hands)) == 5
     s = client.get(f'/sessions/{sid}/summary').json()
     assert s['complete'] and s['bb_per_100'] is None and s['ev_questions'] == 0 and s['category_fr'] == 'Équités'
     # une série GTO à côté : le BB/100 et le score GTO ne voient pas les équités
@@ -134,7 +134,7 @@ def test_api_equity_series_and_stats(client):
         client.post('/attempts', json={'session_id': g, 'question_index': i, 'action_id': q['options'][0]['id']})
     st = client.get('/users/me/stats', headers=H).json()
     assert st['questions'] == 5 and st['ev_questions'] == 5 and [m['filters']['mode'] for m in st['by']['mode']] == ['gto']
-    assert st['equity']['questions'] == 5 and st['equity']['sessions'] == 1 and {k['kind'] for k in st['equity']['by_kind']} == set(E.DEFAULT_KINDS)
+    assert st['equity']['questions'] == 5 and st['equity']['sessions'] == 1 and {k['kind'] for k in st['equity']['by_kind']} == kinds
     # une seule sorte
     one = client.post('/sessions', json={'mode': 'equity', 'filters': {'kind': 'labels'}, 'size': 3}).json()['session_id']
     for i in range(3):
