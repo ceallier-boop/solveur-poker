@@ -32,7 +32,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('correction : même écart que la phrase du serveur', num(a.good) && num(a.good).replace('+', '') === (num(a.essential) || '').replace('+', ''), [a.good, a.essential]);
   ok('correction : avant le flop puis au flop, et la phrase de l\'écart', a.rows === 2 && /avant le flop .* points?\)/.test(a.essential), a.essential);
   ok('correction : jamais de BB perdus', !/BB perdus|coûte/.test(a.text));
-  ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant)', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')));
+  ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant), pas répétée dans les précisions', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')) && !(await p.textContent('#a-details')).includes(await p.textContent('#a-equity .eq-caveat')));
   await p.screenshot({ path: `${OUT}/flop_help_correction.png`, fullPage: true });
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));

@@ -40,7 +40,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('correction : les deux ranges avant et au flop, double paire ou mieux', a.rows.length === 3 && /^Avant le flop [\d,]+ % [\d,]+ %$/.test(a.rows[0])
     && /^Au flop [\d,]+ % [\d,]+ %$/.test(a.rows[1]) && /^Double paire ou mieux [\d,]+ % [\d,]+ %$/.test(a.rows[2]), a.rows);
   ok('correction : pas de main, pas de « null », jamais de BB perdus', !a.hand && !/\bnull\b/.test(a.text + a.recap) && !/BB perdus|coûte/.test(a.text), a.recap);
-  ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant)', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')));
+  ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant), pas répétée dans les précisions', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')) && !(await p.textContent('#a-details')).includes(await p.textContent('#a-equity .eq-caveat')));
   await p.screenshot({ path: `${OUT}/range_help_correction.png`, fullPage: true });
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));

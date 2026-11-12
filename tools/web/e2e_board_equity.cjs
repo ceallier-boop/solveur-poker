@@ -37,7 +37,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
       ok('correction : avant le flop puis au flop, avec leurs valeurs', a.rows.length === 2 && /^Avant le flop .*[\d,]+ %$/.test(a.rows[0]) && /^Au flop .*[\d,]+ %$/.test(a.rows[1]), a.rows);
       ok('correction : ce que la main a et ses cartes qui l\'améliorent', /Ta main pour l'instant : .+ ; \d+ cartes? l'améliore/.test(a.note), a.note);
       ok('correction : le tableau, jamais de BB perdus', a.board === 3 && !/BB perdus|coûte/.test(a.text));
-      ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant)', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')));
+      ok('correction : la nuance visible (l\'équité n\'est pas l\'argent / améliorer n\'est pas passer devant), pas répétée dans les précisions', await p.isVisible('#a-equity .eq-caveat') && /argent|passer devant/i.test(await p.textContent('#a-equity .eq-caveat')) && !(await p.textContent('#a-details')).includes(await p.textContent('#a-equity .eq-caveat')));
       await p.screenshot({ path: `${OUT}/board_equity_correction.png`, fullPage: true });
     }
     await p.click('#next-btn');

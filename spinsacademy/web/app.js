@@ -508,10 +508,10 @@ function renderEquityAnswer(r) {
       return `<li class="${good ? 'good' : ''}${mine ? ' mine' : ''}"><span>${escT(l)}</span><small>${good ? `✓ ${escT(e.delta_bp != null ? deltaFr(e, r.essential_fr) : e.value_fr || '')}` : ''}${mine ? `${good ? ' · ' : ''}ta réponse` : ''}</small></li>`; }).join('')}</ol>`
     : `<ul class="eq-statements">${(e.statements || []).map((x) => `<li class="${x.true ? 'good' : 'bad'}${x.id === r.chosen_action ? ' mine' : ''}"><b>${x.true ? 'Vrai' : 'Faux'}</b> <span>${escT(x.label_fr)}${x.id === r.chosen_action ? ' <small>· ta réponse</small>' : ''}</span><small class="why">${escT((x.why_fr || '').replace(/^(Vrai|Faux) : /, ''))}</small></li>`).join('')}</ul>`;
   $('a-equity').hidden = false;
-  const caveat = (r.details_fr || []).find((l) => /argent|passer devant/i.test(l));   // la nuance (l'équité n'est pas l'argent ; améliorer n'est pas passer devant), visible
+  const caveat = e.caveat_fr || (r.details_fr || []).find((l) => /argent|passer devant/i.test(l));   // la nuance (equity.caveat_fr ; à défaut, repérée dans details_fr), visible
   $('a-equity').innerHTML = rows + outsHTML(e) + (e.villain_flop_bp != null || e.kind === 'nut_help' ? rangesVsHTML(e) : streetsHTML(e)) + (caveat ? `<p class="eq-caveat">${escT(caveat)}</p>` : '') + list(r.strengths_fr, 'plus', 'Forces de la main') + list(r.weaknesses_fr, 'minus', 'Faiblesses de la main');
   const det = r.details_fr || []; $('a-more').open = false;
-  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.map((l) => `<p class="eline">${escT(l)}</p>`).join('');
+  $('a-details').innerHTML = `<p class="eline note">Énoncé : ${escT(q.prompt_fr)}</p>` + det.filter((l) => l !== e.caveat_fr).map((l) => `<p class="eline">${escT(l)}</p>`).join('');   // la nuance n'est pas répétée
   $('next-btn').textContent = state.index + 1 >= state.size ? 'Voir le bilan' : 'Question suivante';
   resetReport();
   for (const id of ['a-essential', 'a-remember', 'a-equity']) glossify($(id));
