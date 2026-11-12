@@ -164,3 +164,81 @@ def test_texts_no_expert_no_bb_lost_and_level1_words(client):
     blob = '\n'.join(texts)
     assert not NAMES_RE.search(blob), NAMES_RE.search(blob).group(0)
     assert not re.search(r'BB perdu', blob, re.I)
+
+
+# ------------------------------------------------------------------ v2 : questions avec tableau (outs, board_equity, flop_help)
+import sys as _sys
+_sys.path.insert(0, os.path.join(ROOT, 'tools', 'web'))
+import eval_independant as EV                                         # évaluateur indépendant, pur Python, sans spinsacademy
+
+
+def _board_ok(q):
+    b = q['board']; return len(b) == 3 and len({c[0] for c in b}) == 3 and len(q['hero_cards']) == 2
+
+
+def test_outs_match_an_independent_evaluator(client):
+    seen = {'nombre': 0, 'turn': 0, 'river': 0}
+    for lv in (1, 2):
+        h = {'X-Player-Id': f'eq-outs-{lv}-000000'}
+        if lv == 2: level2(client, h)
+        for seed in range(6):
+            _, qa = series(client, h, 'outs', seed)
+            for q, a in qa:
+                e = a['equity']; hand, board = q['hero_cards'], q['board']
+                assert _board_ok(q), ('flop pairé ou cartes manquantes', q['board'])
+                mine = EV.outs(hand, board)
+                assert 2 <= len(mine) <= 21 and e['outs_count'] == len(mine), (hand, board, e['outs_count'], len(mine))
+                assert {o['card'] for o in e['outs']} == set(mine), (hand, board, sorted({o['card'] for o in e['outs']} ^ set(mine)))
+                assert e['turn_bp'] == round(1e4 * len(mine) / 47), (hand, board, e['turn_bp'])
+                assert e['river_bp'] == round(1e4 * EV.improve_by_river(hand, board) / 1081), (hand, board, e['river_bp'])
+                ids = [o['id'] for o in q['options']]; k = ids.index(e['correct_option']); seen[q['topic']] += 1
+                if q['topic'] == 'nombre':
+                    nums = [int(re.search(r'\d+', o['label_fr']).group(0)) for o in q['options']]
+                    gaps = {b - a for a, b in zip(nums, nums[1:])}
+                    assert nums[k] == len(mine) and gaps == {3 if lv == 1 else 2}, (nums, len(mine), lv)
+                else:
+                    v = e['turn_bp'] if q['topic'] == 'turn' else e['river_bp']; lo, hi = bounds(q['options'][k]['label_fr'])
+                    assert lo <= v < hi and (lo == 0 or v - lo >= 150) and (hi == 10001 or hi - v >= 150), (q['topic'], v, lo, hi)
+                d = abs(k - 0)
+                assert a['verdict'] == ('correct' if d == 0 else 'imprécision' if d == 1 else 'erreur'), (a['verdict'], d)
+    assert all(seen.values()), seen
+
+
+def test_flop_help_answer_follows_the_equity_change(client):
+    n = 0
+    for lv in (1, 2):
+        h = {'X-Player-Id': f'eq-flophelp-{lv}-0000'}
+        if lv == 2: level2(client, h)
+        for seed in range(4):
+            _, qa = series(client, h, 'flop_help', seed)
+            for q, a in qa:
+                e = a['equity']; d = e['delta_bp']; n += 1
+                assert len(q['board']) == 3 and len({c[0] for c in q['board']}) >= 2, ('flop à brelan', q['board'])   # flop pairé permis, brelan exclu
+                assert d == e['value_bp'] - e['preflop_bp'], e
+                assert abs(d) >= 450 or abs(d) <= 150, ('écart à moins de 1,5 point d\'une frontière', d)
+                want = 'b0' if d >= 300 else 'b2' if d <= -300 else 'b1'
+                assert e['correct_option'] == want, (d, e['correct_option'])
+                chosen = q['options'][0]['id']                                 # on a répondu « elle monte nettement »
+                exp = 'correct' if chosen == want else 'imprécision' if 'b1' in (chosen, want) else 'erreur'
+                assert a['verdict'] == exp, (chosen, want, a['verdict'])
+    assert n == 2 * 4 * 5
+
+
+@pytest.mark.slow
+def test_board_and_flop_help_equities_recomputed_on_the_1081_runouts(client):
+    """équité exacte recalculée par l'évaluateur indépendant (environ 8 s par question) : 2 board_equity, 1 flop_help"""
+    h = {'X-Player-Id': 'eq-board-exact-0001'}; level2(client, h); done = {'hasard': 0, 'range': 0, 'flop_help': 0}
+    for seed in range(20):
+        if all(done.values()): break
+        for kind in ('board_equity', 'flop_help'):
+            _, qa = series(client, h, kind, seed, size=1); q, a = qa[0]; e = a['equity']
+            key = 'flop_help' if kind == 'flop_help' else 'hasard' if q['topic'] == 'hasard' else 'range'
+            if done[key]: continue
+            w = q['ranges'][0]['hands'] if q.get('ranges') else None
+            mine = EV.equity(q['hero_cards'], q['board'], w)
+            assert abs(mine - e['value_bp']) <= 2, (kind, q['topic'], q['hero_cards'], q['board'], mine, e['value_bp'])
+            if kind == 'board_equity':
+                ids = [o['id'] for o in q['options']]; lo, hi = bounds(q['options'][ids.index(e['correct_option'])]['label_fr'])
+                assert lo <= mine < hi and (lo == 0 or mine - lo >= 148) and (hi == 10001 or hi - mine >= 148), (mine, lo, hi)
+            done[key] += 1
+    assert all(done.values()), done

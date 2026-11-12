@@ -31,6 +31,18 @@ const fmt = (x) => `${x.toFixed(1).replace(/\.0$/, '').replace('.', ',')} %`;
 const pctFr = (bp) => fmt(Math.round(bp / 10) / 10);
 const pctAll = (bp) => [...new Set([pctFr(bp), fmt(Math.floor(bp / 10) / 10)])].filter((x, _, a) => bp % 10 === 5 || x === a[0]);   // à 5 près : les deux arrondis (observation)
 const showsValue = (text, bp) => pctAll(bp).some((x) => text.includes(x));
+const ev = spawn(process.env.PYTHON || 'python3', [path.join(__dirname, 'eval_check.py')], { stdio: ['pipe', 'pipe', 'inherit'] });   // évaluateur indépendant (sortes avec tableau)
+const evWait = []; readline.createInterface({ input: ev.stdout }).on('line', (l) => evWait.shift()(JSON.parse(l)));
+const evaluate = (q, exact) => new Promise((res) => { evWait.push(res); ev.stdin.write(JSON.stringify({ kind: q.kind, topic: q.topic, hero_cards: q.hero_cards, board: q.board, ranges: q.ranges, exact }) + '\n'); });
+async function truthBoard(q) {                                       // outs, board_equity : bonne option recalculée par l'évaluateur ; flop_help : équité au flop
+  const m = await evaluate(q, q.kind !== 'outs');
+  if (q.kind === 'outs') {
+    if (q.topic === 'nombre') { const k = q.options.findIndex((o) => Number((o.label_fr.match(/\d+/) || [0])[0]) === m.outs.length); return { kind: 'band', k, shown: String(m.outs.length), m }; }
+    const v = q.topic === 'turn' ? m.turn_bp : m.river_bp; return { kind: 'band', v, k: q.options.findIndex((o) => { const [lo, hi] = bounds(o.label_fr); return lo <= v && v < hi; }), m };
+  }
+  if (q.kind === 'board_equity') { const v = m.value_bp; return { kind: 'band', v, k: q.options.findIndex((o) => { const [lo, hi] = bounds(o.label_fr); return lo <= v && v < hi; }), m }; }
+  return { kind: 'flop_help', m };
+}
 function truth(q) {                                                   // bonne option recalculée depuis la table brute
   if (q.answer === 'statement') {
     const on = new Set(T.labels[IDX[q.hand]].map(([l]) => l)); const ids = q.statement_ids || null;
@@ -69,9 +81,26 @@ const tab = (p, t) => openTab(p, t).then(() => p.waitForTimeout(300));   // ongl
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])', { timeout: 20000 }); await p.waitForTimeout(200);
     const q = await lastQ(p);
-    if (!['hit', 'equity', 'labels'].includes(q.kind)) {             // 12/11 : la série par défaut tire aussi outs, board_equity, flop_help (leurs propres e2e) ;
-      await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');   // la table brute de cette recette ne les recalcule pas
-      const a = (await atts(p)).slice(-1)[0].a; expect.push({ q, tr: { kind: 'other' }, verdict: a.verdict, points: a.points }); await p.click('#next-btn'); continue;
+    if (!['hit', 'equity', 'labels'].includes(q.kind)) {             // 12/11 : outs, board_equity, flop_help, contrôlés par l'évaluateur indépendant
+      const tb = await truthBoard(q); const ui2 = await p.evaluate(() => ({ timer: !document.getElementById('q-timer').hidden, skip: !document.getElementById('replay-skip').hidden, cat: document.getElementById('q-cat').textContent }));
+      if (ui2.timer || ui2.skip || ui2.cat !== 'Équités') uiErr.push({ q: q.spot_id, ...ui2 });
+      let choice2 = 0, want2 = null;
+      if (tb.kind === 'band') {
+        if (tb.k < 0) eqErr.push({ q: q.spot_id, kind: q.kind, défaut: 'aucune option ne contient la valeur de l\'évaluateur', valeur: tb.v ?? tb.shown });
+        else { const n = q.options.length; const near = tb.k + 1 < n ? tb.k + 1 : tb.k - 1; choice2 = plan[i] === 'juste' ? tb.k : near; want2 = plan[i] === 'juste' ? 'correct' : 'imprécision'; }
+      }
+      await p.click(`#actions button >> nth=${choice2}`); await p.waitForSelector('#screen-answer:not([hidden])');
+      const a = (await atts(p)).slice(-1)[0].a; const shown2 = await p.innerText('#screen-answer');
+      if (tb.kind === 'flop_help') {                                  // bonne réponse = sens de (équité au flop recalculée − équité avant le flop de la correction)
+        const d = tb.m.value_bp - a.equity.preflop_bp; const w = d >= 300 ? 'b0' : d <= -300 ? 'b2' : 'b1'; const c0 = q.options[0].id;
+        want2 = c0 === w ? 'correct' : [c0, w].includes('b1') ? 'imprécision' : 'erreur';
+        if (Math.abs(tb.m.value_bp - a.equity.value_bp) > 2) eqErr.push({ q: q.spot_id, kind: q.kind, flop_servi: a.equity.value_bp, flop_évaluateur: tb.m.value_bp });
+        if (!showsValue(shown2, tb.m.value_bp)) eqErr.push({ q: q.spot_id, kind: q.kind, valeur_attendue: pctFr(tb.m.value_bp) });
+      } else if (tb.v != null && !showsValue(shown2, tb.v)) eqErr.push({ q: q.spot_id, kind: q.kind, valeur_attendue: pctFr(tb.v), écran: shown2.slice(0, 200) });
+      else if (tb.shown && !shown2.includes(tb.shown)) eqErr.push({ q: q.spot_id, kind: q.kind, outs_attendus: tb.shown });
+      if (want2 && a.verdict !== want2) eqErr.push({ q: q.spot_id, kind: q.kind, réponse: plan[i], attendu: want2, servi: a.verdict });
+      if (/BB perdu/i.test(shown2)) uiErr.push({ q: q.spot_id, bb: true });
+      expect.push({ q, tr: { kind: tb.kind === 'band' && tb.v != null ? 'band' : 'other', v: tb.v }, verdict: a.verdict, points: a.points }); await p.click('#next-btn'); continue;
     }
     const tr = truth(q); let choice, want;
     const ui = await p.evaluate(() => ({ table: !!document.querySelector('#table-wrap') && getComputedStyle(document.querySelector('#table-wrap')).display !== 'none' && !document.querySelector('#table-wrap').hidden,
@@ -102,7 +131,8 @@ const tab = (p, t) => openTab(p, t).then(() => p.waitForTimeout(300));   // ongl
   await p.waitForSelector('#screen-summary:not([hidden])', { timeout: 15000 });
   const sum = await p.innerText('#screen-summary');
   const missing = expect.filter((x) => x.verdict !== 'correct' && x.tr.kind === 'band' && !showsValue(sum, x.tr.v));
-  ok('équités : verdicts conformes à la table brute (juste, voisine, loin)', !eqErr.length, eqErr);
+  const boardKinds = [...new Set(expect.map((x) => x.q.kind).filter((k) => ['outs', 'board_equity', 'flop_help'].includes(k)))];
+  ok(`équités : verdicts conformes à la table brute et à l'évaluateur indépendant (sortes avec tableau : ${boardKinds.join(', ')})`, !eqErr.length && boardKinds.length >= 2, eqErr);
   ok('équités : question sans table, sans chrono, sans rejouée, étiquette « Équités », jamais de BB', !uiErr.length, uiErr);
   ok('équités : le bilan donne la valeur exacte de chaque erreur, sans BB ni révision', !missing.length && !/BB perdu/i.test(sum) && !/révision/i.test(sum) && (await p.textContent('#s-cat')) === 'Équités', { manquent: missing.map((x) => pctFr(x.tr.v)), bilan: sum.slice(0, 400) });
   await p.screenshot({ path: `${OUT}/ui_equity_summary.png`, fullPage: true });
@@ -160,5 +190,5 @@ const tab = (p, t) => openTab(p, t).then(() => p.waitForTimeout(300));   // ongl
   ok('cartes de défi : chacune porte sa catégorie', !badCards.length, { badCards, cards: cards.map((c) => c.slice(0, 90)) });
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
-  helper.stdin.end(); await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
+  helper.stdin.end(); ev.stdin.end(); await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
 })();

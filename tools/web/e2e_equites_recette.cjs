@@ -23,6 +23,10 @@ function bounds(label) {
   const n = (label.match(/\d+(?:,\d+)?/g) || []).map((x) => Math.round(100 * Number(x.replace(',', '.'))));
   if (label.startsWith('moins')) return [0, n[0]]; if (/ou plus/.test(label)) return [n[0], 10001]; return [n[0], n[1]];
 }
+const { spawn } = require('child_process'); const readline = require('readline');
+const ev = spawn(process.env.PYTHON || 'python3', [path.join(__dirname, 'eval_check.py')], { stdio: ['pipe', 'pipe', 'inherit'] });   // évaluateur indépendant
+const evWait = []; readline.createInterface({ input: ev.stdout }).on('line', (l) => evWait.shift()(JSON.parse(l)));
+const evaluate = (q, exact) => new Promise((res) => { evWait.push(res); ev.stdin.write(JSON.stringify({ kind: q.kind, topic: q.topic, hero_cards: q.hero_cards, board: q.board, ranges: q.ranges, exact }) + '\n'); });
 const call = (p, route, body) => p.evaluate(async ([r, b]) => {
   const opts = { method: b ? 'POST' : 'GET', headers: { 'content-type': 'application/json', 'X-Player-Id': localStorage.getItem('player_id') || 'eq-recette-demo-01' } };
   if (b) opts.body = JSON.stringify(b);
@@ -64,6 +68,36 @@ const call = (p, route, body) => p.evaluate(async ([r, b]) => {
   }
   ok(`tranches = table brute, marge de 1,5 point, notation des voisines (${nBand} questions)`, nBand >= 70 && !bandErr.length, bandErr.slice(0, 6));
   ok(`affirmations = étiquettes de la table, rien de flou sur les paires (${nLab} questions, ${pairs} paires)`, nLab >= 35 && !labErr.length, labErr.slice(0, 6));
+  // v2 : questions avec tableau, recalculées par l'évaluateur indépendant (tools/web/eval_independant.py)
+  const v2Err = []; let nV2 = 0, exact = 0;
+  for (const [kind, seeds, exactFor] of [['outs', 3, 0], ['board_equity', 1, 2], ['flop_help', 1, 1]]) {
+    for (let seed = 0; seed < seeds; seed++) {
+      const s = await call(p, 'sessions', { mode: 'equity', size: 5, seed, filters: { kind } });
+      if (s.status !== 201) { v2Err.push({ kind, seed, status: s.status, json: s.json }); continue; }
+      for (let i = 0; i < 5; i++) {
+        const q = (await call(p, `quiz/next?session_id=${s.json.session_id}`)).json.question;
+        const a = (await call(p, 'attempts', { session_id: s.json.session_id, question_index: i, action_id: q.options[0].id })).json;
+        texts.push(JSON.stringify([q, a])); nV2 += 1; const e = a.equity; const ids = q.options.map((o) => o.id); const k = ids.indexOf(e.correct_option);
+        const doExact = (kind !== 'outs') && i < exactFor; const m = await evaluate(q, doExact); if (doExact) exact += 1;
+        if (kind === 'outs') {
+          const got = new Set(e.outs.map((o) => o.card)); const same = got.size === m.outs.length && m.outs.every((c) => got.has(c));
+          if (!same || e.outs_count !== m.outs.length || e.turn_bp !== m.turn_bp || e.river_bp !== m.river_bp) v2Err.push({ kind, q: q.spot_id, servi: [e.outs_count, e.turn_bp, e.river_bp], évaluateur: [m.outs.length, m.turn_bp, m.river_bp] });
+          if (q.topic === 'nombre') { const nums = q.options.map((o) => Number((o.label_fr.match(/\d+/) || [0])[0])); if (nums[k] !== m.outs.length) v2Err.push({ kind, q: q.spot_id, nombre: nums[k], outs: m.outs.length }); }
+          else { const v = q.topic === 'turn' ? m.turn_bp : m.river_bp; const [lo, hi] = bounds(q.options[k].label_fr); if (!(lo <= v && v < hi) || (lo && v - lo < 150) || (hi !== 10001 && hi - v < 150)) v2Err.push({ kind, q: q.spot_id, valeur: v, tranche: q.options[k].label_fr }); }
+          if (a.verdict !== (k === 0 ? 'correct' : k === 1 ? 'imprécision' : 'erreur')) v2Err.push({ kind, q: q.spot_id, verdict: a.verdict, écart: k });
+        } else if (kind === 'board_equity') {
+          if (doExact && Math.abs(m.value_bp - e.value_bp) > 2) v2Err.push({ kind, q: q.spot_id, servi: e.value_bp, évaluateur: m.value_bp });
+          const [lo, hi] = bounds(q.options[k].label_fr); if (!(lo <= e.value_bp && e.value_bp < hi) || (lo && e.value_bp - lo < 150) || (hi !== 10001 && hi - e.value_bp < 150)) v2Err.push({ kind, q: q.spot_id, valeur: e.value_bp, tranche: q.options[k].label_fr });
+        } else {
+          const d = e.delta_bp; const want = d >= 300 ? 'b0' : d <= -300 ? 'b2' : 'b1';
+          if (d !== e.value_bp - e.preflop_bp || !(Math.abs(d) >= 450 || Math.abs(d) <= 150) || e.correct_option !== want) v2Err.push({ kind, q: q.spot_id, d, correct: e.correct_option });
+          if (doExact && Math.abs(m.value_bp - e.value_bp) > 2) v2Err.push({ kind, q: q.spot_id, servi: e.value_bp, évaluateur: m.value_bp });
+          const exp = ids[0] === want ? 'correct' : [ids[0], want].includes('b1') ? 'imprécision' : 'erreur'; if (a.verdict !== exp) v2Err.push({ kind, q: q.spot_id, verdict: a.verdict, attendu: exp });
+        }
+      }
+    }
+  }
+  ok(`outs, équité sur un tableau, aide du flop = évaluateur indépendant (${nV2} questions, ${exact} équités recalculées sur les 1 081 suites)`, nV2 === 25 && exact === 3 && !v2Err.length, v2Err.slice(0, 6));
   // séparation : séries GTO et exploitantes sans équités, statistiques à part
   const mixed = [];
   for (const mode of ['gto', 'exploit']) for (let seed = 0; seed < 4; seed++) {
@@ -72,10 +106,10 @@ const call = (p, route, body) => p.evaluate(async ([r, b]) => {
   }
   ok('aucune question d\'équités dans une série GTO ou exploitante', !mixed.length, mixed);
   const st = (await call(p, 'users/me/stats')).json;
-  ok('statistiques : bloc « equity » séparé, hors score GTO / exploitant', st.equity && st.equity.questions === nBand + nLab && (st.questions || 0) === 0, { equity: st.equity && st.equity.questions, gto_exploit: st.questions });
+  ok('statistiques : bloc « equity » séparé, hors score GTO / exploitant', st.equity && st.equity.questions === nBand + nLab + nV2 && (st.questions || 0) === 0, { equity: st.equity && st.equity.questions, gto_exploit: st.questions });
   const blob = texts.join('\n');
   ok('aucun nom d\'expert, aucun « BB perdus »', !/lucho|lucky|pasg8|\bPA\b|coach/i.test(blob) && !/BB perdu/i.test(blob));
   ok('aucune erreur JavaScript', !errs.length, errs);
   console.log(JSON.stringify({ base: BASE, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
-  await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
+  ev.stdin.end(); await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
 })();

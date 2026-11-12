@@ -1,6 +1,6 @@
 // Recette de la main rejouée à la table (10/11), en complément de e2e_replay.cjs (Interface, qui contrôle les jetons sur deux
 // historiques imposés) : ici, uniquement des questions réellement servies, sur l'application ou la démo :
-//   15 questions (3 séries rapides) : une bulle par action de question.history, dans l'ordre et au bon siège, puis l'état final ;
+//   au moins 15 questions (3 séries rapides, puis d'autres séries, 8 au plus, tant que moins de 5 sièges adverses ont misé) : une bulle par action de question.history, dans l'ordre et au bon siège, puis l'état final ;
 //   à l'état final, les jetons de chaque adversaire suivent sa dernière action (tapis → plusieurs colonnes, relance → une pile,
 //   limp → un jeton) ; options et chrono cachés jusqu'à la fin ;
 //   chrono à 8 s : il démarre à la fin de la rejouée (le joueur ne perd pas de temps) ;
@@ -45,7 +45,7 @@ const chips = (p) => p.evaluate(() => Object.fromEntries([...document.querySelec
   await p.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 20000 }); await watchQ(p);
   await p.openTab('gto'); await p.click('.chips[data-name="chrono"] button[data-value="8"]');
   const orderErr = [], chipErr = [], hideErr = [], timerErr = []; let n = 0, withHistory = 0, keyOk = null, checkedChips = 0;
-  for (let s = 0; s < 3; s++) {
+  for (let s = 0; s < 3 || (checkedChips < 5 && s < 8); s++) {          // séries en plus tant que les mises adverses manquent (échec aléatoire du 11/11)
     await p.openTab('gto'); await p.click('#quick-start');
     for (let i = 0; i < 5; i++) {
       await p.waitForSelector('#screen-question:not([hidden])'); await p.waitForTimeout(40);
@@ -75,7 +75,7 @@ const chips = (p) => p.evaluate(() => Object.fromEntries([...document.querySelec
     }
     await p.waitForSelector('#screen-summary:not([hidden])'); await p.click('#back-home'); await p.waitForTimeout(600);
   }
-  ok(`bulles : une par action, dans l'ordre et au bon siège (${n} questions, ${withHistory} avec un historique)`, n === 15 && withHistory >= 5 && !orderErr.length, orderErr.slice(0, 5));
+  ok(`bulles : une par action, dans l'ordre et au bon siège (${n} questions, ${withHistory} avec un historique)`, n >= 15 && n % 5 === 0 && withHistory >= 5 && !orderErr.length, orderErr.slice(0, 5));
   ok(`jetons de l'état final conformes à la dernière action de chaque adversaire (${checkedChips} sièges contrôlés)`, checkedChips >= 5 && !chipErr.length, chipErr.slice(0, 5));
   ok('options et chrono cachés pendant toute la rejouée', !hideErr.length, hideErr);
   ok('chrono à 8 s : il démarre à la fin de la rejouée (au moins 7 s affichées)', !timerErr.length, timerErr.slice(0, 5));
