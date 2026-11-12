@@ -25,7 +25,7 @@ def test_correct_band_contains_exact_value_with_margin():
     for lv, series in _many():
         for sid, h in series:
             b = E._built(sid, h)
-            if b['kind'] == 'labels': continue
+            if b['kind'] == 'labels' or b['kind'] in E.BOARD_KINDS: continue      # sortes avec tableau : tests/test_equity_board.py
             v = b['value'] / 100; f = b['f']; c = b['correct']
             lo = f[c - 1] if c > 0 else 0; hi = f[c] if c < len(f) else 100
             assert lo <= v < hi or (hi == 100 and v == 100)                    # la bonne tranche contient la valeur exacte

@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
       out.kinds.push(q.kind); if (q.category_fr !== 'Équités' || q.mode !== 'equity') out.checks.push('catégorie ' + q.category_fr);
       const [, a] = await api('/attempts', { session_id: s.session_id, question_index: i, action_id: q.options[0].id });
       if (a.regret_mbb !== 0) out.checks.push('regret non nul');
-      if (q.kind !== 'labels') {
+      if (q.kind === 'hit' || q.kind === 'equity' || q.kind === 'board_equity') {
         const c = q.options.findIndex((o) => o.id === a.best_action), v = a.equity.value_bp / 100, lab = q.options[c].label_fr, nums = (lab.match(/\d+/g) || []).map(Number);
         const ok = lab.startsWith('moins') ? v < nums[0] : lab.includes('ou plus') ? v >= nums[0] : v >= nums[0] && v < nums[1];
         if (!ok) out.checks.push(`tranche ${lab} sans ${v}`);
@@ -54,7 +54,7 @@ const { chromium } = require('playwright');
     }
     return out;
   });
-  const ok = res.create === 201 && new Set(res.kinds).size === 3 && !res.checks.length && res.summary.complete && res.summary.bb === null && res.gtoEquity === 0
-    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && res.flopHelp.length === 2 && res.flopHelp.every(Boolean) && !res.kinds.includes('outs') && !errs.length;
+  const ok = res.create === 201 && new Set(res.kinds).size === 5 && !res.checks.length && res.summary.complete && res.summary.bb === null && res.gtoEquity === 0
+    && res.stats.questions === 5 && res.stats.ev === 5 && res.stats.equity === 5 && res.stats.modes.join() === 'gto' && res.badFilter === 422 && res.labelsOnly === 'labels' && res.outs.length === 3 && res.outs.every(Boolean) && res.boardEq.length === 2 && res.boardEq.every(Boolean) && res.flopHelp.length === 2 && res.flopHelp.every(Boolean) && !res.kinds.includes('flop_help') && !errs.length;
   console.log(JSON.stringify(Object.assign(res, { errs, ok }), null, 1)); await b.close(); process.exit(ok ? 0 : 1);
 })();
