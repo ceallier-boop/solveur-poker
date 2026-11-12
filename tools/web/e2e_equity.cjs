@@ -19,37 +19,40 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('carte Équités active : série et trois sortes', await p.isVisible('#equity-start') && (await p.$$('#equity-kinds [data-kind]')).length === 6 && !/bientôt/i.test(await p.innerText('#cat-equites')));
   ok('nouveau joueur : « Pas encore commencé »', /Pas encore commencé/.test(await p.textContent('#cat-equites-meter')));
   await p.click('#equity-start'); await p.waitForSelector('#screen-question:not([hidden])', { timeout: 15000 });
-  const seen = { band: 0, statement: 0 }; const ans = [];
+  // série par défaut (12/11) : 5 questions de sortes différentes parmi les six ; chaque question contrôlée selon sa sorte
+  const KIND = { 'Toucher le flop': 'hit', 'Équité contre une range': 'equity', 'Forces et faiblesses': 'labels', 'Tirages et outs': 'outs', 'Équité sur le flop': 'board_equity', 'Ce flop t\'aide-t-il ?': 'flop_help' };
+  const look = () => p.evaluate(() => ({
+    kind: document.getElementById('eq-kind').textContent, cat: document.getElementById('q-cat').textContent, table: !document.getElementById('table-wrap').hidden,
+    hand: !document.getElementById('eq-hand').hidden, cards: document.querySelectorAll('#eq-cards .card').length, ask: document.getElementById('ask').className,
+    askText: document.getElementById('ask').textContent, bands: document.getElementById('actions').classList.contains('bands'),
+    stmts: document.getElementById('actions').classList.contains('stmts'), n: document.querySelectorAll('#actions button').length,
+    timer: !document.getElementById('q-timer').hidden, skip: !document.getElementById('replay-skip').hidden, opts: !document.getElementById('actions').hidden }));
+  const layoutOk = (k, q) => (k === 'labels' ? q.stmts && q.n === 4 : k === 'flop_help' ? q.stmts && q.n === 3 : q.bands && q.n >= 4 && q.n <= 6);
+  const readAnswer = () => p.evaluate(() => ({
+    verdict: document.getElementById('a-verdict').innerText, essential: document.getElementById('a-essential').textContent,
+    calc: document.getElementById('a-remember').innerText, box: !document.getElementById('a-equity').hidden, text: document.getElementById('screen-answer').innerText,
+    good: document.querySelectorAll('#a-equity .eq-bands li.good, #a-equity .eq-statements li.good').length,
+    mine: document.querySelectorAll('#a-equity .eq-bands li.mine, #a-equity .eq-statements li.mine').length, strategy: !document.getElementById('a-strategy').hidden }));
+  const ans = [], kinds = [], badLayout = [];
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])');
-    const q = await p.evaluate(() => ({
-      cat: document.getElementById('q-cat').textContent, table: !document.getElementById('table-wrap').hidden, hand: !document.getElementById('eq-hand').hidden,
-      cards: document.querySelectorAll('#eq-cards .card').length, ask: document.getElementById('ask').className, askText: document.getElementById('ask').textContent,
-      bands: document.getElementById('actions').classList.contains('bands'), read: document.getElementById('actions').classList.contains('read'),
-      n: document.querySelectorAll('#actions button').length, timer: !document.getElementById('q-timer').hidden, skip: !document.getElementById('replay-skip').hidden,
-      opts: !document.getElementById('actions').hidden, progress: document.getElementById('progress').textContent }));
+    const q = await look(), k = KIND[q.kind] || q.kind; kinds.push(k);
     if (i === 0) {
       ok('question : étiquette Équités, sans table, la main en grand', q.cat === 'Équités' && !q.table && q.hand && q.cards === 2, q);
-      ok('question : énoncé visible, ni chrono ni rejouée', q.ask === 'ask' && /Tu as .+\?/.test(q.askText) && !q.timer && !q.skip && q.opts, q);
+      ok('question : énoncé visible, ni chrono ni rejouée', q.ask === 'ask' && q.askText.length > 30 && !q.timer && !q.skip && q.opts, q);
       await p.screenshot({ path: `${OUT}/equity_question.png` });
     }
-    if (q.bands) { seen.band++; if (!ans.some((a) => a.band)) ok('tranches : en grille, 4 à 6', q.n >= 4 && q.n <= 6 && !q.read, q); }
-    else { seen.statement++; if (!ans.some((a) => !a.band)) ok('affirmations : quatre, en liste', q.n === 4 && q.read, q); }
+    if (!layoutOk(k, q)) badLayout.push({ k, q });
     await p.click(`#actions button >> nth=${i % 2 ? -1 : 0}`); await p.waitForSelector('#screen-answer:not([hidden])');
-    const a = await p.evaluate(() => ({
-      verdict: document.getElementById('a-verdict').innerText, essential: document.getElementById('a-essential').textContent,
-      calc: document.getElementById('a-remember').innerText, box: !document.getElementById('a-equity').hidden, text: document.getElementById('screen-answer').innerText,
-      good: document.querySelectorAll('#a-equity li.good').length, mine: document.querySelectorAll('#a-equity li.mine').length,
-      strategy: !document.getElementById('a-strategy').hidden, statements: document.querySelectorAll('#a-equity .eq-statements li').length }));
-    a.band = !a.statements; ans.push(a);
+    ans.push({ k, ...(await readAnswer()) });
     await p.click('#next-btn');
   }
-  const a0 = ans[0];
-  ok('correction : verdict et bonne réponse dite', ans.every((a) => /(Bonne tranche|Imprécision|Erreur|Bonne réponse)/.test(a.verdict) && /(tranche|réponse)/i.test(a.verdict)), ans.map((a) => a.verdict));
-  ok('correction : la valeur exacte en une phrase (tranches)', ans.filter((a) => a.band).every((a) => /\d+,\d %|\d+ %/.test(a.essential)), ans.map((a) => a.essential));
-  ok('correction : le calcul', ans.every((a) => /le calcul/i.test(a.calc) && a.calc.length > 30), ans.map((a) => a.calc));
-  ok('correction : une seule bonne ligne, ta réponse marquée', ans.every((a) => a.box && a.good === 1 && a.mine === 1), ans.map((a) => [a.good, a.mine]));
-  ok('correction : forces et faiblesses', ans.some((a) => /Forces de la main|Faiblesses de la main/.test(a.text)));
+  ok('série par défaut : 5 sortes différentes, connues', new Set(kinds).size === 5 && kinds.every((k) => Object.values(KIND).includes(k)), kinds);
+  ok('réponses selon la sorte : tranches en grille, affirmations ou phrases sur une colonne', !badLayout.length, badLayout);
+  ok('correction : verdict et bonne réponse dite', ans.every((a) => /(Bonne tranche|Bon nombre|Bonne réponse|Imprécision|Erreur)/.test(a.verdict) && /(tranche|réponse|nombre)/i.test(a.verdict)), ans.map((a) => [a.k, a.verdict]));
+  ok('correction : la valeur exacte en une phrase (hors affirmations)', ans.filter((a) => a.k !== 'labels').every((a) => /\d+(,\d)? %|\d+ cartes? sur 47/.test(a.essential)), ans.map((a) => [a.k, a.essential]));
+  ok('correction : le calcul', ans.every((a) => /le calcul/i.test(a.calc) && a.calc.length > 30), ans.map((a) => [a.k, a.calc]));
+  ok('correction : une seule bonne ligne, ta réponse marquée', ans.every((a) => a.box && a.good === 1 && a.mine === 1), ans.map((a) => [a.k, a.good, a.mine]));
   ok('correction : jamais de BB perdus, pas de stratégie de référence', ans.every((a) => !/BB perdus|coûte/.test(a.text) && !a.strategy), ans.map((a) => a.text.match(/.{0,30}(BB perdus|coûte).{0,30}/)));   // « à 8 BB » d'un énoncé reste permis
   await p.waitForSelector('#screen-summary:not([hidden])');
   const sum = await p.innerText('#screen-summary');
@@ -58,8 +61,17 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('bilan : ta réponse et la bonne, sans coût', !(await p.$$('#s-errors li em')).length || (/Ta réponse : .* · bonne réponse : /.test(errs2) && !/coûte|Meilleur coup/.test(errs2)), errs2);
   if (!BASE.startsWith('file:')) ok('bilan : la valeur exacte sur chaque erreur (serveur)', !(await p.$$('#s-errors li em')).length || /valeur exacte : [\d,]+ %/.test(errs2), errs2);   // la démo ne l'envoie pas encore
   await p.screenshot({ path: `${OUT}/equity_summary.png`, fullPage: true });
+  // une seule sorte à la fois (filters.kind) : « Toucher le flop » et « Équité contre une range » ; forces et faiblesses dans la main
+  for (const k of ['hit', 'equity']) {
+    await p.click('#home-btn'); await p.openTab('exos'); await p.click(`#equity-kinds [data-kind="${k}"]`); await p.waitForSelector('#screen-question:not([hidden])');
+    const q = await look();
+    await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');
+    const a = await readAnswer();
+    ok(`une seule sorte (${k}) : tranches en grille, valeur exacte, forces et faiblesses`, KIND[q.kind] === k && layoutOk(k, q) && /\d+(,\d)? %/.test(a.essential)
+      && /Forces de la main|Faiblesses de la main/.test(a.text), { kind: q.kind, essential: a.essential });
+  }
   // une seule sorte : « Forces et faiblesses »
-  await p.click('#back-home'); await p.waitForSelector('#screen-gto:not([hidden])');
+  await p.click('#home-btn'); await p.openTab('exos');
   await p.click('#equity-kinds [data-kind="labels"]'); await p.waitForSelector('#screen-question:not([hidden])');
   ok('une seule sorte : Forces et faiblesses', /Forces et faiblesses/.test(await p.textContent('#eq-kind')) && (await p.$$('#actions button')).length === 4);
   await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');
@@ -75,6 +87,6 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   const gtoRow = await p.innerText('#st-cats-list li[data-cat="gto"]');
   ok('Progression : les équités ne comptent pas en Préflop GTO', /Pas encore commencé/.test(gtoRow), gtoRow);
   ok('aucune erreur JavaScript', !errs.length, errs);
-  console.log(JSON.stringify({ base: BASE, seen, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
+  console.log(JSON.stringify({ base: BASE, kinds, passed: checks.filter((c) => c.ok).length, failed: checks.filter((c) => !c.ok) }, null, 1));
   await b.close(); process.exit(checks.every((c) => c.ok) ? 0 : 1);
 })();
