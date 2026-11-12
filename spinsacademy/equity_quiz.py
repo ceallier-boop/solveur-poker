@@ -22,10 +22,10 @@ from . import equities, equity_board, grading
 from .cards import NAMES
 
 REF = f'equites/{equities.DATE}'
-KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help', 'range_help')
+KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help', 'range_help', 'nut_help')
 DEFAULT_KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help')   # série sans filtre (écran du tableau livré le 12/11)
-BOARD_KINDS = ('outs', 'board_equity', 'flop_help', 'range_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
-KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?', 'range_help': 'Range contre range'}
+BOARD_KINDS = ('outs', 'board_equity', 'flop_help', 'range_help', 'nut_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
+KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?', 'range_help': 'Range contre range', 'nut_help': 'Mains très fortes'}
 CATEGORY_FR = 'Équités'
 MARGIN = 1.5                          # points : écart minimal entre la valeur exacte et toute frontière de tranche
 MIN_BP = 50                           # valeur minimale d'un sujet (0,5 %) : un « 0 % » ou presque n'apprend rien

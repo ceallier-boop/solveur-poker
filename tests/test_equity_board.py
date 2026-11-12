@@ -316,3 +316,49 @@ def test_range_help_questions():
     assert seen == {0, 1, 2}
     assert not E.valid(sid, 'AsKs')                                 # pas de main du héros pour cette sorte
     assert all(E.parse(s)['kind'] != 'range_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))   # hors séries par défaut (écran à deux ranges à venir)
+
+
+# ------------------------------------------------------------------ sorte « nut_help » : qui a le plus de mains très fortes sur ce flop ?
+def _ref_strong_share(weights_class, board_s):
+    """part de mains très fortes, recalculée avec l'évaluateur indépendant de Tests (catégorie(main + flop) ≥ catégorie(flop) + 2)"""
+    import os, sys
+    from itertools import combinations
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'tools', 'web'))
+    import eval_independant as EV
+    bs = [board_s[i:i + 2] for i in (0, 2, 4)]; cb = EV.category(bs); s = t = 0.0
+    for a, b in combinations([c for c in EV.DECK if c not in bs], 2):
+        w = weights_class.get(EV.hand_class(a, b), 0.0)
+        if w <= 0: continue
+        t += w; s += w * (EV.category([a, b] + bs) >= cb + 2)
+    return round(10000 * s / t)
+
+
+@pytest.mark.parametrize('board_s', ['Td7c3d', 'KhKd5s', '9h8h7c', 'As4s2s'])
+def test_strong_share_against_independent_evaluator(board_s):
+    from spinsacademy.cards import NAMES
+    for sc in ('hu10_limp_bb', 'hu8_limp_sb'):
+        _, _, mine, opp = B.scenario(sc)
+        h, v = B.nut_values(sc, board_s)
+        assert h == _ref_strong_share(dict(zip(NAMES, mine)), board_s) and v == _ref_strong_share(dict(zip(NAMES, opp)), board_s)
+
+
+def test_strong_rule_on_paired_board():
+    assert not B.is_strong(B.cards_of('5s5d'), B.cards_of('KhKd2c'))       # paire du tableau + paire de poche : pas « très forte »
+    assert B.is_strong(B.cards_of('Ks5d'), B.cards_of('KhKd2c'))           # brelan avec une carte
+    assert B.is_strong(B.cards_of('Ts7s'), B.cards_of('Td7c3d'))           # double paire avec ses deux cartes
+
+
+def test_nut_help_questions():
+    seen = set()
+    for lv in (1, 2):
+        for sd in range(3):
+            for sid, h in E.draw(lv, 4, seed=sd, kind='nut_help'):
+                b = E._built(sid, h); d = (b['value'] - b['villain']) / 100
+                assert (d >= 3 and b['correct'] == 0) or (d <= -3 and b['correct'] == 2) or (abs(d) <= 1 and b['correct'] == 1)
+                q = E.question(sid, h)
+                assert q['hero_cards'] is None and [r['who'] for r in q['ranges']] == ['hero', 'villain'] and len(q['options']) == 3
+                r = E.correct(sid, h, f"b{b['correct']}")
+                assert r['verdict'] == 'correct' and r['equity']['delta_bp'] == b['value'] - b['villain'] and r['equity']['thresholds']['strong_gain'] == 2
+                seen.add(b['correct'])
+    assert seen == {0, 1, 2}
+    assert all(E.parse(s)['kind'] != 'nut_help' for sd in range(8) for s, _ in E.draw(2, 5, seed=sd))
