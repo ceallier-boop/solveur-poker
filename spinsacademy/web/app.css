@@ -739,3 +739,23 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .board { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .board .street { display: flex; gap: 4px; }
 .board .street + .street { padding-left: 10px; border-left: 2px dashed rgba(255,255,255,.35); }
+
+/* Équités v2 (11/11) : le tableau au-dessus de ta main, les outs groupés dans la correction */
+.eq-board .board .card { width: 46px; height: 64px; font-size: 1.25rem; }
+.a-board { margin: 0 0 6px; } .a-board .board { justify-content: flex-start; } .a-board .board .card { width: 40px; height: 56px; font-size: .95rem; }
+.a-board .board .street + .street { border-left-color: var(--line); }
+.eq-outs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.eq-outs li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.eq-outs .oc-cat { font-weight: 650; min-width: 96px; } .eq-outs .cards.mini { margin: 0; flex-wrap: wrap; } .eq-outs small { color: var(--muted); margin-left: auto; }
+.eq-odds { margin: 4px 0 0; }
+.eq-outs .card small, .a-board .card small { font-size: .9rem; }
+
+/* Équités v2, équité sur le flop (12/11) : la range adverse en petite grille, l'équité avant et après le flop */
+.eq-range { display: flex; flex-direction: column; gap: 6px; }
+.eq-range-title { margin: 0; font-size: .9rem; }
+.mini-grid { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 1px; width: min(100%, 286px); background: var(--line); border: 1px solid var(--line); }
+.mini-grid i { aspect-ratio: 1; background: color-mix(in srgb, var(--accent) calc(var(--w) * 100%), var(--surface)); }
+.eq-streets { display: flex; flex-direction: column; gap: 6px; }
+.st-row { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: 8px; font-size: .9rem; }
+.st-row em { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; } .st-row em i { display: block; height: 100%; background: var(--accent); }
+.st-row b { text-align: right; font-variant-numeric: tabular-nums; }
