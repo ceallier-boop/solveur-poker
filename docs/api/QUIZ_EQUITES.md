@@ -299,3 +299,8 @@ Le bloc `equity` contient en plus `strong_hero_bp`, `strong_villain_bp`, `delta_
 - Les parts sont recalculées avec l'évaluateur indépendant de Tests sur quatre flops (dont un pairé et un monocolore) et deux situations.
 - La règle du flop pairé est vérifiée.
 - La marge et la bonne réponse sont contrôlées.
+
+## Champs communs ajoutés le 12/11 (demande d'Interface)
+
+- `equity.delta_fr` (pour `flop_help`, `range_help` et `nut_help`) : l'écart tel qu'il est écrit dans `essential_fr`, par exemple « −0,7 point » ou « +15,0 points ». Il est calculé sur les valeurs exactes, avant arrondi. Il peut donc différer d'un dixième de la différence entre les deux pourcentages affichés : c'est le chiffre à afficher, pas à recalculer.
+- `equity.caveat_fr` : la phrase de nuance, aussi présente dans `details_fr`. Pour `outs`, c'est « … ne te fait pas toujours passer devant… » ; pour `board_equity`, `flop_help` et `range_help`, « L'équité dit qui est devant… pas qui gagnera l'argent… ». Elle vaut `null` pour `nut_help`.
