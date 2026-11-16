@@ -304,3 +304,28 @@ Le bloc `equity` contient en plus `strong_hero_bp`, `strong_villain_bp`, `delta_
 
 - `equity.delta_fr` (pour `flop_help`, `range_help` et `nut_help`) : l'écart tel qu'il est écrit dans `essential_fr`, par exemple « −0,7 point » ou « +15,0 points ». Il est calculé sur les valeurs exactes, avant arrondi. Il peut donc différer d'un dixième de la différence entre les deux pourcentages affichés : c'est le chiffre à afficher, pas à recalculer.
 - `equity.caveat_fr` : la phrase de nuance, aussi présente dans `details_fr`. Pour `outs`, c'est « … ne te fait pas toujours passer devant… » ; pour `board_equity`, `flop_help` et `range_help`, « L'équité dit qui est devant… pas qui gagnera l'argent… ». Elle vaut `null` pour `nut_help`.
+
+## Niveau 1 sans jargon (retest 12, 16/11/2026)
+
+Au niveau 1, aucun texte des huit sortes ne contient « range », « limp », « outs », « checke » ni « équité ». Cela vaut pour l'énoncé, les réponses, les étiquettes des grilles, le titre, la correction et la nuance. Le test `test_level1_texts_have_no_jargon` le vérifie. Les identifiants des réponses et la notation ne changent pas, et les niveaux 2 et 3 gardent les termes du jeu.
+
+- **Titres** (`kind_fr`, selon le niveau de la question, `equity_quiz.KIND_FR_L1`) :
+
+  | Sorte | Titre au niveau 1 |
+  |---|---|
+  | `hit` | Toucher le flop |
+  | `equity` | Chances de gagner avant le flop |
+  | `labels` | Forces et faiblesses |
+  | `outs` | Cartes qui améliorent ta main |
+  | `board_equity` | Chances de gagner sur le flop |
+  | `flop_help` | Ce flop t'aide-t-il ? |
+  | `range_help` | Tes mains possibles contre les siennes |
+  | `nut_help` | Mains très fortes |
+
+  Le bilan (`by_theme`) et les statistiques (`by_kind`) donnent les deux titres : `label_fr` et `label_l1_fr`.
+- **Pot limpé** : « le SB complète (il paie la blinde sans relancer), et tu ne relances pas au BB ».
+- **Grilles** : « Toi, au BB, sans relancer, à 8 BB » et « Lui, le SB qui complète, à 8 BB ».
+- **Corrections** :
+  - « contre les mains qu'il joue ainsi » au lieu de « contre sa range » ;
+  - « tes mains possibles » et « les siennes » au lieu de « ta range » et « la sienne » ;
+  - « chances de gagner » au lieu d'« équité ».

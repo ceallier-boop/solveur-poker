@@ -27,6 +27,12 @@ DEFAULT_KINDS = ('hit', 'equity', 'labels', 'outs', 'board_equity', 'flop_help',
 BOARD_KINDS = ('outs', 'board_equity', 'flop_help', 'range_help', 'nut_help')                         # sortes avec un tableau : spinsacademy.equity_board, main exacte (« 9s8s »)
 KIND_FR = {'hit': 'Toucher le flop', 'equity': 'Équité contre une range', 'labels': 'Forces et faiblesses', 'outs': 'Tirages et outs', 'board_equity': 'Équité sur le flop', 'flop_help': 'Ce flop t\'aide-t-il ?', 'range_help': 'Range contre range', 'nut_help': 'Mains très fortes'}
 CATEGORY_FR = 'Équités'
+KIND_FR_L1 = {'hit': 'Toucher le flop', 'equity': 'Chances de gagner avant le flop', 'labels': 'Forces et faiblesses', 'outs': 'Cartes qui améliorent ta main',
+              'board_equity': 'Chances de gagner sur le flop', 'flop_help': "Ce flop t'aide-t-il ?", 'range_help': 'Tes mains possibles contre les siennes',
+              'nut_help': 'Mains très fortes'}      # retest 12 (16/11) : titres du niveau 1 sans « équité », « range » ni « outs »
+
+
+def kind_fr(kind, level=2): return KIND_FR_L1[kind] if (level or 2) <= 1 else KIND_FR[kind]
 MARGIN = 1.5                          # points : écart minimal entre la valeur exacte et toute frontière de tranche
 MIN_BP = 50                           # valeur minimale d'un sujet (0,5 %) : un « 0 % » ou presque n'apprend rien
 N_FLOPS = 19600
@@ -364,7 +370,7 @@ def question(spot_id, hand):
     b = _built(spot_id, hand); pre = 'b' if b['kind'] != 'labels' else 'o'
     board = equity_board.HANDLERS[b['kind']]['extra'](b, hand) if b['kind'] in BOARD_KINDS else dict(street=None, board=[], board_display=[], hero_cards=None, villain_cards=None, ranges=[], dead_cards=[])
     return dict(spot_id=spot_id, hand=hand, hand_display=board.pop('hand_display') if 'hand_display' in board else _hd(hand), prompt_fr=prompt(spot_id, hand), mode='equity', family='equity', **board,
-                category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=KIND_FR[b['kind']], topic=b.get('topic') or b.get('mode'), level=b['level'],
+                category_fr=CATEGORY_FR, kind=b['kind'], kind_fr=kind_fr(b['kind'], b['level']), topic=b.get('topic') or b.get('mode'), level=b['level'],
                 answer='band' if pre == 'b' else 'statement', multiple=False,
                 table=None, players=[], stacks_bb=[], hero=None, history=[], history_fr=[], pot_bb=None, to_call_bb=None, difficulty=None,
                 villain=None, profile=None, node_key=None,
@@ -445,18 +451,21 @@ def correct(spot_id, hand, action_id):
         if b['topic'] == 'hasard':
             essential = (f"Contre une main au hasard, {hd} gagne {value_fr} du temps (égalités comptées pour moitié)." if level == 1
                          else f"L'équité de {hd} contre une main au hasard est de {value_fr}.")
-            method = "Calcul : équité exacte avant le flop contre chacune des mains adverses possibles, en tirant les cinq cartes du tableau jusqu'au bout ; une égalité compte pour moitié."
+            method = ("Calcul : chances exactes de gagner avant le flop contre chacune des mains adverses possibles, en tirant les cinq cartes du tableau jusqu'au bout ; une égalité compte pour moitié."
+                      if level == 1 else "Calcul : équité exacte avant le flop contre chacune des mains adverses possibles, en tirant les cinq cartes du tableau jusqu'au bout ; une égalité compte pour moitié.")
         else:
             r = _range(b['topic']); txt = _range_text(b['topic'])
             essential = (f"Quand {txt}, {hd} gagne {value_fr} du temps (égalités comptées pour moitié)." if level == 1
                          else f"L'équité de {hd} contre la range ({txt}, {pct_fr(r['share'], 0)} des mains) est de {value_fr}.")
-            method = ("Calcul : équité exacte avant le flop contre chaque main de cette range, pondérée par sa fréquence dans la banque du solveur ; "
-                      "les mains qui partagent une de tes cartes sont retirées ; une égalité compte pour moitié.")
+            method = (("Calcul : chances exactes de gagner avant le flop contre chacune des mains qu'il joue ainsi, comptée selon sa fréquence ; "
+                       if level == 1 else "Calcul : équité exacte avant le flop contre chaque main de cette range, pondérée par sa fréquence dans la banque du solveur ; ")
+                      + "les mains qui partagent une de tes cartes sont retirées ; une égalité compte pour moitié.")
         extra = dict(value_bp=v, value_fr=value_fr, range_id=None if b['topic'] == 'hasard' else b['topic'])
     else:
         truth = [x for x in b['clarity']]
         essential = f"La bonne réponse : « {b['options'][c]} »."
-        method = "Les affirmations viennent de règles chiffrées, appliquées aux chances de toucher au flop et à l'équité de la main."
+        method = ("Les affirmations viennent de règles chiffrées, appliquées aux chances de toucher au flop et aux chances de gagner de la main." if level == 1
+                  else "Les affirmations viennent de règles chiffrées, appliquées aux chances de toucher au flop et à l'équité de la main.")
         extra = dict(statements=[dict(id=ids[i], label_fr=b['options'][i], label_id=b['ids'][i], true=bool(truth[i]),
                                       why_fr=_why_statement(b['ids'][i], hand, truth[i])) for i in range(4)])
     lines = [essential, method]
@@ -473,6 +482,10 @@ def correct(spot_id, hand, action_id):
     if forces: sw.append('Forces : ' + ' ; '.join(forces) + '.')
     if faiblesses: sw.append('Faiblesses : ' + ' ; '.join(faiblesses) + '.')
     core = lines + sw
+    if level == 1:                                       # retest 12 : au niveau 1, « chances de gagner » plutôt qu'« équité » (même règle que quiz.simplify)
+        from .quiz import _plain_equity
+        core = [_plain_equity(x) for x in core]; essential = _plain_equity(essential); method = _plain_equity(method)
+        if 'statements' in extra: extra['statements'] = [dict(x, why_fr=_plain_equity(x['why_fr'])) for x in extra['statements']]
     return dict(verdict=verdict, points=grading.POINTS[verdict], regret_mbb=0.0, best_action=ids[c], best_label=b['options'][c],
                 top_action=ids[c], chosen_action=action_id, chosen_label=b['options'][j], gto_action=None, gto_label=None,
                 good_actions=[], good_labels=[], strategy=[], loss_fr=None, ev_source='table', exploit=None, avis=None, solver_regret_mbb=None,
@@ -495,7 +508,7 @@ def summary(answers):
     errors.sort(key=lambda e: e['verdict'] != 'erreur')
     return dict(questions=n, points=pts, score_pct=round(100 * pts / n, 1) if n else 0.0, bb_lost=None, ev_questions=0, bb_per_100=None,
                 timeouts=sum(1 for *_, r in answers if r.get('timed_out')), verdicts={v: sum(1 for *_, r in answers if r['verdict'] == v) for v in grading.POINTS},
-                by_theme=[dict(family='equity', kind=k, label_fr=KIND_FR[k], hero=None, questions=c, points=s) for k, (c, s) in sorted(by.items())],
+                by_theme=[dict(family='equity', kind=k, label_fr=KIND_FR[k], label_l1_fr=KIND_FR_L1[k], hero=None, questions=c, points=s) for k, (c, s) in sorted(by.items())],
                 errors=errors, review=[e['prompt_fr'] for e in errors[:3]], category_fr=CATEGORY_FR)
 
 
@@ -510,5 +523,5 @@ def stats(rows):
     n = len(rows); pts = sum(r['points'] for r in rows)
     return dict(questions=n, sessions=len({r['session_id'] for r in rows}), points=round(pts, 1), score_pct=round(100 * pts / n, 1),
                 verdicts={v: sum(1 for r in rows if r['verdict'] == v) for v in grading.POINTS},
-                by_kind=[dict(kind=k, label_fr=KIND_FR[k], questions=c, score_pct=round(100 * s / c, 1)) for k, (c, s) in sorted(by.items())],
+                by_kind=[dict(kind=k, label_fr=KIND_FR[k], label_l1_fr=KIND_FR_L1[k], questions=c, score_pct=round(100 * s / c, 1)) for k, (c, s) in sorted(by.items())],
                 category_fr=CATEGORY_FR)

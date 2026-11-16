@@ -29,6 +29,10 @@ WHY_FR = ['', 'fait une paire', 'fait une double paire', 'fait un brelan', 'fait
 TOPICS = ('nombre', 'turn', 'river')
 CAVEAT_OUTS = "Attention : une carte qui t'améliore ne te fait pas toujours passer devant (elle peut aussi donner une suite ou une couleur à l'adversaire)."
 CAVEAT_MONEY = "L'équité dit qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent : la position et les mises à venir comptent aussi."
+CAVEAT_MONEY_L1 = "Tes chances de gagner disent qui est devant si toutes les cartes sont retournées, pas qui gagnera l'argent : ta place à la table et les mises à venir comptent aussi."
+# niveau 1 (retest 12 du 16/11) : ni « range », ni « limp », ni « outs », ni « checke », ni « équité » dans les textes du niveau 1
+LIMP_L1 = "complète (il paie la blinde sans relancer)"
+CHECK_L1 = "ne relance pas"
 TOPICS_L1 = ('nombre', 'turn')
 N_TURN = 47
 N_RUNOUTS = 1081                       # C(47, 2)
@@ -379,17 +383,18 @@ def eq_correction(b, hand_s):
     hand, board = b['hand'], b['board']; hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in board); v = b['value']
     a, c = sorted(hand, reverse=True); cls = RANKS[a >> 2] + RANKS[c >> 2] + ('' if a >> 2 == c >> 2 else 's' if a % 4 == c % 4 else 'o')
     pre = equities.equity_random(cls) if b['topic'] == 'hasard' else equities.equity_vs_range(cls, b['topic'])
-    who = "une main au hasard" if b['topic'] == 'hasard' else f"la range de tapis du SB à {b['topic'][2:-9]} BB"
-    essential = f"Sur {bd}, {hd} a {E.pct_fr(v)} d'équité contre {who}."
-    method = ("Calcul : les 1 081 turns et rivers possibles, contre chaque main adverse" + ("" if b['topic'] == 'hasard' else " de la range, pondérée par sa fréquence dans la banque du solveur")
+    l1 = b['level'] == 1
+    who = "une main au hasard" if b['topic'] == 'hasard' else (f"les mains avec lesquelles le SB part à tapis à {b['topic'][2:-9]} BB" if l1 else f"la range de tapis du SB à {b['topic'][2:-9]} BB")
+    essential = f"Sur {bd}, {hd} a {E.pct_fr(v)} {'de chances de gagner' if l1 else 'd’équité'} contre {who}."
+    method = ("Calcul : les 1 081 turns et rivers possibles, contre chaque main adverse" + ("" if b['topic'] == 'hasard' else (" possible, comptée selon la fréquence à laquelle il la joue ainsi" if l1 else " de la range, pondérée par sa fréquence dans la banque du solveur"))
               + " ; les cartes déjà vues (ta main, le flop) sont retirées ; une égalité compte pour moitié.")
     d = (v - pre) / 100
     move = ("le flop t'aide nettement" if d >= 3 else "le flop te dessert nettement" if d <= -3 else "le flop change peu de chose")
     now = situation_fr(hand, board); o = outs(hand, board)
     lines = [f"Avant le flop : {E.pct_fr(pre)} ({cls}, toutes couleurs confondues) ; au flop : {E.pct_fr(v)} : {move} ({'+' if d >= 0 else '−'}{str(round(abs(d), 1)).replace('.', ',')} points).",
              f"Ta main pour l'instant : {now} ; {_plural(len(o))} l'améliorent au turn.",
-             CAVEAT_MONEY]
-    extra = dict(caveat_fr=CAVEAT_MONEY, value_bp=v, value_fr=E.pct_fr(v), board=[name(x) for x in board], street='flop', range_id=None if b['topic'] == 'hasard' else b['topic'],
+             CAVEAT_MONEY_L1 if l1 else CAVEAT_MONEY]
+    extra = dict(caveat_fr=CAVEAT_MONEY_L1 if l1 else CAVEAT_MONEY, value_bp=v, value_fr=E.pct_fr(v), board=[name(x) for x in board], street='flop', range_id=None if b['topic'] == 'hasard' else b['topic'],
                  by_street=[dict(street='preflop', value_bp=pre), dict(street='flop', value_bp=v)], hand_category_fr=now, outs_count=len(o))
     return essential, method, lines, extra
 
@@ -496,24 +501,35 @@ def help_draw_one(level, rnd, avoid=frozenset(), topic=None):
     return fallback
 
 
-def _help_context(sc):
+def _help_context(sc, level=2):
     n, hero, _, _ = scenario(sc)
+    if level == 1:
+        return (f"Heads-up à {n} BB : le SB {LIMP_L1}, et tu ne relances pas au BB" if hero == 'BB'
+                else f"Heads-up à {n} BB : au SB, tu complètes (tu paies la blinde sans relancer), et le BB {CHECK_L1}")
     return (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+
+
+def _labels_pair(sc, level):
+    """(étiquette des mains du héros, de l'adversaire) pour les grilles"""
+    n, hero, _, _ = scenario(sc)
+    if level == 1:
+        return ((f"Toi, au BB, sans relancer, à {n} BB", f"Lui, le SB qui complète, à {n} BB") if hero == 'BB'
+                else (f"Toi, au SB, qui complètes, à {n} BB", f"Lui, le BB qui ne relance pas, à {n} BB"))
+    return ((f"Toi, BB qui checke à {n} BB", f"SB qui complète (limp) à {n} BB") if hero == 'BB'
+            else (f"Toi, SB qui complète (limp) à {n} BB", f"BB qui checke à {n} BB"))
 
 
 def help_prompt(q, hand_s):
     hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in q['board'])
     if q['level'] == 1:
-        return f"{_help_context(q['topic'])}, avec {hd}. Le flop est {bd}. Par rapport à avant le flop, tes chances de gagner contre ses mains possibles…"
+        return f"{_help_context(q['topic'], 1)}, avec {hd}. Le flop est {bd}. Par rapport à avant le flop, tes chances de gagner contre les mains qu'il joue ainsi…"
     return f"{_help_context(q['topic'])}, avec {hd}. Le flop est {bd}. Par rapport à avant le flop, ton équité contre sa range…"
 
 
 def help_question_extra(q, hand_s):
     from .cards import NAMES
     n, hero, _, opp = scenario(q['topic'])
-    who = 'SB, complète (limp)' if hero == 'BB' else 'BB, checke après le limp'
-    pct = round(100 * sum(w * (6 if len(h) == 2 else 4 if h[2] == 's' else 12) for h, w in zip(NAMES, opp)) / 1326, 1)
-    rng = dict(who='villain', label_fr=f"{who} à {n} BB ({round(pct)} %)", pct=pct, hands={h: x for h, x in zip(NAMES, opp) if x > 0})
+    rng = _range_entry('villain', _labels_pair(q['topic'], q['level'])[1], opp)
     return dict(street='flop', board=[name(c) for c in q['board']], board_display=[disp(c) for c in q['board']], hero_cards=[hand_s[:2], hand_s[2:]],
                 hand_display=hand_display(hand_s), villain_cards=None, ranges=[rng], dead_cards=[])
 
@@ -522,14 +538,20 @@ def help_correction(b, hand_s):
     from . import equity_quiz as E
     hand, board = b['hand'], b['board']; hd = hand_display(hand_s); bd = ' '.join(disp(c) for c in board)
     pre, v = b['pre'], b['value']; d = (v - pre) / 100; o = outs(hand, board)
-    verdict = ("le flop t'aide plus que sa range" if d > 0 else "le flop aide plus sa range que ta main") if b['correct'] != 1 else "le flop ne change presque rien au rapport de force"
-    essential = f"Contre sa range, {hd} passe de {E.pct_fr(pre)} avant le flop à {E.pct_fr(v)} sur {bd} ({_pts(d)}) : {verdict}."
-    method = ("Calcul : avant le flop, équité exacte de ta main (toutes couleurs confondues) contre chaque main de sa range ; au flop, les 1 081 turns et "
-              "rivers possibles contre chaque main de sa range encore possible, pondérée par sa fréquence dans la banque du solveur ; égalité pour moitié.")
-    lines = [f"Ta main pour l'instant : {situation_fr(hand, board)} ; {_plural(len(o))} l'améliorent au turn.",
-             "Une équité qui monte veut dire que ce flop touche plus souvent ta main que les mains qu'il peut avoir ; qui baisse, l'inverse.",
-             CAVEAT_MONEY]
-    extra = dict(caveat_fr=CAVEAT_MONEY, delta_fr=_pts(d), value_bp=v, value_fr=E.pct_fr(v), preflop_bp=pre, delta_bp=v - pre, board=[name(x) for x in board], street='flop', scenario=b['topic'],
+    if b['level'] == 1:
+        verdict = ("le flop t'aide plus que lui" if d > 0 else "le flop l'aide plus que toi") if b['correct'] != 1 else "le flop ne change presque rien au rapport de force"
+        essential = f"Contre les mains qu'il joue ainsi, {hd} passe de {E.pct_fr(pre)} de chances de gagner avant le flop à {E.pct_fr(v)} sur {bd} ({_pts(d)}) : {verdict}."
+        method = ("Calcul : avant le flop, tes chances exactes (toutes couleurs confondues) contre chaque main qu'il joue dans cette situation ; au flop, les 1 081 turns et "
+                  "rivers possibles contre chacune de ces mains encore possible, comptée selon sa fréquence ; égalité pour moitié.")
+        why, caveat = "Des chances qui montent veulent dire que ce flop touche plus souvent ta main que les siennes ; qui baissent, l'inverse.", CAVEAT_MONEY_L1
+    else:
+        verdict = ("le flop t'aide plus que sa range" if d > 0 else "le flop aide plus sa range que ta main") if b['correct'] != 1 else "le flop ne change presque rien au rapport de force"
+        essential = f"Contre sa range, {hd} passe de {E.pct_fr(pre)} avant le flop à {E.pct_fr(v)} sur {bd} ({_pts(d)}) : {verdict}."
+        method = ("Calcul : avant le flop, équité exacte de ta main (toutes couleurs confondues) contre chaque main de sa range ; au flop, les 1 081 turns et "
+                  "rivers possibles contre chaque main de sa range encore possible, pondérée par sa fréquence dans la banque du solveur ; égalité pour moitié.")
+        why, caveat = "Une équité qui monte veut dire que ce flop touche plus souvent ta main que les mains qu'il peut avoir ; qui baisse, l'inverse.", CAVEAT_MONEY
+    lines = [f"Ta main pour l'instant : {situation_fr(hand, board)} ; {_plural(len(o))} l'améliorent au turn.", why, caveat]
+    extra = dict(caveat_fr=caveat, delta_fr=_pts(d), value_bp=v, value_fr=E.pct_fr(v), preflop_bp=pre, delta_bp=v - pre, board=[name(x) for x in board], street='flop', scenario=b['topic'],
                  by_street=[dict(street='preflop', value_bp=pre), dict(street='flop', value_bp=v)], hand_category_fr=situation_fr(hand, board), outs_count=len(o))
     return essential, method, lines, extra
 
@@ -658,14 +680,14 @@ def _range_entry(who, label, w):
 
 def range_prompt(q, hand_s):
     n, hero, _, _ = scenario(q['topic']); bd = ' '.join(disp(c) for c in q['board'])
-    ctx = (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+    ctx = _help_context(q['topic'], q['level'])
     if q['level'] == 1: return f"{ctx}. Le flop est {bd}. Ce flop aide-t-il plus l'ensemble de tes mains possibles, ou l'ensemble des siennes ?"
     return f"{ctx}. Le flop est {bd}. Ce flop aide-t-il plus ta range ou la sienne ?"
 
 
 def range_question_extra(q, hand_s):
     n, hero, mine, opp = scenario(q['topic'])
-    me_lab, op_lab = (f"Toi, BB qui checke à {n} BB", f"SB qui complète (limp) à {n} BB") if hero == 'BB' else (f"Toi, SB qui complète (limp) à {n} BB", f"BB qui checke à {n} BB")
+    me_lab, op_lab = _labels_pair(q['topic'], q['level'])
     return dict(street='flop', board=[name(c) for c in q['board']], board_display=[disp(c) for c in q['board']], hero_cards=None, hand_display=None,
                 villain_cards=None, ranges=[_range_entry('hero', me_lab, mine), _range_entry('villain', op_lab, opp)], dead_cards=[])
 
@@ -676,16 +698,29 @@ def _pts(d): return f"{'+' if d >= 0 else '−'}{str(round(abs(d), 1)).replace('
 def range_correction(b, hand_s):
     from . import equity_quiz as E
     v = b['values']; bd = ' '.join(disp(c) for c in b['board']); d = (v['flop'] - v['pre']) / 100
-    verdict = {0: "ce flop aide plus ta range", 1: "ce flop ne change presque rien au rapport de force", 2: "ce flop aide plus sa range"}[b['correct']]
-    essential = f"Sur {bd}, l'équité de ta range passe de {E.pct_fr(v['pre'])} avant le flop à {E.pct_fr(v['flop'])} ({_pts(d)}) : {verdict}."
-    method = ("Calcul : chaque main de ta range contre chaque main de la sienne, pondérées par leur fréquence dans la banque du solveur, sans carte commune ; "
-              "avant le flop avec les équités exactes préflop, au flop sur les 1 081 turns et rivers possibles ; égalité pour moitié.")
-    lines = [f"Sa range : {E.pct_fr(10000 - v['pre'])} avant le flop, {E.pct_fr(10000 - v['flop'])} au flop.",
-             f"Mains très fortes sur ce flop (double paire ou mieux avec ses propres cartes ; brelan ou mieux si le flop est pairé) : ta range {E.pct_fr(v['strong_hero'])}, la sienne {E.pct_fr(v['strong_villain'])} (pour information, non noté).",
-             f"Règle : « ma range » ou « la sienne » à partir de {str(RANGE_STEP + RANGE_MARGIN).replace('.0', '')} points d'écart, « à peu près pareil » sous {str(RANGE_STEP - RANGE_MARGIN).replace('.0', '')} point.",
-             "Une range profite d'un flop quand ses mains fréquentes touchent ce tableau (hauteurs, couleurs, suites) plus souvent que celles de l'autre.",
-             CAVEAT_MONEY]
-    extra = dict(caveat_fr=CAVEAT_MONEY, delta_fr=_pts(d), value_bp=v['flop'], value_fr=E.pct_fr(v['flop']), preflop_bp=v['pre'], delta_bp=v['flop'] - v['pre'], villain_preflop_bp=10000 - v['pre'],
+    hi, lo = str(RANGE_STEP + RANGE_MARGIN).replace('.0', ''), str(RANGE_STEP - RANGE_MARGIN).replace('.0', '')
+    if b['level'] == 1:
+        verdict = {0: "ce flop aide plus tes mains possibles", 1: "ce flop ne change presque rien au rapport de force", 2: "ce flop aide plus ses mains possibles"}[b['correct']]
+        essential = f"Sur {bd}, les chances de gagner de l'ensemble de tes mains possibles passent de {E.pct_fr(v['pre'])} avant le flop à {E.pct_fr(v['flop'])} ({_pts(d)}) : {verdict}."
+        method = ("Calcul : chacune de tes mains possibles contre chacune des siennes, comptées selon la fréquence à laquelle vous les jouez ainsi, sans carte commune ; "
+                  "avant le flop avec les chances exactes de chaque main, au flop sur les 1 081 turns et rivers possibles ; égalité pour moitié.")
+        lines = [f"Ses mains possibles : {E.pct_fr(10000 - v['pre'])} avant le flop, {E.pct_fr(10000 - v['flop'])} au flop.",
+                 f"Mains très fortes sur ce flop (double paire ou mieux avec ses propres cartes ; brelan ou mieux si le flop est pairé) : tes mains possibles {E.pct_fr(v['strong_hero'])}, les siennes {E.pct_fr(v['strong_villain'])} (pour information, non noté).",
+                 f"Règle : « mes mains possibles » ou « ses mains possibles » à partir de {hi} points d'écart, « à peu près pareil » sous {lo} point.",
+                 "Un ensemble de mains profite d'un flop quand ses mains fréquentes touchent ce tableau (hauteurs, couleurs, suites) plus souvent que celles de l'autre."]
+        caveat = CAVEAT_MONEY_L1
+    else:
+        verdict = {0: "ce flop aide plus ta range", 1: "ce flop ne change presque rien au rapport de force", 2: "ce flop aide plus sa range"}[b['correct']]
+        essential = f"Sur {bd}, l'équité de ta range passe de {E.pct_fr(v['pre'])} avant le flop à {E.pct_fr(v['flop'])} ({_pts(d)}) : {verdict}."
+        method = ("Calcul : chaque main de ta range contre chaque main de la sienne, pondérées par leur fréquence dans la banque du solveur, sans carte commune ; "
+                  "avant le flop avec les équités exactes préflop, au flop sur les 1 081 turns et rivers possibles ; égalité pour moitié.")
+        lines = [f"Sa range : {E.pct_fr(10000 - v['pre'])} avant le flop, {E.pct_fr(10000 - v['flop'])} au flop.",
+                 f"Mains très fortes sur ce flop (double paire ou mieux avec ses propres cartes ; brelan ou mieux si le flop est pairé) : ta range {E.pct_fr(v['strong_hero'])}, la sienne {E.pct_fr(v['strong_villain'])} (pour information, non noté).",
+                 f"Règle : « ma range » ou « la sienne » à partir de {hi} points d'écart, « à peu près pareil » sous {lo} point.",
+                 "Une range profite d'un flop quand ses mains fréquentes touchent ce tableau (hauteurs, couleurs, suites) plus souvent que celles de l'autre."]
+        caveat = CAVEAT_MONEY
+    lines.append(caveat)
+    extra = dict(caveat_fr=caveat, delta_fr=_pts(d), value_bp=v['flop'], value_fr=E.pct_fr(v['flop']), preflop_bp=v['pre'], delta_bp=v['flop'] - v['pre'], villain_preflop_bp=10000 - v['pre'],
                  villain_flop_bp=10000 - v['flop'], strong_hero_bp=v['strong_hero'], strong_villain_bp=v['strong_villain'], board=[name(x) for x in b['board']],
                  street='flop', scenario=b['topic'], by_street=[dict(street='preflop', value_bp=v['pre']), dict(street='flop', value_bp=v['flop'])],
                  thresholds=dict(step=RANGE_STEP, margin=RANGE_MARGIN))
@@ -753,18 +788,21 @@ def nut_draw_one(level, rnd, avoid=frozenset(), topic=None):
 
 def nut_prompt(q, hand_s):
     n, hero, _, _ = scenario(q['topic']); bd = ' '.join(disp(c) for c in q['board'])
-    ctx = (f"Heads-up à {n} BB : le SB complète (limp), tu checkes au BB" if hero == 'BB' else f"Heads-up à {n} BB : tu complètes au SB (limp), le BB checke")
+    ctx = _help_context(q['topic'], q['level'])
     if q['level'] == 1: return f"{ctx}. Le flop est {bd}. Parmi toutes vos mains possibles, qui a le plus de mains très fortes sur ce flop ?"
     return f"{ctx}. Le flop est {bd}. Qui a le plus de mains très fortes sur ce flop ?"
 
 
-def _premium_line(sc):
+def _premium_line(sc, level=2):
     """part des paires AA, KK, QQ que chaque range garde (lue dans la banque) : une range qui les relance avant le flop en a moins ici"""
     from .cards import NAMES
     _, hero, mine, opp = scenario(sc)
     share = lambda w: round(100 * sum(w[NAMES.index(h)] for h in ('AA', 'KK', 'QQ')) / 3)
     a, b = share(mine), share(opp)
     rest = " (les autres ont été relancées ou mises à tapis)" if min(a, b) < 100 else ""
+    if level == 1:
+        return (f"Avant le flop, tu gardes {a} % de tes AA, KK et QQ dans cette situation, lui {b} %{rest} : "
+                "celui qui garde ses meilleures paires a plus de mains très fortes sur les flops.")
     return (f"Avant le flop, ta range garde {a} % de ses AA, KK et QQ, la sienne {b} %{rest} : "
             "une range qui garde ses meilleures paires a plus de mains très fortes sur les flops.")
 
@@ -772,13 +810,23 @@ def _premium_line(sc):
 def nut_correction(b, hand_s):
     from . import equity_quiz as E
     h, v = b['value'], b['villain']; d = (h - v) / 100; bd = ' '.join(disp(c) for c in b['board'])
-    verdict = {0: "ta range a plus de mains très fortes", 1: "les deux ranges en ont à peu près autant", 2: "sa range a plus de mains très fortes"}[b['correct']]
-    essential = f"Sur {bd}, {E.pct_fr(h)} de ta range a une main très forte, contre {E.pct_fr(v)} de la sienne ({_pts(d)}) : {verdict}."
-    method = ("Calcul : chaque main de chaque range, pondérée par sa fréquence dans la banque du solveur (sans les cartes du flop) ; main très forte = au moins "
-              "deux catégories au-dessus du tableau seul : double paire, brelan ou mieux sur un flop sans paire, brelan ou mieux sur un flop pairé.")
-    lines = [f"Règle : « ma range » ou « la sienne » à partir de {str(NUT_STEP + NUT_MARGIN).replace('.0', '')} points d'écart, « à peu près autant » sous {str(NUT_STEP - NUT_MARGIN).replace('.0', '')} point.",
-             "Les mains très fortes sont celles qui peuvent miser gros sans crainte : la range qui en a le plus peut mettre plus de pression sur ce flop.",
-             _premium_line(b['topic'])]
+    hi, lo = str(NUT_STEP + NUT_MARGIN).replace('.0', ''), str(NUT_STEP - NUT_MARGIN).replace('.0', '')
+    strong = ("main très forte = au moins deux catégories au-dessus du tableau seul : double paire, brelan ou mieux sur un flop sans paire, "
+              "brelan ou mieux sur un flop pairé.")
+    if b['level'] == 1:
+        verdict = {0: "tu as plus de mains très fortes", 1: "vous en avez à peu près autant", 2: "il a plus de mains très fortes"}[b['correct']]
+        essential = f"Sur {bd}, {E.pct_fr(h)} de tes mains possibles sont très fortes, contre {E.pct_fr(v)} des siennes ({_pts(d)}) : {verdict}."
+        method = "Calcul : chacune de vos mains possibles, comptée selon la fréquence à laquelle vous la jouez ainsi (sans les cartes du flop) ; " + strong
+        lines = [f"Règle : « moi » ou « lui » à partir de {hi} points d'écart, « à peu près autant » sous {lo} point.",
+                 "Les mains très fortes peuvent miser gros sans crainte : celui qui en a le plus peut mettre plus de pression sur ce flop.",
+                 _premium_line(b['topic'], 1)]
+    else:
+        verdict = {0: "ta range a plus de mains très fortes", 1: "les deux ranges en ont à peu près autant", 2: "sa range a plus de mains très fortes"}[b['correct']]
+        essential = f"Sur {bd}, {E.pct_fr(h)} de ta range a une main très forte, contre {E.pct_fr(v)} de la sienne ({_pts(d)}) : {verdict}."
+        method = "Calcul : chaque main de chaque range, pondérée par sa fréquence dans la banque du solveur (sans les cartes du flop) ; " + strong
+        lines = [f"Règle : « ma range » ou « la sienne » à partir de {hi} points d'écart, « à peu près autant » sous {lo} point.",
+                 "Les mains très fortes sont celles qui peuvent miser gros sans crainte : la range qui en a le plus peut mettre plus de pression sur ce flop.",
+                 _premium_line(b['topic'])]
     extra = dict(caveat_fr=None, delta_fr=_pts(d), value_bp=h, value_fr=E.pct_fr(h), strong_hero_bp=h, strong_villain_bp=v, delta_bp=h - v, board=[name(x) for x in b['board']], street='flop',
                  scenario=b['topic'], thresholds=dict(step=NUT_STEP, margin=NUT_MARGIN, strong_gain=STRONG_GAIN))
     return essential, method, lines, extra
