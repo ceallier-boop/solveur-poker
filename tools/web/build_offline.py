@@ -294,14 +294,18 @@ const DEMO = (() => {
       return db && uid ? { db, uid } : null;
     })();
     const x = await dbp;
-    if (!x) return [503, { detail: 'Signalement indisponible ici : ouvre la démo connecté à claude.ai, avec un accès qui permet de contribuer.' }];
     const rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const rec = { created_at: now(), mode: s.mode, spot_id: it.q.spot_id, hand: it.q.hand, action_id: ans.action_id, chosen: ans.chosen_label, reference: ans.best_label,
+      verdict: ans.verdict, reason: body.reason, comment: (body.comment || '').slice(0, 1000), prompt: it.q.prompt_fr, dataset: DATASETS[s.mode] };
+    const keepLocal = () => { const m = load(); (m.reports = m.reports || []).push(Object.assign({ id: rid }, rec)); (s.reported = s.reported || {})[k] = true; save();       // hors claude.ai : gardé ici, à copier depuis la note de la page
+      return [201, { report_id: rid, status: 'local' }]; };
+    if (!x) return keepLocal();
     try {
       await x.db.doc(`reports/${x.uid}/items/${rid}`).set({ created_at: now(), mode: s.mode, spot_id: it.q.spot_id, hand: it.q.hand,
         action_id: ans.action_id, chosen: ans.chosen_label, reference: ans.best_label, verdict: ans.verdict, reason: body.reason,
         comment: (body.comment || '').slice(0, 1000), prompt: it.q.prompt_fr, dataset: DATASETS[s.mode], status: 'open' });
     } catch (e) {
-      return [503, { detail: e && e.code === 'permission_denied' ? "Ton accès à cette page ne permet pas d'envoyer de signalement : demande un accès « contributeur »." : "Le signalement n'a pas pu être envoyé, réessaie." }];
+      return keepLocal();
     }
     (s.reported = s.reported || {})[k] = true; save();
     return [201, { report_id: rid, status: 'open' }];
@@ -815,6 +819,19 @@ const DEMO = (() => {
   };
   // la page hébergée n'affiche pas les boîtes de dialogue du navigateur : message dans l'écran (filet de sécurité)
   window.alert = (msg) => { const t = document.getElementById('demo-toast'); t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 5000); };
+  // note de la page : « Copier mes signalements » (hors claude.ai, les signalements restent sur l'appareil)
+  ready.then(() => {
+    const b = document.getElementById('demo-copy-reports'); if (!b) return;
+    if (window.claude && window.claude.use) { b.hidden = true; return; }
+    b.addEventListener('click', async () => {
+      const r = load().reports || []; const t = document.getElementById('demo-toast');
+      const say = (m) => { t.textContent = m; t.hidden = false; setTimeout(() => { t.hidden = true; }, 5000); };
+      if (!r.length) { say('Aucun signalement à copier pour le moment.'); return; }
+      const txt = JSON.stringify(r, null, 1);
+      try { await navigator.clipboard.writeText(txt); say(`${r.length} signalement${r.length > 1 ? 's' : ''} copié${r.length > 1 ? 's' : ''} : colle-les dans ton message.`); }
+      catch (e) { say('Copie impossible ici : ouvre la page dans un navigateur ordinaire.'); }
+    });
+  });
   return { ready };
 })();
 """
@@ -840,7 +857,8 @@ def build(out, k_gto, exploit_max=2500):
     body = re.sub(r'<script[^>]*></script>', '', body)
     gto, fld = (quiz.load(r)[0]['version'] for r in (quiz.DEFAULT_VERSION, quiz.DEFAULT_FIELD))
     note = (f'<p class="demo-note">Version de démonstration : {len(data)} questions : datasets {gto} (GTO) et {fld} (exploitant). '
-            'Ta progression reste dans ce navigateur ; tes signalements sont transmis au porteur du projet. Adaptation et administration sont réservées à l\'application complète.</p>')
+            'Ta progression reste dans ce navigateur. Tes signalements sont transmis au porteur du projet quand la page est ouverte sur claude.ai ; ouverte à part, ils restent sur cet appareil : '
+            '<button id="demo-copy-reports" type="button" class="secondary">Copier mes signalements</button>, puis envoie-les au porteur. Adaptation et administration sont réservées à l\'application complète.</p>')
     home = re.search(r'<section id="screen-home"[^>]*>', body).group(0)       # la note de la démo ouvre l'onglet central (I9 a ajouté des attributs)
     body = body.replace(home, home + '\n      ' + note, 1)
     for hide in ('id="st-delete"',):                               # pas d'effacement sans confirmation possible
