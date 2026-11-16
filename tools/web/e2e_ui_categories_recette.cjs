@@ -135,8 +135,11 @@ const tab = (p, t) => openTab(p, t).then(() => p.waitForTimeout(300));   // ongl
   await p.waitForSelector('#screen-summary:not([hidden])', { timeout: 15000 });
   const sum = await p.innerText('#screen-summary');
   const missing = expect.filter((x) => x.verdict !== 'correct' && x.tr.kind === 'band' && !showsValue(sum, x.tr.v));
-  const boardKinds = [...new Set(expect.map((x) => x.q.kind).filter((k) => ['outs', 'board_equity', 'flop_help'].includes(k)))];
-  ok(`équités : verdicts conformes à la table brute et à l'évaluateur indépendant (sortes avec tableau : ${boardKinds.join(', ')})`, !eqErr.length && boardKinds.length >= 1, eqErr);   // 12/11 : huit sortes, 5 par série (dont 2 à ranges hors évaluateur) : parfois une seule sorte avec tableau ; chacune a aussi son e2e
+  // huit sortes, 5 par série : au plus 3 sortes sans tableau (hit, equity, labels), donc toujours au moins 2 sortes avec tableau parmi les 5 ;
+  // outs, board_equity, flop_help sont recalculées par l'évaluateur, range_help et nut_help jouées (leurs propres e2e) ; un tirage sans
+  // aucune des trois premières est possible (échec aléatoire du 16/11 avec l'ancien seuil) : on exige les 2 sortes avec tableau, pas lesquelles
+  const boardKinds = [...new Set(expect.map((x) => x.q.kind).filter((k) => ['outs', 'board_equity', 'flop_help', 'range_help', 'nut_help'].includes(k)))];
+  ok(`équités : verdicts conformes à la table brute et à l'évaluateur indépendant (sortes avec tableau : ${boardKinds.join(', ')})`, !eqErr.length && boardKinds.length >= 2, eqErr);
   ok('équités : question sans table, sans chrono, sans rejouée, étiquette « Équités », jamais de BB', !uiErr.length, uiErr);
   ok('équités : le bilan donne la valeur exacte de chaque erreur, sans BB ni révision', !missing.length && !/BB perdu/i.test(sum) && !/révision/i.test(sum) && (await p.textContent('#s-cat')) === 'Équités', { manquent: missing.map((x) => pctFr(x.tr.v)), bilan: sum.slice(0, 400) });
   await p.screenshot({ path: `${OUT}/ui_equity_summary.png`, fullPage: true });
