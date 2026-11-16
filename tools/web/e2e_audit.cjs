@@ -56,7 +56,8 @@ const pressed = (p) => p.getAttribute('.mode-switch [data-value="exploit"]', 'ar
   ok('AU2 bilan : un seul chiffre BB, son périmètre dit', !/pour 100 décisions/.test(sum) && (/t'a coûté .* BB par rapport aux meilleurs coups \(ses \d+ décisions\)/.test(sum) || /Aucun BB perdu/.test(sum)), sum);
   await p.click('#back-home'); await p.waitForTimeout(1200); await p.click('#stats-btn'); await p.waitForSelector('#screen-stats:not([hidden])'); await p.waitForTimeout(1500);
   const st = await p.innerText('#screen-stats');
-  ok('AU2 progression : périmètre de la tuile BB', /sur toutes tes décisions \(\d+\), GTO et Exploitant/.test(st), st.slice(0, 300));
+  ok('AU2 progression : périmètre de la tuile BB (sous 30 décisions : pas de chiffre, retest 12)', /sur toutes tes décisions \(\d+\), GTO et Exploitant/.test(st)
+    || /pas assez de décisions pour mesurer \(\d+ sur 30\)/.test(st), st.slice(0, 300));
   ok('AU2 progression : pas de second chiffre BB (niveau, thèmes)', !/BB\/100/.test(st) && /pour 100 décisions à moins de 10 BB/.test(await p.innerText('#st-level')), await p.innerText('#st-level'));
   ok('AU6 : courbe dès la première série', (await p.$$('#st-evolution i')).length === 1);
   const foc = await p.innerText('#st-focus');
