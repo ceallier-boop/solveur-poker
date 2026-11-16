@@ -84,7 +84,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   ok('carte Équités : score et questions', /^\d+ % des points · \d+ questions?$/.test(await p.textContent('#cat-equites-meter')), await p.textContent('#cat-equites-meter'));
   await p.openTab('prog'); await p.waitForSelector('#st-cats:not([hidden])', { timeout: 10000 });
   const row = await p.innerText('#st-cats-list li[data-cat="equites"]');
-  ok('Progression : Équités avec le détail par sorte', /Équités/.test(row) && /(Toucher le flop|Équité contre une range|Forces et faiblesses)/.test(row) && /\d+ %/.test(row), row);
+  ok('Progression : Équités avec le détail par sorte', /Équités/.test(row) && /(Toucher le flop|Équité contre une range|Forces et faiblesses|Chances de gagner|Cartes qui améliorent|Tes mains possibles|Mains très fortes|Équité sur le flop|Tirages et outs|Range contre range|Ce flop)/.test(row) && /\d+ %/.test(row), row);
   const gtoRow = await p.innerText('#st-cats-list li[data-cat="gto"]');
   ok('Progression : les équités ne comptent pas en Préflop GTO', /Pas encore commencé/.test(gtoRow), gtoRow);
   ok('aucune erreur JavaScript', !errs.length, errs);

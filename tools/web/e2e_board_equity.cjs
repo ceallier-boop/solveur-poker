@@ -28,7 +28,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     });
     if (q.range && !withRange) { withRange = q; await p.screenshot({ path: `${OUT}/board_equity_question.png` }); }
     if (!q.range && !plain) plain = q;
-    if (i === 0) ok('question : le flop au-dessus de ta main, réponses en tranches', q.kind === 'Équité sur le flop' && q.flop === 3 && q.hand === 2 && q.bands, q);
+    if (i === 0) ok('question : le flop au-dessus de ta main, réponses en tranches', /^(Équité sur le flop|Chances de gagner sur le flop)$/.test(q.kind) && q.flop === 3 && q.hand === 2 && q.bands, q);
     await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');
     if (i === 0) {
       const a = await p.evaluate(() => ({ rows: [...document.querySelectorAll('#a-equity .st-row')].map((r) => r.innerText.replace(/\s+/g, ' ')),

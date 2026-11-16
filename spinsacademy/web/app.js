@@ -70,6 +70,7 @@ function show(name) {
   $('loading').hidden = true;
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
   $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab); document.body.dataset.screen = name;
+  if (name === 'exos') kindButtons();                               // retest 12 : titres du niveau du joueur
   if (tab) { state.tab = tab; const bt = barTab(tab); for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === bt), b.dataset.tab === bt && b.setAttribute('aria-current', 'page');
     for (const q of document.querySelectorAll('.quiz-switch [data-side]')) q.setAttribute('aria-pressed', String(q.dataset.side === tab)); }
   else $('back-home').textContent = $('td-home').textContent = BACK_LABEL[state.tab] || BACK_LABEL.defis;   // retest 10 : le lien de retour nomme l'onglet où il ramène
@@ -282,8 +283,16 @@ const VERB_RE = /^(FOLD|CHECK|CALL|RAISE TO|ALL-IN)(?: (.+))?$/i;
 const VERB_FR = { FOLD: 'Se coucher', CHECK: 'Parole', CALL: 'Payer', 'RAISE TO': 'Relancer à', 'ALL-IN': 'Tapis' };
 const simpleWords = () => mode() === 'gto' && !!state.level && state.level.level === 1;
 const levelOne = () => !!state.level && state.level.level === 1;
-// retest 12 : au niveau 1, les titres d'équité sans jargon (les termes restent aux niveaux 2 et 3)
-const KIND_L1 = { equity: 'Ta main contre les mains possibles de l\'autre', outs: 'Combien de cartes t\'aident', range_help: 'Qui est favorisé : toi ou lui ?' };
+// retest 12 : au niveau 1, les boutons de la carte Équités prennent les titres sans jargon du serveur (KIND_FR_L1 de equity_quiz.py) ;
+// les termes restent aux niveaux 2 et 3
+const KIND_L1 = { hit: 'Toucher le flop', equity: 'Chances de gagner avant le flop', labels: 'Forces et faiblesses', outs: 'Cartes qui améliorent ta main',
+  board_equity: 'Chances de gagner sur le flop', flop_help: 'Ce flop t\'aide-t-il ?', range_help: 'Tes mains possibles contre les siennes', nut_help: 'Mains très fortes' };
+function kindButtons() {
+  for (const b of document.querySelectorAll('#equity-kinds [data-kind]')) {
+    if (!b.dataset.std) b.dataset.std = b.textContent;
+    b.textContent = (levelOne() && KIND_L1[b.dataset.kind]) || b.dataset.std;
+  }
+}
 function frLabel(label) {                                            // « ALL-IN 8 BB » → « Tapis 8 BB (ALL-IN) » dans les phrases
   const m = simpleWords() && VERB_RE.exec(label || '');
   return m ? `${VERB_FR[m[1].toUpperCase()]}${m[2] ? ` ${m[2]}` : ''} (${m[1].toUpperCase()})` : label;
@@ -362,7 +371,7 @@ function renderQuestion(data) {
     const bc = q.board || []; $('eq-board').hidden = !bc.length; $('eq-board').innerHTML = bc.length ? boardHTML(bc) : '';   // board : cartes précises (« Qs »), docs/api/QUIZ_EQUITES.md v2
     const mine = (q.hero_cards || []).length ? q.hero_cards : q.hand_display;   // « range contre range » : pas de main, ta range à la place
     $('eq-cards').hidden = !mine; if (mine) renderCardRow($('eq-cards'), mine, 'Ta main'); else $('eq-cards').innerHTML = '';   // pas de cartes de la question précédente
-    $('eq-kind').textContent = (levelOne() && KIND_L1[q.kind]) || q.kind_fr || '';   // retest 12 : sans jargon au niveau 1
+    $('eq-kind').textContent = q.kind_fr || '';                     // retest 12 : le serveur donne le titre du niveau du joueur (sans jargon au niveau 1)
     $('eq-kind').dataset.kind = q.kind || '';
   }
   const rgs = eq ? ['hero', 'villain'].map((w) => (q.ranges || []).find((r) => r.who === w)).filter(Boolean) : [];   // ta range (range contre range) puis la sienne
@@ -745,7 +754,7 @@ function renderCats(s) {
   const n = catNumbers(s);
   for (const k of ['gto', 'exploit', 'profils', 'ranges', 'equites']) $(`cat-${k}-meter`).textContent = catLine(k, n[k]);
   const head = (k, v) => (!v ? '–' : k === 'ranges' ? `${Math.round(v.acc)} %` : `${Math.round(v.pct)} %`);
-  const kinds = (v) => (v && v.kinds.length ? `<ul class="cat-kinds">${v.kinds.map((x) => `<li>${escT(x.label_fr)}<b>${Math.round(x.score_pct)} %</b><small>${plural(x.questions, 'question')}</small></li>`).join('')}</ul>` : '');
+  const kinds = (v) => (v && v.kinds.length ? `<ul class="cat-kinds">${v.kinds.map((x) => `<li>${escT((levelOne() && x.label_l1_fr) || x.label_fr)}<b>${Math.round(x.score_pct)} %</b><small>${plural(x.questions, 'question')}</small></li>`).join('')}</ul>` : '');
   $('st-cats').hidden = false;
   $('st-cats-list').innerHTML = Object.keys(CAT_FR).filter((k) => k !== 'exploit' && k !== 'profils' || !exploitLocked())
     .map((k) => `<li class="cat-row" data-cat="${k}"><span><b>${CAT_FR[k]}</b><small>${escT(catLine(k, n[k]))}</small>${k === 'equites' ? kinds(n[k]) : ''}</span><b class="cats-num">${head(k, n[k])}</b></li>`).join('');   // Équités : le détail par sorte de question

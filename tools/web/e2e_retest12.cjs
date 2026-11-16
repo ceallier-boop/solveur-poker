@@ -1,6 +1,6 @@
 // Corrections du douzième test joueurs (docs/produit/RETEST12_JOUEURS_2026-11-16.md), avec assertions :
-//   1. niveau 1 : titres d'équité sans jargon (« Ta main contre les mains possibles de l'autre », « Combien de cartes t'aident »,
-//      « Qui est favorisé : toi ou lui ? ») ; niveau 2 : les termes reviennent (« Tirages et outs ») ;
+//   1. niveau 1 : titres d'équité sans jargon, à l'écran et sur les boutons de la carte (« Chances de gagner avant le flop », « Cartes qui
+//      améliorent ta main », « Tes mains possibles contre les siennes ») ; niveau 2 : les termes reviennent (« Tirages et outs ») ;
 //   2. range contre range : la légende des grilles (case foncée / claire, toi en bleu, lui en vert) ;
 //   3. Progression : pas de BB perdus sous 30 décisions (« pas assez de décisions pour mesurer (N sur 30) ») ; au-dessus, sans
 //      décimales superflues (109 BB, 12,4 BB) ;
@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const BASE = process.env.BASE_URL || 'http://localhost:8000/'; const OUT = process.argv[2] || '.';
 const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!cond, info });
-const L1 = { equity: 'Ta main contre les mains possibles de l\'autre', outs: 'Combien de cartes t\'aident', range_help: 'Qui est favorisé : toi ou lui ?' };
+const L1 = { equity: 'Chances de gagner avant le flop', outs: 'Cartes qui améliorent ta main', range_help: 'Tes mains possibles contre les siennes' };   // titres du serveur (equity_quiz.KIND_FR_L1)
 
 (async () => {
   const b = await chromium.launch(); const errs = [];
@@ -35,6 +35,9 @@ const L1 = { equity: 'Ta main contre les mains possibles de l\'autre', outs: 'Co
 
   // --- joueur de niveau 1
   const p = await page(); await start(p);
+  await p.openTab('exos');
+  const btns = await p.$$eval('#equity-kinds [data-kind]', (xs) => Object.fromEntries(xs.map((x) => [x.dataset.kind, x.textContent])));
+  ok('niveau 1 : boutons de la carte Équités sans jargon', Object.keys(L1).every((k) => btns[k] === L1[k]) && !/range|outs|équité/i.test(Object.values(btns).join(' ')), btns);
   for (const k of ['equity', 'outs', 'range_help']) {
     const t = await kindTitle(p, k);
     ok(`niveau 1 : titre sans jargon (${k})`, t.kind === k && t.title === L1[k], t);
@@ -114,6 +117,8 @@ const L1 = { equity: 'Ta main contre les mains possibles de l\'autre', outs: 'Co
     await q.click('#pl-keep'); await q.waitForSelector('#screen-home:not([hidden]) #today:not([hidden])', { timeout: 15000 }); await q.waitForTimeout(1200);   // accueil fini de charger
   }
   const t2 = await kindTitle(q, 'outs');
+  const btn2 = await q.textContent('#equity-kinds [data-kind="outs"]');
+  ok('niveau 2 : bouton « Tirages et outs »', btn2 === 'Tirages et outs', btn2);
   ok('niveau 2 : les termes reviennent (« Tirages et outs »)', t2.kind === 'outs' && t2.title === 'Tirages et outs', t2);
   // 3 bis. au-dessus de 30 décisions : sans décimales superflues (réponse du serveur simulée)
   await q.unroute('**/users/me/placement?*');
