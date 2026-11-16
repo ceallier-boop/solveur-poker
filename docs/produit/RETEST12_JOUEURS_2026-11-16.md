@@ -60,7 +60,21 @@ Les défauts restants sont du côté des **nouveaux exercices d'équités pour l
 
 ## 5. Recettes
 
-RECETTES
+Les recettes automatiques ont été rejouées sur la version testée, application et démo, avec les deux banques (contrôles passés / contrôles).
+
+| Recette | Application, banque du test fermé | Application, banque de référence | Démo, banque du test fermé | Démo, banque de référence |
+|---|---|---|---|---|
+| `e2e_audit_recette.cjs` | 10/10 | 10/10 | — | — |
+| `e2e_placement_recette.cjs` | 19/19 | 19/19 | 19/19 | 19/19 |
+| `e2e_test_ferme.cjs` | 7/7 | — | — | — |
+| `e2e_rythme_recette.cjs` | 13/13 | 13/13 | 10/10 | 10/10 |
+| `e2e_fiches_recette.cjs` | 8/8 | 8/8 | 8/8 | 8/8 |
+| `e2e_categories_recette.cjs` | 18/18 | 18/18 | 18/18 | 18/18 |
+| `e2e_equites_recette.cjs` | 7/7 | 7/7 | 7/7 | 7/7 |
+| `e2e_replay_recette.cjs` | 6/6 | 6/6 | 6/6 | 6/6 |
+| `e2e_ui_categories_recette.cjs` | 11/11 | 11/11 | 11/11 | 10/11 puis 11/11 (×2) |
+
+Seul écart : un contrôle de `e2e_ui_categories_recette.cjs` sur la démo exigeait une des sortes outs, équité sur tableau ou « Ce flop t'aide-t-il ? » ; une série tire 5 sortes sur 8 et peut n'en contenir aucune. C'était un défaut du test, pas de l'application : le contrôle compte désormais les cinq sortes avec tableau (toujours au moins 2 par série) et garde la vérification de chaque verdict par l'évaluateur indépendant ; rejoué deux fois sur la démo, 11/11.
 
 ## 6. Ce qui plaît
 - La première séance en quelques secondes, sans explication.
