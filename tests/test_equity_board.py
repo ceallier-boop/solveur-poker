@@ -371,3 +371,25 @@ def test_delta_fr_and_caveat_fields():
     for kind, word in (('outs', 'passer devant'), ('board_equity', 'argent'), ('flop_help', 'argent'), ('range_help', 'argent')):
         sid, h = E.draw(2, 1, seed=3, kind=kind)[0]; r = E.correct(sid, h, 'b0')
         assert word in r['equity']['caveat_fr'] and r['equity']['caveat_fr'] in r['details_fr']
+
+
+def test_level1_texts_have_no_jargon():
+    """retest 12 (16/11) : au niveau 1, ni « range », ni « limp », ni « outs », ni « checke », ni « équité » dans les énoncés, réponses,
+    grilles, titres, corrections et nuances, pour les huit sortes ; les niveaux 2 et 3 gardent les termes"""
+    import re
+    bad = re.compile(r"range|limp|\bouts?\b|check|équité", re.I)
+    seen = set()
+    for kind in E.KINDS:
+        for sd in range(4):
+            for sid, h in E.draw(1, 2, seed=sd, kind=kind):
+                q = E.question(sid, h)
+                texts = [q['prompt_fr'], q['kind_fr']] + [o['label_fr'] for o in q['options']] + [x['label_fr'] for x in q['ranges']]
+                for o in q['options']:
+                    r = E.correct(sid, h, o['id'])
+                    texts += [r['explanation_fr'], r['essential_fr'], r['method_fr'], r['best_label'], r['chosen_label'], r['equity'].get('caveat_fr') or '']
+                    texts += [s['why_fr'] for s in r['equity'].get('statements', [])]
+                for t in texts: assert not bad.search(t), (kind, t)
+                seen.add(kind)
+    assert seen == set(E.KINDS)
+    sid, h = E.draw(2, 1, seed=1, kind='range_help')[0]
+    assert 'range' in E.question(sid, h)['prompt_fr'] and E.question(sid, h)['kind_fr'] == 'Range contre range'      # niveau 2 inchangé
