@@ -22,7 +22,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     flop: document.querySelectorAll('#eq-board .street.flop .card').length, all: document.querySelectorAll('#eq-board .card').length,
     hand: document.querySelectorAll('#eq-cards .card').length, ask: document.getElementById('ask').textContent,
     bands: document.getElementById('actions').classList.contains('bands'), n: document.querySelectorAll('#actions button').length, firstOpt: (document.querySelector('#actions button b') || {}).textContent, table: !document.getElementById('table-wrap').hidden }));
-  ok('question : le flop (3 cartes) au-dessus de ta main (2 cartes)', q.kind === 'Tirages et outs' && q.board && q.flop === 3 && q.all >= 3 && q.all <= 5 && q.hand === 2 && !q.table, q);
+  ok('question : le flop (3 cartes) au-dessus de ta main (2 cartes)', /^(Tirages et outs|Combien de cartes t'aident)$/.test(q.kind) && q.board && q.flop === 3 && q.all >= 3 && q.all <= 5 && q.hand === 2 && !q.table, q);
   ok('question : énoncé avec le flop, réponses en grille', /le flop est/.test(q.ask) && q.bands && q.n >= 4, q);
   await p.screenshot({ path: `${OUT}/outs_question.png` });
   await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');

@@ -16,6 +16,8 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* idem */ } },
 };
 const bb = (x) => String(Math.round(x * 100) / 100).replace('.', ',');
+const bbShort = (x) => (Math.abs(x) >= 100 ? String(Math.round(x)) : String(Math.round(x * 10) / 10).replace('.', ','));   // retest 12 : 108 BB, 12,4 BB
+const BB_MIN = 30;                                                   // sous 30 décisions, pas de BB perdus affichés
 
 // pastilles (lot 1) : la couleur que le joueur donne à chaque profil, comme dans son client ; une lettre pour les daltoniens
 const PROFILES = ['Rec passif', 'Calling station', 'Dégène', 'Nit', 'Reg'];
@@ -67,7 +69,7 @@ function show(name) {
   for (const s of document.querySelectorAll('.screen')) s.hidden = s.id !== `screen-${name}`;
   $('loading').hidden = true;
   const tab = Object.keys(TAB_SCREEN).find((k) => TAB_SCREEN[k] === name);
-  $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab);
+  $('tabs').hidden = !tab; document.body.classList.toggle('has-tabs', !!tab); document.body.dataset.screen = name;
   if (tab) { state.tab = tab; const bt = barTab(tab); for (const b of document.querySelectorAll('.tab')) b.toggleAttribute('aria-current', b.dataset.tab === bt), b.dataset.tab === bt && b.setAttribute('aria-current', 'page');
     for (const q of document.querySelectorAll('.quiz-switch [data-side]')) q.setAttribute('aria-pressed', String(q.dataset.side === tab)); }
   else $('back-home').textContent = $('td-home').textContent = BACK_LABEL[state.tab] || BACK_LABEL.defis;   // retest 10 : le lien de retour nomme l'onglet où il ramène
@@ -279,6 +281,9 @@ const VERB_RE = /^(FOLD|CHECK|CALL|RAISE TO|ALL-IN)(?: (.+))?$/i;
 // AU8 : au niveau 1 (mode GTO), les mots français d'abord, le terme du client de jeu en petit dessous
 const VERB_FR = { FOLD: 'Se coucher', CHECK: 'Parole', CALL: 'Payer', 'RAISE TO': 'Relancer à', 'ALL-IN': 'Tapis' };
 const simpleWords = () => mode() === 'gto' && !!state.level && state.level.level === 1;
+const levelOne = () => !!state.level && state.level.level === 1;
+// retest 12 : au niveau 1, les titres d'équité sans jargon (les termes restent aux niveaux 2 et 3)
+const KIND_L1 = { equity: 'Ta main contre les mains possibles de l\'autre', outs: 'Combien de cartes t\'aident', range_help: 'Qui est favorisé : toi ou lui ?' };
 function frLabel(label) {                                            // « ALL-IN 8 BB » → « Tapis 8 BB (ALL-IN) » dans les phrases
   const m = simpleWords() && VERB_RE.exec(label || '');
   return m ? `${VERB_FR[m[1].toUpperCase()]}${m[2] ? ` ${m[2]}` : ''} (${m[1].toUpperCase()})` : label;
@@ -357,10 +362,12 @@ function renderQuestion(data) {
     const bc = q.board || []; $('eq-board').hidden = !bc.length; $('eq-board').innerHTML = bc.length ? boardHTML(bc) : '';   // board : cartes précises (« Qs »), docs/api/QUIZ_EQUITES.md v2
     const mine = (q.hero_cards || []).length ? q.hero_cards : q.hand_display;   // « range contre range » : pas de main, ta range à la place
     $('eq-cards').hidden = !mine; if (mine) renderCardRow($('eq-cards'), mine, 'Ta main'); else $('eq-cards').innerHTML = '';   // pas de cartes de la question précédente
-    $('eq-kind').textContent = q.kind_fr || '';
+    $('eq-kind').textContent = (levelOne() && KIND_L1[q.kind]) || q.kind_fr || '';   // retest 12 : sans jargon au niveau 1
+    $('eq-kind').dataset.kind = q.kind || '';
   }
   const rgs = eq ? ['hero', 'villain'].map((w) => (q.ranges || []).find((r) => r.who === w)).filter(Boolean) : [];   // ta range (range contre range) puis la sienne
-  $('eq-range').hidden = !rgs.length; $('eq-range').classList.toggle('two', rgs.length === 2); $('eq-range').innerHTML = rgs.map(rangeMiniHTML).join('');
+  $('eq-range').hidden = !rgs.length; $('eq-range').classList.toggle('two', rgs.length === 2);
+  $('eq-range').innerHTML = rgs.map(rangeMiniHTML).join('') + (rgs.length ? rangeLegendHTML(rgs) : '');   // retest 12 : la légende des grilles
   const fmt = q.table === '3-handed' ? '3 joueurs' : 'Heads-up';
   $('seat-line').hidden = noHand; $('seat-line').innerHTML = `Tu es au <b>${q.hero}</b> · ${fmt}`;
   $('prompt-full').textContent = q.prompt_fr;                        // énoncé complet pour les lecteurs d'écran
@@ -399,7 +406,8 @@ function renderFieldStats(q, noHand) {
       + `<div class="vbar obs"><span>Observé</span><em><i style="width:${w(s.observed_pct)}"></i></em><b>${rnd0(s.observed_pct)} %</b></div>`   // mêmes arrondis que le texte
       + `<div class="vbar gto"><span>Théorie</span><em><i style="width:${w(s.gto_pct)}"></i></em><b>${rnd0(s.gto_pct)} %</b></div>`;
   }).join('');
-  const body = (context ? `<p class="fnone">${escT(context)}</p>` : '')
+  const long = context.length > 120;                                // retest 12 : sur téléphone, les premières lignes puis « Voir la suite »
+  const body = (context ? `<p class="fnone fctx${long ? ' clamp' : ''}" id="fctx">${escT(context)}</p>${long ? '<button class="link fmore" id="fmore" type="button" aria-controls="fctx" aria-expanded="false">Voir la suite</button>' : ''}` : '')
     + (f.stats.length ? bars + `<p class="fn">${f.observations} occasions : plus il y en a, plus la tendance est fiable.</p>`
       : `<p class="fnone">Aucune information sur ce vilain : compte sur le profil le plus fréquent du field (rec passif).</p>`);
   box.className = 'fstats';
@@ -407,6 +415,11 @@ function renderFieldStats(q, noHand) {
     : `<details class="vdetails"><summary><span class="ftype">${f.type_fr}</span> ${f.pastille ? `${pastilleDot(f.pastille)}<b>${f.pastille}</b> <small>voir ses stats (${f.observations} mains)</small>` : f.observations ? `Stats du vilain · ${f.observations} mains` : 'Aucune information'}</summary>${body}</details>`;   // analyse des écrans : la pastille nommée
 }
 
+$('villain').addEventListener('click', (e) => {                     // retest 12 : « Voir la suite » du contexte de lecture
+  const b = e.target.closest('#fmore'); if (!b) return;
+  const open = $('fctx').classList.toggle('clamp') === false;
+  b.textContent = open ? 'Voir moins' : 'Voir la suite'; b.setAttribute('aria-expanded', String(open));
+});
 const PLAN_CHRONO = { challenge_daily: 15, challenge_pressure: 8 };   // série de défi reprise : son chrono imposé revient
 async function next() {
   loading(true);
@@ -452,6 +465,10 @@ function rangeMiniHTML(r) {
   const title = mine ? escT(label) : `Lui : ${escT(label)}`;
   return `<div class="eq-range-one"><p class="eq-range-title"><b>${title}</b></p>`
     + `<div class="mini-grid${mine ? ' mine' : ''}" role="img" aria-label="${mine ? escT(label) : `Lui : ${escT(label)}`}">${cells}</div></div>`;
+}
+function rangeLegendHTML(rgs) {
+  const who = rgs.map((r) => (r.who === 'hero' ? '<span><i class="sw mine"></i>Toi en bleu</span>' : '<span><i class="sw"></i>Lui en vert</span>')).join('');
+  return `<p class="mini-legend"><span><i class="sw dark"></i>Case foncée : main jouée souvent</span><span><i class="sw light"></i>Case claire : rarement</span>${rgs.length > 1 ? who : ''}</p>`;
 }
 // équité sur le flop : avant le flop, puis au flop, en deux barres ; ce que la main a et ses cartes qui l'améliorent
 function streetsHTML(e) {
@@ -782,7 +799,9 @@ async function stats() {
   // analyse des écrans (29/10) : le score en grand, puis deux ou trois tuiles au lieu d'un paragraphe
   $('st-score').innerHTML = `${pc(s.score_pct)}<small>${s.questions} questions · ${s.sessions} série${s.sessions > 1 ? 's' : ''}</small>`
     + '<div class="st-tiles">'
-    + (s.bb_per_100 != null ? `<div><b>${bb(s.bb_per_100)} BB</b><span>perdus pour 100 décisions</span><small>sur toutes tes décisions (${s.ev_questions}), GTO et Exploitant${s.ev_questions < 100 ? ' · échantillon faible' : ''}</small></div>` : '')   // AU2 : le seul chiffre BB de l'écran, avec son périmètre
+    + (s.bb_per_100 != null ? (s.ev_questions < BB_MIN
+      ? `<div class="st-thin"><b>–</b><span>BB perdus pour 100 décisions</span><small>pas assez de décisions pour mesurer (${s.ev_questions} sur ${BB_MIN})</small></div>`   // retest 12 : comme les objectifs
+      : `<div><b>${bbShort(s.bb_per_100)} BB</b><span>perdus pour 100 décisions</span><small>sur toutes tes décisions (${s.ev_questions}), GTO et Exploitant${s.ev_questions < 100 ? ' · échantillon faible' : ''}</small></div>`) : '')   // AU2 : le seul chiffre BB de l'écran, avec son périmètre
     + (s.ranges && s.ranges.count ? `<div><b>${pc(s.ranges.accuracy_pct)}</b><span>ranges bien classées</span><small>${s.ranges.count} range${s.ranges.count > 1 ? 's' : ''}${s.ranges.count > s.ranges.recent ? ` (${s.ranges.recent} dernières)` : ''}</small></div>` : '')
     + (s.timeouts ? `<div><b>${s.timeouts}</b><span>coup${s.timeouts > 1 ? 's' : ''} joué${s.timeouts > 1 ? 's' : ''} au temps</span></div>` : '')
     + '</div>';
@@ -1218,10 +1237,15 @@ async function placementResult() {
   $('pl-text').textContent = r.text_fr;                            // retest 10 : une tranche à 0 question (absente de la banque servie) n'est pas montrée
   $('pl-bands').innerHTML = r.bands.filter((b) => b.expected > 0 || b.questions > 0).map((b) => `<tr class="${b.passed ? 'ok' : ''}"><th scope="row">${escT(b.depth_fr.charAt(0).toUpperCase() + b.depth_fr.slice(1))}</th>`
     + `<td>${nfr1(b.points)} sur ${Math.max(b.questions, b.expected)}</td></tr>`).join('');   // sans reproche ; banque étroite : les mains d'une tranche absente vont dans une autre
-  const same = r.proposed_level === r.current_level;
+  const same = r.proposed_level === r.current_level, down = r.proposed_level < r.current_level;
   $('pl-take').hidden = same;
+  $('pl-take').textContent = down ? `Revenir au niveau ${r.proposed_level}` : 'Prendre ce niveau';   // retest 12 : un niveau plus bas se dit
+  $('pl-take').className = down ? 'secondary' : 'primary big';
   $('pl-keep').textContent = same ? `Continuer au niveau ${r.current_level}` : `Garder le niveau ${r.current_level}`;
-  $('pl-keep').className = same ? 'primary big' : 'secondary';
+  $('pl-keep').className = same || down ? 'primary big' : 'secondary';   // en baisse, garder son niveau est le bouton plein
+  $('pl-down').hidden = !down;
+  if (down) $('pl-down').textContent = `Ce test est en dessous de ton niveau ${r.current_level}. Revenir au niveau ${r.proposed_level}, c'est repartir des tapis courts (${r.proposed_depth_fr}). Tu peux aussi garder ton niveau et refaire le test plus tard.`;
+  if (down) $('pl-take').before($('pl-keep')); else $('pl-keep').before($('pl-take'));   // le bouton plein en premier
   show('placement');
 }
 const placementDone = () => { state.tab = state.modeBefore === 'exploit' ? 'expl' : 'defis'; state.modeBefore = null; home(); };   // la séance du nouveau niveau est sur l'onglet central   // le mode d'avant le test revient

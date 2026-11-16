@@ -25,7 +25,7 @@ button { font: inherit; cursor: pointer; }
   padding: 10px var(--gutter); padding-top: max(10px, env(safe-area-inset-top)); background: var(--felt-dark); color: #fff; }
 .brand { background: none; border: 0; color: #fff; font-weight: 700; font-size: 1.1rem; padding: 4px 0; }
 .brand span { color: #9fe0c0; }
-.progress { font-size: .9rem; color: #cfe9dc; }
+.progress { font-size: .9rem; color: #cfe9dc; min-width: 0; text-align: right; }
 
 main { max-width: 560px; margin: 0 auto; padding: var(--gutter); padding-bottom: calc(var(--gutter) + env(safe-area-inset-bottom)); }
 .screen { display: flex; flex-direction: column; gap: 14px; }
@@ -208,7 +208,10 @@ html.touch .hint, html.touch .actions button .key { display: none; }   /* A' : t
 .range-grid span { cursor: pointer; }
 
 /* lexique */
-.bar-right { display: flex; align-items: center; gap: 10px; }
+.bar-right { display: flex; align-items: center; gap: 10px; min-width: 0; }   /* retest 12 : jamais plus large que l'écran */
+.brand, .lex-btn, .avatar { flex-shrink: 0; }
+body[data-screen="import"] .lex-btn { display: none; }               /* retest 12 : « Importer mes mains » sur une ligne ; le lexique est dans Outils */
+body[data-screen="import"] .progress { white-space: nowrap; }
 .lex-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; padding: 6px 12px; font-size: .85rem; min-height: 36px; }
 .lex { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.45); display: flex; justify-content: flex-end; }
 .lex-panel { background: var(--bg); color: var(--text); width: min(480px, 100%); height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
@@ -768,3 +771,15 @@ body.has-tabs .lex-btn { display: none; }                          /* retest 10 
 .eq-vs th[scope="row"] { text-align: left; font-weight: 600; } .eq-vs thead th { font-weight: 650; color: var(--muted); }
 .eq-caveat { margin: 4px 0 0; padding: 8px 12px; border-radius: 10px; background: #f9eeda; color: #5a3d00; font-size: .9rem; }
 @media (prefers-color-scheme: dark) { .eq-caveat { background: #3a2e17; color: #f0d29a; } }
+
+/* retest 12 : légende des grilles de range, contexte de lecture replié, suite de l'import */
+.mini-legend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 2px 0 0; font-size: .8rem; color: var(--muted); }
+.mini-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.mini-legend .sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.15); background: var(--accent); }
+.mini-legend .sw.mine { background: #1f5f99; }
+.mini-legend .sw.dark { background: var(--accent); }
+.mini-legend .sw.light { background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
+.fctx.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fmore { align-self: flex-start; padding: 2px 0; font-size: .85rem; }
+.im-next { margin: 4px 0; }
+.st-thin b { color: var(--muted); }

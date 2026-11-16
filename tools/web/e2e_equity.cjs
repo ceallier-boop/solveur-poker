@@ -22,7 +22,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   // série par défaut (12/11) : 5 questions de sortes différentes parmi les six ; chaque question contrôlée selon sa sorte
   const KIND = { 'Toucher le flop': 'hit', 'Équité contre une range': 'equity', 'Forces et faiblesses': 'labels', 'Tirages et outs': 'outs', 'Équité sur le flop': 'board_equity', 'Ce flop t\'aide-t-il ?': 'flop_help', 'Range contre range': 'range_help', 'Mains très fortes': 'nut_help' };   // huit sortes (12/11)
   const look = () => p.evaluate(() => ({
-    kind: document.getElementById('eq-kind').textContent, cat: document.getElementById('q-cat').textContent, table: !document.getElementById('table-wrap').hidden,
+    kind: document.getElementById('eq-kind').dataset.kind, title: document.getElementById('eq-kind').textContent, cat: document.getElementById('q-cat').textContent, table: !document.getElementById('table-wrap').hidden,
     hand: !document.getElementById('eq-hand').hidden, cards: document.querySelectorAll('#eq-cards .card').length, ask: document.getElementById('ask').className,
     askText: document.getElementById('ask').textContent, bands: document.getElementById('actions').classList.contains('bands'),
     stmts: document.getElementById('actions').classList.contains('stmts'), n: document.querySelectorAll('#actions button').length,
@@ -37,7 +37,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
   const ans = [], kinds = [], badLayout = [];
   for (let i = 0; i < 5; i++) {
     await p.waitForSelector('#screen-question:not([hidden])');
-    const q = await look(), k = KIND[q.kind] || q.kind; kinds.push(k);
+    const q = await look(), k = q.kind; kinds.push(k);   // retest 12 : le titre change au niveau 1, la sorte est dans data-kind
     if (i === 0) {
       ok('question : étiquette Équités, sans table, la main en grand (sauf range contre range)', q.cat === 'Équités' && !q.table && q.hand && (NO_HAND.includes(k) ? q.cards === 0 : q.cards === 2), q);
       ok('question : énoncé visible, ni chrono ni rejouée', q.ask === 'ask' && q.askText.length > 30 && !q.timer && !q.skip && q.opts, q);
@@ -68,7 +68,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     const q = await look();
     await p.click('#actions button >> nth=0'); await p.waitForSelector('#screen-answer:not([hidden])');
     const a = await readAnswer();
-    ok(`une seule sorte (${k}) : tranches en grille, valeur exacte, forces et faiblesses`, KIND[q.kind] === k && layoutOk(k, q) && /\d+(,\d)? %/.test(a.essential)
+    ok(`une seule sorte (${k}) : tranches en grille, valeur exacte, forces et faiblesses`, q.kind === k && layoutOk(k, q) && /\d+(,\d)? %/.test(a.essential)
       && /Forces de la main|Faiblesses de la main/.test(a.text), { kind: q.kind, essential: a.essential });
   }
   // une seule sorte : « Forces et faiblesses »

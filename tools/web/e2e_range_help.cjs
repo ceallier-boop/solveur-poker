@@ -23,7 +23,7 @@ const checks = []; const ok = (name, cond, info) => checks.push({ name, ok: !!co
     titles: [...document.querySelectorAll('#eq-range .eq-range-title')].map((t) => t.textContent), two: document.getElementById('eq-range').classList.contains('two'),
     stmts: document.getElementById('actions').classList.contains('stmts'), opts: [...document.querySelectorAll('#actions button b')].map((x) => x.textContent),
     page: document.getElementById('screen-question').innerText }));
-  ok('question : le flop, pas de main du héros', q.kind === 'Range contre range' && q.flop === 3 && !q.handShown, q);
+  ok('question : le flop, pas de main du héros', /^(Range contre range|Qui est favorisé : toi ou lui \?)$/.test(q.kind) && q.flop === 3 && !q.handShown, q);
   ok('question : les deux ranges côte à côte, la tienne puis la sienne, en grilles 13 × 13', q.grids === 2 && q.two && q.cells.every((n) => n === 169)
     && /^Toi, /.test(q.titles[0]) && /^Lui : /.test(q.titles[1]), q.titles);   // libellés du serveur, sans « ta range » en dur
   ok('question : trois réponses en texte sur une colonne', q.opts.length === 3 && q.stmts, q.opts);
