@@ -135,3 +135,9 @@ Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 
 - **Hébergeur :** recommandation OVHcloud VPS (`docs/exploitation/CHOIX_HEBERGEUR_2026-11-23.md`) ; script `tools/ops/bootstrap_server.sh`.
 - **Fichiers Winamax :** le porteur ne peut pas les envoyer.
 - **Pots relancés à 3 joueurs** (questions de range) : travail lancé.
+
+## Réponses du 24/11
+
+- **Nom SpinXpresso : vérifié par le porteur** sur l'INPI et l'EUIPO (« libre de droit », noms de domaine libres). Feu vert pour acheter les domaines et réserver les comptes. À conserver : captures et dates des recherches ; la vérification ne couvre ni TMview, ni la base mondiale (WIPO), ni les pseudos des réseaux : à compléter avec la liste de contrôle de `docs/marketing/FONDATIONS_1-3_v0.2_2026-11-23.md`. Le dépôt de la marque reste une décision du porteur.
+- **Publicité** (payante et récompensée dans l'application) : **à étudier à la fin de la bêta.** Rien n'est activé d'ici là.
+- **Hébergeur : OVHcloud VPS** (recommandation de `docs/exploitation/CHOIX_HEBERGEUR_2026-11-23.md`) validée.
