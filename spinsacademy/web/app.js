@@ -1648,9 +1648,10 @@ function impReset() {
   imp.result = null; $('im-files').value = '';
   $('im-result').hidden = true; $('im-progress').hidden = true; $('im-error').hidden = true;
 }
+function inViewer() { return typeof DEMO !== 'undefined' && !!(window.claude && window.claude.use); }   // démo ouverte dans le visualiseur d'artefacts (pas de téléchargement possible)
 function openImport() {
   progress('Importer mes mains'); show('import');
-  const demo = typeof DEMO !== 'undefined';                          // la démo publiée ne peut pas télécharger de fichier
+  const demo = inViewer();                                           // le visualiseur de claude.ai ne permet pas de télécharger un fichier ; la page ouverte à part, si
   $('im-save').hidden = demo; $('im-demo').hidden = !demo; $('im-save-note').hidden = demo;
 }
 async function impRun(files) {
@@ -1683,7 +1684,7 @@ async function impRun(files) {
   } finally { imp.busy = false; $('im-files').value = ''; }
 }
 function impSave() {
-  if (!imp.result || typeof DEMO !== 'undefined') return;
+  if (!imp.result || inViewer()) return;
   const out = window.Winamax.toCsv(imp.result) || {};
   for (const name of ['comptages.csv', 'volume.csv']) {
     if (typeof out[name] !== 'string') continue;

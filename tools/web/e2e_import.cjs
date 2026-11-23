@@ -25,7 +25,7 @@ const STAND_IN = `window.Winamax = { VERSION: 'provisoire',
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, acceptDownloads: true });
   const demo = BASE.startsWith('file:');
   let provisional = false;
-  if (demo) await ctx.addInitScript(STAND_IN);                       // la démo n'embarque pas encore le lecteur
+  if (demo) { await ctx.addInitScript(STAND_IN); await ctx.addInitScript('window.claude = { use: async () => null };'); }   // lecteur provisoire ; la démo est jouée comme dans le visualiseur de claude.ai (pas de téléchargement)
   else await ctx.route('**/static/winamax.js', async (r) => {
     const real = await r.fetch().catch(() => null);
     if (real && real.ok()) return r.fulfill({ response: real });
