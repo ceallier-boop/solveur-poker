@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SpinXpresso — entraîneur Expresso en français</title>
+<meta name="description" content="Entraînez-vous aux Expresso en 10 minutes par jour : séance du jour, correction selon la stratégie de référence d'un solveur et lecture exploitante. Test fermé gratuit.">
+<!-- MAQUETTE PRIVÉE v0.2 — ne pas publier sans validation du porteur. Aucune police, aucun script ni aucun pixel tiers. -->
+<style>
+  :root{
+    --bg:#f6f7fb; --surface:#ffffff; --ink:#0f1a2e; --muted:#566079; --line:#dde2ec;
+    --brand:#14213d; --accent:#e8742c; --accent-ink:#ffffff; --ok:#1f8a5b;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1220; --surface:#121b2e; --ink:#e8ecf5; --muted:#9aa5bd; --line:#24304a;
+      --brand:#e8ecf5; --accent:#f08a46; --accent-ink:#0b1220; --ok:#4cc38a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1220; --surface:#121b2e; --ink:#e8ecf5; --muted:#9aa5bd; --line:#24304a;
+    --brand:#e8ecf5; --accent:#f08a46; --accent-ink:#0b1220; --ok:#4cc38a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+  header{border-bottom:1px solid var(--line);background:var(--surface)}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;color:var(--brand);text-decoration:none}
+  .mark{width:34px;height:34px;border-radius:9px;background:var(--brand);color:var(--bg);
+    display:grid;place-items:center;font-size:15px;letter-spacing:-.5px}
+  .mark b{color:var(--accent)}
+  a.btn{display:inline-block;background:var(--accent);color:var(--accent-ink);font-weight:700;
+    padding:12px 20px;border-radius:10px;text-decoration:none}
+  a.btn.small{padding:8px 14px;font-size:14px}
+  a.btn:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+  .hero{padding:72px 0 56px}
+  .hero h1{font-size:clamp(30px,5vw,48px);line-height:1.15;margin:0 0 16px;max-width:16ch}
+  .hero p.lead{font-size:clamp(17px,2.2vw,20px);color:var(--muted);margin:0 0 28px;max-width:52ch}
+  .hero small{display:block;margin-top:12px;color:var(--muted);font-size:14px}
+  section{padding:48px 0}
+  h2{font-size:clamp(24px,3.4vw,32px);margin:0 0 24px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card h3{margin:0 0 8px;font-size:18px}
+  .card p{margin:0;color:var(--muted)}
+  .num{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;
+    background:var(--accent);color:var(--accent-ink);font-weight:800;margin-bottom:12px}
+  .shots{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .shot{margin:0}
+  .ph{aspect-ratio:9/16;border:2px dashed var(--line);border-radius:14px;background:var(--surface);
+    display:grid;place-items:center;text-align:center;color:var(--muted);font-size:13px;padding:10px}
+  .shot figcaption{font-size:14px;color:var(--muted);margin-top:8px}
+  .transp{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .transp ul{margin:0;padding-left:20px}
+  .transp li{margin:6px 0}
+  .tag{display:inline-block;font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+  .test{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:center}
+  .test ul{padding-left:0;list-style:none}
+  .test li::before{content:"✓ ";color:var(--ok);font-weight:800}
+  details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+  summary{font-weight:700;cursor:pointer}
+  details p{margin:10px 0 0;color:var(--muted)}
+  footer{border-top:1px solid var(--line);background:var(--surface);padding:28px 0;font-size:14px;color:var(--muted)}
+  footer p{margin:6px 0}
+  footer a{color:inherit}
+  .rg{font-weight:700;color:var(--ink)}
+  .draft{background:#fff4d6;color:#5a4300;text-align:center;font-size:13px;padding:6px 16px}
+  @media (max-width:820px){
+    .grid3{grid-template-columns:1fr}
+    .shots{grid-template-columns:repeat(2,1fr)}
+    .test{grid-template-columns:1fr}
+    .hero{padding:48px 0 36px}
+  }
+</style>
+</head>
+<body>
+<div class="draft">Maquette privée v0.2 — captures et logo provisoires ; numéro d'aide et mentions à faire valider par un juriste.</div>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#"><span class="mark">S<b>X</b></span>SpinXpresso</a>
+    <a class="btn small" href="#test">Candidater au test</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <h1>10 minutes par jour pour mieux jouer vos Expresso.</h1>
+    <p class="lead">L'entraîneur en français dédié aux Expresso, en heads-up et à 3 joueurs, de 2 à 25&nbsp;BB. Stratégie de référence fiable de 8 à 16&nbsp;BB pour les décisions à tapis.</p>
+    <a class="btn" href="#test">Candidater au test fermé gratuit</a>
+    <small>Test fermé, 10 à 20 joueurs, à partir du 15 décembre. Réservé aux personnes majeures.</small>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Pourquoi SpinXpresso</h2>
+      <div class="grid3">
+        <div class="card"><span class="num">1</span><h3>Pensé pour l'Expresso, en français</h3>
+          <p>Pas un solveur généraliste en anglais : chaque situation vient du format que vous jouez, heads-up ou à 3, de 2 à 25&nbsp;BB (stratégie de référence fiable de 8 à 16&nbsp;BB pour les décisions à tapis, approximation ailleurs).</p></div>
+        <div class="card"><span class="num">2</span><h3>Deux lectures de chaque décision</h3>
+          <p>La stratégie de référence d'un solveur, et une lecture exploitante face à des profils de joueurs types. Ce qui est théoriquement juste, et ce qui rapporte contre le joueur en face.</p></div>
+        <div class="card"><span class="num">3</span><h3>Une séance du jour de 10 minutes</h3>
+          <p>Des mains rejouées à la table, une correction immédiate, des fiches à emporter et vos progrès suivis au fil des jours.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>À quoi ça ressemble</h2>
+      <div class="shots">
+        <figure class="shot"><div class="ph">Capture à refaire<br>(nom SpinXpresso)<br>Séance du jour</div>
+          <figcaption>Votre entraînement du jour, en 10 ou 15 minutes.</figcaption></figure>
+        <figure class="shot"><div class="ph">Capture à refaire<br>Main rejouée + correction<br>(sans « experts sur 3 »)</div>
+          <figcaption>La décision, la stratégie de référence et la lecture exploitante.</figcaption></figure>
+        <figure class="shot"><div class="ph">Capture à refaire<br>Fiche à emporter</div>
+          <figcaption>Une situation, une profondeur, à imprimer.</figcaption></figure>
+        <figure class="shot"><div class="ph">Capture à refaire<br>Progression</div>
+          <figcaption>Vos points forts et vos fuites, semaine après semaine.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Ce que c'est, et ce que ce n'est pas encore</h2>
+      <div class="transp">
+        <ul>
+          <li>La stratégie de référence est fiable de <strong>8 à 16&nbsp;BB pour les décisions qui finissent à tapis ou face à un tapis</strong>. Ailleurs, c'est une approximation, et nous le signalons.</li>
+          <li>La lecture exploitante s'appuie sur des <strong>profils estimés</strong> ; elle s'affinera avec les mains que les testeurs voudront bien partager.</li>
+          <li><span class="tag">Bientôt</span> Un bilan de vos fuites à partir de vos propres mains Winamax.</li>
+          <li>Vos données d'entraînement restent sur votre appareil.</li>
+          <li>SpinXpresso est un outil d'entraînement indépendant, sans lien avec Winamax ni aucun opérateur de jeu.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="test">
+    <div class="wrap test">
+      <div>
+        <h2>Rejoignez le test fermé</h2>
+        <p>Nous cherchons 10 à 20 joueurs d'Expresso, du joueur régulier au plus confirmé, pour tester SpinXpresso gratuitement pendant quelques semaines. En échange : vos avis francs, deux courts questionnaires, et si vous le souhaitez, deux petits fichiers anonymes de comptage de vos mains.</p>
+        <ul>
+          <li>Gratuit, sans engagement.</li>
+          <li>Sur ordinateur ou sur téléphone.</li>
+          <li>Un Discord privé pour échanger avec l'équipe et les autres testeurs.</li>
+        </ul>
+      </div>
+      <div class="card" style="text-align:center">
+        <p style="margin-bottom:16px">Candidature en 3 minutes.</p>
+        <a class="btn" href="#" aria-disabled="true">Candidater</a>
+        <p style="margin-top:12px;font-size:13px">Lien du formulaire à venir.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Questions fréquentes</h2>
+      <details><summary>C'est gratuit ?</summary><p>Oui, pendant tout le test et la bêta. Une offre payante viendra plus tard pour certaines fonctions avancées.</p></details>
+      <details><summary>Faut-il installer quelque chose ?</summary><p>Non. Pendant le test, vous recevez un fichier à ouvrir dans votre navigateur (ou un lien vers la démo, qui demande un compte claude.ai).</p></details>
+      <details><summary>Ça marche sur téléphone ?</summary><p>Oui pour l'entraînement. L'import de vos mains Winamax se fait sur ordinateur.</p></details>
+      <details><summary>Mes mains sont-elles envoyées quelque part ?</summary><p>Non. Vos historiques ne quittent pas votre appareil. Si vous le souhaitez, vous pouvez nous envoyer vous-même deux fichiers de comptage anonymes.</p></details>
+      <details><summary>Allez-vous me faire gagner de l'argent ?</summary><p>SpinXpresso vous aide à travailler votre jeu ; il ne promet aucun résultat.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>SpinXpresso — outil d'entraînement indépendant, sans lien avec Winamax ni aucun opérateur de jeu.</p>
+    <p><span class="rg">18+</span> · Le jeu comporte des risques : endettement, isolement, dépendance. Pour être aidé, appelez le 09&nbsp;74&nbsp;75&nbsp;13&nbsp;13 (Joueurs Info Service, appel non surtaxé).</p>
+    <p>Contact : [CONTACT] · <a href="#">Mentions légales</a> · <a href="#">Données personnelles</a></p>
+    <p>Cette page n'utilise ni cookie publicitaire ni outil de mesure d'audience. Comme tout hébergeur, [HÉBERGEUR] enregistre des journaux techniques (dont l'adresse IP) : voir Données personnelles.</p>
+  </div>
+</footer>
+</body>
+</html>
