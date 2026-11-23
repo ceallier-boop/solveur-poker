@@ -6,7 +6,7 @@ set -euo pipefail
 TAG=${1:?usage : release.sh TAG [dossier]}; OUT=${2:-dist}
 cd "$(git rev-parse --show-toplevel)"
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "tag $TAG introuvable (git tag -a $TAG -m ...)"; exit 1; }
-INCLUDE=(spinsacademy data/datasets data/profiles requirements-app.txt requirements-app.lock tools/ops deploy)
+INCLUDE=(spinsacademy data/datasets requirements-app.txt requirements-app.lock tools/ops deploy)
 NAME="spinsacademy-$TAG"; mkdir -p "$OUT"; TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 git archive --format=tar --prefix="$NAME/" "$TAG" "${INCLUDE[@]}" | tar -x -C "$TMP"
 # le solveur (numba) n'est pas exécuté par le serveur : on le retire du paquet
