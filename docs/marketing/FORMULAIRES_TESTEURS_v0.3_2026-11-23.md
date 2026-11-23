@@ -1,7 +1,7 @@
 # Formulaire de candidature et questionnaires J7 / J21 — v0.3 (23/11/2026)
 
 Auteur : Marketing SpinAcademy. Relecture : Plan (8 corrections du 23/11 intégrées ; relecture finale en fin de document). **À valider par le porteur avant tout envoi ; mentions de données personnelles à faire valider par un juriste (A14, D3).**
-Nom : **SpinXpresso** (D1, sous réserve de la vérification INPI/EUIPO). `[SERVICE]` = outil de formulaire retenu (Google Forms, Tally…). `[RESPONSABLE]` et `[CONTACT DONNÉES]` = à fournir par le porteur.
+Nom : **SpinXpresso** (D1, sous réserve de la vérification INPI/EUIPO). `[SERVICE]` = outil de formulaire retenu (Tally ou Framaforms, cf. note juridique du 24/11). `[RESPONSABLE]` et `[CONTACT DONNÉES]` = à fournir par le porteur.
 
 ## Changements depuis la v0.2
 - `SpinXpresso` remplacé par **SpinXpresso** partout.
