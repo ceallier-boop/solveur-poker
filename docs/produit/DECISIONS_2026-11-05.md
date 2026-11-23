@@ -141,3 +141,9 @@ Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 
 - **Nom SpinXpresso : vérifié par le porteur** sur l'INPI et l'EUIPO (« libre de droit », noms de domaine libres). Feu vert pour acheter les domaines et réserver les comptes. À conserver : captures et dates des recherches ; la vérification ne couvre ni TMview, ni la base mondiale (WIPO), ni les pseudos des réseaux : à compléter avec la liste de contrôle de `docs/marketing/FONDATIONS_1-3_v0.2_2026-11-23.md`. Le dépôt de la marque reste une décision du porteur.
 - **Publicité** (payante et récompensée dans l'application) : **à étudier à la fin de la bêta.** Rien n'est activé d'ici là.
 - **Hébergeur : OVHcloud VPS** (recommandation de `docs/exploitation/CHOIX_HEBERGEUR_2026-11-23.md`) validée.
+
+## Réponses du 24/11 (suite, rapportées par la session Marketing)
+
+- **D11 et D12 validés** par le porteur (aucune piste de la liste v0.2 n'est liée à un coach ; choix des cibles de la phase 1a et message d'approche).
+- **SpinElite (piste 10) : « Oui, la garder »** (réponse du porteur à la session Marketing, rapportée par elle) : SpinElite n'est pas écarté comme concurrent partiel et entre dans les cibles de la phase 1a.
+- **Reste à obtenir avant tout contact** : la confirmation, par le porteur, qu'aucun lien n'existe entre un coach du projet et Grind Academy (9) ou SpinElite (10). La réponse sur SpinElite ne la couvre pas.

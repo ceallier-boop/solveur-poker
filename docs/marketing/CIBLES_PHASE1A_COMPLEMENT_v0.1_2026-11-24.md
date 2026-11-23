@@ -49,7 +49,7 @@ Pour chaque piste : ouvrir le lien dans ton navigateur habituel, répondre à la
 # Relecture de Plan (24/11/2026)
 
 1. **D11 ne couvre pas ces nouvelles pistes.** Le porteur a validé D11 pour la liste v0.2 ; pour Grind Academy (9) et SpinElite (10), la confirmation « aucun lien avec un coach du projet » reste à donner par lui. Aucune ne se contacte avant.
-2. **SpinElite (10) :** concurrent partiel possible (quiz GTO, ranges, logiciel de ranges d'un de ses coachs) : le porteur décide ; en cas de doute, la garder hors de la phase 1a.
+2. **SpinElite (10) :** concurrent partiel possible (quiz GTO, ranges, logiciel de ranges d'un de ses coachs). **Décision du porteur (24/11, rapportée par la session Marketing) : « Oui, la garder » : SpinElite entre dans les cibles de la phase 1a.** Cette réponse ne couvre pas la confirmation d'absence de lien avec un coach du projet, toujours à obtenir avant tout contact (voir point 1).
 3. **Grind Academy (9) :** l'angle « lecture exploitante d'abord » est cohérent avec la fiabilité actuelle (profils estimés) à condition de ne rien promettre de plus ; rappeler la fiabilité (8 à 16 BB pour les décisions à tapis).
 4. **Fish Academy (11) :** blog généraliste d'un outil de parties entre amis ; rien avant la phase 2 ; vérifier les règles de publication d'un lien de Discord.
 5. **Concurrents écartés (PokerPro.fr, bitB Spins)** : décision cohérente ; ne pas les citer en communication externe.
