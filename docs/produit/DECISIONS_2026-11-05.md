@@ -122,3 +122,16 @@ Dossier `data/field/winamax/2026-11-07/` (5 fichiers sans pseudo). 39 fichiers, 
 
 **En attente**
 - Essai de l'import avec les vrais fichiers Winamax, puis envoi des comptages (essais MM2 et MM3 ensuite).
+
+## Réponses du 23/11 (liste des décisions du bilan)
+
+- **Nom : SpinXpresso** (sous réserve de la vérification des marques INPI/EUIPO avant achat des domaines).
+- **Publicité payante : non** (aucune campagne payante d'acquisition). Reste à confirmer : la publicité récompensée dans l'application (défi « Range au cordeau »), qui est un autre sujet.
+- **Avis juridique** (ANJ, règles Winamax, A14) et **politique de confidentialité réécrite** : acceptés.
+- **Accord des coachs : non obtenu.** Pas de mention « relu par des experts » ni de nom de coach dans la communication externe.
+- **Avis du 13/10** (trois raisons) : accord de principe, raisons non transmises.
+- **Existant hors dépôt (logo, site, réseaux, Discord) : rien**, tout est à construire.
+- **Dates** (test fermé léger 15/12, bêta ouverte 01/02, version finale mai 2027), **budget de communication** (0 €, environ 50 € par an pour domaine et page) et **objectifs chiffrés** du plan v0.2 : validés.
+- **Hébergeur :** recommandation OVHcloud VPS (`docs/exploitation/CHOIX_HEBERGEUR_2026-11-23.md`) ; script `tools/ops/bootstrap_server.sh`.
+- **Fichiers Winamax :** le porteur ne peut pas les envoyer.
+- **Pots relancés à 3 joueurs** (questions de range) : travail lancé.
