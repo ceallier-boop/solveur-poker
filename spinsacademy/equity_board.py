@@ -267,6 +267,28 @@ def _turn_part(h0, h1, flop, opp, CC, used, t):
     return win, tot
 
 
+_BANK_SPOTS = None
+
+
+def _bank_spot(table, stack, node):
+    """spot de la banque du solveur (tapis égaux), lu en flux dans spots.jsonl : on ne garde en mémoire que les nœuds utiles aux équités
+    (actions, atteinte et fréquences), pas la banque entière (environ 270 Mo par processus du serveur, mesure du 23/11)"""
+    global _BANK_SPOTS
+    if _BANK_SPOTS is None:
+        import json, os
+        from . import equities, quiz
+        keep = {('heads-up', 'root'), ('heads-up', 'SB-call'), ('heads-up', 'SB-allin'), ('3-handed', 'root')}
+        out = {}
+        with open(os.path.join(quiz.ref_path(equities.BANK), 'spots.jsonl'), encoding='utf-8') as f:
+            for line in f:
+                sp = json.loads(line)
+                if (sp['table'], sp['node_key']) not in keep or len(set(sp['stacks_bb'])) != 1: continue
+                out[(sp['table'], sp['stacks_bb'][0], sp['node_key'])] = dict(hero=sp['hero'], actions=[dict(id=a['id'], type=a['type']) for a in sp['actions']],
+                                                                             hands={h: dict(reach=x['reach'], freq=x['freq']) for h, x in sp['hands'].items()})
+        _BANK_SPOTS = out
+    return _BANK_SPOTS[(table, float(stack), node)]
+
+
 @lru_cache(maxsize=16)
 def class_weights(rid):
     """poids (0 à 1) de chaque classe de main dans une range de la banque : atteinte × fréquence de l'action (comme equities.build)"""
@@ -274,8 +296,8 @@ def class_weights(rid):
     from .cards import NAMES
     rid_table = {r[0]: r for r in equities.RANGES}
     _, table, stack, hero, node, act = rid_table[rid][1:]
-    _, spots = quiz.load(equities.BANK)
-    sp = next(s for s in spots.values() if s['table'] == table and s['stacks_bb'] == [float(stack)] * len(s['stacks_bb']) and s['hero'] == hero and s['node_key'] == node)
+    sp = _bank_spot(table, stack, node)
+    assert sp['hero'] == hero
     types = [a['type'] for a in sp['actions']]
     j = types.index('allin') if act == 'allin' else types.index('call_allin') if 'call_allin' in types else types.index('call')
     return tuple(round(sp['hands'][h]['reach'] * sp['hands'][h]['freq'][j], 4) for h in NAMES)
@@ -414,10 +436,8 @@ HELP_OPTIONS_L1 = ("elles augmentent nettement", "elles changent peu", "elles ba
 @lru_cache(maxsize=16)
 def node_weights(stack, node, aid):
     """poids (0 à 1) par classe d'une action de la banque en heads-up : atteinte × fréquence"""
-    from . import equities, quiz
     from .cards import NAMES
-    _, spots = quiz.load(equities.BANK)
-    sp = next(s for s in spots.values() if s['table'] == 'heads-up' and s['stacks_bb'] == [float(stack)] * 2 and s['node_key'] == node)
+    sp = _bank_spot('heads-up', stack, node)
     j = [a['id'] for a in sp['actions']].index(aid)
     return tuple(round(sp['hands'][h]['reach'] * sp['hands'][h]['freq'][j], 4) for h in NAMES)
 
@@ -840,3 +860,13 @@ HANDLERS = {
     'range_help': dict(parse=range_parse, built=range_built, draw=range_draw_one, prompt=range_prompt, extra=range_question_extra, correction=range_correction),
     'nut_help': dict(parse=nut_parse, built=nut_built, draw=nut_draw_one, prompt=nut_prompt, extra=range_question_extra, correction=nut_correction),
 }
+
+
+def warm():
+    """préchauffage au démarrage du serveur (spinsacademy.api._warm, en arrière-plan) : compile les noyaux numba des questions avec
+    tableau, ou les relit du cache (NUMBA_CACHE_DIR), et charge les ranges de la banque ; sinon la première question avec tableau de
+    chaque processus attendrait la compilation (plusieurs secondes)"""
+    board = np.array([0, 17, 38], np.int64); opp = np.ones(1326)
+    hero_equity(51, 50, board, opp, CC); range_flop(board, opp, CC); category([51, 50, 0, 17, 38])
+    for sc in HELP_SCENARIOS: scenario(sc)
+    for t in EQ_TOPICS[1:]: class_weights(t); class_weights(CALLER[t])

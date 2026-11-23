@@ -22,7 +22,7 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from . import adaptive, catalog, challenges, equity_quiz, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins, worst
+from . import adaptive, catalog, challenges, equity_board, equity_quiz, goals, levels, progress, quiz, ranges, ratelimit, recommend, review, today, wins, worst
 from .hrc import ROOT
 
 SCHEMA = """
@@ -143,6 +143,8 @@ def _warm():
     """préchargement des datasets servis, en arrière-plan : les premières requêtes attendent ce chargement (verrou de
     quiz.load) au lieu d'en lancer chacune un"""
     def run():
+        try: equity_board.warm()                              # noyaux numba des équités avec tableau (compilés ou relus du cache)
+        except Exception: pass
         try:
             with closing(connect()) as con:
                 versions = {serving_version(con, m) for m in DATASET_OF}
