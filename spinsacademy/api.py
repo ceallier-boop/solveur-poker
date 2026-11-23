@@ -173,6 +173,24 @@ def index():
     return FileResponse(os.path.join(WEB, 'index.html'))
 
 
+def brand():
+    """nom de l'application, lu dans <meta name="application-name"> d'index.html (seule source du nom visible)"""
+    with open(os.path.join(WEB, 'index.html'), encoding='utf-8') as f: head = f.read(4000)
+    m = re.search(r'<meta name="application-name" content="([^"]+)"(?: data-tagline="([^"]*)")?', head)
+    return (m.group(1), m.group(2) or '') if m else ('SpinXpresso', '')
+
+
+@app.get('/manifest.json', include_in_schema=False)
+def manifest():
+    """manifest de l'application installable, avec le nom d'index.html"""
+    name, tagline = brand()
+    return JSONResponse(dict(name=f'{name} · {tagline}' if tagline else name, short_name=name,
+                             description='Entraînement Expresso : décisions préflop corrigées et expliquées', lang='fr', start_url='/',
+                             display='standalone', background_color='#0b3f2d', theme_color='#0f3d2e',
+                             icons=[dict(src='/static/icon.svg', sizes='any', type='image/svg+xml')]),
+                        media_type='application/manifest+json', headers={'Cache-Control': 'no-cache'})
+
+
 @app.get('/sw.js', include_in_schema=False)
 def service_worker():
     """service worker servi à la racine (portée « / ») : l'application s'ouvre hors connexion"""

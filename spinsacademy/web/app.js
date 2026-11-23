@@ -1,6 +1,18 @@
 'use strict';
 // Interface mobile du quiz : consomme l'API /sessions, /quiz/next, /attempts, /sessions/{id}/summary.
 const $ = (id) => document.getElementById(id);
+// nom de l'application : lu dans <meta name="application-name"> d'index.html (seule source), posé partout où le joueur le voit
+const BRAND = (() => {
+  const m = document.querySelector('meta[name="application-name"]');
+  const name = (m && m.content) || 'SpinXpresso', tagline = (m && m.dataset.tagline) || '';
+  return { name, tagline, slug: (m && m.dataset.slug) || name.toLowerCase().replace(/[^a-z0-9]+/g, '-') };
+})();
+(function applyBrand() {
+  const cut = /^(.+?)([A-Z][a-z]+)$/.exec(BRAND.name);                // « SpinXpresso » → Spin + Xpresso (deuxième partie en couleur)
+  for (const e of document.querySelectorAll('[data-brand]')) { e.textContent = cut ? cut[1] : BRAND.name; if (cut) { const s = document.createElement('span'); s.textContent = cut[2]; e.append(s); } }
+  for (const e of document.querySelectorAll('[data-brand-name]')) e.textContent = BRAND.name;
+  document.title = BRAND.tagline ? `${BRAND.name} · ${BRAND.tagline}` : BRAND.name;
+})();
 const SUIT = { '♠': 's', '♥': 'h', '♦': 'd', '♣': 'c' };
 const SUIT_NAME = { s: 'pique', h: 'cœur', d: 'carreau', c: 'trèfle' };
 const BLINDS = { 3: [0, 0.5, 1], 2: [0.5, 1] };
@@ -994,7 +1006,7 @@ $('notice-close').addEventListener('click', () => { $('notice').hidden = true; r
 $('st-export').addEventListener('click', async () => {              // droit d'accès et de portabilité : fichier JSON
   try {
     const data = await api('/users/me/export');
-    const a = document.createElement('a'); a.download = 'spinsacademy-mes-donnees.json';
+    const a = document.createElement('a'); a.download = `${BRAND.slug}-mes-donnees.json`;
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   } catch (e) { notify(netMsg(e, "l'export n'a pas pu être préparé")); }
@@ -1610,7 +1622,7 @@ function showFiche(id) {
     + `<p class="fi-hint">Chaque case est partagée selon la part de chaque action ; le texte suit l'action la plus fréquente.</p>`
     + (ap ? `<p class="fi-note">${escT(ap)}</p>` : `<p class="fi-note quiet">${escT(D.reliability_fr.tapis)}</p>`)
     + (experts ? `<div class="fi-experts"><p>Là où les experts jouent autrement :</p><ul>${experts}</ul></div>` : '')
-    + `<p class="fi-src">SpinsAcademy · banque ${escT(D.bank)} · ${escT(D.generated)}</p>`;
+    + `<p class="fi-src">${escT(BRAND.name)} · banque ${escT(D.bank)} · ${escT(D.generated)}</p>`;
   $('fi-pick').hidden = true; $('fi-sheet').hidden = false; $('fi-actions').hidden = false; window.scrollTo(0, 0);
 }
 $('fiches-btn').addEventListener('click', openFiches);

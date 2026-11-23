@@ -4,14 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f3d2e">
-  <title>SpinsAcademy</title>
-  <link rel="manifest" href="/static/manifest.json">
+  <!-- Nom de l'application : la SEULE source (en-tête, accueil, titre de l'onglet, manifest servi par /manifest.json, fiches, export).
+       Le changer ici suffit ; tests/test_brand.py vérifie que le titre ci-dessous suit. Noms internes (module, stockage) : « spinsacademy ». -->
+  <meta name="application-name" content="SpinXpresso" data-tagline="Poker Trainer" data-slug="spinxpresso">
+  <title>SpinXpresso · Poker Trainer</title>
+  <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
   <header class="bar">
-    <button class="brand" id="home-btn" aria-label="Accueil">Spins<span>Academy</span></button>
+    <button class="brand" id="home-btn" aria-label="Accueil" data-brand></button>
     <div class="bar-right">
       <div class="progress" id="progress" aria-live="polite"></div>
       <button class="lex-btn" id="lex-btn" aria-haspopup="dialog" aria-controls="lex">Lexique</button>
@@ -306,7 +309,7 @@
     <section id="screen-onboard" class="screen" hidden aria-labelledby="ob-title">
       <p class="ob-steps" id="ob-steps">Étape 1 sur 3</p>
       <div id="ob-1">
-        <h2 id="ob-title">Bienvenue sur SpinsAcademy</h2>
+        <h2 id="ob-title">Bienvenue sur <span data-brand-name></span></h2>
         <p class="lead">Trois questions pour préparer ton entraînement.</p>
         <h3>Tu joues en Expresso depuis…</h3>
         <div class="chips ob-chips" id="ob-exp"></div>

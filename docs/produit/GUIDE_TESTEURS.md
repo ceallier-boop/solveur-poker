@@ -1,9 +1,9 @@
-# Guide des testeurs (version de démonstration, 16/11/2026)
+# Guide des testeurs de SpinXpresso (version de démonstration, 16/11/2026 ; nom mis à jour le 23/11)
 
 À envoyer avec la page. Durée conseillée : 20 minutes, sur téléphone ou ordinateur.
 
 ## Ce que vous testez
-Un entraîneur de poker pour le format Expresso (Spin & Go) : des questions de préflop avec la stratégie de référence d'un solveur, des exercices de ranges, de profils de joueurs et d'équités, des défis et une progression. C'est une démonstration : une partie des fonctions de l'application complète (comptes, administration, exercices adaptatifs, bilan de vos mains importées) n'y est pas.
+SpinXpresso (Poker Trainer) : un entraîneur de poker pour le format Expresso (Spin & Go) : des questions de préflop avec la stratégie de référence d'un solveur, des exercices de ranges, de profils de joueurs et d'équités, des défis et une progression. C'est une démonstration : une partie des fonctions de l'application complète (comptes, administration, exercices adaptatifs, bilan de vos mains importées) n'y est pas.
 
 ## Pour commencer
 1. Ouvrez la page (lien ou fichier reçu). Au premier lancement, répondez aux questions « Ton but » : elles règlent le niveau. Vous pouvez aussi passer le test de 10 mains pour trouver votre niveau.

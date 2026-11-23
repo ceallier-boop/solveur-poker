@@ -67,9 +67,10 @@ def test_series_coverage_across_seeds():
 
 
 def test_web_interface_is_served(client):
-    r = client.get('/'); assert r.status_code == 200 and 'SpinsAcademy' in r.text and '/static/app.js' in r.text
-    for f in ('app.js', 'app.css', 'manifest.json', 'icon.svg'):
+    r = client.get('/'); assert r.status_code == 200 and 'application-name' in r.text and '/static/app.js' in r.text
+    for f in ('app.js', 'app.css', 'icon.svg'):
         assert client.get(f'/static/{f}').status_code == 200
+    assert client.get('/manifest.json').status_code == 200          # manifest servi avec le nom d'index.html (tests/test_brand.py)
 
 
 def test_exploit_mode_series(client):

@@ -1,7 +1,7 @@
 {
  "version": "1.12.2",
  "date": "2026-10-29",
- "note_fr": "Définitions rédigées pour SpinsAcademy (Expresso, décisions avant le flop).",
+ "note_fr": "Définitions rédigées pour l'application (Expresso, décisions avant le flop).",
  "categories": {
   "jeu": "Table et format",
   "actions": "Actions",
@@ -264,7 +264,7 @@
    "match": [
     "solveur"
    ],
-   "def": "Logiciel qui calcule la stratégie d'équilibre d'une situation. Les références de SpinsAcademy viennent d'un solveur préflop."
+   "def": "Logiciel qui calcule la stratégie d'équilibre d'une situation. Les références de l'application viennent d'un solveur préflop."
   },
   {
    "term": "EV (espérance de gain)",
